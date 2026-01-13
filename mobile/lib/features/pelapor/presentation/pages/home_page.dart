@@ -126,7 +126,13 @@ class HomePage extends StatelessWidget {
           ),
           const Gap(16),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              // Navigate to Create Report for Emergency
+              GoRouter.of(context).push('/create-report', extra: {
+                'category': 'Emergency',
+                'isEmergency': true,
+              });
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFFDC2626),
@@ -161,24 +167,32 @@ class HomePage extends StatelessWidget {
       itemCount: menus.length,
       itemBuilder: (context, index) {
         final menu = menus[index];
-        return Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.shade200),
+        return GestureDetector(
+          onTap: () {
+            GoRouter.of(context).push('/create-report', extra: {
+              'category': menu['label'],
+              'isEmergency': false,
+            });
+          },
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Icon(menu['icon'] as IconData, color: menu['color'] as Color),
               ),
-              child: Icon(menu['icon'] as IconData, color: menu['color'] as Color),
-            ),
-            const Gap(8),
-            Text(
-              menu['label'] as String,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
-            ),
-          ],
+              const Gap(8),
+              Text(
+                menu['label'] as String,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         );
       },
     );

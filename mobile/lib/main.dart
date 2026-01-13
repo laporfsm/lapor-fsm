@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/pelapor/presentation/pages/home_page.dart';
+import 'package:mobile/core/router/app_router.dart'; // Add Router Import
 import 'package:mobile/theme.dart';
 
 void main() {
@@ -12,10 +12,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router( // Change to .router
       title: 'Lapor FSM!',
       theme: AppTheme.lightTheme,
-      home: const HomePage(), // For now, direct to Home. Later use Router.
+      routerConfig: appRouter, // Use the router
       debugShowCheckedModeBanner: false,
     );
   }
