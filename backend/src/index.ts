@@ -4,6 +4,10 @@ import { staticPlugin } from '@elysiajs/static';
 import { reportController } from "./controllers/reporter/report.controller";
 import { authController } from "./controllers/auth.controller";
 import { uploadController } from "./controllers/upload.controller";
+import { staffController } from "./controllers/staff/staff.controller";
+import { technicianController } from "./controllers/technician/technician.controller";
+import { supervisorController } from "./controllers/supervisor/supervisor.controller";
+import { adminController } from "./controllers/admin/admin.controller";
 
 const app = new Elysia()
   .use(cors()) // Allow request from Mobile/Web
@@ -12,8 +16,13 @@ const app = new Elysia()
   .use(authController)
   .use(reportController)
   .use(uploadController)
+  .use(staffController)
+  .use(technicianController)
+  .use(supervisorController)
+  .use(adminController)
   .listen(3000);
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
+
