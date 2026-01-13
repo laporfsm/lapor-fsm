@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
 class HomePage extends StatelessWidget {
@@ -9,151 +10,176 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(),
-              const Gap(24),
-              _buildEmergencySection(),
-              const Gap(24),
-              Text(
-                "Layanan Lainnya",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const Gap(12),
-              _buildMenuGrid(context),
-              const Gap(24),
-              Text(
-                "Laporan Terbaru (Public Feed)",
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const Gap(12),
-              _buildPublicFeed(),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: Colors.grey,
-        showUnselectedLabels: true,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.map), label: "Peta"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.fileText), label: "Aktivitas"),
-          BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            const Text(
-              "Selamat Datang, 👋",
-              style: TextStyle(color: Colors.grey),
+            // 1. Header Image Section (Mimic Damkar Header)
+            Stack(
+              children: [
+                Container(
+                  height: 220,
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: NetworkImage(
+                          'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop'), // Campus/Building Image
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.black.withOpacity(0.3),
+                          Colors.black.withOpacity(0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Lapor FSM",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "Fakultas Sains & Matematika",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Undip Logo Placeholder
+                      Container(
+                        height: 50,
+                        width: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.2),
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: const Icon(LucideIcons.graduationCap, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const Gap(4),
-            Text(
-              "Sulhan Fuadi",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1E293B),
+
+            const Gap(40),
+
+            // 2. Big Circular Panic Button (Mimic Damkar Button)
+            Center(
+              child: GestureDetector(
+                onTap: () {
+                   context.push('/create-report', extra: {
+                    'category': 'Emergency',
+                    'isEmergency': true,
+                  });
+                },
+                child: Container(
+                  height: 180,
+                  width: 180,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626), // Deep Red
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFDC2626).withOpacity(0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(LucideIcons.siren, color: Colors.white, size: 50),
+                      Gap(8),
+                      Text(
+                        "LAPOR",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "DARURAT",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
+
+            const Gap(40),
+
+            // 3. Grid Menu
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Laporan Non-Darurat",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Gap(16),
+                  _buildMenuGrid(context),
+                  const Gap(24),
+                  const Text(
+                    "Info Terkini",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const Gap(12),
+                  _buildPublicFeed(),
+                ],
+              ),
+            ),
+            const Gap(40),
           ],
         ),
-        CircleAvatar(
-          backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-          child: const Icon(LucideIcons.bell, color: AppTheme.primaryColor),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmergencySection() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFDC2626).withOpacity(0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          const Icon(LucideIcons.siren, color: Colors.white, size: 48),
-          const Gap(12),
-          const Text(
-            "DARURAT / EMERGENCY",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              fontSize: 18,
-              letterSpacing: 1.2,
-            ),
-          ),
-          const Gap(8),
-          const Text(
-            "Tekan tombol ini jika Anda melihat Bahaya, Kebakaran, atau Kecelakaan.",
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const Gap(16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to Create Report for Emergency
-              GoRouter.of(context).push('/create-report', extra: {
-                'category': 'Emergency',
-                'isEmergency': true,
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFFDC2626),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: const Text("SOS - LAPOR SEKARANG"),
-          ),
-        ],
-      ),
+      bottomNavigationBar: _BottomNav(),
     );
   }
 
   Widget _buildMenuGrid(BuildContext context) {
+    // Kategori sesuai detail proyek: Maintenance & Kebersihan
     final menus = [
-      {'icon': LucideIcons.wrench, 'label': 'Infrastruktur', 'color': Colors.blue},
-      {'icon': LucideIcons.trash2, 'label': 'Kebersihan', 'color': Colors.green},
-      {'icon': LucideIcons.shieldAlert, 'label': 'Keamanan', 'color': Colors.orange},
-      {'icon': LucideIcons.layoutGrid, 'label': 'Lainnya', 'color': Colors.purple},
+      // Maintenance
+      {'icon': LucideIcons.building, 'label': 'Infrastruktur Kelas', 'color': Color(0xFF1E3A8A)},
+      {'icon': LucideIcons.zap, 'label': 'Kelistrikan', 'color': Color(0xFFF59E0B)},
+      {'icon': LucideIcons.hardHat, 'label': 'Sipil & Bangunan', 'color': Color(0xFF6366F1)},
+      {'icon': LucideIcons.droplet, 'label': 'Sanitasi / Air', 'color': Color(0xFF0EA5E9)},
+      // Kebersihan dan Ketertiban
+      {'icon': LucideIcons.trash2, 'label': 'Kebersihan Area', 'color': Color(0xFF22C55E)},
+      {'icon': LucideIcons.trees, 'label': 'Taman / Outdoor', 'color': Color(0xFF10B981)},
+      {'icon': LucideIcons.moreHorizontal, 'label': 'Lain-lain', 'color': Colors.grey},
     ];
 
     return GridView.builder(
@@ -161,15 +187,16 @@ class HomePage extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.75,
         crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
       ),
       itemCount: menus.length,
       itemBuilder: (context, index) {
         final menu = menus[index];
         return GestureDetector(
           onTap: () {
-            GoRouter.of(context).push('/create-report', extra: {
+            context.push('/create-report', extra: {
               'category': menu['label'],
               'isEmergency': false,
             });
@@ -177,18 +204,17 @@ class HomePage extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade200),
+                  color: (menu['color'] as Color).withOpacity(0.1),
+                  shape: BoxShape.circle,
                 ),
                 child: Icon(menu['icon'] as IconData, color: menu['color'] as Color),
               ),
               const Gap(8),
               Text(
                 menu['label'] as String,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -202,15 +228,22 @@ class HomePage extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 3,
+      itemCount: 2,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+            border: Border.all(color: Colors.grey.shade100),
           ),
           child: Row(
             children: [
@@ -220,9 +253,10 @@ class HomePage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(12),
-                  image: const DecorationImage(
+                  // Mock Image
+                   image: const DecorationImage(
                     fit: BoxFit.cover,
-                    image: NetworkImage("https://via.placeholder.com/150"), // Placeholder
+                    image: NetworkImage("https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop"), 
                   ),
                 ),
               ),
@@ -248,28 +282,56 @@ class HomePage extends StatelessWidget {
                     ),
                     const Gap(4),
                     const Text(
-                      "AC Mati di Gedung E101",
+                      "Lampu Koridor Kedip",
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Gap(2),
                     const Text(
-                      "Gedung E, Lantai 1",
+                      "Gedung A, Lt 2",
                       style: TextStyle(color: Colors.grey, fontSize: 11),
                     ),
                   ],
                 ),
               ),
-              Column(
-                children: [
-                  const Icon(LucideIcons.clock, size: 14, color: Colors.grey),
-                  const Gap(2),
-                  Text("2j lalu", style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                ],
-              )
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _BottomNav extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      selectedItemColor: AppTheme.primaryColor,
+      unselectedItemColor: Colors.grey,
+      showUnselectedLabels: true,
+      type: BottomNavigationBarType.fixed,
+      currentIndex: 0,
+      onTap: (index) {
+        switch (index) {
+          case 0:
+            context.go('/');
+            break;
+          case 1:
+            context.push('/feed');
+            break;
+          case 2:
+            context.push('/history');
+            break;
+          case 3:
+            // Profile - TODO
+            break;
+        }
+      },
+      items: const [
+        BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
+        BottomNavigationBarItem(icon: Icon(LucideIcons.newspaper), label: "Feed"),
+        BottomNavigationBarItem(icon: Icon(LucideIcons.fileText), label: "Aktivitas"),
+        BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
+      ],
     );
   }
 }
