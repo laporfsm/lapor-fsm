@@ -225,75 +225,131 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildPublicFeed() {
+    // Mock data sesuai kategori dari detail proyek
+    final feedItems = [
+      {
+        'title': 'AC Mati di Lab Komputer',
+        'category': 'Kelistrikan',
+        'building': 'Gedung G, Lt 2',
+        'time': '10 menit lalu',
+        'status': 'Penanganan',
+        'color': Colors.orange,
+      },
+      {
+        'title': 'Kebocoran Pipa Toilet',
+        'category': 'Sanitasi / Air',
+        'building': 'Gedung C, Lt 1',
+        'time': '30 menit lalu',
+        'status': 'Verifikasi',
+        'color': Colors.blue,
+      },
+      {
+        'title': 'Sampah Menumpuk',
+        'category': 'Kebersihan Area',
+        'building': 'Area Parkir',
+        'time': '1 jam lalu',
+        'status': 'Pending',
+        'color': Colors.green,
+      },
+    ];
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: 2,
+      itemCount: feedItems.length,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-            border: Border.all(color: Colors.grey.shade100),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(12),
-                  // Mock Image
-                   image: const DecorationImage(
-                    fit: BoxFit.cover,
-                    image: NetworkImage("https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop"), 
+        final item = feedItems[index];
+        return GestureDetector(
+          onTap: () => context.push('/feed'),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(color: Colors.grey.shade100),
+            ),
+            child: Row(
+              children: [
+                // Status Icon
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: (item['color'] as Color).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(LucideIcons.fileText, color: item['color'] as Color),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: (item['color'] as Color).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              item['category'] as String,
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: item['color'] as Color,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            item['time'] as String,
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                      const Gap(4),
+                      Text(
+                        item['title'] as String,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Gap(2),
+                      Row(
+                        children: [
+                          Icon(LucideIcons.mapPin, size: 12, color: Colors.grey.shade500),
+                          const Gap(4),
+                          Text(
+                            item['building'] as String,
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                          ),
+                          const Spacer(),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              item['status'] as String,
+                              style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        "Infrastruktur",
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const Gap(4),
-                    const Text(
-                      "Lampu Koridor Kedip",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const Gap(2),
-                    const Text(
-                      "Gedung A, Lt 2",
-                      style: TextStyle(color: Colors.grey, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -322,7 +378,7 @@ class _BottomNav extends StatelessWidget {
             context.push('/history');
             break;
           case 3:
-            // Profile - TODO
+            context.push('/profile');
             break;
         }
       },

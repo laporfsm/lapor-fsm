@@ -7,6 +7,7 @@ import 'package:mobile/features/pelapor/presentation/pages/report/report_success
 import 'package:mobile/features/pelapor/presentation/pages/report/report_detail_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/feed/public_feed_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/history/report_history_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/profile/profile_page.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/login', // Start with login for demo
@@ -57,6 +58,12 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/history',
       builder: (context, state) => const ReportHistoryPage(),
+    ),
+    
+    // Profile
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfilePage(),
     ),
   ],
 );
