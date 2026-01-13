@@ -16,10 +16,10 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _handleSSOLogin() async {
     setState(() => _isLoading = true);
-    
+
     // Simulate SSO login delay
     await Future.delayed(const Duration(seconds: 2));
-    
+
     if (mounted) {
       setState(() => _isLoading = false);
       // Check if first time (no phone number) -> go to complete profile
@@ -67,20 +67,25 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(color: Colors.grey),
               ),
               const Spacer(),
-              
+
               // SSO Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _handleSSOLogin,
-                  icon: _isLoading 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(LucideIcons.logIn),
-                  label: Text(_isLoading ? "Menghubungkan..." : "Login dengan SSO Undip"),
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(LucideIcons.logIn),
+                  label: Text(
+                    _isLoading ? "Menghubungkan..." : "Login dengan SSO Undip",
+                  ),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -90,6 +95,29 @@ class _LoginPageState extends State<LoginPage> {
               Text(
                 "Gunakan akun SSO Undip Anda untuk masuk",
                 style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+              ),
+              const Gap(24),
+
+              // Link to Staff Login
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Staff/Teknisi? ",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.go('/staff-login'),
+                    child: const Text(
+                      "Login disini",
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const Gap(32),
             ],
