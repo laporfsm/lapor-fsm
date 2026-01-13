@@ -1,0 +1,31 @@
+# Miscellaneous
+*.class
+*.log
+*.lock
+*.ctxt
+.mtj.tmp/
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.DS_Store
+.idea/
+.vscode/
+
+# Mobile (Flutter)
+mobile/.dart_tool/
+mobile/.packages
+mobile/.pub/
+mobile/build/
+mobile/ios/.generated/
+mobile/windows/flutter/ephemeral/
+mobile/linux/flutter/ephemeral/
+mobile/macos/Flutter/ephemeral/
+
+# Backend (JS/TS)
+backend/node_modules/
+backend/dist/
+backend/.env
