@@ -92,17 +92,10 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
               Center(
                 child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        LucideIcons.shieldCheck,
-                        color: AppTheme.primaryColor,
-                        size: 48,
-                      ),
+                    Image.asset(
+                      'assets/images/logo.png',
+                      width: 100,
+                      height: 100,
                     ),
                     const Gap(24),
                     const Text(

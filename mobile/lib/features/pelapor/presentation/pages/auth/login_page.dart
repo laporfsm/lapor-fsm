@@ -39,27 +39,20 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const Spacer(),
               // Logo & Title
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.megaphone,
-                  size: 64,
-                  color: AppTheme.primaryColor,
-                ),
+              Image.asset(
+                'assets/images/logo.png',
+                width: 120,
+                height: 120,
               ),
               const Gap(24),
-              const Text(
-                "Lapor FSM!",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
+              // const Text(
+              //   "Lapor FSM!",
+              //   style: TextStyle(
+              //     fontSize: 32,
+              //     fontWeight: FontWeight.bold,
+              //     color: AppTheme.primaryColor,
+              //   ),
+              // ),
               const Gap(8),
               const Text(
                 "Sistem Pelaporan Insiden & Fasilitas\nFakultas Sains dan Matematika",
