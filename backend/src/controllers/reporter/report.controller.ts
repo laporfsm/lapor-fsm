@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
-import { db } from '../db';
-import { reports, categories } from '../db/schema';
+import { db } from '../../db';
+import { reports, categories } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export const reportController = new Elysia({ prefix: '/reports' })

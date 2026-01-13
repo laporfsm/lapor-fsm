@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
-import { db } from '../db';
-import { staff } from '../db/schema';
+import { db } from '../../db';
+import { staff } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
 export const staffController = new Elysia({ prefix: '/staff' })
