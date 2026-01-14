@@ -12,6 +12,8 @@ import 'package:mobile/features/pelapor/presentation/pages/feed/public_feed_page
 import 'package:mobile/features/pelapor/presentation/pages/history/report_history_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/edit_profile_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/profile/settings_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/profile/help_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/emergency_report_page.dart';
 // Staff & Teknisi imports
 import 'package:mobile/features/auth/presentation/pages/staff_login_page.dart';
@@ -135,6 +137,12 @@ final appRouter = GoRouter(
 
     // Edit Profile - Pelapor (outside shell for focused editing)
     GoRoute(path: '/edit-profile', builder: (context, state) => const EditProfilePage()),
+
+    // Settings - Pelapor
+    GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
+
+    // Help - Pelapor
+    GoRoute(path: '/help', builder: (context, state) => const HelpPage()),
 
     // Emergency Report - Pelapor (simplified fast reporting)
     GoRoute(path: '/emergency-report', builder: (context, state) => const EmergencyReportPage()),

@@ -119,8 +119,8 @@ class ProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   _MenuItem(icon: LucideIcons.edit, label: "Edit Profil", onTap: () => context.push('/edit-profile')),
-                  _MenuItem(icon: LucideIcons.settings, label: "Pengaturan", onTap: () {}),
-                  _MenuItem(icon: LucideIcons.helpCircle, label: "Bantuan", onTap: () {}),
+                  _MenuItem(icon: LucideIcons.settings, label: "Pengaturan", onTap: () => context.push('/settings')),
+                  _MenuItem(icon: LucideIcons.helpCircle, label: "Bantuan", onTap: () => context.push('/help')),
                   _MenuItem(icon: LucideIcons.logOut, label: "Keluar", onTap: () => context.go('/login'), isDestructive: true),
                 ],
               ),
