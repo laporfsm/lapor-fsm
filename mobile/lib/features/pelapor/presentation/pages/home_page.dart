@@ -90,10 +90,7 @@ class HomePage extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                   context.push('/create-report', extra: {
-                    'category': 'Emergency',
-                    'isEmergency': true,
-                  });
+                   context.push('/emergency-report');
                 },
                 child: Container(
                   height: 180,
@@ -144,16 +141,49 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Laporan Non-Darurat",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Laporan Non-Darurat",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "Pilih kategori untuk melaporkan kerusakan atau masalah fasilitas",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
                   ),
                   const Gap(16),
                   _buildMenuGrid(context),
                   const Gap(24),
-                  const Text(
-                    "Info Terkini",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Info Terkini",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "Preview laporan terbaru dari civitas FSM",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/feed'),
+                        child: const Row(
+                          children: [
+                            Text("Lihat Semua"),
+                            Gap(4),
+                            Icon(LucideIcons.arrowRight, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const Gap(12),
                   _buildPublicFeed(),
@@ -164,7 +194,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNav(),
     );
   }
 
@@ -353,41 +382,6 @@ class HomePage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      selectedItemColor: AppTheme.primaryColor,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true,
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 0,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/');
-            break;
-          case 1:
-            context.push('/feed');
-            break;
-          case 2:
-            context.push('/history');
-            break;
-          case 3:
-            context.push('/profile');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.newspaper), label: "Feed"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.fileText), label: "Aktivitas"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
-      ],
     );
   }
 }

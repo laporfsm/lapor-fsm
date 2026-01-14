@@ -45,6 +45,8 @@ dependencies:
   dio: ^5.9.0
   shared_preferences: ^2.5.4
   url_launcher: ^6.2.5
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
