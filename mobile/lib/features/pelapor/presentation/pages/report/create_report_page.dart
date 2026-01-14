@@ -41,15 +41,23 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   // Data gedung FSM
   final List<String> _buildings = [
-    'Gedung A - Dekanat',
-    'Gedung B - Matematika',
-    'Gedung C - Fisika',
-    'Gedung D - Kimia',
-    'Gedung E - Biologi',
-    'Gedung F - Statistika',
-    'Gedung G - Informatika',
-    'Gedung H - Lab Terpadu',
-    'Area Outdoor / Taman',
+    'Gedung A',
+    'Gedung B',
+    'Gedung C',
+    'Gedung D',
+    'Gedung E',
+    'Gedung F',
+    'Gedung G',
+    'Gedung H',
+    'Gedung I',
+    'Gedung J',
+    'Gedung K',
+    'Gedung L',
+    'Parkiran Motor',
+    'Parkiran Mobil',
+    'Masjid',
+    'Gedung Acintya Prasada',
+    'Taman Rumah Kita',
     'Lainnya',
   ];
 

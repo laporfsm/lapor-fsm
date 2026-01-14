@@ -1,18 +1,76 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 
-class ReportDetailPage extends StatelessWidget {
+class ReportDetailPage extends StatefulWidget {
   final String reportId;
 
   const ReportDetailPage({super.key, required this.reportId});
 
   @override
+  State<ReportDetailPage> createState() => _ReportDetailPageState();
+}
+
+class _ReportDetailPageState extends State<ReportDetailPage> {
+  Timer? _timer;
+  Duration _elapsed = Duration.zero;
+  
+  // Mock created timestamp - in real app this comes from backend
+  late DateTime _createdAt;
+
+  @override
+  void initState() {
+    super.initState();
+    // Simulate report created 2 hours 15 minutes ago
+    _createdAt = DateTime.now().subtract(const Duration(hours: 2, minutes: 15));
+    _updateElapsed();
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _updateElapsed();
+    });
+  }
+
+  void _updateElapsed() {
+    if (mounted) {
+      setState(() {
+        _elapsed = DateTime.now().difference(_createdAt);
+      });
+    }
+  }
+
+  String _formatElapsedTime(Duration duration) {
+    final days = duration.inDays;
+    final hours = duration.inHours.remainder(24);
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (days > 0) {
+      return '${days}h ${hours}j ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}j ${minutes}m ${seconds}d';
+    } else if (minutes > 0) {
+      return '${minutes}m ${seconds}d';
+    } else {
+      return '${seconds} detik';
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Mock data based on ID
     final report = {
-      'id': reportId,
+      'id': widget.reportId,
       'title': 'AC Mati di Ruang E102',
       'category': 'Infrastruktur Kelas',
       'building': 'Gedung E',
@@ -22,7 +80,10 @@ class ReportDetailPage extends StatelessWidget {
       'reporter': 'Sulhan Fuadi',
       'latitude': -6.998576,
       'longitude': 110.423188,
+      'isEmergency': widget.reportId == '999', // Demo: id 999 = emergency
     };
+
+    final isEmergency = report['isEmergency'] as bool;
 
     final timeline = [
       {'status': 'Laporan Dibuat', 'time': '13 Jan 2026, 08:30', 'done': true},
@@ -56,21 +117,118 @@ class ReportDetailPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Status Badge
+                  // Timer Card - Shows elapsed time since report was created
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
+                      gradient: LinearGradient(
+                        colors: isEmergency 
+                            ? [const Color(0xFFDC2626), const Color(0xFFB91C1C)]
+                            : [AppTheme.primaryColor, const Color(0xFF1565C0)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Icon(LucideIcons.wrench, size: 14, color: Colors.blue),
-                        Gap(6),
-                        Text('Penanganan', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isEmergency ? LucideIcons.siren : LucideIcons.clock,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const Gap(16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isEmergency ? 'Waktu Respon Darurat' : 'Waktu Berjalan',
+                                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              ),
+                              const Gap(4),
+                              Text(
+                                _formatElapsedTime(_elapsed),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              isEmergency ? 'Target: 30 menit' : 'Sejak dibuat',
+                              style: const TextStyle(color: Colors.white70, fontSize: 10),
+                            ),
+                            if (isEmergency && _elapsed.inMinutes > 30)
+                              Container(
+                                margin: const EdgeInsets.only(top: 4),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'MELEBIHI TARGET',
+                                  style: TextStyle(color: Colors.red, fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                          ],
+                        ),
                       ],
                     ),
+                  ),
+                  const Gap(20),
+
+                  // Status Badge
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(LucideIcons.wrench, size: 14, color: Colors.blue),
+                            Gap(6),
+                            Text('Penanganan', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      if (isEmergency) ...[
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(LucideIcons.siren, size: 14, color: Colors.red),
+                              Gap(6),
+                              Text('DARURAT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const Gap(16),
 

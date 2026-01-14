@@ -27,20 +27,24 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   bool _isSubmitting = false;
   bool _isFetchingLocation = false;
 
-  // Stopwatch for timer display
-  final Stopwatch _stopwatch = Stopwatch();
-  int _elapsedSeconds = 0;
-
   final List<String> _buildings = [
-    'Gedung A - Dekanat',
-    'Gedung B - Matematika',
-    'Gedung C - Fisika',
-    'Gedung D - Kimia',
-    'Gedung E - Biologi',
-    'Gedung F - Statistika',
-    'Gedung G - Informatika',
-    'Gedung H - Lab Terpadu',
-    'Area Outdoor / Taman',
+    'Gedung A',
+    'Gedung B',
+    'Gedung C',
+    'Gedung D',
+    'Gedung E',
+    'Gedung F',
+    'Gedung G',
+    'Gedung H',
+    'Gedung I',
+    'Gedung J',
+    'Gedung K',
+    'Gedung L',
+    'Parkiran Motor',
+    'Parkiran Mobil',
+    'Masjid',
+    'Gedung Acintya Prasada',
+    'Taman Rumah Kita',
     'Lainnya',
   ];
 
@@ -48,34 +52,6 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   void initState() {
     super.initState();
     _fetchCurrentLocation();
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _stopwatch.stop();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _stopwatch.start();
-    _updateTimer();
-  }
-
-  void _updateTimer() {
-    if (!mounted) return;
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _stopwatch.isRunning) {
-        setState(() => _elapsedSeconds = _stopwatch.elapsed.inSeconds);
-        _updateTimer();
-      }
-    });
-  }
-
-  String _formatTime(int seconds) {
-    final minutes = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
   }
 
   Future<void> _fetchCurrentLocation() async {
@@ -147,13 +123,13 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     }
 
     setState(() => _isSubmitting = true);
-    _stopwatch.stop();
 
     // Simulate API call
     await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
       setState(() => _isSubmitting = false);
+      // Navigate to success, timer will start in report detail
       context.go('/report-success');
     }
   }
@@ -167,31 +143,6 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         backgroundColor: const Color(0xFFDC2626),
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: [
-          // Timer display
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                const Icon(LucideIcons.clock, size: 16, color: Colors.white),
-                const Gap(6),
-                Text(
-                  _formatTime(_elapsedSeconds),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
       body: SafeArea(
         child: Column(
