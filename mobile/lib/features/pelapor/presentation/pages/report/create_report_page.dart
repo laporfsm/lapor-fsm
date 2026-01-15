@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -33,6 +35,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
   
   // State
   XFile? _selectedImage;
+  Uint8List? _selectedImageBytes; // For web compatibility
   String? _selectedBuilding;
   double? _latitude;
   double? _longitude;
@@ -91,7 +94,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
         imageQuality: 80,
       );
       if (image != null) {
-        setState(() => _selectedImage = image);
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = image;
+          _selectedImageBytes = bytes;
+        });
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
@@ -210,34 +217,46 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: _selectedImage != null ? AppTheme.primaryColor : Colors.grey.shade300,
-                      width: _selectedImage != null ? 2 : 1,
+                      color: _selectedImageBytes != null ? AppTheme.primaryColor : Colors.grey.shade300,
+                      width: _selectedImageBytes != null ? 2 : 1,
                     ),
-                    image: _selectedImage != null
-                        ? DecorationImage(
-                            image: FileImage(File(_selectedImage!.path)),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: _selectedImage == null
-                      ? Column(
+                  child: _selectedImageBytes != null
+                      ? Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(15),
+                              child: Image.memory(
+                                _selectedImageBytes!,
+                                height: 200,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () => setState(() {
+                                  _selectedImage = null;
+                                  _selectedImageBytes = null;
+                                }),
+                                child: const CircleAvatar(
+                                  backgroundColor: Colors.red,
+                                  radius: 16,
+                                  child: Icon(LucideIcons.x, color: Colors.white, size: 16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(LucideIcons.camera, size: 48, color: Colors.grey.shade400),
                             const Gap(12),
                             Text("Ketuk untuk ambil foto bukti", style: TextStyle(color: Colors.grey.shade500)),
                           ],
-                        )
-                      : Align(
-                          alignment: Alignment.topRight,
-                          child: IconButton(
-                            icon: const CircleAvatar(
-                              backgroundColor: Colors.red,
-                              child: Icon(LucideIcons.x, color: Colors.white, size: 16),
-                            ),
-                            onPressed: () => setState(() => _selectedImage = null),
-                          ),
                         ),
                 ),
               ),
@@ -268,10 +287,17 @@ class _CreateReportPageState extends State<CreateReportPage> {
               ),
               const Gap(16),
               
-              // Map Preview
+              // Map Preview - Interactive
+              const Text("Lokasi *", style: TextStyle(fontWeight: FontWeight.w600)),
+              const Gap(4),
+              Text(
+                'Geser peta untuk menyesuaikan lokasi',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              ),
+              const Gap(8),
               if (_latitude != null && _longitude != null && !_isFetchingLocation)
                 Container(
-                  height: 150,
+                  height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
@@ -285,30 +311,29 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           options: MapOptions(
                             initialCenter: LatLng(_latitude!, _longitude!),
                             initialZoom: 17,
-                            interactionOptions: const InteractionOptions(
-                              flags: InteractiveFlag.none,
-                            ),
+                            onPositionChanged: (position, hasGesture) {
+                              if (hasGesture && position.center != null) {
+                                setState(() {
+                                  _latitude = position.center!.latitude;
+                                  _longitude = position.center!.longitude;
+                                });
+                              }
+                            },
                           ),
                           children: [
                             TileLayer(
                               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                               userAgentPackageName: 'com.laporfsm.mobile',
                             ),
-                            MarkerLayer(
-                              markers: [
-                                Marker(
-                                  point: LatLng(_latitude!, _longitude!),
-                                  width: 40,
-                                  height: 40,
-                                  child: const Icon(
-                                    Icons.location_pin,
-                                    color: Colors.red,
-                                    size: 40,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
+                        ),
+                        // Center marker (fixed position)
+                        const Center(
+                          child: Icon(
+                            Icons.location_pin,
+                            color: Colors.red,
+                            size: 40,
+                          ),
                         ),
                         // Location info overlay
                         Positioned(
@@ -316,8 +341,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           left: 0,
                           right: 0,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            color: Colors.black.withOpacity(0.6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            color: Colors.black.withOpacity(0.7),
                             child: Row(
                               children: [
                                 const Icon(LucideIcons.mapPin, color: Colors.white, size: 14),
@@ -328,12 +353,43 @@ class _CreateReportPageState extends State<CreateReportPage> {
                                     style: const TextStyle(color: Colors.white, fontSize: 10),
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(LucideIcons.refreshCw, color: Colors.white, size: 14),
-                                  onPressed: _fetchCurrentLocation,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                                GestureDetector(
+                                  onTap: _fetchCurrentLocation,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(LucideIcons.locate, color: Colors.white, size: 12),
+                                        Gap(4),
+                                        Text('Reset', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                      ],
+                                    ),
+                                  ),
                                 ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        // Drag hint overlay
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(LucideIcons.move, color: Colors.white, size: 12),
+                                Gap(4),
+                                Text('Geser peta', style: TextStyle(color: Colors.white, fontSize: 10)),
                               ],
                             ),
                           ),

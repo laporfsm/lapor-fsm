@@ -1,3 +1,3 @@
 # Controller: Admin
-Zona controller untuk logika admin/supervisor.
-**Penanggung Jawab:** Taki
+Zona controller untuk logika admin.
+**Penanggung Jawab:** Fuad

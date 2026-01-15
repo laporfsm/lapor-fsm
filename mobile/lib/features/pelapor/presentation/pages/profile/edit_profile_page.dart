@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 
@@ -15,109 +13,14 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  final _imagePicker = ImagePicker();
   
-  // Controllers - Editable fields
+  // Controllers - Editable fields only
   final _phoneController = TextEditingController(text: '081234567890');
-  final _addressController = TextEditingController(text: 'Jl. Prof. Soedarto No. 50, Tembalang');
-  final _emergencyContactController = TextEditingController(text: '081298765432');
-  final _emergencyNameController = TextEditingController(text: 'Orang Tua');
+  final _addressController = TextEditingController(text: 'Tembalang, Semarang');
+  final _emergencyNameController = TextEditingController(text: 'Budi Santoso');
+  final _emergencyPhoneController = TextEditingController(text: '081298765432');
   
-  // State
-  XFile? _selectedImage;
   bool _isLoading = false;
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: source,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 80,
-      );
-      if (image != null) {
-        setState(() => _selectedImage = image);
-      }
-    } catch (e) {
-      debugPrint('Error picking image: $e');
-    }
-    if (mounted) Navigator.pop(context);
-  }
-
-  void _showImageSourceDialog() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Pilih Foto Profil',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const Gap(20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  _buildImageSourceOption(
-                    icon: LucideIcons.camera,
-                    label: 'Kamera',
-                    onTap: () => _pickImage(ImageSource.camera),
-                  ),
-                  _buildImageSourceOption(
-                    icon: LucideIcons.image,
-                    label: 'Galeri',
-                    onTap: () => _pickImage(ImageSource.gallery),
-                  ),
-                  if (_selectedImage != null)
-                    _buildImageSourceOption(
-                      icon: LucideIcons.trash2,
-                      label: 'Hapus',
-                      color: Colors.red,
-                      onTap: () {
-                        setState(() => _selectedImage = null);
-                        Navigator.pop(context);
-                      },
-                    ),
-                ],
-              ),
-              const Gap(16),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImageSourceOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    Color? color,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: (color ?? AppTheme.primaryColor).withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color ?? AppTheme.primaryColor, size: 28),
-          ),
-          const Gap(8),
-          Text(label, style: TextStyle(color: color ?? Colors.black)),
-        ],
-      ),
-    );
-  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
@@ -143,8 +46,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _phoneController.dispose();
     _addressController.dispose();
-    _emergencyContactController.dispose();
     _emergencyNameController.dispose();
+    _emergencyPhoneController.dispose();
     super.dispose();
   }
 
@@ -175,56 +78,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar Section
+              // Avatar Section (non-editable)
               Center(
-                child: GestureDetector(
-                  onTap: _showImageSourceDialog,
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 120,
-                        height: 120,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primaryColor.withOpacity(0.1),
-                          border: Border.all(color: AppTheme.primaryColor, width: 3),
-                          image: _selectedImage != null
-                              ? DecorationImage(
-                                  image: FileImage(File(_selectedImage!.path)),
-                                  fit: BoxFit.cover,
-                                )
-                              : null,
-                        ),
-                        child: _selectedImage == null
-                            ? const Icon(LucideIcons.user, size: 48, color: AppTheme.primaryColor)
-                            : null,
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: AppTheme.primaryColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(LucideIcons.camera, size: 18, color: Colors.white),
-                        ),
-                      ),
-                    ],
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    border: Border.all(color: AppTheme.primaryColor, width: 3),
                   ),
-                ),
-              ),
-              const Gap(8),
-              Center(
-                child: TextButton(
-                  onPressed: _showImageSourceDialog,
-                  child: const Text('Ubah Foto Profil'),
+                  child: const Icon(LucideIcons.user, size: 48, color: AppTheme.primaryColor),
                 ),
               ),
               const Gap(24),
 
-              // Info from SSO (Read-only)
+              // Read-only Data Section
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -239,7 +108,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         Icon(LucideIcons.lock, size: 16, color: Colors.grey.shade600),
                         const Gap(8),
                         Text(
-                          'Data dari SSO (tidak dapat diubah)',
+                          'Data Akun (tidak dapat diubah)',
                           style: TextStyle(color: Colors.grey.shade600, fontSize: 12, fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -247,19 +116,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const Gap(16),
                     _ReadOnlyField(label: 'Nama Lengkap', value: 'Sulhan Fuadi', icon: LucideIcons.user),
                     const Gap(12),
-                    _ReadOnlyField(label: 'NIM', value: '24060123130115', icon: LucideIcons.hash),
-                    const Gap(12),
                     _ReadOnlyField(label: 'Email', value: 'sulhan.fuadi@students.undip.ac.id', icon: LucideIcons.mail),
                     const Gap(12),
-                    _ReadOnlyField(label: 'Fakultas', value: 'Sains dan Matematika', icon: LucideIcons.building),
-                    const Gap(12),
-                    _ReadOnlyField(label: 'Jurusan', value: 'Informatika', icon: LucideIcons.graduationCap),
+                    _ReadOnlyField(label: 'NIM/NIP', value: '24060123130115', icon: LucideIcons.hash),
                   ],
                 ),
               ),
               const Gap(24),
 
-              // Editable Fields
+              // Editable Fields Header
               const Text(
                 'Informasi Kontak',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -271,14 +136,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               const Gap(16),
 
+              // Phone
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  labelText: 'Nomor WhatsApp/HP *',
-                  hintText: 'Contoh: 081234567890',
+                  labelText: 'Nomor HP *',
+                  hintText: '08xxxxxxxxxx',
                   prefixIcon: Icon(LucideIcons.phone),
-                  helperText: 'Untuk dihubungi terkait status laporan',
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) return 'Nomor HP wajib diisi';
@@ -288,47 +153,69 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
               const Gap(16),
 
+              // Address
               TextFormField(
                 controller: _addressController,
                 maxLines: 2,
                 decoration: const InputDecoration(
-                  labelText: 'Alamat Domisili',
-                  hintText: 'Alamat tempat tinggal saat ini',
-                  prefixIcon: Icon(LucideIcons.home),
+                  labelText: 'Alamat',
+                  hintText: 'Alamat domisili',
+                  prefixIcon: Icon(LucideIcons.mapPin),
                 ),
               ),
               const Gap(24),
 
-              // Emergency Contact
-              const Text(
-                'Kontak Darurat',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const Gap(4),
-              Text(
-                'Untuk keadaan darurat, kami akan menghubungi kontak ini',
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+              // Emergency Contact Section
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade100),
+                ),
+                child: Row(
+                  children: [
+                    Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 20),
+                    const Gap(8),
+                    Expanded(
+                      child: Text(
+                        'Kontak darurat akan dihubungi jika terjadi situasi mendesak',
+                        style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const Gap(16),
 
+              // Emergency Contact Name
               TextFormField(
                 controller: _emergencyNameController,
                 decoration: const InputDecoration(
-                  labelText: 'Nama Kontak Darurat',
-                  hintText: 'Contoh: Orang Tua / Wali',
-                  prefixIcon: Icon(LucideIcons.userCheck),
+                  labelText: 'Nama Kontak Darurat *',
+                  hintText: 'Nama orang yang bisa dihubungi',
+                  prefixIcon: Icon(LucideIcons.userCircle),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Nama kontak darurat wajib diisi';
+                  return null;
+                },
               ),
               const Gap(16),
 
+              // Emergency Contact Phone
               TextFormField(
-                controller: _emergencyContactController,
+                controller: _emergencyPhoneController,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  labelText: 'Nomor Kontak Darurat',
-                  hintText: 'Contoh: 081298765432',
+                  labelText: 'Nomor Kontak Darurat *',
+                  hintText: '08xxxxxxxxxx',
                   prefixIcon: Icon(LucideIcons.phoneCall),
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Nomor kontak darurat wajib diisi';
+                  return null;
+                },
               ),
               const Gap(32),
 
