@@ -72,7 +72,17 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
       'status': 'penanganan',
       'createdAt': DateTime.now().subtract(const Duration(minutes: 45)),
       'startedAt': DateTime.now().subtract(const Duration(minutes: 15)),
-      'handledBy': 'Budi Teknisi', // TODO: [BACKEND] Get from logged in user
+      'handledBy': ['Budi Santoso'], // Single technician
+    },
+    {
+      'id': 6,
+      'title': 'AC Rusak di Ruang Rapat',
+      'category': 'Kelistrikan',
+      'building': 'Gedung B, Lt 2',
+      'status': 'penanganan',
+      'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
+      'startedAt': DateTime.now().subtract(const Duration(minutes: 30)),
+      'handledBy': ['Budi Santoso', 'Ahmad Hidayat'], // Multiple technicians
     },
   ];
 
@@ -108,6 +118,14 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
       return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
     }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  // Helper to format handledBy (can be String or List<String>)
+  String _formatHandledBy(dynamic handledBy) {
+    if (handledBy is List) {
+      return handledBy.join(', ');
+    }
+    return handledBy.toString();
   }
 
   @override
@@ -207,21 +225,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
             : Colors.white,
         foregroundColor: isEmergencyTab ? Colors.white : Colors.black,
         automaticallyImplyLeading: false,
-        actions: [
-          if (!isActiveTab)
-            IconButton(
-              onPressed: () {
-                // TODO: [BACKEND] Implement refresh
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Memperbarui data...')),
-                );
-              },
-              icon: Icon(
-                LucideIcons.refreshCw,
-                color: isEmergencyTab ? Colors.white : Colors.grey,
-              ),
-            ),
-        ],
+        // Reload icon removed - data will be real-time
       ),
       body: reports.isEmpty
           ? Center(
@@ -391,19 +395,22 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
                   if (!isPending && report['handledBy'] != null) ...[
                     const Gap(8),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
-                          LucideIcons.user,
+                          LucideIcons.users,
                           size: 14,
                           color: Colors.grey.shade500,
                         ),
                         const Gap(6),
-                        Text(
-                          'Ditangani oleh: ${report['handledBy']}',
-                          style: TextStyle(
-                            color: AppTheme.secondaryColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+                        Expanded(
+                          child: Text(
+                            'Ditangani oleh: ${_formatHandledBy(report['handledBy'])}',
+                            style: TextStyle(
+                              color: AppTheme.secondaryColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],

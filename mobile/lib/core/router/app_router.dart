@@ -22,6 +22,9 @@ import 'package:mobile/features/auth/presentation/pages/staff_profile_page.dart'
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_home_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_report_detail_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_complete_report_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_map_view_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_settings_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_help_page.dart';
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_home_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
@@ -41,7 +44,10 @@ final appRouter = GoRouter(
   routes: [
     // Auth - Unified Login & Register
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
-    GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
+    GoRoute(
+      path: '/register',
+      builder: (context, state) => const RegisterPage(),
+    ),
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfilePage(),
@@ -91,10 +97,22 @@ final appRouter = GoRouter(
               }
             },
             items: const [
-              BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-              BottomNavigationBarItem(icon: Icon(LucideIcons.newspaper), label: "Feed"),
-              BottomNavigationBarItem(icon: Icon(LucideIcons.fileText), label: "Aktivitas"),
-              BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.home),
+                label: "Beranda",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.newspaper),
+                label: "Feed",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.fileText),
+                label: "Aktivitas",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(LucideIcons.user),
+                label: "Profil",
+              ),
             ],
           ),
         );
@@ -103,10 +121,19 @@ final appRouter = GoRouter(
         // Main - Pelapor (inside shell)
         GoRoute(path: '/', builder: (context, state) => const HomePage()),
         // Feed & History - Pelapor (inside shell)
-        GoRoute(path: '/feed', builder: (context, state) => const PublicFeedPage()),
-        GoRoute(path: '/history', builder: (context, state) => const ReportHistoryPage()),
+        GoRoute(
+          path: '/feed',
+          builder: (context, state) => const PublicFeedPage(),
+        ),
+        GoRoute(
+          path: '/history',
+          builder: (context, state) => const ReportHistoryPage(),
+        ),
         // Profile - Pelapor (inside shell)
-        GoRoute(path: '/profile', builder: (context, state) => const ProfilePage()),
+        GoRoute(
+          path: '/profile',
+          builder: (context, state) => const ProfilePage(),
+        ),
       ],
     ),
 
@@ -132,16 +159,25 @@ final appRouter = GoRouter(
     ),
 
     // Edit Profile - Pelapor (outside shell for focused editing)
-    GoRoute(path: '/edit-profile', builder: (context, state) => const EditProfilePage()),
+    GoRoute(
+      path: '/edit-profile',
+      builder: (context, state) => const EditProfilePage(),
+    ),
 
     // Settings - Pelapor
-    GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
+    GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsPage(),
+    ),
 
     // Help - Pelapor
     GoRoute(path: '/help', builder: (context, state) => const HelpPage()),
 
     // Emergency Report - Pelapor (simplified fast reporting)
-    GoRoute(path: '/emergency-report', builder: (context, state) => const EmergencyReportPage()),
+    GoRoute(
+      path: '/emergency-report',
+      builder: (context, state) => const EmergencyReportPage(),
+    ),
 
     // ===============================================
     // TEKNISI ROUTES
@@ -164,6 +200,25 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/teknisi/profile',
       builder: (context, state) => const StaffProfilePage(role: 'teknisi'),
+    ),
+    GoRoute(
+      path: '/teknisi/map',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>? ?? {};
+        return TeknisiMapViewPage(
+          latitude: extra['latitude'] ?? 0.0,
+          longitude: extra['longitude'] ?? 0.0,
+          locationName: extra['locationName'] ?? 'Lokasi Laporan',
+        );
+      },
+    ),
+    GoRoute(
+      path: '/teknisi/settings',
+      builder: (context, state) => const TeknisiSettingsPage(),
+    ),
+    GoRoute(
+      path: '/teknisi/help',
+      builder: (context, state) => const TeknisiHelpPage(),
     ),
 
     // ===============================================

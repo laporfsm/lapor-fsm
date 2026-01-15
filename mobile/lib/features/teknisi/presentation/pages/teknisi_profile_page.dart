@@ -195,15 +195,27 @@ class TeknisiProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   _MenuItem(
+                    icon: LucideIcons.user,
+                    label: "Edit Profil",
+                    onTap: () {
+                      // TODO: Implement Edit Profile for Teknisi
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Fitur akan segera hadir'),
+                        ),
+                      );
+                    },
+                  ),
+                  _MenuItem(
                     icon: LucideIcons.settings,
                     label: "Pengaturan",
-                    onTap: () {},
-                  ), // TODO: [BACKEND] Implement settings
+                    onTap: () => context.push('/teknisi/settings'),
+                  ),
                   _MenuItem(
                     icon: LucideIcons.helpCircle,
                     label: "Bantuan",
-                    onTap: () {},
-                  ), // TODO: [BACKEND] Implement help
+                    onTap: () => context.push('/teknisi/help'),
+                  ),
                   _MenuItem(
                     icon: LucideIcons.logOut,
                     label: "Keluar",

@@ -17,6 +17,8 @@ class TeknisiHistoryPage extends StatelessWidget {
       'status': 'Selesai',
       'completedAt': '12 Jan 2026, 15:30',
       'duration': '45 menit',
+      'handledBy': ['Budi Santoso'],
+      'supervisedBy': 'Pak Joko Widodo',
     },
     {
       'id': 102,
@@ -26,6 +28,8 @@ class TeknisiHistoryPage extends StatelessWidget {
       'status': 'Selesai',
       'completedAt': '11 Jan 2026, 10:00',
       'duration': '1 jam 20 menit',
+      'handledBy': ['Budi Santoso', 'Ahmad Hidayat'],
+      'supervisedBy': 'Pak Joko Widodo',
     },
     {
       'id': 103,
@@ -35,6 +39,8 @@ class TeknisiHistoryPage extends StatelessWidget {
       'status': 'Selesai',
       'completedAt': '10 Jan 2026, 14:15',
       'duration': '30 menit',
+      'handledBy': ['Ahmad Hidayat'],
+      'supervisedBy': 'Pak Susilo',
     },
   ];
 
@@ -52,9 +58,16 @@ class TeknisiHistoryPage extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(LucideIcons.inbox, size: 64, color: Colors.grey.shade300),
+                  Icon(
+                    LucideIcons.inbox,
+                    size: 64,
+                    color: Colors.grey.shade300,
+                  ),
                   const Gap(16),
-                  const Text('Belum ada laporan selesai', style: TextStyle(color: Colors.grey)),
+                  const Text(
+                    'Belum ada laporan selesai',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             )
@@ -90,7 +103,11 @@ class TeknisiHistoryPage extends StatelessWidget {
                                 color: Colors.green.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(LucideIcons.checkCircle, color: Colors.green, size: 20),
+                              child: const Icon(
+                                LucideIcons.checkCircle,
+                                color: Colors.green,
+                                size: 20,
+                              ),
                             ),
                             const Gap(12),
                             Expanded(
@@ -99,14 +116,27 @@ class TeknisiHistoryPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     report['title'],
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                   const Gap(4),
                                   Row(
                                     children: [
-                                      Icon(LucideIcons.tag, size: 12, color: Colors.grey.shade500),
+                                      Icon(
+                                        LucideIcons.tag,
+                                        size: 12,
+                                        color: Colors.grey.shade500,
+                                      ),
                                       const Gap(4),
-                                      Text(report['category'], style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                      Text(
+                                        report['category'],
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -119,24 +149,101 @@ class TeknisiHistoryPage extends StatelessWidget {
                         const Gap(12),
                         Row(
                           children: [
-                            Icon(LucideIcons.building, size: 14, color: Colors.grey.shade500),
+                            Icon(
+                              LucideIcons.building,
+                              size: 14,
+                              color: Colors.grey.shade500,
+                            ),
                             const Gap(4),
                             Expanded(
-                              child: Text(report['building'], style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                              child: Text(
+                                report['building'],
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
-                            Icon(LucideIcons.timer, size: 14, color: Colors.grey.shade500),
+                            Icon(
+                              LucideIcons.timer,
+                              size: 14,
+                              color: Colors.grey.shade500,
+                            ),
                             const Gap(4),
-                            Text(report['duration'], style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                            Text(
+                              report['duration'],
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
                         const Gap(8),
                         Row(
                           children: [
-                            Icon(LucideIcons.calendar, size: 14, color: Colors.grey.shade500),
+                            Icon(
+                              LucideIcons.calendar,
+                              size: 14,
+                              color: Colors.grey.shade500,
+                            ),
                             const Gap(4),
-                            Text(report['completedAt'], style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                            Text(
+                              report['completedAt'],
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
+                              ),
+                            ),
                           ],
                         ),
+                        // TK-012: Show teknisi and supervisor info
+                        if (report['handledBy'] != null) ...[
+                          const Gap(8),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.wrench,
+                                size: 14,
+                                color: AppTheme.secondaryColor,
+                              ),
+                              const Gap(4),
+                              Expanded(
+                                child: Text(
+                                  'Teknisi: ${(report['handledBy'] as List).join(', ')}',
+                                  style: TextStyle(
+                                    color: AppTheme.secondaryColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        if (report['supervisedBy'] != null) ...[
+                          const Gap(4),
+                          Row(
+                            children: [
+                              Icon(
+                                LucideIcons.userCheck,
+                                size: 14,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const Gap(4),
+                              Expanded(
+                                child: Text(
+                                  'Supervisor: ${report['supervisedBy']}',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
                   ),
