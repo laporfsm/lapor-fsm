@@ -15,12 +15,9 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  // Mock data
+  // Mock data - Emergency adalah 1 kategori fixed (tidak perlu dipilih user)
   final List<Map<String, dynamic>> _emergencyCategories = [
-    {'id': 1, 'name': 'Kebakaran', 'icon': '🔥', 'type': 'emergency'},
-    {'id': 2, 'name': 'Kecelakaan Kerja', 'icon': '⚠️', 'type': 'emergency'},
-    {'id': 3, 'name': 'K3 Lab', 'icon': '🧪', 'type': 'emergency'},
-    {'id': 4, 'name': 'Tindak Kriminal', 'icon': '🚨', 'type': 'emergency'},
+    {'id': 1, 'name': 'Laporan Darurat', 'icon': '🚨', 'type': 'emergency', 'description': 'Semua laporan darurat (kebakaran, kecelakaan, kriminal, dll)'},
   ];
 
   final List<Map<String, dynamic>> _nonEmergencyCategories = [
@@ -41,6 +38,9 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild to update FAB visibility
+    });
   }
 
   @override
@@ -75,16 +75,157 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildCategoryList(_emergencyCategories, true),
+          _buildEmergencySection(),
           _buildCategoryList(_nonEmergencyCategories, false),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEditDialog(null),
-        backgroundColor: const Color(0xFF059669),
-        icon: const Icon(LucideIcons.plus),
-        label: const Text('Tambah Kategori'),
+      floatingActionButton: _tabController.index == 1
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddEditDialog(null),
+              backgroundColor: const Color(0xFF059669),
+              icon: const Icon(LucideIcons.plus),
+              label: const Text('Tambah Kategori'),
+            )
+          : null,
+    );
+  }
+
+  // Emergency section - showing that it's a single fixed category
+  Widget _buildEmergencySection() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Info Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(LucideIcons.info, color: Colors.orange.shade700, size: 20),
+                const Gap(12),
+                Expanded(
+                  child: Text(
+                    'Kategori darurat bersifat tetap. Pelapor langsung membuat laporan darurat tanpa memilih kategori.',
+                    style: TextStyle(color: Colors.orange.shade700, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Gap(20),
+          
+          // Single Emergency Category Card
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.emergencyColor.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.emergencyColor.withOpacity(0.1),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppTheme.emergencyColor.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Center(
+                          child: Text('🚨', style: TextStyle(fontSize: 24)),
+                        ),
+                      ),
+                      const Gap(12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Laporan Darurat',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            Gap(2),
+                            Text(
+                              'Kategori Tunggal',
+                              style: TextStyle(color: Colors.grey, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppTheme.emergencyColor,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'AKTIF',
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Mencakup semua jenis laporan darurat:',
+                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      ),
+                      const Gap(12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildEmergencyTag('🔥 Kebakaran'),
+                          _buildEmergencyTag('⚠️ Kecelakaan'),
+                          _buildEmergencyTag('🧪 K3 Lab'),
+                          _buildEmergencyTag('🚨 Kriminal'),
+                          _buildEmergencyTag('🏥 Medis'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildEmergencyTag(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
     );
   }
 
