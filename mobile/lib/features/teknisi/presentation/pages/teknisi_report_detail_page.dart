@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,51 +22,310 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
   // Mock data - will be replaced with API
   late Map<String, dynamic> _report;
   bool _isLoading = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
     _loadReport();
+    // TK-011: Timer for live counter
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   void _loadReport() {
     // TODO: [BACKEND] Replace with API call to fetch report details
     Future.delayed(const Duration(milliseconds: 500), () {
       setState(() {
-        _report = {
-          'id': widget.reportId,
-          'title': 'AC Mati di Lab Komputer',
-          'description':
-              'AC di Lab Komputer ruang 201 tidak menyala sejak pagi. Sudah dicoba restart tapi tetap tidak berfungsi. Suhu ruangan sangat panas.',
-          'category': 'Kelistrikan',
-          'building': 'Gedung G, Lt 2, Ruang 201',
-          'latitude': -6.9932,
-          'longitude': 110.4203,
-          'imageUrl':
-              'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
-          'isEmergency': false,
-          'status':
-              'pending', // pending, verifikasi, penanganan, selesai, ditolak
-          'createdAt': DateTime.now().subtract(const Duration(minutes: 30)),
-          'reporterName': 'Ahmad Fauzi',
-          'reporterPhone': '08123456789',
-          'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
-          // TODO: [BACKEND] Fetch assigned technicians from API
-          'handledBy': null, // List of technicians - null when not yet handled
-          // Example when handled:
-          // 'handledBy': ['Budi Teknisi', 'Ahmad Mekanik'],
-          'logs': [
-            {
-              'action': 'created',
-              'time': DateTime.now().subtract(const Duration(minutes: 30)),
-              'notes': 'Laporan dibuat',
-              'isDone': true,
-            },
-          ],
-        };
+        final int reportIdNum = int.tryParse(widget.reportId) ?? 0;
+
+        // Check report type based on ID
+        // IDs 101-103: Completed reports (from Riwayat Aktivitas)
+        // IDs 4, 6: Active reports (from Sedang Dikerjakan)
+        // Other IDs: Pending reports (from Laporan Umum)
+
+        if (reportIdNum >= 101 && reportIdNum <= 103) {
+          _report = _getCompletedReportData(reportIdNum);
+        } else if (reportIdNum == 4 || reportIdNum == 6) {
+          _report = _getActiveReportData(reportIdNum);
+        } else {
+          _report = _getPendingReportData();
+        }
         _isLoading = false;
       });
     });
+  }
+
+  // Mock data for ACTIVE reports (from Sedang Dikerjakan tab)
+  Map<String, dynamic> _getActiveReportData(int reportId) {
+    final activeReports = {
+      4: {
+        'id': '4',
+        'title': 'Lampu Koridor Mati',
+        'description':
+            'Lampu di koridor lantai 1 mati semua. Sudah dicoba ganti lampu tapi tetap tidak menyala.',
+        'category': 'Kelistrikan',
+        'building': 'Gedung A, Lt 1',
+        'latitude': -6.9940,
+        'longitude': 110.4210,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+        'isEmergency': false,
+        'status': 'penanganan',
+        'createdAt': DateTime.now().subtract(const Duration(minutes: 45)),
+        'reporterName': 'Rudi Hartono',
+        'reporterPhone': '08345678901',
+        'reporterEmail': 'rudi.hartono@students.undip.ac.id',
+        'handledBy': ['Budi Santoso'],
+        'logs': [
+          {
+            'action': 'penanganan',
+            'time': DateTime.now().subtract(const Duration(minutes: 15)),
+            'notes': 'Teknisi mulai menangani laporan',
+            'isDone': true,
+          },
+          {
+            'action': 'verifikasi',
+            'time': DateTime.now().subtract(const Duration(minutes: 30)),
+            'notes': 'Laporan diverifikasi dan ditangani',
+            'isDone': true,
+          },
+          {
+            'action': 'created',
+            'time': DateTime.now().subtract(const Duration(minutes: 45)),
+            'notes': 'Laporan dibuat oleh Rudi Hartono',
+            'isDone': true,
+          },
+        ],
+      },
+      6: {
+        'id': '6',
+        'title': 'AC Rusak di Ruang Rapat',
+        'description':
+            'AC di ruang rapat tidak bisa dingin. Sudah di-setting ke suhu rendah tapi tetap panas.',
+        'category': 'Kelistrikan',
+        'building': 'Gedung B, Lt 2',
+        'latitude': -6.9935,
+        'longitude': 110.4205,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+        'isEmergency': false,
+        'status': 'penanganan',
+        'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
+        'reporterName': 'Dewi Lestari',
+        'reporterPhone': '08456789012',
+        'reporterEmail': 'dewi.lestari@students.undip.ac.id',
+        'handledBy': ['Budi Santoso', 'Ahmad Hidayat'],
+        'logs': [
+          {
+            'action': 'penanganan',
+            'time': DateTime.now().subtract(const Duration(minutes: 30)),
+            'notes': 'Teknisi mulai menangani laporan',
+            'isDone': true,
+          },
+          {
+            'action': 'verifikasi',
+            'time': DateTime.now().subtract(const Duration(minutes: 45)),
+            'notes': 'Laporan diverifikasi dan ditangani',
+            'isDone': true,
+          },
+          {
+            'action': 'created',
+            'time': DateTime.now().subtract(const Duration(hours: 1)),
+            'notes': 'Laporan dibuat oleh Dewi Lestari',
+            'isDone': true,
+          },
+        ],
+      },
+    };
+    return activeReports[reportId] ?? _getPendingReportData();
+  }
+
+  Map<String, dynamic> _getCompletedReportData(int reportId) {
+    final completedReports = {
+      101: {
+        'id': '101',
+        'title': 'AC Mati di Lab Komputer',
+        'description':
+            'AC di Lab Komputer ruang 201 tidak menyala sejak pagi. Sudah dicoba restart tapi tetap tidak berfungsi. Suhu ruangan sangat panas.',
+        'category': 'Kelistrikan',
+        'building': 'Gedung G, Lt 2, Ruang 201',
+        'latitude': -6.9932,
+        'longitude': 110.4203,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+        'isEmergency': false,
+        'status': 'selesai',
+        'createdAt': DateTime.now().subtract(const Duration(days: 4)),
+        'reporterName': 'Ahmad Fauzi',
+        'reporterPhone': '08123456789',
+        'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
+        'handledBy': ['Budi Santoso'],
+        'supervisedBy': 'Pak Joko Widodo',
+        'logs': [
+          {
+            'action': 'selesai',
+            'time': DateTime.now().subtract(const Duration(days: 4, hours: -1)),
+            'notes': 'Laporan selesai ditangani',
+            'photoUrl':
+                'https://images.unsplash.com/photo-1581092921461-eab32e97f6d3?w=400',
+            'isDone': true,
+          },
+          {
+            'action': 'penanganan',
+            'time': DateTime.now().subtract(const Duration(days: 4, hours: 1)),
+            'notes': 'Teknisi mulai menangani laporan',
+            'isDone': true,
+          },
+          {
+            'action': 'verifikasi',
+            'time': DateTime.now().subtract(const Duration(days: 4, hours: 2)),
+            'notes': 'Laporan diverifikasi dan ditangani',
+            'isDone': true,
+          },
+          {
+            'action': 'created',
+            'time': DateTime.now().subtract(const Duration(days: 4, hours: 3)),
+            'notes': 'Laporan dibuat oleh Ahmad Fauzi',
+            'isDone': true,
+          },
+        ],
+      },
+      102: {
+        'id': '102',
+        'title': 'Kebocoran Pipa Toilet',
+        'description':
+            'Pipa di toilet lantai 1 bocor dan menyebabkan genangan air. Perlu segera diperbaiki.',
+        'category': 'Sipil & Bangunan',
+        'building': 'Gedung E, Lt 1',
+        'latitude': -6.9945,
+        'longitude': 110.4215,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+        'isEmergency': false,
+        'status': 'selesai',
+        'createdAt': DateTime.now().subtract(const Duration(days: 5)),
+        'reporterName': 'Siti Aminah',
+        'reporterPhone': '08234567890',
+        'reporterEmail': 'siti.aminah@students.undip.ac.id',
+        'handledBy': ['Budi Santoso', 'Ahmad Hidayat'],
+        'supervisedBy': 'Pak Joko Widodo',
+        'logs': [
+          {
+            'action': 'selesai',
+            'time': DateTime.now().subtract(const Duration(days: 5, hours: -2)),
+            'notes': 'Laporan selesai ditangani',
+            'photoUrl':
+                'https://images.unsplash.com/photo-1581092921461-eab32e97f6d3?w=400',
+            'isDone': true,
+          },
+          {
+            'action': 'penanganan',
+            'time': DateTime.now().subtract(const Duration(days: 5, hours: 1)),
+            'notes': 'Teknisi mulai menangani laporan',
+            'isDone': true,
+          },
+          {
+            'action': 'verifikasi',
+            'time': DateTime.now().subtract(const Duration(days: 5, hours: 2)),
+            'notes': 'Laporan diverifikasi dan ditangani',
+            'isDone': true,
+          },
+          {
+            'action': 'created',
+            'time': DateTime.now().subtract(const Duration(days: 5, hours: 3)),
+            'notes': 'Laporan dibuat oleh Siti Aminah',
+            'isDone': true,
+          },
+        ],
+      },
+      103: {
+        'id': '103',
+        'title': 'Lampu Koridor Mati',
+        'description':
+            'Lampu di koridor lantai 3 mati semua sejak kemarin malam.',
+        'category': 'Kelistrikan',
+        'building': 'Gedung C, Lt 3',
+        'latitude': -6.9950,
+        'longitude': 110.4200,
+        'imageUrl':
+            'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+        'isEmergency': false,
+        'status': 'selesai',
+        'createdAt': DateTime.now().subtract(const Duration(days: 6)),
+        'reporterName': 'Rudi Hartono',
+        'reporterPhone': '08345678901',
+        'reporterEmail': 'rudi.hartono@students.undip.ac.id',
+        'handledBy': ['Ahmad Hidayat'],
+        'supervisedBy': 'Pak Susilo',
+        'logs': [
+          {
+            'action': 'selesai',
+            'time': DateTime.now().subtract(const Duration(days: 6, hours: -1)),
+            'notes': 'Laporan selesai ditangani',
+            'photoUrl':
+                'https://images.unsplash.com/photo-1581092921461-eab32e97f6d3?w=400',
+            'isDone': true,
+          },
+          {
+            'action': 'penanganan',
+            'time': DateTime.now().subtract(const Duration(days: 6, hours: 1)),
+            'notes': 'Teknisi mulai menangani laporan',
+            'isDone': true,
+          },
+          {
+            'action': 'verifikasi',
+            'time': DateTime.now().subtract(const Duration(days: 6, hours: 2)),
+            'notes': 'Laporan diverifikasi dan ditangani',
+            'isDone': true,
+          },
+          {
+            'action': 'created',
+            'time': DateTime.now().subtract(const Duration(days: 6, hours: 3)),
+            'notes': 'Laporan dibuat oleh Rudi Hartono',
+            'isDone': true,
+          },
+        ],
+      },
+    };
+    return completedReports[reportId] ?? _getPendingReportData();
+  }
+
+  Map<String, dynamic> _getPendingReportData() {
+    return {
+      'id': widget.reportId,
+      'title': 'AC Mati di Lab Komputer',
+      'description':
+          'AC di Lab Komputer ruang 201 tidak menyala sejak pagi. Sudah dicoba restart tapi tetap tidak berfungsi. Suhu ruangan sangat panas.',
+      'category': 'Kelistrikan',
+      'building': 'Gedung G, Lt 2, Ruang 201',
+      'latitude': -6.9932,
+      'longitude': 110.4203,
+      'imageUrl':
+          'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+      'isEmergency': false,
+      'status': 'pending',
+      'createdAt': DateTime.now().subtract(const Duration(minutes: 30)),
+      'reporterName': 'Ahmad Fauzi',
+      'reporterPhone': '08123456789',
+      'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
+      'handledBy': null,
+      'logs': [
+        {
+          'action': 'created',
+          'time': DateTime.now().subtract(const Duration(minutes: 30)),
+          'notes': 'Laporan dibuat oleh Ahmad Fauzi',
+          'isDone': true,
+        },
+      ],
+    };
   }
 
   @override
@@ -247,11 +509,81 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                       title: 'Ditangani Oleh',
                       icon: LucideIcons.users,
                       children: [
-                        // TODO: [BACKEND] Support multiple technicians
-                        _buildInfoRow(
-                          LucideIcons.wrench,
-                          'Teknisi',
-                          _report['handledBy'],
+                        // Bug #5 Fix: Support multiple technicians as a list
+                        ...(_report['handledBy'] as List<dynamic>).map(
+                          (tech) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const Gap(12),
+                                Icon(
+                                  LucideIcons.wrench,
+                                  size: 16,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const Gap(8),
+                                Expanded(
+                                  child: Text(
+                                    tech.toString(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(16),
+                  ],
+
+                  // TK-013: Show Supervisor Info
+                  if (_report['supervisedBy'] != null) ...[
+                    _buildInfoCard(
+                      title: 'Diverifikasi Oleh',
+                      icon: LucideIcons.userCheck,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.secondaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const Gap(12),
+                              Icon(
+                                LucideIcons.user,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                              const Gap(8),
+                              Expanded(
+                                child: Text(
+                                  _report['supervisedBy'],
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -271,7 +603,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                         _report['building'],
                       ),
                       const Gap(12),
-                      // Static Map Preview Image
+                      // Bug #1 Fix: Interactive Map Preview like Pelapor
                       Container(
                         height: 150,
                         width: double.infinity,
@@ -282,51 +614,65 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                           borderRadius: BorderRadius.circular(12),
                           child: Stack(
                             children: [
-                              // Static Map Image from Google Static Maps API
-                              // TODO: [BACKEND] Replace with actual Google Static Maps API key
-                              Image.network(
-                                'https://maps.googleapis.com/maps/api/staticmap?center=${_report['latitude']},${_report['longitude']}&zoom=15&size=600x300&maptype=roadmap&markers=color:red%7C${_report['latitude']},${_report['longitude']}&key=YOUR_API_KEY',
-                                fit: BoxFit.cover,
-                                width: double.infinity,
-                                height: 150,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey.shade200,
-                                  child: Center(
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          LucideIcons.mapPin,
-                                          size: 32,
-                                          color: AppTheme.primaryColor,
+                              // FlutterMap preview (non-interactive)
+                              IgnorePointer(
+                                child: FlutterMap(
+                                  options: MapOptions(
+                                    initialCenter: LatLng(
+                                      _report['latitude'],
+                                      _report['longitude'],
+                                    ),
+                                    initialZoom: 15,
+                                    interactionOptions:
+                                        const InteractionOptions(
+                                          flags: InteractiveFlag.none,
                                         ),
-                                        const Gap(8),
-                                        Text(
-                                          'Lat: ${_report['latitude']}, Long: ${_report['longitude']}',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12,
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate:
+                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      userAgentPackageName:
+                                          'com.laporfsm.mobile',
+                                    ),
+                                    MarkerLayer(
+                                      markers: [
+                                        Marker(
+                                          point: LatLng(
+                                            _report['latitude'],
+                                            _report['longitude'],
+                                          ),
+                                          width: 40,
+                                          height: 40,
+                                          child: const Icon(
+                                            Icons.location_pin,
+                                            color: Colors.red,
+                                            size: 40,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
+                                  ],
                                 ),
                               ),
+                              // Button to open interactive map
                               Positioned(
                                 bottom: 8,
                                 right: 8,
                                 child: ElevatedButton.icon(
-                                  onPressed: () => _openMaps(
-                                    _report['latitude'],
-                                    _report['longitude'],
+                                  onPressed: () => context.push(
+                                    '/teknisi/map',
+                                    extra: {
+                                      'latitude': _report['latitude'],
+                                      'longitude': _report['longitude'],
+                                      'locationName': _report['building'],
+                                    },
                                   ),
                                   icon: const Icon(
-                                    LucideIcons.navigation,
+                                    LucideIcons.maximize2,
                                     size: 14,
                                   ),
-                                  label: const Text('Buka Maps'),
+                                  label: const Text('Lihat Peta'),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: AppTheme.primaryColor,
                                     foregroundColor: Colors.white,
@@ -362,13 +708,17 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                   ),
                   const Gap(16),
 
-                  // Activity Log Card
+                  // Activity Log Card - Bug #2 Fix: Timeline with connected dots
                   _buildInfoCard(
                     title: 'Riwayat Aktivitas',
                     icon: LucideIcons.clock,
                     children: [
-                      ...(_report['logs'] as List).map(
-                        (log) => _buildLogItem(log),
+                      ...(_report['logs'] as List).asMap().entries.map(
+                        (entry) => _buildLogItem(
+                          entry.value,
+                          index: entry.key,
+                          total: (_report['logs'] as List).length,
+                        ),
                       ),
                     ],
                   ),
@@ -392,7 +742,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
 
     switch (status) {
       case 'pending':
-        statusColor = Colors.grey;
+        statusColor = AppTheme.secondaryColor;
         statusText = 'Menunggu Verifikasi';
         statusIcon = LucideIcons.clock;
         break;
@@ -420,6 +770,19 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         statusColor = Colors.grey;
         statusText = 'Unknown';
         statusIcon = LucideIcons.helpCircle;
+    }
+
+    // TK-011: Calculate elapsed time from createdAt
+    final DateTime createdAt = _report['createdAt'] as DateTime;
+    final Duration elapsed = DateTime.now().difference(createdAt);
+    final bool showTimer = status == 'pending' || status == 'penanganan';
+
+    // Determine timer color based on elapsed time
+    Color timerColor = AppTheme.secondaryColor;
+    if (elapsed.inMinutes >= 30) {
+      timerColor = Colors.red;
+    } else if (elapsed.inMinutes >= 15) {
+      timerColor = Colors.orange;
     }
 
     return Container(
@@ -452,21 +815,22 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
               ],
             ),
           ),
-          if (status == 'penanganan')
+          // TK-011: Show timer for pending and penanganan status
+          if (showTimer)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: statusColor,
+                color: timerColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.timer, color: Colors.white, size: 14),
-                  Gap(4),
+                  const Icon(LucideIcons.timer, color: Colors.white, size: 14),
+                  const Gap(4),
                   Text(
-                    '15:30',
-                    style: TextStyle(
+                    _formatDuration(elapsed),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -477,6 +841,18 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         ],
       ),
     );
+  }
+
+  // TK-011: Format duration for timer display
+  String _formatDuration(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    final seconds = duration.inSeconds % 60;
+
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   Widget _buildInfoCard({
@@ -593,36 +969,108 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     );
   }
 
-  Widget _buildLogItem(Map<String, dynamic> log) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+  // Bug #2 Fix: Timeline with connected dots like Pelapor
+  Widget _buildLogItem(
+    Map<String, dynamic> log, {
+    required int index,
+    required int total,
+  }) {
+    final bool isDone = log['isDone'] ?? false;
+    final bool isFirst = index == 0;
+    final bool isLast = index == total - 1;
+
+    return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(top: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
-              shape: BoxShape.circle,
-            ),
+          // Timeline column with dot and connecting line
+          Column(
+            children: [
+              // Circle dot
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDone ? AppTheme.primaryColor : Colors.grey.shade300,
+                  border: isFirst
+                      ? Border.all(color: AppTheme.primaryColor, width: 3)
+                      : null,
+                ),
+                child: isDone
+                    ? const Icon(
+                        LucideIcons.check,
+                        size: 14,
+                        color: Colors.white,
+                      )
+                    : null,
+              ),
+              // Connecting line (hide for last item)
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isDone
+                        ? AppTheme.primaryColor
+                        : Colors.grey.shade300,
+                  ),
+                ),
+            ],
           ),
           const Gap(12),
+          // Content
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  log['notes'],
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-                const Gap(2),
-                Text(
-                  _formatDateTime(log['time']),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    log['notes'],
+                    style: TextStyle(
+                      fontWeight: isFirst ? FontWeight.bold : FontWeight.w500,
+                      color: isDone ? Colors.black : Colors.grey,
+                    ),
+                  ),
+                  const Gap(2),
+                  Text(
+                    _formatDateTime(log['time']),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                  // TK-014: Show photo in timeline log if available
+                  if (log['photoUrl'] != null) ...[
+                    const Gap(8),
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) =>
+                              Dialog(child: Image.network(log['photoUrl'])),
+                        );
+                      },
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          log['photoUrl'],
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 120,
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(
+                                LucideIcons.imageOff,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],
@@ -661,28 +1109,14 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                 ),
               ),
               const Gap(12),
-              // Verify Button
+              // Verify & Handle Button - combined action
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: _verifyReport,
+                  onPressed: _verifyAndHandle,
                   icon: const Icon(LucideIcons.checkCircle),
-                  label: const Text('Verifikasi'),
+                  label: const Text('Verifikasi & Tangani'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ],
-            if (status == 'verifikasi') ...[
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _startHandling,
-                  icon: const Icon(LucideIcons.play),
-                  label: const Text('Mulai Penanganan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.secondaryColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
@@ -711,41 +1145,30 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     );
   }
 
-  void _verifyReport() {
-    // TODO: Call API to verify report
-    setState(() {
-      _report['status'] = 'verifikasi';
-      (_report['logs'] as List).insert(0, {
-        'action': 'verified',
-        'time': DateTime.now(),
-        'notes': 'Laporan diverifikasi oleh Teknisi',
-      });
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Laporan berhasil diverifikasi'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _startHandling() {
-    // TODO: [BACKEND] Call API to start handling and assign technician
+  void _verifyAndHandle() {
+    // TODO: [BACKEND] Call API to verify and start handling
     setState(() {
       _report['status'] = 'penanganan';
-      _report['handledBy'] =
-          'Budi Teknisi'; // TODO: [BACKEND] Get from logged in user
+      // Assign current technician(s) - can be multiple
+      // TODO: [BACKEND] Get from logged in user
+      _report['handledBy'] = ['Budi Santoso', 'Ahmad Hidayat'];
       (_report['logs'] as List).insert(0, {
         'action': 'handling',
         'time': DateTime.now(),
         'notes': 'Teknisi mulai menangani laporan',
         'isDone': true,
       });
+      (_report['logs'] as List).insert(0, {
+        'action': 'verified',
+        'time': DateTime.now(),
+        'notes': 'Laporan diverifikasi dan ditangani',
+        'isDone': true,
+      });
     });
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Penanganan dimulai - Timer berjalan'),
-        backgroundColor: AppTheme.secondaryColor,
+        content: Text('Laporan diverifikasi - Penanganan dimulai'),
+        backgroundColor: Colors.green,
       ),
     );
   }
@@ -819,15 +1242,6 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
-    }
-  }
-
-  void _openMaps(double lat, double lng) async {
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
