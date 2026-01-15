@@ -169,14 +169,14 @@ class HelpPage extends StatelessWidget {
                     leading: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: Colors.orange.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(LucideIcons.phone, color: Colors.green),
+                      child: const Icon(LucideIcons.mapPin, color: Colors.orange),
                     ),
-                    title: const Text('Telepon'),
-                    subtitle: const Text('(024) 7474754'),
-                    onTap: () => _launchUrl('tel:0247474754'),
+                    title: const Text('Alamat'),
+                    subtitle: const Text('Jl. Prof. Jacob Rais, Tembalang Semarang, Jawa Tengah 50275'),
+                    isThreeLine: true,
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -186,11 +186,11 @@ class HelpPage extends StatelessWidget {
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(LucideIcons.messageCircle, color: Colors.green),
+                      child: const Icon(LucideIcons.phone, color: Colors.green),
                     ),
-                    title: const Text('WhatsApp'),
-                    subtitle: const Text('0812-3456-7890'),
-                    onTap: () => _launchUrl('https://wa.me/6281234567890'),
+                    title: const Text('Telepon'),
+                    subtitle: const Text('024-7474754'),
+                    onTap: () => _launchUrl('tel:0247474754'),
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -217,74 +217,8 @@ class HelpPage extends StatelessWidget {
                       child: const Icon(LucideIcons.globe, color: Colors.purple),
                     ),
                     title: const Text('Website'),
-                    subtitle: const Text('fsm.undip.ac.id'),
-                    onTap: () => _launchUrl('https://fsm.undip.ac.id'),
-                  ),
-                ],
-              ),
-            ),
-            const Gap(24),
-
-            // Emergency Contact
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(LucideIcons.siren, color: Colors.white, size: 20),
-                      ),
-                      const Gap(12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Kontak Darurat 24 Jam',
-                              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-                            ),
-                            Text(
-                              'Untuk keadaan darurat dan mendesak',
-                              style: TextStyle(fontSize: 12, color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _launchUrl('tel:112'),
-                          icon: const Icon(LucideIcons.phone, size: 16),
-                          label: const Text('112'),
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                        ),
-                      ),
-                      const Gap(8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _launchUrl('tel:118'),
-                          icon: const Icon(LucideIcons.heartPulse, size: 16),
-                          label: const Text('118'),
-                          style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-                        ),
-                      ),
-                    ],
+                    subtitle: const Text('https://fsm.undip.ac.id/'),
+                    onTap: () => _launchUrl('https://fsm.undip.ac.id/'),
                   ),
                 ],
               ),

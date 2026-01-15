@@ -193,30 +193,29 @@ class HomePage extends StatelessWidget {
                   _buildMenuGrid(context),
                   const Gap(24),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Info Terkini",
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            "Preview laporan terbaru dari civitas FSM",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Info Terkini",
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              "Preview laporan terbaru",
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
                       ),
                       TextButton(
                         onPressed: () => context.go('/feed'),
-                        child: const Row(
-                          children: [
-                            Text("Lihat Semua"),
-                            Gap(4),
-                            Icon(LucideIcons.arrowRight, size: 16),
-                          ],
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
+                        child: const Text("Lihat Semua"),
                       ),
                     ],
                   ),
@@ -396,11 +395,14 @@ class HomePage extends StatelessWidget {
                         children: [
                           Icon(LucideIcons.mapPin, size: 12, color: Colors.grey.shade500),
                           const Gap(4),
-                          Text(
-                            item['building'] as String,
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                          Flexible(
+                            child: Text(
+                              item['building'] as String,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
+                          const Gap(8),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(

@@ -96,7 +96,7 @@ class _AdminHomePageState extends State<AdminHomePage> {
                                 ),
                               ),
                               IconButton(
-                                onPressed: () {},
+                                onPressed: () => _showLogoutConfirmation(),
                                 icon: const Icon(
                                   LucideIcons.logOut,
                                   color: Colors.white,
@@ -647,6 +647,34 @@ class _AdminHomePageState extends State<AdminHomePage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Keluar?'),
+        content: const Text('Anda yakin ingin keluar dari Admin Panel?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/login');
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
       ),
     );
   }

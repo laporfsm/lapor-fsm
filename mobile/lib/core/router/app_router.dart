@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/login_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/auth/register_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/complete_profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/home_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/create_report_page.dart';
@@ -15,9 +16,9 @@ import 'package:mobile/features/pelapor/presentation/pages/profile/edit_profile_
 import 'package:mobile/features/pelapor/presentation/pages/profile/settings_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/help_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/emergency_report_page.dart';
-// Staff & Teknisi imports
-import 'package:mobile/features/auth/presentation/pages/staff_login_page.dart';
+// Staff Profile (shared)
 import 'package:mobile/features/auth/presentation/pages/staff_profile_page.dart';
+// Teknisi imports
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_home_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_report_detail_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_complete_report_page.dart';
@@ -38,17 +39,12 @@ final _shellNavigatorKey = GlobalKey<NavigatorState>();
 final appRouter = GoRouter(
   initialLocation: '/login', // Start with login for demo
   routes: [
-    // Auth - Pelapor
+    // Auth - Unified Login & Register
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+    GoRoute(path: '/register', builder: (context, state) => const RegisterPage()),
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfilePage(),
-    ),
-
-    // Auth - Staff (Teknisi, Supervisor, Admin)
-    GoRoute(
-      path: '/staff-login',
-      builder: (context, state) => const StaffLoginPage(),
     ),
 
     // ===============================================

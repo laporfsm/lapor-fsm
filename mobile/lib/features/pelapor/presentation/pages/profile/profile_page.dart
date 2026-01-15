@@ -58,7 +58,7 @@ class ProfilePage extends StatelessWidget {
                       children: [
                         Icon(LucideIcons.checkCircle, size: 14, color: Colors.green),
                         Gap(4),
-                        Text("Terverifikasi SSO", style: TextStyle(color: Colors.green, fontSize: 12)),
+                        Text("Akun Terverifikasi", style: TextStyle(color: Colors.green, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -79,11 +79,42 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   _InfoRow(icon: LucideIcons.mail, label: "Email", value: "sulhan.fuadi@students.undip.ac.id"),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.phone, label: "WhatsApp", value: "081234567890"),
+                  _InfoRow(icon: LucideIcons.hash, label: "NIM/NIP", value: "24060123130115"),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.building, label: "Fakultas", value: "Sains dan Matematika"),
+                  _InfoRow(icon: LucideIcons.phone, label: "Nomor HP", value: "081234567890"),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.graduationCap, label: "Jurusan", value: "Informatika"),
+                  _InfoRow(icon: LucideIcons.mapPin, label: "Alamat", value: "Tembalang, Semarang"),
+                ],
+              ),
+            ),
+            const Gap(16),
+
+            // Emergency Contact Section
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 18),
+                      const Gap(8),
+                      Text(
+                        'Kontak Darurat',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                      ),
+                    ],
+                  ),
+                  const Gap(12),
+                  _InfoRow(icon: LucideIcons.userCircle, label: "Nama", value: "Budi Santoso"),
+                  const Divider(height: 20),
+                  _InfoRow(icon: LucideIcons.phoneCall, label: "Nomor HP", value: "081298765432"),
                 ],
               ),
             ),

@@ -13,10 +13,8 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _soundEnabled = true;
-  String _selectedLanguage = 'Indonesia';
 
   @override
   Widget build(BuildContext context) {
@@ -48,17 +46,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     value: _notificationsEnabled,
                     onChanged: (value) => setState(() => _notificationsEnabled = value),
                     secondary: const Icon(LucideIcons.bell),
-                    activeColor: AppTheme.primaryColor,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Notifikasi Email'),
-                    subtitle: const Text('Kirim update ke email'),
-                    value: _emailNotifications,
-                    onChanged: _notificationsEnabled 
-                        ? (value) => setState(() => _emailNotifications = value) 
-                        : null,
-                    secondary: const Icon(LucideIcons.mail),
                     activeColor: AppTheme.primaryColor,
                   ),
                   const Divider(height: 1),
@@ -101,9 +88,23 @@ class _SettingsPageState extends State<SettingsPage> {
                   ListTile(
                     leading: const Icon(LucideIcons.globe),
                     title: const Text('Bahasa'),
-                    subtitle: Text(_selectedLanguage),
-                    trailing: const Icon(LucideIcons.chevronRight),
-                    onTap: () => _showLanguageDialog(),
+                    subtitle: const Text('Indonesia'),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Segera Hadir',
+                        style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Fitur multi-bahasa akan segera hadir!')),
+                      );
+                    },
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -222,34 +223,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showLanguageDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Pilih Bahasa'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildLanguageOption('Indonesia'),
-            _buildLanguageOption('English'),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildLanguageOption(String language) {
-    return ListTile(
-      title: Text(language),
-      trailing: _selectedLanguage == language 
-          ? const Icon(LucideIcons.check, color: AppTheme.primaryColor) 
-          : null,
-      onTap: () {
-        setState(() => _selectedLanguage = language);
-        Navigator.pop(context);
-      },
-    );
-  }
 
   void _showInfoDialog(String title, String content) {
     showDialog(
