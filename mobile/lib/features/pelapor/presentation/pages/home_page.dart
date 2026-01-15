@@ -14,69 +14,104 @@ class HomePage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 1. Header Image Section (Mimic Damkar Header)
+            // 1. Header Image Section with Lapor FSM Branding
             Stack(
               children: [
                 Container(
-                  height: 220,
+                  height: 200,
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(
-                          'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop'), // Campus/Building Image
-                      fit: BoxFit.cover,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.primaryColor.withOpacity(0.8),
+                        const Color(0xFF1565C0),
+                      ],
                     ),
                   ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.7),
-                        ],
+                ),
+                // Background Pattern
+                Positioned.fill(
+                  child: Opacity(
+                    opacity: 0.1,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: NetworkImage('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop'),
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
                   ),
                 ),
+                // Content
                 Positioned(
                   bottom: 20,
                   left: 20,
                   right: 20,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Lapor FSM",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                "UNIVERSITAS DIPONEGORO",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9),
+                              ),
                             ),
-                          ),
-                          Text(
-                            "Fakultas Sains & Matematika",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
+                            const Gap(8),
+                            const Text(
+                              "Lapor FSM!",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      // Undip Logo Placeholder
-                      Container(
-                        height: 50,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withOpacity(0.2),
-                          border: Border.all(color: Colors.white, width: 2),
+                            const Gap(4),
+                            const Text(
+                              "Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Icon(LucideIcons.graduationCap, color: Colors.white),
+                      ),
+                      const Gap(12),
+                      // Report Icon - Minimal & Compact
+                      Container(
+                        height: 48,
+                        width: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          LucideIcons.siren,
+                          color: Color(0xFFDC2626),
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
@@ -90,10 +125,7 @@ class HomePage extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                   context.push('/create-report', extra: {
-                    'category': 'Emergency',
-                    'isEmergency': true,
-                  });
+                   context.push('/emergency-report');
                 },
                 child: Container(
                   height: 180,
@@ -144,16 +176,49 @@ class HomePage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Laporan Non-Darurat",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Laporan Non-Darurat",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "Pilih kategori untuk melaporkan kerusakan atau masalah fasilitas",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ],
                   ),
                   const Gap(16),
                   _buildMenuGrid(context),
                   const Gap(24),
-                  const Text(
-                    "Info Terkini",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Info Terkini",
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "Preview laporan terbaru dari civitas FSM",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/feed'),
+                        child: const Row(
+                          children: [
+                            Text("Lihat Semua"),
+                            Gap(4),
+                            Icon(LucideIcons.arrowRight, size: 16),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                   const Gap(12),
                   _buildPublicFeed(),
@@ -164,7 +229,6 @@ class HomePage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _BottomNav(),
     );
   }
 
@@ -187,9 +251,9 @@ class HomePage extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
+        childAspectRatio: 0.65, // Adjusted for more vertical space
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
       ),
       itemCount: menus.length,
       itemBuilder: (context, index) {
@@ -202,20 +266,25 @@ class HomePage extends StatelessWidget {
             });
           },
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: (menu['color'] as Color).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(menu['icon'] as IconData, color: menu['color'] as Color),
+                child: Icon(menu['icon'] as IconData, color: menu['color'] as Color, size: 22),
               ),
-              const Gap(8),
-              Text(
-                menu['label'] as String,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                textAlign: TextAlign.center,
+              const Gap(6),
+              Flexible(
+                child: Text(
+                  menu['label'] as String,
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -353,41 +422,6 @@ class HomePage extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _BottomNav extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      selectedItemColor: AppTheme.primaryColor,
-      unselectedItemColor: Colors.grey,
-      showUnselectedLabels: true,
-      type: BottomNavigationBarType.fixed,
-      currentIndex: 0,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            context.go('/');
-            break;
-          case 1:
-            context.push('/feed');
-            break;
-          case 2:
-            context.push('/history');
-            break;
-          case 3:
-            context.push('/profile');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(LucideIcons.home), label: "Beranda"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.newspaper), label: "Feed"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.fileText), label: "Aktivitas"),
-        BottomNavigationBarItem(icon: Icon(LucideIcons.user), label: "Profil"),
-      ],
     );
   }
 }

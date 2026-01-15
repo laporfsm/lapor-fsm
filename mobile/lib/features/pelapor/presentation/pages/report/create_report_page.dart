@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 
@@ -39,15 +41,23 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   // Data gedung FSM
   final List<String> _buildings = [
-    'Gedung A - Dekanat',
-    'Gedung B - Matematika',
-    'Gedung C - Fisika',
-    'Gedung D - Kimia',
-    'Gedung E - Biologi',
-    'Gedung F - Statistika',
-    'Gedung G - Informatika',
-    'Gedung H - Lab Terpadu',
-    'Area Outdoor / Taman',
+    'Gedung A',
+    'Gedung B',
+    'Gedung C',
+    'Gedung D',
+    'Gedung E',
+    'Gedung F',
+    'Gedung G',
+    'Gedung H',
+    'Gedung I',
+    'Gedung J',
+    'Gedung K',
+    'Gedung L',
+    'Parkiran Motor',
+    'Parkiran Mobil',
+    'Masjid',
+    'Gedung Acintya Prasada',
+    'Taman Rumah Kita',
     'Lainnya',
   ];
 
@@ -258,43 +268,110 @@ class _CreateReportPageState extends State<CreateReportPage> {
               ),
               const Gap(16),
               
-              // GPS Location
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(LucideIcons.mapPin, color: AppTheme.primaryColor),
-                    const Gap(12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text("Koordinat GPS", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          Text(
-                            _isFetchingLocation
-                                ? "Mendeteksi lokasi..."
-                                : _latitude != null
-                                    ? "$_latitude, $_longitude"
-                                    : "Lokasi tidak tersedia",
-                            style: const TextStyle(fontWeight: FontWeight.w500),
+              // Map Preview
+              if (_latitude != null && _longitude != null && !_isFetchingLocation)
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.primaryColor, width: 2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Stack(
+                      children: [
+                        FlutterMap(
+                          options: MapOptions(
+                            initialCenter: LatLng(_latitude!, _longitude!),
+                            initialZoom: 17,
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.none,
+                            ),
+                          ),
+                          children: [
+                            TileLayer(
+                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              userAgentPackageName: 'com.laporfsm.mobile',
+                            ),
+                            MarkerLayer(
+                              markers: [
+                                Marker(
+                                  point: LatLng(_latitude!, _longitude!),
+                                  width: 40,
+                                  height: 40,
+                                  child: const Icon(
+                                    Icons.location_pin,
+                                    color: Colors.red,
+                                    size: 40,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        // Location info overlay
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            color: Colors.black.withOpacity(0.6),
+                            child: Row(
+                              children: [
+                                const Icon(LucideIcons.mapPin, color: Colors.white, size: 14),
+                                const Gap(6),
+                                Expanded(
+                                  child: Text(
+                                    'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
+                                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(LucideIcons.refreshCw, color: Colors.white, size: 14),
+                                  onPressed: _fetchCurrentLocation,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isFetchingLocation) ...[
+                          const CircularProgressIndicator(),
+                          const Gap(8),
+                          const Text('Mendeteksi lokasi...'),
+                        ] else ...[
+                          const Icon(LucideIcons.mapPin, size: 32, color: Colors.grey),
+                          const Gap(8),
+                          const Text('Lokasi tidak tersedia'),
+                          TextButton(
+                            onPressed: _fetchCurrentLocation,
+                            child: const Text('Coba lagi'),
                           ),
                         ],
-                      ),
+                      ],
                     ),
-                    IconButton(
-                      icon: _isFetchingLocation 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(LucideIcons.refreshCw),
-                      onPressed: _isFetchingLocation ? null : _fetchCurrentLocation,
-                    ),
-                  ],
+                  ),
                 ),
-              ),
               const Gap(16),
 
               // Description
