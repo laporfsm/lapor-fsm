@@ -13,6 +13,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
+  bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _soundEnabled = true;
 
@@ -42,9 +43,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   SwitchListTile(
                     title: const Text('Aktifkan Notifikasi'),
-                    subtitle: const Text('Terima pembaruan tentang laporan Anda'),
+                    subtitle: const Text(
+                      'Terima pembaruan tentang laporan Anda',
+                    ),
                     value: _notificationsEnabled,
-                    onChanged: (value) => setState(() => _notificationsEnabled = value),
+                    onChanged: (value) =>
+                        setState(() => _notificationsEnabled = value),
                     secondary: const Icon(LucideIcons.bell),
                     activeThumbColor: AppTheme.primaryColor,
                   ),
@@ -53,8 +57,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Notifikasi Email'),
                     subtitle: const Text('Kirim update ke email'),
                     value: _emailNotifications,
-                    onChanged: _notificationsEnabled 
-                        ? (value) => setState(() => _emailNotifications = value) 
+                    onChanged: _notificationsEnabled
+                        ? (value) => setState(() => _emailNotifications = value)
                         : null,
                     secondary: const Icon(LucideIcons.mail),
                     activeThumbColor: AppTheme.primaryColor,
@@ -64,8 +68,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Push Notification'),
                     subtitle: const Text('Notifikasi di perangkat'),
                     value: _pushNotifications,
-                    onChanged: _notificationsEnabled 
-                        ? (value) => setState(() => _pushNotifications = value) 
+                    onChanged: _notificationsEnabled
+                        ? (value) => setState(() => _pushNotifications = value)
                         : null,
                     secondary: const Icon(LucideIcons.smartphone),
                     activeThumbColor: AppTheme.primaryColor,
@@ -75,8 +79,8 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Suara Notifikasi'),
                     subtitle: const Text('Aktifkan suara saat notifikasi'),
                     value: _soundEnabled,
-                    onChanged: _notificationsEnabled 
-                        ? (value) => setState(() => _soundEnabled = value) 
+                    onChanged: _notificationsEnabled
+                        ? (value) => setState(() => _soundEnabled = value)
                         : null,
                     secondary: const Icon(LucideIcons.volume2),
                     activeThumbColor: AppTheme.primaryColor,
@@ -101,19 +105,30 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Bahasa'),
                     subtitle: const Text('Indonesia'),
                     trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.orange.shade100,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'Segera Hadir',
-                        style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.orange.shade800,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Fitur multi-bahasa akan segera hadir!')),
+                        const SnackBar(
+                          content: Text(
+                            'Fitur multi-bahasa akan segera hadir!',
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -125,7 +140,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     trailing: const Icon(LucideIcons.chevronRight),
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Tema lainnya akan segera hadir!')),
+                        const SnackBar(
+                          content: Text('Tema lainnya akan segera hadir!'),
+                        ),
                       );
                     },
                   ),
@@ -149,9 +166,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Kebijakan Privasi'),
                     trailing: const Icon(LucideIcons.chevronRight),
                     onTap: () {
-                      _showInfoDialog('Kebijakan Privasi', 
+                      _showInfoDialog(
+                        'Kebijakan Privasi',
                         'Data Anda dilindungi sesuai dengan kebijakan privasi Universitas Diponegoro. '
-                        'Informasi yang Anda berikan hanya digunakan untuk keperluan pelaporan fasilitas.');
+                            'Informasi yang Anda berikan hanya digunakan untuk keperluan pelaporan fasilitas.',
+                      );
                     },
                   ),
                   const Divider(height: 1),
@@ -160,9 +179,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: const Text('Syarat & Ketentuan'),
                     trailing: const Icon(LucideIcons.chevronRight),
                     onTap: () {
-                      _showInfoDialog('Syarat & Ketentuan', 
+                      _showInfoDialog(
+                        'Syarat & Ketentuan',
                         'Dengan menggunakan aplikasi ini, Anda setuju untuk menggunakan layanan secara bertanggung jawab. '
-                        'Laporan palsu dapat dikenakan sanksi sesuai peraturan universitas.');
+                            'Laporan palsu dapat dikenakan sanksi sesuai peraturan universitas.',
+                      );
                     },
                   ),
                 ],
@@ -206,9 +227,18 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               child: ListTile(
                 leading: const Icon(LucideIcons.trash2, color: Colors.red),
-                title: const Text('Hapus Akun', style: TextStyle(color: Colors.red)),
-                subtitle: const Text('Hapus semua data akun Anda', style: TextStyle(fontSize: 12)),
-                trailing: const Icon(LucideIcons.chevronRight, color: Colors.red),
+                title: const Text(
+                  'Hapus Akun',
+                  style: TextStyle(color: Colors.red),
+                ),
+                subtitle: const Text(
+                  'Hapus semua data akun Anda',
+                  style: TextStyle(fontSize: 12),
+                ),
+                trailing: const Icon(
+                  LucideIcons.chevronRight,
+                  color: Colors.red,
+                ),
                 onTap: () => _showDeleteAccountDialog(),
               ),
             ),
@@ -234,8 +264,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-
-
   void _showInfoDialog(String title, String content) {
     showDialog(
       context: context,
@@ -259,7 +287,7 @@ class _SettingsPageState extends State<SettingsPage> {
         title: const Text('Hapus Akun?'),
         content: const Text(
           'Tindakan ini akan menghapus semua data akun Anda secara permanen. '
-          'Laporan yang sudah dibuat tidak akan dapat dikembalikan.'
+          'Laporan yang sudah dibuat tidak akan dapat dikembalikan.',
         ),
         actions: [
           TextButton(
