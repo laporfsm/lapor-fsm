@@ -24,8 +24,16 @@ mobile/ios/.generated/
 mobile/windows/flutter/ephemeral/
 mobile/linux/flutter/ephemeral/
 mobile/macos/Flutter/ephemeral/
+# Generated plugin files (auto-generated, don't commit)
+mobile/linux/flutter/generated_*.cc
+mobile/linux/flutter/generated_*.cmake
+mobile/macos/Flutter/GeneratedPluginRegistrant.swift
+mobile/windows/flutter/generated_*.cc
+mobile/windows/flutter/generated_*.cmake
+mobile/pubspec.lock
 
 # Backend (JS/TS)
 backend/node_modules/
 backend/dist/
 backend/.env
+

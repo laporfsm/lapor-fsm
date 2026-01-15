@@ -253,7 +253,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                       ),
                       const Gap(8),
                       DropdownButtonFormField<String>(
-                        value: _selectedBuilding,
+                        initialValue: _selectedBuilding,
                         decoration: InputDecoration(
                           hintText: "Pilih gedung (opsional)",
                           prefixIcon: const Icon(LucideIcons.building),

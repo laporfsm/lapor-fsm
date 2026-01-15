@@ -62,7 +62,7 @@ class _ReportDetailPageState extends State<ReportDetailPage> {
     } else if (minutes > 0) {
       return '${minutes}m ${seconds}d';
     } else {
-      return '${seconds} detik';
+      return '$seconds detik';
     }
   }
 

@@ -315,7 +315,7 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
                 ],
                 const Gap(16),
                 DropdownButtonFormField<String>(
-                  value: selectedRole,
+                  initialValue: selectedRole,
                   decoration: const InputDecoration(
                     labelText: 'Role',
                     prefixIcon: Icon(LucideIcons.userCog),

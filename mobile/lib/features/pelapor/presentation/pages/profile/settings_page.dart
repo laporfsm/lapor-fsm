@@ -46,7 +46,18 @@ class _SettingsPageState extends State<SettingsPage> {
                     value: _notificationsEnabled,
                     onChanged: (value) => setState(() => _notificationsEnabled = value),
                     secondary: const Icon(LucideIcons.bell),
-                    activeColor: AppTheme.primaryColor,
+                    activeThumbColor: AppTheme.primaryColor,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: const Text('Notifikasi Email'),
+                    subtitle: const Text('Kirim update ke email'),
+                    value: _emailNotifications,
+                    onChanged: _notificationsEnabled 
+                        ? (value) => setState(() => _emailNotifications = value) 
+                        : null,
+                    secondary: const Icon(LucideIcons.mail),
+                    activeThumbColor: AppTheme.primaryColor,
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
@@ -57,7 +68,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ? (value) => setState(() => _pushNotifications = value) 
                         : null,
                     secondary: const Icon(LucideIcons.smartphone),
-                    activeColor: AppTheme.primaryColor,
+                    activeThumbColor: AppTheme.primaryColor,
                   ),
                   const Divider(height: 1),
                   SwitchListTile(
@@ -68,7 +79,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         ? (value) => setState(() => _soundEnabled = value) 
                         : null,
                     secondary: const Icon(LucideIcons.volume2),
-                    activeColor: AppTheme.primaryColor,
+                    activeThumbColor: AppTheme.primaryColor,
                   ),
                 ],
               ),

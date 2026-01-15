@@ -106,7 +106,7 @@ class _PublicFeedPageState extends State<PublicFeedPage> {
                   children: [
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedCategory,
+                        initialValue: _selectedCategory,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -118,7 +118,7 @@ class _PublicFeedPageState extends State<PublicFeedPage> {
                     const Gap(12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _selectedBuilding,
+                        initialValue: _selectedBuilding,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

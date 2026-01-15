@@ -372,7 +372,7 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage>
                 ),
                 const Gap(16),
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  initialValue: selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tipe',
                     prefixIcon: Icon(LucideIcons.alertTriangle),
