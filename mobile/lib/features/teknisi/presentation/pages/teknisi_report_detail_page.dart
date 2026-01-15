@@ -27,7 +27,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
   }
 
   void _loadReport() {
-    // Simulate API call
+    // TODO: [BACKEND] Replace with API call to fetch report details
     Future.delayed(const Duration(milliseconds: 500), () {
       setState(() {
         _report = {
@@ -42,16 +42,22 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           'imageUrl':
               'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
           'isEmergency': false,
-          'status': 'pending', // pending, verifikasi, penanganan, selesai
+          'status':
+              'pending', // pending, verifikasi, penanganan, selesai, ditolak
           'createdAt': DateTime.now().subtract(const Duration(minutes: 30)),
           'reporterName': 'Ahmad Fauzi',
           'reporterPhone': '08123456789',
           'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
+          // TODO: [BACKEND] Fetch assigned technicians from API
+          'handledBy': null, // List of technicians - null when not yet handled
+          // Example when handled:
+          // 'handledBy': ['Budi Teknisi', 'Ahmad Mekanik'],
           'logs': [
             {
               'action': 'created',
               'time': DateTime.now().subtract(const Duration(minutes: 30)),
               'notes': 'Laporan dibuat',
+              'isDone': true,
             },
           ],
         };
@@ -235,6 +241,23 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                       ),
                     ],
                   ),
+                  // Handled By Info (if report is being handled)
+                  if (_report['handledBy'] != null) ...[
+                    _buildInfoCard(
+                      title: 'Ditangani Oleh',
+                      icon: LucideIcons.users,
+                      children: [
+                        // TODO: [BACKEND] Support multiple technicians
+                        _buildInfoRow(
+                          LucideIcons.wrench,
+                          'Teknisi',
+                          _report['handledBy'],
+                        ),
+                      ],
+                    ),
+                    const Gap(16),
+                  ],
+
                   const Gap(16),
 
                   // Location Card
@@ -248,61 +271,75 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                         _report['building'],
                       ),
                       const Gap(12),
-                      // Map preview placeholder
+                      // Static Map Preview Image
                       Container(
                         height: 150,
                         width: double.infinity,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Stack(
-                          children: [
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.map,
-                                    size: 32,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                  const Gap(8),
-                                  Text(
-                                    'Lat: ${_report['latitude']}, Long: ${_report['longitude']}',
-                                    style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 12,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            children: [
+                              // Static Map Image from Google Static Maps API
+                              // TODO: [BACKEND] Replace with actual Google Static Maps API key
+                              Image.network(
+                                'https://maps.googleapis.com/maps/api/staticmap?center=${_report['latitude']},${_report['longitude']}&zoom=15&size=600x300&maptype=roadmap&markers=color:red%7C${_report['latitude']},${_report['longitude']}&key=YOUR_API_KEY',
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: 150,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: Colors.grey.shade200,
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          LucideIcons.mapPin,
+                                          size: 32,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                        const Gap(8),
+                                        Text(
+                                          'Lat: ${_report['latitude']}, Long: ${_report['longitude']}',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                            Positioned(
-                              bottom: 8,
-                              right: 8,
-                              child: ElevatedButton.icon(
-                                onPressed: () => _openMaps(
-                                  _report['latitude'],
-                                  _report['longitude'],
-                                ),
-                                icon: const Icon(
-                                  LucideIcons.navigation,
-                                  size: 14,
-                                ),
-                                label: const Text('Buka Maps'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => _openMaps(
+                                    _report['latitude'],
+                                    _report['longitude'],
                                   ),
-                                  textStyle: const TextStyle(fontSize: 12),
+                                  icon: const Icon(
+                                    LucideIcons.navigation,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Buka Maps'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    textStyle: const TextStyle(fontSize: 12),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -610,6 +647,21 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         child: Row(
           children: [
             if (status == 'pending') ...[
+              // Reject Button
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _rejectReport,
+                  icon: const Icon(LucideIcons.x),
+                  label: const Text('Tolak'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const Gap(12),
+              // Verify Button
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: _verifyReport,
@@ -678,13 +730,16 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
   }
 
   void _startHandling() {
-    // TODO: Call API to start handling
+    // TODO: [BACKEND] Call API to start handling and assign technician
     setState(() {
       _report['status'] = 'penanganan';
+      _report['handledBy'] =
+          'Budi Teknisi'; // TODO: [BACKEND] Get from logged in user
       (_report['logs'] as List).insert(0, {
         'action': 'handling',
         'time': DateTime.now(),
         'notes': 'Teknisi mulai menangani laporan',
+        'isDone': true,
       });
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -692,6 +747,71 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         content: Text('Penanganan dimulai - Timer berjalan'),
         backgroundColor: AppTheme.secondaryColor,
       ),
+    );
+  }
+
+  void _rejectReport() {
+    // Show dialog to get rejection reason
+    showDialog(
+      context: context,
+      builder: (context) {
+        String reason = '';
+        return AlertDialog(
+          title: const Text('Tolak Laporan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Masukkan alasan penolakan:'),
+              const Gap(12),
+              TextField(
+                onChanged: (value) => reason = value,
+                decoration: const InputDecoration(
+                  hintText: 'Alasan penolakan...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                // TODO: [BACKEND] Call API to reject report and send back to Supervisor
+                setState(() {
+                  _report['status'] = 'ditolak';
+                  (_report['logs'] as List).insert(0, {
+                    'action': 'rejected',
+                    'time': DateTime.now(),
+                    'notes':
+                        'Laporan ditolak: ${reason.isEmpty ? "Tidak ada alasan" : reason}',
+                    'isDone': true,
+                  });
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      'Laporan ditolak dan dikembalikan ke Supervisor',
+                    ),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                // Go back to home after rejection
+                context.pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Tolak'),
+            ),
+          ],
+        );
+      },
     );
   }
 

@@ -257,7 +257,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
               
               // Building Selection
               DropdownButtonFormField<String>(
-                value: _selectedBuilding,
+                initialValue: _selectedBuilding,
                 decoration: const InputDecoration(
                   labelText: "Lokasi Gedung *",
                   prefixIcon: Icon(LucideIcons.building),

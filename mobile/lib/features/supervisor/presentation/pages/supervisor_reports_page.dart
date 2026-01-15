@@ -4,6 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
+// Supervisor theme color
+const Color _supervisorColor = Color(0xFF059669);
+
 class SupervisorReportsPage extends StatefulWidget {
   const SupervisorReportsPage({super.key});
 
@@ -112,8 +115,8 @@ class _SupervisorReportsPageState extends State<SupervisorReportsPage> {
                       onSelected: (selected) {
                         setState(() => _selectedStatus = status);
                       },
-                      selectedColor: const Color(0xFF6366F1).withOpacity(0.2),
-                      checkmarkColor: const Color(0xFF6366F1),
+                      selectedColor: _supervisorColor.withOpacity(0.2),
+                      checkmarkColor: _supervisorColor,
                     ),
                   );
                 }).toList(),
@@ -395,7 +398,7 @@ class _SupervisorReportsPageState extends State<SupervisorReportsPage> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6366F1),
+                  backgroundColor: _supervisorColor,
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Tutup'),

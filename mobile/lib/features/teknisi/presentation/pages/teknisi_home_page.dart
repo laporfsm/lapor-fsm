@@ -4,6 +4,8 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_history_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_profile_page.dart';
 
 class TeknisiHomePage extends StatefulWidget {
   const TeknisiHomePage({super.key});
@@ -12,13 +14,11 @@ class TeknisiHomePage extends StatefulWidget {
   State<TeknisiHomePage> createState() => _TeknisiHomePageState();
 }
 
-class _TeknisiHomePageState extends State<TeknisiHomePage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _TeknisiHomePageState extends State<TeknisiHomePage> {
+  int _currentIndex = 0;
   Timer? _timer;
 
-  // Mock data - will be replaced with API calls
-  // Timer starts from when report was CREATED (createdAt), not when technician starts handling
+  // TODO: [BACKEND] Replace with API call to fetch pending reports
   final List<Map<String, dynamic>> _pendingReports = [
     {
       'id': 1,
@@ -50,8 +50,19 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
       'reporterName': 'Budi Santoso',
       'reporterPhone': '08345678901',
     },
+    {
+      'id': 5,
+      'title': 'Kebakaran Kecil di Kantin',
+      'category': 'K3 Lab',
+      'building': 'Kantin Utama',
+      'createdAt': DateTime.now().subtract(const Duration(minutes: 5)),
+      'isEmergency': true,
+      'reporterName': 'Dewi Lestari',
+      'reporterPhone': '08456789012',
+    },
   ];
 
+  // TODO: [BACKEND] Replace with API call to fetch technician's active reports
   final List<Map<String, dynamic>> _myReports = [
     {
       'id': 4,
@@ -61,14 +72,20 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
       'status': 'penanganan',
       'createdAt': DateTime.now().subtract(const Duration(minutes: 45)),
       'startedAt': DateTime.now().subtract(const Duration(minutes: 15)),
+      'handledBy': 'Budi Teknisi', // TODO: [BACKEND] Get from logged in user
     },
   ];
+
+  // Filter reports by emergency status
+  List<Map<String, dynamic>> get _emergencyReports =>
+      _pendingReports.where((r) => r['isEmergency'] == true).toList();
+
+  List<Map<String, dynamic>> get _regularReports =>
+      _pendingReports.where((r) => r['isEmergency'] != true).toList();
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    // Start real-time timer that updates every second
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (mounted) {
         setState(() {});
@@ -79,7 +96,6 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
   @override
   void dispose() {
     _timer?.cancel();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -98,204 +114,158 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            // Custom App Bar with gradient
-            SliverAppBar(
-              expandedHeight: 140,
-              floating: false,
-              pinned: true,
-              backgroundColor: AppTheme.primaryColor,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryColor,
-                        Color(0xFF3B82F6), // Lighter blue
-                      ],
-                    ),
-                  ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.wrench,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const Gap(12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dashboard Teknisi',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Lapor FSM - UP2TI',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () =>
-                                    context.push('/teknisi/profile'),
-                                icon: const Icon(
-                                  LucideIcons.user,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          // Tab 0: Laporan Umum (Regular reports)
+          _buildReportsPage(
+            title: 'Laporan Umum',
+            reports: _regularReports,
+            emptyMessage: 'Tidak ada laporan umum',
+            emptyIcon: LucideIcons.inbox,
+          ),
+          // Tab 1: Laporan Darurat (Emergency reports)
+          _buildReportsPage(
+            title: 'Laporan Darurat',
+            reports: _emergencyReports,
+            emptyMessage: 'Tidak ada laporan darurat',
+            emptyIcon: LucideIcons.siren,
+            isEmergencyTab: true,
+          ),
+          // Tab 2: Dikerjakan (Active reports)
+          _buildReportsPage(
+            title: 'Sedang Dikerjakan',
+            reports: _myReports,
+            emptyMessage: 'Tidak ada laporan yang sedang dikerjakan',
+            emptyIcon: LucideIcons.wrench,
+            isActiveTab: true,
+          ),
+          // Tab 3: Riwayat
+          const TeknisiHistoryPage(),
+          // Tab 4: Profil
+          const TeknisiProfilePage(),
+        ],
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        selectedItemColor: AppTheme.secondaryColor,
+        unselectedItemColor: Colors.grey,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          setState(() => _currentIndex = index);
+        },
+        items: [
+          const BottomNavigationBarItem(
+            icon: Icon(LucideIcons.inbox),
+            label: 'Umum',
+          ),
+          BottomNavigationBarItem(
+            icon: Badge(
+              isLabelVisible: _emergencyReports.isNotEmpty,
+              label: Text(_emergencyReports.length.toString()),
+              backgroundColor: AppTheme.emergencyColor,
+              child: const Icon(LucideIcons.siren),
+            ),
+            label: 'Darurat',
+          ),
+          BottomNavigationBarItem(
+            icon: Badge(
+              isLabelVisible: _myReports.isNotEmpty,
+              label: Text(_myReports.length.toString()),
+              backgroundColor: AppTheme.secondaryColor,
+              child: const Icon(LucideIcons.wrench),
+            ),
+            label: 'Aktif',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(LucideIcons.history),
+            label: 'Riwayat',
+          ),
+          const BottomNavigationBarItem(
+            icon: Icon(LucideIcons.user),
+            label: 'Profil',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportsPage({
+    required String title,
+    required List<Map<String, dynamic>> reports,
+    required String emptyMessage,
+    required IconData emptyIcon,
+    bool isEmergencyTab = false,
+    bool isActiveTab = false,
+  }) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: isEmergencyTab
+            ? AppTheme.emergencyColor
+            : Colors.white,
+        foregroundColor: isEmergencyTab ? Colors.white : Colors.black,
+        automaticallyImplyLeading: false,
+        actions: [
+          if (!isActiveTab)
+            IconButton(
+              onPressed: () {
+                // TODO: [BACKEND] Implement refresh
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Memperbarui data...')),
+                );
+              },
+              icon: Icon(
+                LucideIcons.refreshCw,
+                color: isEmergencyTab ? Colors.white : Colors.grey,
               ),
-              bottom: TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.white,
-                indicatorWeight: 3,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                tabs: [
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.inbox, size: 18),
-                        const Gap(8),
-                        Text('Masuk (${_pendingReports.length})'),
-                      ],
-                    ),
-                  ),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(LucideIcons.clock, size: 18),
-                        const Gap(8),
-                        Text('Dikerjakan (${_myReports.length})'),
-                      ],
-                    ),
+            ),
+        ],
+      ),
+      body: reports.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(emptyIcon, size: 64, color: Colors.grey.shade300),
+                  const Gap(16),
+                  Text(
+                    emptyMessage,
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
                   ),
                 ],
               ),
+            )
+          : RefreshIndicator(
+              onRefresh: () async {
+                // TODO: [BACKEND] Refresh data from API
+              },
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: reports.length,
+                itemBuilder: (context, index) {
+                  final report = reports[index];
+                  return _buildReportCard(
+                    report,
+                    isPending: !isActiveTab,
+                    showEmergencyBanner: isEmergencyTab,
+                  );
+                },
+              ),
             ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            // Tab 1: Pending Reports
-            _buildPendingReportsList(),
-            // Tab 2: My Active Reports
-            _buildMyReportsList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPendingReportsList() {
-    if (_pendingReports.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              LucideIcons.checkCircle,
-              size: 64,
-              color: Colors.grey.shade300,
-            ),
-            const Gap(16),
-            Text(
-              'Tidak ada laporan baru',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        // TODO: Refresh data from API
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _pendingReports.length,
-        itemBuilder: (context, index) {
-          final report = _pendingReports[index];
-          return _buildReportCard(report, isPending: true);
-        },
-      ),
-    );
-  }
-
-  Widget _buildMyReportsList() {
-    if (_myReports.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(LucideIcons.clipboard, size: 64, color: Colors.grey.shade300),
-            const Gap(16),
-            Text(
-              'Tidak ada laporan yang sedang dikerjakan',
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _myReports.length,
-      itemBuilder: (context, index) {
-        final report = _myReports[index];
-        return _buildReportCard(report, isPending: false);
-      },
     );
   }
 
   Widget _buildReportCard(
     Map<String, dynamic> report, {
     required bool isPending,
+    bool showEmergencyBanner = false,
   }) {
     final bool isEmergency = report['isEmergency'] ?? false;
     final Color statusColor = isEmergency
         ? AppTheme.emergencyColor
         : AppTheme.primaryColor;
-
-    // Calculate elapsed time from when report was CREATED
     final DateTime createdAt = report['createdAt'] as DateTime;
     final Duration elapsed = DateTime.now().difference(createdAt);
 
@@ -308,12 +278,12 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: isEmergency
+          border: isEmergency && showEmergencyBanner
               ? Border.all(color: AppTheme.emergencyColor, width: 2)
               : null,
           boxShadow: [
             BoxShadow(
-              color: isEmergency
+              color: isEmergency && showEmergencyBanner
                   ? AppTheme.emergencyColor.withOpacity(0.2)
                   : Colors.black.withOpacity(0.05),
               blurRadius: 10,
@@ -325,7 +295,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Emergency Banner
-            if (isEmergency)
+            if (isEmergency && showEmergencyBanner)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -359,7 +329,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Category & Timer (REAL-TIME from createdAt)
+                  // Category & Timer
                   Row(
                     children: [
                       Container(
@@ -381,7 +351,6 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
                         ),
                       ),
                       const Spacer(),
-                      // Real-time timer showing elapsed time since creation
                       _buildTimer(elapsed, isEmergency: isEmergency),
                     ],
                   ),
@@ -417,6 +386,29 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
                       ),
                     ],
                   ),
+
+                  // Handled by info (for active reports)
+                  if (!isPending && report['handledBy'] != null) ...[
+                    const Gap(8),
+                    Row(
+                      children: [
+                        Icon(
+                          LucideIcons.user,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
+                        const Gap(6),
+                        Text(
+                          'Ditangani oleh: ${report['handledBy']}',
+                          style: TextStyle(
+                            color: AppTheme.secondaryColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
 
                   if (isPending) ...[
                     const Gap(8),
@@ -472,7 +464,9 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
                       label: Text(isPending ? 'Lihat Detail' : 'Selesaikan'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isPending
-                            ? AppTheme.primaryColor
+                            ? (isEmergency
+                                  ? AppTheme.emergencyColor
+                                  : AppTheme.primaryColor)
                             : const Color(0xFF22C55E),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
@@ -492,7 +486,6 @@ class _TeknisiHomePageState extends State<TeknisiHomePage>
   }
 
   Widget _buildTimer(Duration elapsed, {bool isEmergency = false}) {
-    // Color based on urgency - if elapsed time is long, show warning color
     Color timerColor = AppTheme.secondaryColor;
     if (elapsed.inMinutes >= 30) {
       timerColor = Colors.red;

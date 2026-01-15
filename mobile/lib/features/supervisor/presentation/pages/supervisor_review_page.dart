@@ -4,6 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
+// Supervisor theme color
+const Color _supervisorColor = Color(0xFF059669);
+
 class SupervisorReviewPage extends StatefulWidget {
   final String reportId;
 
@@ -106,7 +109,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,
-            backgroundColor: const Color(0xFF6366F1),
+            backgroundColor: _supervisorColor,
             leading: IconButton(
               onPressed: () => context.pop(),
               icon: Container(
@@ -238,12 +241,12 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withOpacity(0.1),
+              color: _supervisorColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
               LucideIcons.timer,
-              color: Color(0xFF6366F1),
+              color: _supervisorColor,
               size: 24,
             ),
           ),
@@ -303,7 +306,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         children: [
           const Row(
             children: [
-              Icon(LucideIcons.camera, size: 18, color: Color(0xFF6366F1)),
+              Icon(LucideIcons.camera, size: 18, color: _supervisorColor),
               Gap(8),
               Text(
                 'Bukti Penanganan',
@@ -348,7 +351,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
               Icon(
                 LucideIcons.messageSquare,
                 size: 18,
-                color: Color(0xFF6366F1),
+                color: _supervisorColor,
               ),
               Gap(8),
               Text(
@@ -386,7 +389,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         children: [
           const Row(
             children: [
-              Icon(LucideIcons.fileText, size: 18, color: Color(0xFF6366F1)),
+              Icon(LucideIcons.fileText, size: 18, color: _supervisorColor),
               Gap(8),
               Text(
                 'Detail Laporan',
@@ -454,7 +457,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         children: [
           const Row(
             children: [
-              Icon(LucideIcons.clock, size: 18, color: Color(0xFF6366F1)),
+              Icon(LucideIcons.clock, size: 18, color: _supervisorColor),
               Gap(8),
               Text('Timeline', style: TextStyle(fontWeight: FontWeight.bold)),
             ],
@@ -474,7 +477,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1),
+                        color: _supervisorColor,
                         shape: BoxShape.circle,
                       ),
                     ),

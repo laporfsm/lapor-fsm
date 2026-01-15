@@ -4,6 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
+// Supervisor theme color - differentiated from Pelapor (blue) and Teknisi (orange)
+const Color _supervisorColor = Color(0xFF059669); // Emerald green
+
 class SupervisorHomePage extends StatefulWidget {
   const SupervisorHomePage({super.key});
 
@@ -60,7 +63,7 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: const Color(0xFF6366F1), // Indigo for Supervisor
+              backgroundColor: _supervisorColor,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
@@ -68,8 +71,8 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Color(0xFF6366F1),
-                        Color(0xFF8B5CF6), // Purple
+                        _supervisorColor,
+                        Color(0xFF10B981), // Lighter emerald
                       ],
                     ),
                   ),
@@ -169,7 +172,7 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF6366F1),
+        selectedItemColor: _supervisorColor,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
@@ -574,11 +577,11 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
             child: Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                  backgroundColor: _supervisorColor.withOpacity(0.1),
                   child: Text(
                     tech['name'].toString().substring(0, 1),
                     style: const TextStyle(
-                      color: Color(0xFF6366F1),
+                      color: _supervisorColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
