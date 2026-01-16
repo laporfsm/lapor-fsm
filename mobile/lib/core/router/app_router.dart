@@ -35,6 +35,12 @@ import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_categories_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_users_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_pending_registrations_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_notifications_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_profile_page.dart';
+import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
+// Auth imports
+import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
 
 // Navigation key for ShellRoute
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -51,6 +57,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfilePage(),
+    ),
+    GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordPage(),
     ),
 
     // ===============================================
@@ -247,24 +257,50 @@ final appRouter = GoRouter(
     ),
 
     // ===============================================
-    // ADMIN ROUTES
+    // ADMIN SHELL ROUTE - Persistent Bottom Nav
     // ===============================================
-    GoRoute(path: '/admin', builder: (context, state) => const AdminHomePage()),
-    GoRoute(
-      path: '/admin/staff',
-      builder: (context, state) => const AdminStaffPage(),
+    ShellRoute(
+      navigatorKey: GlobalKey<NavigatorState>(),
+      builder: (context, state, child) {
+        return AdminShell(
+          currentLocation: state.uri.path,
+          child: child,
+        );
+      },
+      routes: [
+        // Bottom Nav Tabs
+        GoRoute(
+          path: '/admin',
+          builder: (context, state) => const AdminHomePage(),
+        ),
+        GoRoute(
+          path: '/admin/verifikasi',
+          builder: (context, state) => const AdminPendingRegistrationsPage(),
+        ),
+        GoRoute(
+          path: '/admin/notifikasi',
+          builder: (context, state) => const AdminNotificationsPage(),
+        ),
+        GoRoute(
+          path: '/admin/profil',
+          builder: (context, state) => const AdminProfilePage(),
+        ),
+        // Pages accessed from Beranda (with bottom nav visible)
+        GoRoute(
+          path: '/admin/staff',
+          builder: (context, state) => const AdminStaffPage(),
+        ),
+        GoRoute(
+          path: '/admin/users',
+          builder: (context, state) => const AdminUsersPage(),
+        ),
+        GoRoute(
+          path: '/admin/categories',
+          builder: (context, state) => const AdminCategoriesPage(),
+        ),
+      ],
     ),
-    GoRoute(
-      path: '/admin/categories',
-      builder: (context, state) => const AdminCategoriesPage(),
-    ),
-    GoRoute(
-      path: '/admin/users',
-      builder: (context, state) => const AdminUsersPage(),
-    ),
-    GoRoute(
-      path: '/admin/profile',
-      builder: (context, state) => const StaffProfilePage(role: 'admin'),
-    ),
+    
+    // Admin pages outside shell (focused views without bottom nav)
   ],
 );

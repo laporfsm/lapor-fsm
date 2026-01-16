@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/theme.dart';
 
 class AdminStaffPage extends StatefulWidget {
   const AdminStaffPage({super.key});
@@ -12,6 +11,9 @@ class AdminStaffPage extends StatefulWidget {
 }
 
 class _AdminStaffPageState extends State<AdminStaffPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'all';
+
   // Mock data
   final List<Map<String, dynamic>> _staffList = [
     {
@@ -56,31 +58,164 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
     },
   ];
 
+  List<Map<String, dynamic>> get _filteredStaff {
+    var list = _staffList;
+
+    if (_searchController.text.isNotEmpty) {
+      final query = _searchController.text.toLowerCase();
+      list = list.where((s) {
+        return s['name'].toString().toLowerCase().contains(query) ||
+            s['email'].toString().toLowerCase().contains(query);
+      }).toList();
+    }
+
+    if (_selectedFilter != 'all') {
+      list = list.where((s) => s['role'] == _selectedFilter).toList();
+    }
+
+    return list;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Manajemen Staff'),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF059669),
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(LucideIcons.arrowLeft),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+        ),
+        title: const Text(
+          'Manajemen Staff',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _staffList.length,
-        itemBuilder: (context, index) {
-          return _buildStaffCard(_staffList[index]);
-        },
+      body: Column(
+        children: [
+          // Search
+          Container(
+            color: const Color(0xFF059669),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Cari staff...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  prefixIcon: Icon(LucideIcons.search,
+                      color: Colors.grey.shade400, size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: Icon(LucideIcons.x,
+                              color: Colors.grey.shade400, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ),
+
+          // Filter
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              children: [
+                _buildFilterChip('all', 'Semua'),
+                const Gap(8),
+                _buildFilterChip('teknisi', 'Teknisi'),
+                const Gap(8),
+                _buildFilterChip('supervisor', 'Supervisor'),
+                const Gap(8),
+                _buildFilterChip('admin', 'Admin'),
+              ],
+            ),
+          ),
+
+          // List
+          Expanded(
+            child: _filteredStaff.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _filteredStaff.length,
+                    itemBuilder: (context, index) =>
+                        _buildStaffCard(_filteredStaff[index]),
+                  ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddEditDialog(null),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddEditSheet(null),
         backgroundColor: const Color(0xFF059669),
-        icon: const Icon(LucideIcons.userPlus),
-        label: const Text('Tambah Staff'),
+        child: const Icon(LucideIcons.userPlus, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String value, String label) {
+    final isSelected = _selectedFilter == value;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF059669) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF059669) : Colors.grey.shade300,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: isSelected ? Colors.white : Colors.grey.shade600,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(LucideIcons.users, size: 48, color: Colors.grey.shade300),
+          const Gap(16),
+          Text(
+            'Tidak ada staff',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -89,139 +224,104 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
     final roleColor = _getRoleColor(staff['role']);
     final bool isActive = staff['isActive'] ?? false;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: isActive ? null : Border.all(color: Colors.grey.shade300),
-        boxShadow: isActive
-            ? [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Opacity(
-        opacity: isActive ? 1.0 : 0.6,
+    return Opacity(
+      opacity: isActive ? 1.0 : 0.6,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(10),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: roleColor.withOpacity(0.1),
-                    child: Text(
-                      staff['name'].toString().substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: roleColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            Text(
-                              staff['name'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                        Flexible(
+                          child: Text(
+                            staff['name'],
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
                             ),
-                            const Gap(8),
-                            if (!isActive)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade200,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  'Nonaktif',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const Gap(4),
-                        Text(
-                          staff['email'],
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (!isActive) ...[
+                          const Gap(8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'Nonaktif',
+                              style: TextStyle(fontSize: 9, color: Colors.grey),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: roleColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _getRoleLabel(staff['role']),
+                    const Gap(4),
+                    Text(
+                      staff['email'],
                       style: TextStyle(
-                        color: roleColor,
+                        color: Colors.grey.shade500,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                    const Gap(6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: roleColor.withAlpha(26),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        _getRoleLabel(staff['role']),
+                        style: TextStyle(
+                          color: roleColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const Gap(12),
+
+              // Actions
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    LucideIcons.phone,
-                    size: 14,
-                    color: Colors.grey.shade500,
+                  _ActionButton(
+                    icon: LucideIcons.pencil,
+                    color: const Color(0xFF3B82F6),
+                    onTap: () => _showAddEditSheet(staff),
                   ),
                   const Gap(6),
-                  Text(
-                    staff['phone'] ?? '-',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () => _showAddEditDialog(staff),
-                    icon: const Icon(LucideIcons.pencil, size: 16),
-                    label: const Text('Edit'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.blue,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _toggleStatus(staff),
-                    icon: Icon(
-                      isActive ? LucideIcons.userX : LucideIcons.userCheck,
-                      size: 16,
-                    ),
-                    label: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: isActive ? Colors.red : Colors.green,
-                      padding: EdgeInsets.zero,
-                    ),
+                  _ActionButton(
+                    icon: isActive ? LucideIcons.userX : LucideIcons.userCheck,
+                    color: isActive
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF22C55E),
+                    onTap: () => _toggleStatus(staff),
                   ),
                 ],
               ),
@@ -235,9 +335,9 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
   Color _getRoleColor(String role) {
     switch (role) {
       case 'teknisi':
-        return Colors.blue;
+        return const Color(0xFF3B82F6);
       case 'supervisor':
-        return Colors.purple;
+        return const Color(0xFF8B5CF6);
       case 'admin':
         return const Color(0xFF059669);
       default:
@@ -258,154 +358,286 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
     }
   }
 
-  void _showAddEditDialog(Map<String, dynamic>? staff) {
-    final isEditing = staff != null;
-    final nameController = TextEditingController(text: staff?['name'] ?? '');
-    final emailController = TextEditingController(text: staff?['email'] ?? '');
-    final phoneController = TextEditingController(text: staff?['phone'] ?? '');
-    final passwordController = TextEditingController();
-    String selectedRole = staff?['role'] ?? 'teknisi';
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Text(isEditing ? 'Edit Staff' : 'Tambah Staff Baru'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap',
-                    prefixIcon: Icon(LucideIcons.user),
-                  ),
-                ),
-                const Gap(12),
-                TextField(
-                  controller: emailController,
-                  enabled: !isEditing,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(LucideIcons.mail),
-                  ),
-                ),
-                const Gap(12),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'No. Telepon',
-                    prefixIcon: Icon(LucideIcons.phone),
-                  ),
-                ),
-                if (!isEditing) ...[
-                  const Gap(12),
-                  TextField(
-                    controller: passwordController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(LucideIcons.lock),
-                    ),
-                  ),
-                ],
-                const Gap(16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedRole,
-                  decoration: const InputDecoration(
-                    labelText: 'Role',
-                    prefixIcon: Icon(LucideIcons.userCog),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'teknisi', child: Text('Teknisi')),
-                    DropdownMenuItem(
-                      value: 'supervisor',
-                      child: Text('Supervisor'),
-                    ),
-                    DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                  ],
-                  onChanged: (value) {
-                    setDialogState(() => selectedRole = value!);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // TODO: Call API
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isEditing
-                          ? 'Staff berhasil diupdate'
-                          : 'Staff berhasil ditambahkan',
-                    ),
-                    backgroundColor: const Color(0xFF059669),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF059669),
-                foregroundColor: Colors.white,
-              ),
-              child: Text(isEditing ? 'Simpan' : 'Tambah'),
-            ),
-          ],
-        ),
+  void _toggleStatus(Map<String, dynamic> staff) {
+    final bool isActive = staff['isActive'] ?? false;
+    setState(() {
+      staff['isActive'] = !isActive;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isActive ? 'Staff dinonaktifkan' : 'Staff diaktifkan'),
+        backgroundColor:
+            isActive ? const Color(0xFFF59E0B) : const Color(0xFF22C55E),
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
-  void _toggleStatus(Map<String, dynamic> staff) {
-    final bool isActive = staff['isActive'] ?? false;
-    showDialog(
+  void _showAddEditSheet(Map<String, dynamic>? staff) {
+    final isEditing = staff != null;
+    final nameController = TextEditingController(text: staff?['name'] ?? '');
+    final emailController = TextEditingController(text: staff?['email'] ?? '');
+    final phoneController = TextEditingController(text: staff?['phone'] ?? '');
+    String selectedRole = staff?['role'] ?? 'teknisi';
+
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(isActive ? 'Nonaktifkan Staff?' : 'Aktifkan Staff?'),
-        content: Text(
-          isActive
-              ? 'Staff ${staff['name']} tidak akan bisa login setelah dinonaktifkan.'
-              : 'Staff ${staff['name']} akan bisa login kembali setelah diaktifkan.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              setState(() {
-                staff['isActive'] = !isActive;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    isActive ? 'Staff dinonaktifkan' : 'Staff diaktifkan',
-                  ),
-                  backgroundColor: isActive ? Colors.orange : Colors.green,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isActive ? Colors.red : Colors.green,
-              foregroundColor: Colors.white,
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
             ),
-            child: Text(isActive ? 'Nonaktifkan' : 'Aktifkan'),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Text(
+                    isEditing ? 'Edit Staff' : 'Tambah Staff',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Gap(20),
+
+                  // Name
+                  _FormField(
+                    label: 'Nama',
+                    controller: nameController,
+                    hint: 'Nama lengkap',
+                  ),
+                  const Gap(12),
+
+                  // Email
+                  _FormField(
+                    label: 'Email',
+                    controller: emailController,
+                    hint: 'email@undip.ac.id',
+                    enabled: !isEditing,
+                  ),
+                  const Gap(12),
+
+                  // Phone
+                  _FormField(
+                    label: 'No. Telepon',
+                    controller: phoneController,
+                    hint: '08xxxxxxxxxx',
+                  ),
+                  const Gap(12),
+
+                  // Role
+                  const Text(
+                    'Role',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
+                  const Gap(8),
+                  Row(
+                    children: [
+                      _RoleChip(
+                        label: 'Teknisi',
+                        isSelected: selectedRole == 'teknisi',
+                        color: const Color(0xFF3B82F6),
+                        onTap: () =>
+                            setSheetState(() => selectedRole = 'teknisi'),
+                      ),
+                      const Gap(8),
+                      _RoleChip(
+                        label: 'Supervisor',
+                        isSelected: selectedRole == 'supervisor',
+                        color: const Color(0xFF8B5CF6),
+                        onTap: () =>
+                            setSheetState(() => selectedRole = 'supervisor'),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(isEditing
+                                    ? 'Staff diperbarui'
+                                    : 'Staff ditambahkan'),
+                                backgroundColor: const Color(0xFF22C55E),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF059669),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(isEditing ? 'Simpan' : 'Tambah'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: color.withAlpha(26),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, size: 16, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String hint;
+  final bool enabled;
+
+  const _FormField({
+    required this.label,
+    required this.controller,
+    required this.hint,
+    this.enabled = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        ),
+        const Gap(6),
+        TextField(
+          controller: controller,
+          enabled: enabled,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.grey.shade400),
+            filled: true,
+            fillColor: enabled ? const Color(0xFFF8FAFC) : Colors.grey.shade100,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF059669)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _RoleChip({
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? color : color.withAlpha(26),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isSelected ? color : color.withAlpha(51),
+            ),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.white : color,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

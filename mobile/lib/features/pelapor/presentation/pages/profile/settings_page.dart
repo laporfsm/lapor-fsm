@@ -13,7 +13,6 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _notificationsEnabled = true;
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _soundEnabled = true;
 
@@ -50,17 +49,6 @@ class _SettingsPageState extends State<SettingsPage> {
                     onChanged: (value) =>
                         setState(() => _notificationsEnabled = value),
                     secondary: const Icon(LucideIcons.bell),
-                    activeThumbColor: AppTheme.primaryColor,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: const Text('Notifikasi Email'),
-                    subtitle: const Text('Kirim update ke email'),
-                    value: _emailNotifications,
-                    onChanged: _notificationsEnabled
-                        ? (value) => setState(() => _emailNotifications = value)
-                        : null,
-                    secondary: const Icon(LucideIcons.mail),
                     activeThumbColor: AppTheme.primaryColor,
                   ),
                   const Divider(height: 1),
