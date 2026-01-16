@@ -219,10 +219,7 @@ class _LoginPageState extends State<LoginPage> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          // TODO: Implement forgot password
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Fitur lupa password coming soon')),
-                          );
+                          context.go('/forgot-password');
                         },
                         child: Text(
                           'Lupa Password?',

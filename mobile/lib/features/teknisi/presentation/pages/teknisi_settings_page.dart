@@ -12,7 +12,6 @@ class TeknisiSettingsPage extends StatefulWidget {
 }
 
 class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
-  bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _darkMode = false;
 
@@ -66,13 +65,6 @@ class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
               ),
               child: Column(
                 children: [
-                  _buildSwitchItem(
-                    title: 'Notifikasi Email',
-                    value: _emailNotifications,
-                    onChanged: (val) =>
-                        setState(() => _emailNotifications = val),
-                  ),
-                  const Divider(height: 1),
                   _buildSwitchItem(
                     title: 'Push Notification',
                     value: _pushNotifications,
