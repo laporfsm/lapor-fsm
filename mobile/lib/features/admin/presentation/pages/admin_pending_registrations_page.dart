@@ -273,7 +273,7 @@ class _AdminPendingRegistrationsPageState
                   icon: LucideIcons.check,
                   color: const Color(0xFF22C55E),
                   tooltip: 'Setujui',
-                  onTap: () => _approveRegistration(registration),
+                  onTap: () => _confirmApprove(registration),
                 ),
                 const Gap(10),
                 _IconActionButton(
@@ -288,6 +288,43 @@ class _AdminPendingRegistrationsPageState
         ],
       ),
     );
+  }
+
+  Future<void> _confirmApprove(Map<String, dynamic> registration) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Persetujuan'),
+        content: Text(
+            'Apakah Anda yakin ingin menyetujui pendaftaran atas nama ${registration['name']}?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal',
+                style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF22C55E),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            child: const Text('Ya, Setujui'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _approveRegistration(registration);
+    }
   }
 
   void _approveRegistration(Map<String, dynamic> registration) {
@@ -594,7 +631,7 @@ class _AdminPendingRegistrationsPageState
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        _approveRegistration(registration);
+                        _confirmApprove(registration);
                       },
                       icon: const Icon(LucideIcons.check, size: 16),
                       label: const Text('Setujui'),
