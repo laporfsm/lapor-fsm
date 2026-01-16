@@ -462,6 +462,14 @@ class _AdminStaffPageState extends State<AdminStaffPage> {
                         onTap: () =>
                             setSheetState(() => selectedRole = 'supervisor'),
                       ),
+                      const Gap(8),
+                      _RoleChip(
+                        label: 'Admin',
+                        isSelected: selectedRole == 'admin',
+                        color: const Color(0xFF059669),
+                        onTap: () =>
+                            setSheetState(() => selectedRole = 'admin'),
+                      ),
                     ],
                   ),
                   const Gap(24),
