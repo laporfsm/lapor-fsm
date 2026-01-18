@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
-
-// Supervisor theme color
-const Color _supervisorColor = Color(0xFF059669);
+import 'package:url_launcher/url_launcher.dart';
 
 class SupervisorReviewPage extends StatefulWidget {
   final String reportId;
-
   const SupervisorReviewPage({super.key, required this.reportId});
 
   @override
@@ -17,83 +16,76 @@ class SupervisorReviewPage extends StatefulWidget {
 }
 
 class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
-  bool _isLoading = true;
+  // Mock Data
   late Map<String, dynamic> _report;
-  final TextEditingController _reasonController = TextEditingController();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadReport();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  void _loadReport() {
+    // Simulate API call
     Future.delayed(const Duration(milliseconds: 500), () {
-      setState(() {
-        _report = {
-          'id': widget.reportId,
-          'title': 'AC Mati di Lab Komputer',
-          'description':
-              'AC di Lab Komputer ruang 201 tidak menyala sejak pagi. Sudah dicoba restart tapi tetap tidak berfungsi.',
-          'category': 'Kelistrikan',
-          'building': 'Gedung G, Lt 2, Ruang 201',
-          'imageUrl':
-              'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
-          'handlerMediaUrl':
-              'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=400',
-          'status': 'selesai',
-          'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
-          'assignedAt': DateTime.now().subtract(
-            const Duration(hours: 1, minutes: 45),
-          ),
-          'handledAt': DateTime.now().subtract(
-            const Duration(hours: 1, minutes: 30),
-          ),
-          'completedAt': DateTime.now().subtract(const Duration(hours: 1)),
-          'reporterName': 'Ahmad Fauzi',
-          'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
-          'teknisiName': 'Budi Teknisi',
-          'handlerNotes':
-              'AC sudah diperbaiki. Masalah pada kapasitor yang perlu diganti. Sudah berfungsi normal kembali.',
-          'logs': [
-            {
-              'action': 'created',
-              'time': DateTime.now().subtract(const Duration(hours: 2)),
-              'notes': 'Laporan dibuat',
-            },
-            {
-              'action': 'verified',
-              'time': DateTime.now().subtract(
-                const Duration(hours: 1, minutes: 45),
-              ),
-              'actor': 'Budi Teknisi',
-              'notes': 'Laporan diverifikasi',
-            },
-            {
-              'action': 'handling',
-              'time': DateTime.now().subtract(
-                const Duration(hours: 1, minutes: 30),
-              ),
-              'actor': 'Budi Teknisi',
-              'notes': 'Mulai penanganan',
-            },
-            {
-              'action': 'completed',
-              'time': DateTime.now().subtract(const Duration(hours: 1)),
-              'actor': 'Budi Teknisi',
-              'notes': 'Penanganan selesai',
-            },
-          ],
-        };
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _report = {
+            'id': widget.reportId,
+            'title': 'AC Mati di Lab Komputer',
+            'description':
+                'AC di Lab Komputer ruang 201 tidak menyala sejak pagi. Sudah dicoba restart tapi tetap tidak berfungsi. Suhu ruangan sangat panas.',
+            'category': 'Kelistrikan',
+            'building': 'Gedung G, Lt 2, Ruang 201',
+            'latitude': -6.9932,
+            'longitude': 110.4203,
+            'imageUrl':
+                'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400',
+            'status': 'selesai',
+            'isEmergency': false,
+            'reporterName': 'Ahmad Fauzi',
+            'reporterEmail': 'ahmad.fauzi@students.undip.ac.id',
+            'reporterPhone': '08123456789',
+            'handledBy': ['Budi Santoso'],
+            'logs': [
+              {
+                'action': 'Selesai',
+                'time': '10:30',
+                'date': '17 Jan 2024',
+                'notes': 'AC sudah diperbaiki, kapasitor diganti.',
+                'isDone': true,
+              },
+              {
+                'action': 'Penanganan',
+                'time': '09:45',
+                'date': '17 Jan 2024',
+                'notes': 'Mulai pengecekan unit AC.',
+                'isDone': true,
+              },
+              {
+                'action': 'Verifikasi',
+                'time': '09:00',
+                'date': '17 Jan 2024',
+                'notes': 'Laporan diterima supervisor.',
+                'isDone': true,
+              },
+              {
+                'action': 'Laporan Masuk',
+                'time': '08:45',
+                'date': '17 Jan 2024',
+                'notes': 'Laporan dibuat oleh Ahmad Fauzi.',
+                'isDone': true,
+              },
+            ],
+          };
+          _isLoading = false;
+        });
+      }
     });
+  }
+
+  void _launchPhone(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    }
   }
 
   @override
@@ -102,14 +94,18 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final bool isEmergency = _report['isEmergency'];
+    final String status = _report['status'];
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         slivers: [
+          // 1. Sliver App Bar with Image
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 250,
             pinned: true,
-            backgroundColor: _supervisorColor,
+            backgroundColor: AppTheme.supervisorColor,
             leading: IconButton(
               onPressed: () => context.pop(),
               icon: Container(
@@ -129,7 +125,18 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.network(_report['imageUrl'], fit: BoxFit.cover),
+                  Image.network(
+                    _report['imageUrl'],
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(
+                        LucideIcons.image,
+                        size: 64,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -142,6 +149,40 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
                       ),
                     ),
                   ),
+                  if (isEmergency)
+                    Positioned(
+                      top: 80,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              LucideIcons.alertTriangle,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            Gap(4),
+                            Text(
+                              'DARURAT',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -155,14 +196,14 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green,
+                            color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'SELESAI - MENUNGGU REVIEW',
-                            style: TextStyle(
+                          child: Text(
+                            _report['category'],
+                            style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -172,7 +213,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
                           _report['title'],
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -183,102 +224,318 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
               ),
             ),
           ),
+
+          // 2. Content
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Duration Summary
-                  _buildDurationCard(),
+                  // Status Card
+                  _buildStatusCard(status),
                   const Gap(16),
 
-                  // Handler Proof
-                  _buildProofCard(),
+                  // Reporter Info Wrapper in Card
+                  _buildInfoCard(
+                    title: 'Informasi Pelapor',
+                    icon: LucideIcons.user,
+                    children: [
+                      _buildInfoRow(
+                        LucideIcons.user,
+                        'Nama',
+                        _report['reporterName'],
+                      ),
+                      _buildInfoRow(
+                        LucideIcons.mail,
+                        'Email',
+                        _report['reporterEmail'],
+                      ),
+                      _buildInfoRowWithAction(
+                        LucideIcons.phone,
+                        'Telepon',
+                        _report['reporterPhone'],
+                        onTap: () => _launchPhone(_report['reporterPhone']),
+                      ),
+                    ],
+                  ),
                   const Gap(16),
 
-                  // Handler Notes
-                  _buildNotesCard(),
+                  // Technician Info (if assigned)
+                  if (_report['handledBy'] != null) ...[
+                    _buildInfoCard(
+                      title: 'Ditangani Oleh',
+                      icon: LucideIcons.wrench,
+                      children: [
+                        ...(_report['handledBy'] as List<dynamic>).map(
+                          (tech) => Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.user,
+                                  size: 16,
+                                  color: Colors.grey.shade400,
+                                ),
+                                const Gap(12),
+                                Expanded(
+                                  child: Text(
+                                    tech.toString(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Gap(16),
+                  ],
+
+                  // Location Card with Map
+                  _buildInfoCard(
+                    title: 'Lokasi',
+                    icon: LucideIcons.mapPin,
+                    children: [
+                      _buildInfoRow(
+                        LucideIcons.building,
+                        'Gedung',
+                        _report['building'],
+                      ),
+                      const Gap(12),
+                      Container(
+                        height: 150,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Stack(
+                            children: [
+                              IgnorePointer(
+                                child: FlutterMap(
+                                  options: MapOptions(
+                                    initialCenter: LatLng(
+                                      _report['latitude'],
+                                      _report['longitude'],
+                                    ),
+                                    initialZoom: 15,
+                                    interactionOptions:
+                                        const InteractionOptions(
+                                          flags: InteractiveFlag.none,
+                                        ),
+                                  ),
+                                  children: [
+                                    TileLayer(
+                                      urlTemplate:
+                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      userAgentPackageName:
+                                          'com.laporfsm.mobile',
+                                    ),
+                                    MarkerLayer(
+                                      markers: [
+                                        Marker(
+                                          point: LatLng(
+                                            _report['latitude'],
+                                            _report['longitude'],
+                                          ),
+                                          width: 40,
+                                          height: 40,
+                                          child: const Icon(
+                                            Icons.location_pin,
+                                            color: Colors.red,
+                                            size: 40,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 8,
+                                right: 8,
+                                child: ElevatedButton.icon(
+                                  onPressed: () {
+                                    // Map action - create route if needed
+                                  },
+                                  icon: const Icon(
+                                    LucideIcons.maximize2,
+                                    size: 14,
+                                  ),
+                                  label: const Text('Lihat Peta'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    textStyle: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const Gap(16),
 
-                  // Report Details
-                  _buildDetailsCard(),
+                  // Description Card
+                  _buildInfoCard(
+                    title: 'Deskripsi Laporan',
+                    icon: LucideIcons.fileText,
+                    children: [
+                      Text(
+                        _report['description'],
+                        style: TextStyle(
+                          color: Colors.grey.shade700,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
                   const Gap(16),
 
-                  // Timeline
-                  _buildTimelineCard(),
-                  const Gap(100),
+                  // Activity Log Card (Timeline)
+                  _buildInfoCard(
+                    title: 'Riwayat Aktivitas',
+                    icon: LucideIcons.clock,
+                    children: [
+                      ...(_report['logs'] as List).asMap().entries.map(
+                        (entry) => _buildLogItem(
+                          entry.value,
+                          index: entry.key,
+                          total: (_report['logs'] as List).length,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Gap(100), // Bottom padding
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildActionButtons(),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () {
+                  // Reject Action
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: const BorderSide(color: Colors.red),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Tolak Laporan'),
+              ),
+            ),
+            const Gap(16),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  // Verify/Accept Action
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.supervisorColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Verifikasi'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildDurationCard() {
-    final duration = _report['completedAt'].difference(_report['handledAt']);
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes % 60;
+  Widget _buildStatusCard(String status) {
+    Color color;
+    String label;
+    IconData icon;
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+        color = Colors.grey;
+        label = 'Menunggu';
+        icon = LucideIcons.clock;
+        break;
+      case 'verifikasi':
+        color = Colors.blue;
+        label = 'Perlu Verifikasi';
+        icon = LucideIcons.checkCircle2;
+        break;
+      case 'penanganan':
+        color = Colors.orange;
+        label = 'Sedang Dikerjakan';
+        icon = LucideIcons.wrench;
+        break;
+      case 'selesai':
+        color = Colors.green;
+        label = 'Selesai';
+        icon = LucideIcons.checkCheck;
+        break;
+      default:
+        color = Colors.grey;
+        label = status;
+        icon = LucideIcons.info;
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: _supervisorColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              LucideIcons.timer,
-              color: _supervisorColor,
-              size: 24,
-            ),
-          ),
-          const Gap(16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Durasi Penanganan',
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-                Text(
-                  hours > 0 ? '$hours jam $minutes menit' : '$minutes menit',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Icon(icon, color: color),
+          const Gap(12),
           Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Teknisi',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+              Text(
+                'Status Laporan',
+                style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
               ),
               Text(
-                _report['teknisiName'],
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ],
           ),
@@ -287,7 +544,11 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     );
   }
 
-  Widget _buildProofCard() {
+  Widget _buildInfoCard({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -304,125 +565,38 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.camera, size: 18, color: _supervisorColor),
-              Gap(8),
+              Icon(icon, size: 18, color: AppTheme.supervisorColor),
+              const Gap(8),
               Text(
-                'Bukti Penanganan',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const Gap(12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              _report['handlerMediaUrl'],
-              height: 200,
-              width: double.infinity,
-              fit: BoxFit.cover,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotesCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                LucideIcons.messageSquare,
-                size: 18,
-                color: _supervisorColor,
-              ),
-              Gap(8),
-              Text(
-                'Catatan Teknisi',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const Gap(12),
-          Text(
-            _report['handlerNotes'],
-            style: TextStyle(color: Colors.grey.shade700, height: 1.5),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(LucideIcons.fileText, size: 18, color: _supervisorColor),
-              Gap(8),
-              Text(
-                'Detail Laporan',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
           const Divider(height: 24),
-          _buildDetailRow('Kategori', _report['category']),
-          _buildDetailRow('Lokasi', _report['building']),
-          _buildDetailRow('Pelapor', _report['reporterName']),
-          _buildDetailRow('Email', _report['reporterEmail']),
-          const Gap(8),
-          Text(
-            _report['description'],
-            style: TextStyle(color: Colors.grey.shade600, height: 1.4),
-          ),
+          ...children,
         ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Icon(icon, size: 16, color: Colors.grey.shade400),
+          const Gap(12),
           SizedBox(
             width: 80,
             child: Text(
               label,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
             ),
           ),
           Expanded(
@@ -436,247 +610,115 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     );
   }
 
-  Widget _buildTimelineCard() {
-    final logs = _report['logs'] as List;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+  Widget _buildInfoRowWithAction(
+    IconData icon,
+    String label,
+    String value, {
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: Colors.grey.shade400),
+          const Gap(12),
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              child: Text(
+                value,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
           ),
         ],
       ),
-      child: Column(
+    );
+  }
+
+  Widget _buildLogItem(
+    Map<String, dynamic> log, {
+    required int index,
+    required int total,
+  }) {
+    final bool isDone = log['isDone'] ?? false;
+    final bool isFirst = index == 0;
+    final bool isLast = index == total - 1;
+
+    return IntrinsicHeight(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Column(
             children: [
-              Icon(LucideIcons.clock, size: 18, color: _supervisorColor),
-              Gap(8),
-              Text('Timeline', style: TextStyle(fontWeight: FontWeight.bold)),
+              Container(
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isDone
+                      ? AppTheme.supervisorColor
+                      : Colors.grey.shade300,
+                  border: isFirst
+                      ? Border.all(color: AppTheme.supervisorColor, width: 3)
+                      : null,
+                ),
+                child: isDone
+                    ? const Icon(Icons.check, size: 12, color: Colors.white)
+                    : null,
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(width: 2, color: Colors.grey.shade200),
+                ),
             ],
           ),
-          const Divider(height: 24),
-          ...logs.asMap().entries.map((entry) {
-            final index = entry.key;
-            final log = entry.value;
-            final isLast = index == logs.length - 1;
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Column(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: _supervisorColor,
-                        shape: BoxShape.circle,
+          const Gap(16),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        log['action'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
-                    ),
-                    if (!isLast)
-                      Container(
-                        width: 2,
-                        height: 40,
-                        color: Colors.grey.shade300,
+                      Text(
+                        '${log['time']} • ${log['date']}',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
                       ),
-                  ],
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          log['notes'],
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          _formatDateTime(log['time']),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _showRecallDialog,
-                icon: const Icon(LucideIcons.refreshCw),
-                label: const Text('Panggil Ulang'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange,
-                  side: const BorderSide(color: Colors.orange),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
+                  const Gap(4),
+                  Text(
+                    log['notes'], // Changed from 'note' to 'notes' to match mock data
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                  ),
+                ],
               ),
-            ),
-            const Gap(12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _approveReport,
-                icon: const Icon(LucideIcons.checkCircle2),
-                label: const Text('Setujui'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showRecallDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Panggil Ulang Teknisi'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Berikan alasan mengapa penanganan perlu diulang:'),
-            const Gap(16),
-            TextField(
-              controller: _reasonController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                hintText: 'Masukkan alasan...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _recallTechnician();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Panggil Ulang'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _recallTechnician() {
-    // TODO: Call API
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Teknisi dipanggil kembali untuk penanganan ulang'),
-        backgroundColor: Colors.orange,
-      ),
-    );
-    context.pop();
-  }
-
-  void _approveReport() {
-    // TODO: Call API
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.checkCircle2,
-                color: Colors.green,
-                size: 48,
-              ),
-            ),
-            const Gap(16),
-            const Text(
-              'Laporan Disetujui!',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Gap(8),
-            Text(
-              'Penanganan telah diverifikasi dan disetujui.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                context.go('/supervisor');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Kembali ke Dashboard'),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dt) {
-    return '${dt.day}/${dt.month}/${dt.year} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

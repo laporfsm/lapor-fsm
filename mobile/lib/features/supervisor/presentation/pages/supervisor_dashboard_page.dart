@@ -3,32 +3,27 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 
-// Supervisor theme color - differentiated from Pelapor (blue) and Teknisi (orange)
-const Color _supervisorColor = Color(0xFF3730A3); // Emerald green
+/// Dashboard page for Supervisor (tab 0 in shell)
+/// This page contains the main dashboard content WITHOUT bottom navigation bar
+class SupervisorDashboardPage extends StatelessWidget {
+  const SupervisorDashboardPage({super.key});
 
-class SupervisorHomePage extends StatefulWidget {
-  const SupervisorHomePage({super.key});
-
-  @override
-  State<SupervisorHomePage> createState() => _SupervisorHomePageState();
-}
-
-class _SupervisorHomePageState extends State<SupervisorHomePage> {
-  int _currentIndex = 0;
-
-  // Mock data - akan diganti dengan API
-  final Map<String, dynamic> _stats = {
+  // TODO: [BACKEND] Replace with API call to fetch stats
+  Map<String, dynamic> get _stats => {
     'pending': 5,
     'verifikasi': 2,
     'penanganan': 3,
     'selesai': 45,
+    'emergency': 2, // Laporan darurat yang perlu perhatian
     'todayReports': 8,
     'weekReports': 32,
     'monthReports': 45,
   };
 
-  final List<Map<String, dynamic>> _pendingReview = [
+  // TODO: [BACKEND] Replace with API call to fetch pending reviews
+  List<Map<String, dynamic>> get _pendingReview => [
     {
       'id': 1,
       'title': 'AC Mati di Lab Komputer',
@@ -45,7 +40,8 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
     },
   ];
 
-  final List<Map<String, dynamic>> _technicians = [
+  // TODO: [BACKEND] Replace with API call to fetch technicians
+  List<Map<String, dynamic>> get _technicians => [
     {'id': 1, 'name': 'Budi Teknisi', 'handled': 15, 'completed': 14},
     {'id': 2, 'name': 'Andi Teknisi', 'handled': 12, 'completed': 12},
     {'id': 3, 'name': 'Citra Teknisi', 'handled': 8, 'completed': 7},
@@ -58,22 +54,19 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            // App Bar
             SliverAppBar(
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: _supervisorColor,
+              backgroundColor: supervisorColor,
+              automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        _supervisorColor,
-                        Color(0xFF10B981), // Lighter emerald
-                      ],
+                      colors: [supervisorColor, Color(0xFF4338CA)],
                     ),
                   ),
                   child: SafeArea(
@@ -119,14 +112,6 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
                                   ],
                                 ),
                               ),
-                              IconButton(
-                                onPressed: () =>
-                                    context.push('/supervisor/profile'),
-                                icon: const Icon(
-                                  LucideIcons.user,
-                                  color: Colors.white,
-                                ),
-                              ),
                             ],
                           ),
                         ],
@@ -143,26 +128,34 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Stats Cards
-              _buildStatsSection(),
+              _buildEmergencyAlert(context),
+              const Gap(16),
+              _buildStatsSection(context),
               const Gap(24),
-
-              // Quick Actions
-              _buildQuickActions(),
+              _buildQuickActions(context),
               const Gap(24),
-
-              // Pending Review
-              _buildSectionHeader('Menunggu Review', 'Lihat Semua', () {
-                context.push('/supervisor/reports');
-              }),
+              _buildSectionHeader(
+                context,
+                'Menunggu Review',
+                'Lihat Semua',
+                // Navigate to finished reports (assuming pending review usually means finished)
+                () => context.push(
+                  Uri(
+                    path: '/supervisor/reports/filter',
+                    queryParameters: {'status': 'selesai'},
+                  ).toString(),
+                ),
+              ),
               const Gap(12),
-              _buildPendingReviewList(),
+              _buildPendingReviewList(context),
               const Gap(24),
-
-              // Technician Performance
-              _buildSectionHeader('Kinerja Teknisi', 'Detail', () {
-                context.push('/supervisor/performance');
-              }),
+              _buildSectionHeader(
+                context,
+                'Log Aktivitas Teknisi',
+                'Lihat Semua',
+                // Navigate to technician list
+                () => context.push('/supervisor/technicians'),
+              ),
               const Gap(12),
               _buildTechnicianPerformance(),
               const Gap(24),
@@ -170,79 +163,115 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        selectedItemColor: _supervisorColor,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-          switch (index) {
-            case 0:
-              break; // Already on home
-            case 1:
-              context.push('/supervisor/reports');
-              break;
-            case 2:
-              context.push('/supervisor/archive');
-              break;
-            case 3:
-              context.push('/supervisor/profile');
-              break;
-          }
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.home),
-            label: 'Dashboard',
+    );
+  }
+
+  /// Emergency alert banner - clickable
+  Widget _buildEmergencyAlert(BuildContext context) {
+    final emergencyCount = _stats['emergency'] ?? 0;
+    if (emergencyCount == 0) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () => context.push(
+        Uri(
+          path: '/supervisor/reports/filter',
+          queryParameters: {'emergency': 'true'},
+        ).toString(),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.red.shade600, Colors.red.shade800],
           ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.fileText),
-            label: 'Laporan',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.archive),
-            label: 'Arsip',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.user),
-            label: 'Profil',
-          ),
-        ],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.alertTriangle,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Laporan Darurat!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    '$emergencyCount laporan darurat perlu perhatian segera',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, color: Colors.white),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(BuildContext context) {
     return Column(
       children: [
-        // Period stats
         Row(
           children: [
             _buildStatCard(
+              context,
               'Hari Ini',
               _stats['todayReports'].toString(),
               LucideIcons.calendar,
               Colors.blue,
+              'today',
             ),
             const Gap(12),
             _buildStatCard(
+              context,
               'Minggu Ini',
               _stats['weekReports'].toString(),
               LucideIcons.calendarDays,
               Colors.green,
+              'week',
             ),
             const Gap(12),
             _buildStatCard(
+              context,
               'Bulan Ini',
               _stats['monthReports'].toString(),
               LucideIcons.calendarRange,
               Colors.orange,
+              'month',
             ),
           ],
         ),
         const Gap(12),
-        // Status breakdown
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -266,21 +295,37 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
               const Gap(12),
               Row(
                 children: [
-                  _buildStatusBadge('Pending', _stats['pending'], Colors.grey),
+                  _buildStatusBadge(
+                    context,
+                    'Pending',
+                    _stats['pending'],
+                    Colors.grey,
+                    'pending',
+                  ),
                   const Gap(8),
                   _buildStatusBadge(
+                    context,
                     'Verifikasi',
                     _stats['verifikasi'],
                     Colors.blue,
+                    'verifikasi',
                   ),
                   const Gap(8),
                   _buildStatusBadge(
+                    context,
                     'Penanganan',
                     _stats['penanganan'],
                     Colors.orange,
+                    'penanganan',
                   ),
                   const Gap(8),
-                  _buildStatusBadge('Selesai', _stats['selesai'], Colors.green),
+                  _buildStatusBadge(
+                    context,
+                    'Selesai',
+                    _stats['selesai'],
+                    Colors.green,
+                    'selesai',
+                  ),
                 ],
               ),
             ],
@@ -291,102 +336,121 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
   }
 
   Widget _buildStatCard(
+    BuildContext context,
     String label,
     String value,
     IconData icon,
     Color color,
+    String filter,
   ) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+      child: GestureDetector(
+        onTap: () => context.push(
+          Uri(
+            path: '/supervisor/reports/filter',
+            queryParameters: {'period': filter},
+          ).toString(),
         ),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 24),
-            const Gap(8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
               ),
-            ),
-            const Gap(4),
-            Text(
-              label,
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const Gap(8),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+              const Gap(4),
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(String label, int count, Color color) {
+  Widget _buildStatusBadge(
+    BuildContext context,
+    String label,
+    int count,
+    Color color,
+    String status,
+  ) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+      child: GestureDetector(
+        onTap: () => context.push(
+          Uri(
+            path: '/supervisor/reports/filter',
+            queryParameters: {'status': status},
+          ).toString(),
         ),
-        child: Column(
-          children: [
-            Text(
-              count.toString(),
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: color,
-                fontSize: 16,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            Text(label, style: TextStyle(fontSize: 10, color: color)),
-          ],
+              Text(label, style: TextStyle(fontSize: 10, color: color)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildQuickActions() {
-    return Row(
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
       children: [
-        Expanded(
-          child: _buildActionButton(
-            'Lihat Laporan',
-            LucideIcons.fileText,
-            Colors.blue,
-            () => context.push('/supervisor/reports'),
-          ),
-        ),
-        const Gap(12),
-        Expanded(
-          child: _buildActionButton(
-            'Export Data',
-            LucideIcons.download,
-            Colors.green,
-            () => context.push('/supervisor/export'),
-          ),
-        ),
-        const Gap(12),
-        Expanded(
-          child: _buildActionButton(
-            'Arsip',
-            LucideIcons.archive,
-            Colors.orange,
-            () => context.push('/supervisor/archive'),
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildActionButton(
+                'Review Penolakan',
+                LucideIcons.xCircle,
+                Colors.red,
+                () => context.push('/supervisor/rejected'),
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: _buildActionButton(
+                'Export',
+                LucideIcons.download,
+                Colors.green,
+                () => context.push('/supervisor/export'),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -426,6 +490,7 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
   }
 
   Widget _buildSectionHeader(
+    BuildContext context,
     String title,
     String actionText,
     VoidCallback onTap,
@@ -442,7 +507,7 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
     );
   }
 
-  Widget _buildPendingReviewList() {
+  Widget _buildPendingReviewList(BuildContext context) {
     if (_pendingReview.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -569,24 +634,24 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
       ),
       child: Column(
         children: _technicians.map((tech) {
-          final completionRate = tech['handled'] > 0
-              ? (tech['completed'] / tech['handled'] * 100).toInt()
-              : 0;
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Row(
               children: [
+                // Avatar
                 CircleAvatar(
-                  backgroundColor: _supervisorColor.withOpacity(0.1),
+                  backgroundColor: supervisorColor.withOpacity(0.1),
                   child: Text(
                     tech['name'].toString().substring(0, 1),
                     style: const TextStyle(
-                      color: _supervisorColor,
+                      color: supervisorColor,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 const Gap(12),
+
+                // Name & Role
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -595,41 +660,47 @@ class _SupervisorHomePageState extends State<SupervisorHomePage> {
                         tech['name'],
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      const Gap(4),
-                      LinearProgressIndicator(
-                        value: completionRate / 100,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          completionRate >= 90
+                      Text(
+                        'Teknisi ${tech['status'] == 'online' ? '• Online' : '• Offline'}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: tech['status'] == 'online'
                               ? Colors.green
-                              : completionRate >= 70
-                              ? Colors.orange
-                              : Colors.red,
+                              : Colors.grey,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Gap(12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      '${tech['completed']}/${tech['handled']}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      '$completionRate%',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: completionRate >= 90
-                            ? Colors.green
-                            : completionRate >= 70
-                            ? Colors.orange
-                            : Colors.red,
+
+                // Simple Stats: Done / Total
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        LucideIcons.checkCircle2,
+                        size: 14,
+                        color: Colors.green,
                       ),
-                    ),
-                  ],
+                      const Gap(4),
+                      Text(
+                        '${tech['completed']}/${tech['handled']}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

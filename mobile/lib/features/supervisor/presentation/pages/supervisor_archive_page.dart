@@ -62,10 +62,7 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
         title: const Text('Arsip Laporan'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(LucideIcons.arrowLeft),
-        ),
+        automaticallyImplyLeading: false, // No back button for shell tab
         actions: [
           IconButton(
             onPressed: _showExportDialog,
@@ -173,101 +170,112 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
   }
 
   Widget _buildArchiveCard(Map<String, dynamic> archive) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.checkCircle2,
-                      size: 12,
-                      color: Colors.green,
-                    ),
-                    Gap(4),
-                    Text(
-                      'Selesai',
-                      style: TextStyle(
+    return GestureDetector(
+      onTap: () {
+        context.push('/supervisor/review/${archive['id']}');
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.checkCircle2,
+                        size: 12,
                         color: Colors.green,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                  ],
+                      Gap(4),
+                      Text(
+                        'Selesai',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Gap(8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(6),
+                const Gap(8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    archive['category'],
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
+                  ),
                 ),
-                child: Text(
-                  archive['category'],
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
+                const Spacer(),
+                Text(
+                  _formatDate(archive['completedAt']),
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                 ),
-              ),
-              const Spacer(),
-              Text(
-                _formatDate(archive['completedAt']),
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-              ),
-            ],
-          ),
-          const Gap(10),
-          Text(
-            archive['title'],
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          const Gap(8),
-          Row(
-            children: [
-              Icon(LucideIcons.mapPin, size: 14, color: Colors.grey.shade500),
-              const Gap(4),
-              Text(
-                archive['building'],
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-              ),
-              const Gap(16),
-              Icon(LucideIcons.user, size: 14, color: Colors.grey.shade500),
-              const Gap(4),
-              Text(
-                archive['teknisi'],
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-              ),
-              const Gap(16),
-              Icon(LucideIcons.timer, size: 14, color: Colors.grey.shade500),
-              const Gap(4),
-              Text(
-                archive['duration'],
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const Gap(10),
+            Text(
+              archive['title'],
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            ),
+            const Gap(8),
+            Row(
+              children: [
+                Icon(LucideIcons.mapPin, size: 14, color: Colors.grey.shade500),
+                const Gap(4),
+                Text(
+                  archive['building'],
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+                const Gap(16),
+                Icon(LucideIcons.user, size: 14, color: Colors.grey.shade500),
+                const Gap(4),
+                Text(
+                  archive['teknisi'],
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+                const Gap(16),
+                Icon(LucideIcons.timer, size: 14, color: Colors.grey.shade500),
+                const Gap(4),
+                Text(
+                  archive['duration'],
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

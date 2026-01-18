@@ -3,25 +3,28 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 
-class TeknisiProfilePage extends StatelessWidget {
-  const TeknisiProfilePage({super.key});
+/// Profile page for Supervisor (tab 3 in shell)
+/// This page shows supervisor profile info WITHOUT bottom navigation bar
+class SupervisorProfilePage extends StatelessWidget {
+  const SupervisorProfilePage({super.key});
 
-  // TODO: [BACKEND] Fetch technician profile from API
+  // TODO: [BACKEND] Fetch supervisor profile from API
   Map<String, dynamic> get _profile => {
-    'name': 'Budi Teknisi',
-    'nip': '198501152010011001',
-    'email': 'budi.teknisi@undip.ac.id',
+    'name': 'Dr. Ahmad Supervisor',
+    'nip': '197001012000011001',
+    'email': 'ahmad.supervisor@undip.ac.id',
     'phone': '08123456789',
-    'department': 'Unit Pemeliharaan',
-    'specialization': 'Kelistrikan & AC',
+    'department': 'UP2TI FSM Undip',
+    'position': 'Kepala Unit',
   };
 
-  // TODO: [BACKEND] Fetch technician statistics from API
+  // TODO: [BACKEND] Fetch supervisor statistics from API
   Map<String, int> get _stats => {
-    'handled': 25,
-    'completed': 23,
-    'inProgress': 2,
+    'reviewed': 150,
+    'approved': 145,
+    'recalled': 5,
   };
 
   @override
@@ -49,16 +52,13 @@ class TeknisiProfilePage extends StatelessWidget {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.secondaryColor.withOpacity(0.1),
-                      border: Border.all(
-                        color: AppTheme.secondaryColor,
-                        width: 3,
-                      ),
+                      color: supervisorColor.withOpacity(0.1),
+                      border: Border.all(color: supervisorColor, width: 3),
                     ),
                     child: const Icon(
-                      LucideIcons.wrench,
+                      LucideIcons.clipboardCheck,
                       size: 48,
-                      color: AppTheme.secondaryColor,
+                      color: supervisorColor,
                     ),
                   ),
                   const Gap(16),
@@ -81,22 +81,22 @@ class TeknisiProfilePage extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.secondaryColor.withOpacity(0.1),
+                      color: supervisorColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          LucideIcons.wrench,
+                          LucideIcons.shield,
                           size: 14,
-                          color: AppTheme.secondaryColor,
+                          color: supervisorColor,
                         ),
                         const Gap(4),
                         Text(
-                          "Teknisi",
+                          "Supervisor",
                           style: TextStyle(
-                            color: AppTheme.secondaryColor,
+                            color: supervisorColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -138,9 +138,9 @@ class TeknisiProfilePage extends StatelessWidget {
                   ),
                   const Divider(height: 24),
                   _InfoRow(
-                    icon: LucideIcons.wrench,
-                    label: "Spesialisasi",
-                    value: _profile['specialization'],
+                    icon: LucideIcons.briefcase,
+                    label: "Jabatan",
+                    value: _profile['position'],
                   ),
                 ],
               ),
@@ -159,25 +159,25 @@ class TeknisiProfilePage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _StatItem(
-                      icon: LucideIcons.fileText,
-                      value: _stats['handled'].toString(),
-                      label: "Ditangani",
+                      icon: LucideIcons.fileCheck,
+                      value: _stats['reviewed'].toString(),
+                      label: "Di-review",
                     ),
                   ),
                   Container(width: 1, height: 40, color: Colors.grey.shade200),
                   Expanded(
                     child: _StatItem(
                       icon: LucideIcons.checkCircle,
-                      value: _stats['completed'].toString(),
-                      label: "Selesai",
+                      value: _stats['approved'].toString(),
+                      label: "Disetujui",
                     ),
                   ),
                   Container(width: 1, height: 40, color: Colors.grey.shade200),
                   Expanded(
                     child: _StatItem(
-                      icon: LucideIcons.clock,
-                      value: _stats['inProgress'].toString(),
-                      label: "Proses",
+                      icon: LucideIcons.refreshCw,
+                      value: _stats['recalled'].toString(),
+                      label: "Ditolak",
                     ),
                   ),
                 ],
@@ -195,19 +195,18 @@ class TeknisiProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   _MenuItem(
-                    icon: LucideIcons.user,
-                    label: "Edit Profil",
-                    onTap: () => context.push('/teknisi/edit-profile'),
-                  ),
-                  _MenuItem(
                     icon: LucideIcons.settings,
                     label: "Pengaturan",
-                    onTap: () => context.push('/teknisi/settings'),
+                    onTap: () {
+                      // TODO: [BACKEND] Implement settings page
+                    },
                   ),
                   _MenuItem(
                     icon: LucideIcons.helpCircle,
                     label: "Bantuan",
-                    onTap: () => context.push('/teknisi/help'),
+                    onTap: () {
+                      // TODO: [BACKEND] Implement help page
+                    },
                   ),
                   _MenuItem(
                     icon: LucideIcons.logOut,
@@ -275,7 +274,7 @@ class _StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, color: AppTheme.secondaryColor),
+        Icon(icon, color: supervisorColor),
         const Gap(4),
         Text(
           value,

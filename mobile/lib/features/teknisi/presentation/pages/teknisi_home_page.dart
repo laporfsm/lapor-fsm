@@ -16,6 +16,8 @@ class TeknisiHomePage extends StatefulWidget {
 
 class _TeknisiHomePageState extends State<TeknisiHomePage> {
   int _currentIndex = 0;
+  String _selectedCategory = 'all';
+  final List<String> _categories = ['all', 'Kelistrikan', 'Sanitasi / Air', 'Sipil & Bangunan', 'K3 Lab'];
   Timer? _timer;
 
   // TODO: [BACKEND] Replace with API call to fetch pending reports
@@ -90,6 +92,12 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
   List<Map<String, dynamic>> get _emergencyReports =>
       _pendingReports.where((r) => r['isEmergency'] == true).toList();
 
+  // Filtered by category
+  List<Map<String, dynamic>> get _filteredRegularReports {
+    if (_selectedCategory == 'all') return _regularReports;
+    return _regularReports.where((r) => r['category'] == _selectedCategory).toList();
+  }
+
   List<Map<String, dynamic>> get _regularReports =>
       _pendingReports.where((r) => r['isEmergency'] != true).toList();
 
@@ -138,9 +146,10 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
           // Tab 0: Laporan Umum (Regular reports)
           _buildReportsPage(
             title: 'Laporan Umum',
-            reports: _regularReports,
+            reports: _filteredRegularReports,
             emptyMessage: 'Tidak ada laporan umum',
             emptyIcon: LucideIcons.inbox,
+            showCategoryFilter: true,
           ),
           // Tab 1: Laporan Darurat (Emergency reports)
           _buildReportsPage(
@@ -215,6 +224,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
     required IconData emptyIcon,
     bool isEmergencyTab = false,
     bool isActiveTab = false,
+    bool showCategoryFilter = false,
   }) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,

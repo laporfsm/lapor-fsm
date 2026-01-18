@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1E3A8A); // Deep Blue (FSM/Undip vibe)
+  static const Color primaryColor = Color(
+    0xFF1E3A8A,
+  ); // Deep Blue (FSM/Undip vibe)
   static const Color secondaryColor = Color(0xFFF59E0B); // Amber (Alert/Action)
   static const Color emergencyColor = Color(0xFFDC2626); // Red (Emergency)
+  static const Color supervisorColor = Color(
+    0xFF3730A3,
+  ); // Indigo 800 (Supervisor Theme)
   static const Color backgroundColor = Color(0xFFF3F4F6); // Light Gray
 
   static ThemeData get lightTheme {
@@ -46,7 +51,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
