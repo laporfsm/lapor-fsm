@@ -1096,7 +1096,9 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           children: [
             if (status == 'pending') ...[
               // Reject Button
+              // Reject Button
               Expanded(
+                flex: 1,
                 child: OutlinedButton.icon(
                   onPressed: _rejectReport,
                   icon: const Icon(LucideIcons.x),
@@ -1111,6 +1113,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
               const Gap(12),
               // Verify & Handle Button - combined action
               Expanded(
+                flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: _verifyAndHandle,
                   icon: const Icon(LucideIcons.checkCircle),

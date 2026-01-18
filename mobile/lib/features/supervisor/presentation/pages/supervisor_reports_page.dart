@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
 // Supervisor theme color
-const Color _supervisorColor = Color(0xFF059669);
+const Color _supervisorColor = Color(0xFF3730A3);
 
 class SupervisorReportsPage extends StatefulWidget {
   const SupervisorReportsPage({super.key});

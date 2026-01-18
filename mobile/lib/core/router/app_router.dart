@@ -25,11 +25,17 @@ import 'package:mobile/features/teknisi/presentation/pages/teknisi_complete_repo
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_map_view_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_settings_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_help_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_edit_profile_page.dart';
 // Supervisor imports
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_home_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_review_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_archive_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_rejected_reports_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_export_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_detail_page.dart';
 // Admin imports
 import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
@@ -230,17 +236,37 @@ final appRouter = GoRouter(
       path: '/teknisi/help',
       builder: (context, state) => const TeknisiHelpPage(),
     ),
+    GoRoute(
+      path: '/teknisi/edit-profile',
+      builder: (context, state) => const TeknisiEditProfilePage(),
+    ),
 
     // ===============================================
     // SUPERVISOR ROUTES
     // ===============================================
+    // Main supervisor shell with persistent bottom navigation
     GoRoute(
       path: '/supervisor',
-      builder: (context, state) => const SupervisorHomePage(),
+      builder: (context, state) => const SupervisorShellPage(),
     ),
+    // Detail page (opened on top of shell, has back button)
     GoRoute(
       path: '/supervisor/reports',
       builder: (context, state) => const SupervisorReportsPage(),
+    ),
+    // Filtered reports page with query parameters
+    GoRoute(
+      path: '/supervisor/reports/filter',
+      builder: (context, state) {
+        final status = state.uri.queryParameters['status'];
+        final period = state.uri.queryParameters['period'];
+        final emergency = state.uri.queryParameters['emergency'] == 'true';
+        return SupervisorReportsListPage(
+          initialStatus: status,
+          initialPeriod: period,
+          showEmergencyOnly: emergency,
+        );
+      },
     ),
     GoRoute(
       path: '/supervisor/review/:id',
@@ -255,6 +281,27 @@ final appRouter = GoRouter(
       path: '/supervisor/profile',
       builder: (context, state) => const StaffProfilePage(role: 'supervisor'),
     ),
+    // Rejected reports review page
+    GoRoute(
+      path: '/supervisor/rejected',
+      builder: (context, state) => const SupervisorRejectedReportsPage(),
+    ),
+    // Export Reports Page
+    GoRoute(
+      path: '/supervisor/export',
+      builder: (context, state) => const SupervisorExportPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/technicians',
+      builder: (context, state) => const SupervisorTechnicianListPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/technician/:id',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        return SupervisorTechnicianDetailPage(technicianId: id);
+      },
+    ),
 
     // ===============================================
     // ADMIN SHELL ROUTE - Persistent Bottom Nav
@@ -262,10 +309,7 @@ final appRouter = GoRouter(
     ShellRoute(
       navigatorKey: GlobalKey<NavigatorState>(),
       builder: (context, state, child) {
-        return AdminShell(
-          currentLocation: state.uri.path,
-          child: child,
-        );
+        return AdminShell(currentLocation: state.uri.path, child: child);
       },
       routes: [
         // Bottom Nav Tabs
@@ -300,7 +344,7 @@ final appRouter = GoRouter(
         ),
       ],
     ),
-    
+
     // Admin pages outside shell (focused views without bottom nav)
   ],
 );
