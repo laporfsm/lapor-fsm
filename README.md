@@ -101,8 +101,8 @@ lapor-fsm/
 
 | Role | Deskripsi | Fitur Utama |
 |------|-----------|-------------|
-| **Pelapor** | Mahasiswa & Dosen FSM | Kirim laporan, lacak status real-time, pantau public feed |
-| **Teknisi** | Responder/UP2TI | Validasi laporan, ubah status lifecycle, tangani masalah di lokasi |
+| **Pelapor** | Warga FSM | Kirim laporan, lacak status real-time, pantau public feed |
+| **Teknisi** | Responder | Validasi laporan, ubah status lifecycle, tangani masalah di lokasi |
 | **Supervisor** | Manajer | Evaluasi kinerja, lihat arsip, unduh laporan PDF/Excel |
 | **Admin** | Pengelola Sistem | Kelola akun pengguna, hak akses, dan kategori laporan |
 
@@ -118,13 +118,10 @@ lapor-fsm/
 
 ### 🟢 Non-Emergency
 
-**Maintenance:**
 - Infrastruktur Kelas
 - Kelistrikan
 - Sipil & Bangunan
 - Sanitasi / Air
-
-**Kebersihan dan Ketertiban:**
 - Kebersihan Area
 - Taman / Outdoor
 - Lain-lain
@@ -194,11 +191,31 @@ lapor-fsm/
 ### Status Lifecycle Laporan
 
 ```
-pending ──► verifikasi ──► penanganan ──► selesai
-                              │
-                              ▼
-                      penanganan_ulang
+PENDING ──► VERIFIKASI ──► PENANGANAN ──► SELESAI ──► APPROVED (Arsip)
+                │                            │
+                ▼                            ▼
+             DITOLAK                      RECALLED
+                │                            │
+                ▼                            ▼
+        [Supervisor Review]          [Kembali ke Teknisi]
+              │   │
+              ▼   ▼
+          ARSIP   KEMBALIKAN
 ```
+
+#### Keterangan Status:
+
+| Status | Deskripsi |
+|--------|-----------|
+| **PENDING** | Laporan baru masuk, menunggu verifikasi teknisi |
+| **VERIFIKASI** | Teknisi sedang memverifikasi laporan |
+| **PENANGANAN** | Laporan sedang dalam proses penanganan oleh teknisi |
+| **SELESAI** | Teknisi menyelesaikan penanganan, menunggu review supervisor |
+| **APPROVED** | Supervisor menyetujui hasil penanganan → masuk arsip |
+| **DITOLAK** | Teknisi menolak laporan, menunggu review supervisor |
+| **RECALLED** | Supervisor meminta teknisi untuk menangani ulang |
+| **ARSIP** | Laporan yang ditolak dan disetujui supervisor untuk diarsipkan |
+| **KEMBALIKAN** | Laporan ditolak dikembalikan ke teknisi untuk ditinjau ulang |
 
 ---
 
@@ -265,7 +282,7 @@ Edit konfigurasi API di:
 
 ---
 
-## 📖 Dokumentasi API
+<!-- ## 📖 Dokumentasi API
 
 ### Base URL
 ```
@@ -288,7 +305,7 @@ http://localhost:3000
 | **Upload** |||
 | `POST` | `/upload` | Upload file multimedia |
 
----
+--- -->
 
 ## 📱 Fitur Per Role
 
@@ -365,18 +382,18 @@ Backend (ElysiaJS)
 └── Sulhan: src/controllers/reporter, src/controllers/admin
 ```
 
----
-
+<!-- --- -->
+<!-- 
 ## 📋 Metodologi Pengembangan
 
 - **Agile Development**: Untuk fleksibilitas pengembangan fitur
-- **ICONIX Process**: Pendekatan berorientasi objek
+- **ICONIX Process**: Pendekatan berorientasi objek -->
 
-### Diagram yang Dikembangkan
+<!-- ### Diagram yang Dikembangkan
 - Use Case Diagram
 - Robustness Diagram
 - Sequence Diagram
-- Class Diagram
+- Class Diagram -->
 
 <!-- ---
 
