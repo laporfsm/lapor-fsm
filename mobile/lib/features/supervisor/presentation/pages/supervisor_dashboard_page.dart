@@ -40,13 +40,6 @@ class SupervisorDashboardPage extends StatelessWidget {
     },
   ];
 
-  // TODO: [BACKEND] Replace with API call to fetch technicians
-  List<Map<String, dynamic>> get _technicians => [
-    {'id': 1, 'name': 'Budi Teknisi', 'handled': 15, 'completed': 14},
-    {'id': 2, 'name': 'Andi Teknisi', 'handled': 12, 'completed': 12},
-    {'id': 3, 'name': 'Citra Teknisi', 'handled': 8, 'completed': 7},
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -138,26 +131,18 @@ class SupervisorDashboardPage extends StatelessWidget {
                 context,
                 'Menunggu Review',
                 'Lihat Semua',
-                // Navigate to finished reports (assuming pending review usually means finished)
+                // Navigate to finished reports
                 () => context.push(
                   Uri(
                     path: '/supervisor/reports/filter',
-                    queryParameters: {'status': 'selesai'},
+                    queryParameters: {
+                      'status': 'done',
+                    }, // Changed to 'done' (selesai)
                   ).toString(),
                 ),
               ),
               const Gap(12),
               _buildPendingReviewList(context),
-              const Gap(24),
-              _buildSectionHeader(
-                context,
-                'Log Aktivitas Teknisi',
-                'Lihat Semua',
-                // Navigate to technician list
-                () => context.push('/supervisor/technicians'),
-              ),
-              const Gap(12),
-              _buildTechnicianPerformance(),
               const Gap(24),
             ],
           ),
@@ -270,6 +255,54 @@ class SupervisorDashboardPage extends StatelessWidget {
               'month',
             ),
           ],
+        ),
+        const Gap(12),
+        // Clickable Stats Header
+        GestureDetector(
+          onTap: () => context.push('/supervisor/statistics'),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryColor.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.barChart2,
+                      color: AppTheme.primaryColor,
+                      size: 20,
+                    ),
+                    const Gap(8),
+                    const Text(
+                      'Lihat Statistik Lengkap',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: AppTheme.primaryColor,
+                ),
+              ],
+            ),
+          ),
         ),
         const Gap(12),
         Container(
@@ -615,98 +648,6 @@ class SupervisorDashboardPage extends StatelessWidget {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildTechnicianPerformance() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: _technicians.map((tech) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                // Avatar
-                CircleAvatar(
-                  backgroundColor: supervisorColor.withOpacity(0.1),
-                  child: Text(
-                    tech['name'].toString().substring(0, 1),
-                    style: const TextStyle(
-                      color: supervisorColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const Gap(12),
-
-                // Name & Role
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        tech['name'],
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        'Teknisi ${tech['status'] == 'online' ? '• Online' : '• Offline'}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: tech['status'] == 'online'
-                              ? Colors.green
-                              : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Simple Stats: Done / Total
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        LucideIcons.checkCircle2,
-                        size: 14,
-                        color: Colors.green,
-                      ),
-                      const Gap(4),
-                      Text(
-                        '${tech['completed']}/${tech['handled']}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
     );
   }
 }

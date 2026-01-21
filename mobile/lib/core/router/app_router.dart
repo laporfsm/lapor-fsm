@@ -36,6 +36,10 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_rejecte
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_export_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_detail_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_statistics_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_form_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_settings_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_help_page.dart';
 // Admin imports
 import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
@@ -254,6 +258,10 @@ final appRouter = GoRouter(
       path: '/supervisor/reports',
       builder: (context, state) => const SupervisorReportsPage(),
     ),
+    GoRoute(
+      path: '/supervisor/statistics',
+      builder: (context, state) => const SupervisorStatisticsPage(),
+    ),
     // Filtered reports page with query parameters
     GoRoute(
       path: '/supervisor/reports/filter',
@@ -301,6 +309,24 @@ final appRouter = GoRouter(
         final id = state.pathParameters['id']!;
         return SupervisorTechnicianDetailPage(technicianId: id);
       },
+    ),
+    GoRoute(
+      path: '/supervisor/technicians/add',
+      builder: (context, state) => const SupervisorTechnicianFormPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/technicians/edit/:id',
+      builder: (context, state) => SupervisorTechnicianFormPage(
+        technicianId: state.pathParameters['id'],
+      ),
+    ),
+    GoRoute(
+      path: '/supervisor/settings',
+      builder: (context, state) => const SupervisorSettingsPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/help',
+      builder: (context, state) => const SupervisorHelpPage(),
     ),
 
     // ===============================================
