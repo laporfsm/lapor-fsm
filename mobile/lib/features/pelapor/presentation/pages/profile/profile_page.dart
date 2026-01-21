@@ -32,9 +32,16 @@ class ProfilePage extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppTheme.primaryColor.withOpacity(0.1),
-                      border: Border.all(color: AppTheme.primaryColor, width: 3),
+                      border: Border.all(
+                        color: AppTheme.primaryColor,
+                        width: 3,
+                      ),
                     ),
-                    child: const Icon(LucideIcons.user, size: 48, color: AppTheme.primaryColor),
+                    child: const Icon(
+                      LucideIcons.user,
+                      size: 48,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                   const Gap(16),
                   const Text(
@@ -48,7 +55,10 @@ class ProfilePage extends StatelessWidget {
                   ),
                   const Gap(8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -56,9 +66,16 @@ class ProfilePage extends StatelessWidget {
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.checkCircle, size: 14, color: Colors.green),
+                        Icon(
+                          LucideIcons.checkCircle,
+                          size: 14,
+                          color: Colors.green,
+                        ),
                         Gap(4),
-                        Text("Akun Terverifikasi", style: TextStyle(color: Colors.green, fontSize: 12)),
+                        Text(
+                          "Akun Terverifikasi",
+                          style: TextStyle(color: Colors.green, fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -77,13 +94,29 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _InfoRow(icon: LucideIcons.mail, label: "Email", value: "sulhan.fuadi@students.undip.ac.id"),
+                  _InfoRow(
+                    icon: LucideIcons.mail,
+                    label: "Email",
+                    value: "sulhan.fuadi@students.undip.ac.id",
+                  ),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.hash, label: "NIM/NIP", value: "24060123130115"),
+                  _InfoRow(
+                    icon: LucideIcons.hash,
+                    label: "NIM/NIP",
+                    value: "24060123130115",
+                  ),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.phone, label: "Nomor HP", value: "081234567890"),
+                  _InfoRow(
+                    icon: LucideIcons.phone,
+                    label: "Nomor HP",
+                    value: "081234567890",
+                  ),
                   const Divider(height: 24),
-                  _InfoRow(icon: LucideIcons.mapPin, label: "Alamat", value: "Tembalang, Semarang"),
+                  _InfoRow(
+                    icon: LucideIcons.mapPin,
+                    label: "Alamat",
+                    value: "Tembalang, Semarang",
+                  ),
                 ],
               ),
             ),
@@ -103,18 +136,33 @@ class ProfilePage extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 18),
+                      Icon(
+                        LucideIcons.alertCircle,
+                        color: Colors.red.shade700,
+                        size: 18,
+                      ),
                       const Gap(8),
                       Text(
                         'Kontak Darurat',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade700),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red.shade700,
+                        ),
                       ),
                     ],
                   ),
                   const Gap(12),
-                  _InfoRow(icon: LucideIcons.userCircle, label: "Nama", value: "Budi Santoso"),
+                  _InfoRow(
+                    icon: LucideIcons.userCircle,
+                    label: "Nama",
+                    value: "Budi Santoso",
+                  ),
                   const Divider(height: 20),
-                  _InfoRow(icon: LucideIcons.phoneCall, label: "Nomor HP", value: "081298765432"),
+                  _InfoRow(
+                    icon: LucideIcons.phoneCall,
+                    label: "Nomor HP",
+                    value: "081298765432",
+                  ),
                 ],
               ),
             ),
@@ -130,11 +178,29 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _StatItem(icon: LucideIcons.fileText, value: "12", label: "Laporan")),
+                  Expanded(
+                    child: _StatItem(
+                      icon: LucideIcons.fileText,
+                      value: "12",
+                      label: "Laporan",
+                    ),
+                  ),
                   Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  Expanded(child: _StatItem(icon: LucideIcons.checkCircle, value: "10", label: "Selesai")),
+                  Expanded(
+                    child: _StatItem(
+                      icon: LucideIcons.checkCircle,
+                      value: "10",
+                      label: "Selesai",
+                    ),
+                  ),
                   Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  Expanded(child: _StatItem(icon: LucideIcons.clock, value: "2", label: "Proses")),
+                  Expanded(
+                    child: _StatItem(
+                      icon: LucideIcons.clock,
+                      value: "2",
+                      label: "Proses",
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -149,16 +215,56 @@ class ProfilePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _MenuItem(icon: LucideIcons.edit, label: "Edit Profil", onTap: () => context.push('/edit-profile')),
-                  _MenuItem(icon: LucideIcons.settings, label: "Pengaturan", onTap: () => context.push('/settings')),
-                  _MenuItem(icon: LucideIcons.helpCircle, label: "Bantuan", onTap: () => context.push('/help')),
-                  _MenuItem(icon: LucideIcons.logOut, label: "Keluar", onTap: () => context.go('/login'), isDestructive: true),
+                  _MenuItem(
+                    icon: LucideIcons.edit,
+                    label: "Edit Profil",
+                    onTap: () => context.push('/edit-profile'),
+                  ),
+                  _MenuItem(
+                    icon: LucideIcons.settings,
+                    label: "Pengaturan",
+                    onTap: () => context.push('/settings'),
+                  ),
+                  _MenuItem(
+                    icon: LucideIcons.helpCircle,
+                    label: "Bantuan",
+                    onTap: () => context.push('/help'),
+                  ),
+                  _MenuItem(
+                    icon: LucideIcons.logOut,
+                    label: "Keluar",
+                    onTap: () => _showLogoutConfirmation(context),
+                    isDestructive: true,
+                  ),
                 ],
               ),
             ),
             const Gap(32),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.pop(); // Close dialog
+              context.go('/login');
+            },
+            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
@@ -169,7 +275,11 @@ class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,7 +291,10 @@ class _InfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
               Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
@@ -196,7 +309,11 @@ class _StatItem extends StatelessWidget {
   final String value;
   final String label;
 
-  const _StatItem({required this.icon, required this.value, required this.label});
+  const _StatItem({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -204,7 +321,10 @@ class _StatItem extends StatelessWidget {
       children: [
         Icon(icon, color: AppTheme.primaryColor),
         const Gap(4),
-        Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(
+          value,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
         Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
@@ -217,13 +337,24 @@ class _MenuItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool isDestructive;
 
-  const _MenuItem({required this.icon, required this.label, required this.onTap, this.isDestructive = false});
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: isDestructive ? Colors.red : Colors.grey.shade700),
-      title: Text(label, style: TextStyle(color: isDestructive ? Colors.red : Colors.black)),
+      leading: Icon(
+        icon,
+        color: isDestructive ? Colors.red : Colors.grey.shade700,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(color: isDestructive ? Colors.red : Colors.black),
+      ),
       trailing: const Icon(LucideIcons.chevronRight, size: 18),
       onTap: onTap,
     );

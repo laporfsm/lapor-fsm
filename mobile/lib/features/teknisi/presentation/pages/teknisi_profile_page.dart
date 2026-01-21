@@ -212,7 +212,7 @@ class TeknisiProfilePage extends StatelessWidget {
                   _MenuItem(
                     icon: LucideIcons.logOut,
                     label: "Keluar",
-                    onTap: () => context.go('/login'),
+                    onTap: () => _showLogoutConfirmation(context),
                     isDestructive: true,
                   ),
                 ],
@@ -221,6 +221,29 @@ class TeknisiProfilePage extends StatelessWidget {
             const Gap(32),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Logout'),
+        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi?'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.pop(); // Close dialog
+              context.go('/login');
+            },
+            child: const Text('Keluar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

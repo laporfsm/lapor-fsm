@@ -4,6 +4,7 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_dashboa
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_archive_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_profile_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_main_page.dart';
 
 /// Supervisor theme color - Dark Blue-Purple (Indigo 800) (differentiated from Pelapor blue & Teknisi orange)
 const Color supervisorColor = Color(0xFF3730A3);
@@ -24,9 +25,10 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
   // NOTE: Each page should NOT have its own Scaffold with bottom nav
   final List<Widget> _pages = const [
     SupervisorDashboardPage(), // Tab 0: Dashboard
-    SupervisorReportsListPage(), // Tab 1: Semua Laporan
-    SupervisorArchivePage(), // Tab 2: Arsip
-    SupervisorProfilePage(), // Tab 3: Profil
+    SupervisorTechnicianMainPage(), // Tab 1: Teknisi (NEW)
+    SupervisorReportsListPage(), // Tab 2: Laporan
+    SupervisorArchivePage(), // Tab 3: Arsip
+    SupervisorProfilePage(), // Tab 4: Profil
   ];
 
   @override
@@ -45,6 +47,10 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
           BottomNavigationBarItem(
             icon: Icon(LucideIcons.home),
             label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(LucideIcons.users),
+            label: 'Teknisi',
           ),
           BottomNavigationBarItem(
             icon: Icon(LucideIcons.fileText),

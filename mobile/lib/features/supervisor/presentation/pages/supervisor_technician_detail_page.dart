@@ -84,6 +84,38 @@ class _SupervisorTechnicianDetailPageState
     });
   }
 
+  void _deleteTechnician() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Teknisi?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus data teknisi "${_technician['name']}"? Tindakan ini tidak dapat dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              // TODO: [BACKEND] Delete technician API call
+              context.pop(); // Close dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Teknisi berhasil dihapus'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              context.pop(true); // Return to list and refresh
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -101,6 +133,24 @@ class _SupervisorTechnicianDetailPageState
           icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.pencil, color: Colors.blue),
+            onPressed: () async {
+              final result = await context.push(
+                '/supervisor/technicians/edit/${widget.technicianId}',
+              );
+              if (result == true) {
+                _loadTechnicianData(); // Refresh data
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(LucideIcons.trash2, color: Colors.red),
+            onPressed: _deleteTechnician,
+          ),
+          const Gap(8),
+        ],
         titleTextStyle: const TextStyle(
           color: Colors.black,
           fontWeight: FontWeight.bold,
