@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 
 class AppTheme {
   static const Color primaryColor = Color(
@@ -10,7 +11,59 @@ class AppTheme {
   static const Color supervisorColor = Color(
     0xFF3730A3,
   ); // Indigo 800 (Supervisor Theme)
+  static const Color adminColor = Color(0xFF059669); // Emerald (Admin Theme)
   static const Color backgroundColor = Color(0xFFF3F4F6); // Light Gray
+
+  // Standard border radius for cards
+  static const double cardBorderRadius = 12.0;
+
+  /// Get color for report status
+  static Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.grey;
+      case 'verifikasi':
+        return Colors.orange;
+      case 'penanganan':
+        return Colors.blue;
+      case 'selesai':
+        return Colors.teal;
+      case 'approved':
+        return Colors.green;
+      case 'ditolak':
+        return Colors.red;
+      case 'recalled':
+        return Colors.deepOrange;
+      case 'archived':
+        return Colors.blueGrey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Get icon for report status
+  static IconData getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return LucideIcons.clock;
+      case 'verifikasi':
+        return LucideIcons.search;
+      case 'penanganan':
+        return LucideIcons.wrench;
+      case 'selesai':
+        return LucideIcons.checkCircle;
+      case 'approved':
+        return LucideIcons.checkCircle2;
+      case 'ditolak':
+        return LucideIcons.xCircle;
+      case 'recalled':
+        return LucideIcons.refreshCw;
+      case 'archived':
+        return LucideIcons.archive;
+      default:
+        return LucideIcons.circle;
+    }
+  }
 
   static ThemeData get lightTheme {
     return ThemeData(

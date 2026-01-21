@@ -8,39 +8,40 @@ class TeknisiHistoryPage extends StatelessWidget {
   const TeknisiHistoryPage({super.key});
 
   // TODO: [BACKEND] Replace with API call to get technician's completed reports
+  // IDs should match MockReportData for consistency
   List<Map<String, dynamic>> get _completedReports => [
     {
-      'id': 101,
-      'title': 'AC Mati di Lab Komputer',
+      'id': '101',
+      'title': 'Lampu Koridor Mati',
       'category': 'Kelistrikan',
-      'building': 'Gedung G, Lt 2',
+      'building': 'Gedung E',
       'status': 'Selesai',
       'completedAt': '12 Jan 2026, 15:30',
       'duration': '45 menit',
       'handledBy': ['Budi Santoso'],
-      'supervisedBy': 'Pak Joko Widodo',
+      'supervisedBy': 'Pak Supervisor',
     },
     {
-      'id': 102,
-      'title': 'Kebocoran Pipa Toilet',
-      'category': 'Sipil & Bangunan',
-      'building': 'Gedung E, Lt 1',
-      'status': 'Selesai',
+      'id': '102',
+      'title': 'Kebocoran AC di Lab',
+      'category': 'Infrastruktur Kelas',
+      'building': 'Gedung C',
+      'status': 'Penanganan',
       'completedAt': '11 Jan 2026, 10:00',
       'duration': '1 jam 20 menit',
-      'handledBy': ['Budi Santoso', 'Ahmad Hidayat'],
-      'supervisedBy': 'Pak Joko Widodo',
+      'handledBy': ['Joko Susilo', 'Rudi'],
+      'supervisedBy': null,
     },
     {
-      'id': 103,
-      'title': 'Lampu Koridor Mati',
-      'category': 'Kelistrikan',
-      'building': 'Gedung C, Lt 3',
-      'status': 'Selesai',
+      'id': '103',
+      'title': 'Kaca Jendela Retak',
+      'category': 'Sipil & Bangunan',
+      'building': 'Gedung B',
+      'status': 'Verifikasi',
       'completedAt': '10 Jan 2026, 14:15',
       'duration': '30 menit',
-      'handledBy': ['Ahmad Hidayat'],
-      'supervisedBy': 'Pak Susilo',
+      'handledBy': ['Budi Santoso'],
+      'supervisedBy': null,
     },
   ];
 
