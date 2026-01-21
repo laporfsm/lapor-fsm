@@ -39,7 +39,9 @@ class HomePage extends StatelessWidget {
                     child: Container(
                       decoration: const BoxDecoration(
                         image: DecorationImage(
-                          image: NetworkImage('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop'),
+                          image: NetworkImage(
+                            'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop',
+                          ),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -60,14 +62,21 @@ class HomePage extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: const Text(
                                 "UNIVERSITAS DIPONEGORO",
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 9,
+                                ),
                               ),
                             ),
                             const Gap(8),
@@ -125,7 +134,7 @@ class HomePage extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                   context.push('/emergency-report');
+                  context.push('/emergency-report');
                 },
                 child: Container(
                   height: 180,
@@ -181,7 +190,10 @@ class HomePage extends StatelessWidget {
                     children: [
                       Text(
                         "Laporan Non-Darurat",
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         "Pilih kategori untuk melaporkan kerusakan atau masalah fasilitas",
@@ -200,11 +212,17 @@ class HomePage extends StatelessWidget {
                           children: [
                             const Text(
                               "Info Terkini",
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
                               "Preview laporan terbaru",
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ],
@@ -235,14 +253,42 @@ class HomePage extends StatelessWidget {
     // Kategori sesuai detail proyek: Maintenance & Kebersihan
     final menus = [
       // Maintenance
-      {'icon': LucideIcons.building, 'label': 'Infrastruktur Kelas', 'color': Color(0xFF1E3A8A)},
-      {'icon': LucideIcons.zap, 'label': 'Kelistrikan', 'color': Color(0xFFF59E0B)},
-      {'icon': LucideIcons.hardHat, 'label': 'Sipil & Bangunan', 'color': Color(0xFF6366F1)},
-      {'icon': LucideIcons.droplet, 'label': 'Sanitasi / Air', 'color': Color(0xFF0EA5E9)},
+      {
+        'icon': LucideIcons.building,
+        'label': 'Infrastruktur Kelas',
+        'color': Color(0xFF1E3A8A),
+      },
+      {
+        'icon': LucideIcons.zap,
+        'label': 'Kelistrikan',
+        'color': Color(0xFFF59E0B),
+      },
+      {
+        'icon': LucideIcons.hardHat,
+        'label': 'Sipil & Bangunan',
+        'color': Color(0xFF6366F1),
+      },
+      {
+        'icon': LucideIcons.droplet,
+        'label': 'Sanitasi / Air',
+        'color': Color(0xFF0EA5E9),
+      },
       // Kebersihan dan Ketertiban
-      {'icon': LucideIcons.trash2, 'label': 'Kebersihan Area', 'color': Color(0xFF22C55E)},
-      {'icon': LucideIcons.trees, 'label': 'Taman / Outdoor', 'color': Color(0xFF10B981)},
-      {'icon': LucideIcons.moreHorizontal, 'label': 'Lain-lain', 'color': Colors.grey},
+      {
+        'icon': LucideIcons.trash2,
+        'label': 'Kebersihan Area',
+        'color': Color(0xFF22C55E),
+      },
+      {
+        'icon': LucideIcons.trees,
+        'label': 'Taman / Outdoor',
+        'color': Color(0xFF10B981),
+      },
+      {
+        'icon': LucideIcons.moreHorizontal,
+        'label': 'Lain-lain',
+        'color': Colors.grey,
+      },
     ];
 
     return GridView.builder(
@@ -259,10 +305,10 @@ class HomePage extends StatelessWidget {
         final menu = menus[index];
         return GestureDetector(
           onTap: () {
-            context.push('/create-report', extra: {
-              'category': menu['label'],
-              'isEmergency': false,
-            });
+            context.push(
+              '/create-report',
+              extra: {'category': menu['label'], 'isEmergency': false},
+            );
           },
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -273,13 +319,20 @@ class HomePage extends StatelessWidget {
                   color: (menu['color'] as Color).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(menu['icon'] as IconData, color: menu['color'] as Color, size: 22),
+                child: Icon(
+                  menu['icon'] as IconData,
+                  color: menu['color'] as Color,
+                  size: 22,
+                ),
               ),
               const Gap(6),
               Flexible(
                 child: Text(
                   menu['label'] as String,
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -293,31 +346,34 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _buildPublicFeed() {
-    // Mock data sesuai kategori dari detail proyek
+    // Mock data matching Feed page and report_detail_page
     final feedItems = [
       {
-        'title': 'AC Mati di Lab Komputer',
-        'category': 'Kelistrikan',
-        'building': 'Gedung G, Lt 2',
-        'time': '10 menit lalu',
+        'id': '1',
+        'title': 'AC Mati di Ruang E102',
+        'category': 'Maintenance',
+        'building': 'Gedung E',
+        'time': '2 jam lalu',
         'status': 'Penanganan',
         'color': Colors.orange,
       },
       {
+        'id': '2',
         'title': 'Kebocoran Pipa Toilet',
-        'category': 'Sanitasi / Air',
-        'building': 'Gedung C, Lt 1',
+        'category': 'Maintenance',
+        'building': 'Gedung C',
         'time': '30 menit lalu',
         'status': 'Verifikasi',
         'color': Colors.blue,
       },
       {
-        'title': 'Sampah Menumpuk',
-        'category': 'Kebersihan Area',
-        'building': 'Area Parkir',
+        'id': '4',
+        'title': 'Sampah Menumpuk Area Parkir',
+        'category': 'Kebersihan',
+        'building': 'Gedung A',
         'time': '1 jam lalu',
         'status': 'Pending',
-        'color': Colors.green,
+        'color': Colors.grey,
       },
     ];
 
@@ -329,7 +385,7 @@ class HomePage extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = feedItems[index];
         return GestureDetector(
-          onTap: () => context.push('/feed'),
+          onTap: () => context.push('/report-detail/${item['id']}'),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -354,7 +410,10 @@ class HomePage extends StatelessWidget {
                     color: (item['color'] as Color).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(LucideIcons.fileText, color: item['color'] as Color),
+                  child: Icon(
+                    LucideIcons.fileText,
+                    color: item['color'] as Color,
+                  ),
                 ),
                 const Gap(12),
                 Expanded(
@@ -364,7 +423,10 @@ class HomePage extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: (item['color'] as Color).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -381,7 +443,10 @@ class HomePage extends StatelessWidget {
                           const Spacer(),
                           Text(
                             item['time'] as String,
-                            style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 10,
+                            ),
                           ),
                         ],
                       ),
@@ -393,25 +458,38 @@ class HomePage extends StatelessWidget {
                       const Gap(2),
                       Row(
                         children: [
-                          Icon(LucideIcons.mapPin, size: 12, color: Colors.grey.shade500),
+                          Icon(
+                            LucideIcons.mapPin,
+                            size: 12,
+                            color: Colors.grey.shade500,
+                          ),
                           const Gap(4),
                           Flexible(
                             child: Text(
                               item['building'] as String,
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 11),
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 11,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           const Gap(8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
                               item['status'] as String,
-                              style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ),
                         ],

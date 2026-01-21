@@ -17,45 +17,52 @@ class TeknisiHomePage extends StatefulWidget {
 class _TeknisiHomePageState extends State<TeknisiHomePage> {
   int _currentIndex = 0;
   String _selectedCategory = 'all';
-  final List<String> _categories = ['all', 'Kelistrikan', 'Sanitasi / Air', 'Sipil & Bangunan', 'K3 Lab'];
+  final List<String> _categories = [
+    'all',
+    'Kelistrikan',
+    'Sanitasi / Air',
+    'Sipil & Bangunan',
+    'K3 Lab',
+  ];
   Timer? _timer;
 
   // TODO: [BACKEND] Replace with API call to fetch pending reports
+  // IDs should match MockReportData for consistency
   final List<Map<String, dynamic>> _pendingReports = [
     {
-      'id': 1,
-      'title': 'AC Mati di Lab Komputer',
-      'category': 'Kelistrikan',
-      'building': 'Gedung G, Lt 2',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 10)),
+      'id': '1',
+      'title': 'AC Mati di Ruang E102',
+      'category': 'Maintenance',
+      'building': 'Gedung E',
+      'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
       'isEmergency': false,
       'reporterName': 'Ahmad Fauzi',
-      'reporterPhone': '08123456789',
+      'reporterPhone': '081234567890',
     },
     {
-      'id': 2,
+      'id': '2',
       'title': 'Kebocoran Pipa Toilet',
-      'category': 'Sanitasi / Air',
-      'building': 'Gedung C, Lt 1',
+      'category': 'Maintenance',
+      'building': 'Gedung C',
       'createdAt': DateTime.now().subtract(const Duration(minutes: 30)),
       'isEmergency': false,
       'reporterName': 'Siti Aminah',
-      'reporterPhone': '08234567890',
+      'reporterPhone': '081234567891',
     },
     {
-      'id': 3,
-      'title': 'Kecelakaan di Lab Kimia',
-      'category': 'K3 Lab',
-      'building': 'Gedung D, Lt 3',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 2)),
+      'id': '3',
+      'title': 'Kebakaran di Lab Kimia',
+      'category': 'Emergency',
+      'building': 'Gedung D',
+      'createdAt': DateTime.now().subtract(const Duration(minutes: 5)),
       'isEmergency': true,
-      'reporterName': 'Budi Santoso',
-      'reporterPhone': '08345678901',
+      'reporterName': 'Rudi Hartono',
+      'reporterPhone': '081234567892',
     },
     {
-      'id': 5,
+      'id': '5',
       'title': 'Kebakaran Kecil di Kantin',
-      'category': 'K3 Lab',
+      'category': 'Emergency',
       'building': 'Kantin Utama',
       'createdAt': DateTime.now().subtract(const Duration(minutes: 5)),
       'isEmergency': true,
@@ -65,26 +72,27 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
   ];
 
   // TODO: [BACKEND] Replace with API call to fetch technician's active reports
+  // IDs should match MockReportData
   final List<Map<String, dynamic>> _myReports = [
     {
-      'id': 4,
-      'title': 'Lampu Koridor Mati',
-      'category': 'Kelistrikan',
-      'building': 'Gedung A, Lt 1',
+      'id': '4',
+      'title': 'Sampah Menumpuk Area Parkir',
+      'category': 'Kebersihan',
+      'building': 'Gedung A',
       'status': 'penanganan',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 45)),
-      'startedAt': DateTime.now().subtract(const Duration(minutes: 15)),
-      'handledBy': ['Budi Santoso'], // Single technician
+      'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
+      'startedAt': DateTime.now().subtract(const Duration(minutes: 30)),
+      'handledBy': ['Budi Santoso'],
     },
     {
-      'id': 6,
+      'id': '6',
       'title': 'AC Rusak di Ruang Rapat',
       'category': 'Kelistrikan',
       'building': 'Gedung B, Lt 2',
       'status': 'penanganan',
       'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
       'startedAt': DateTime.now().subtract(const Duration(minutes: 30)),
-      'handledBy': ['Budi Santoso', 'Ahmad Hidayat'], // Multiple technicians
+      'handledBy': ['Budi Santoso', 'Ahmad Hidayat'],
     },
   ];
 
@@ -95,7 +103,9 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
   // Filtered by category
   List<Map<String, dynamic>> get _filteredRegularReports {
     if (_selectedCategory == 'all') return _regularReports;
-    return _regularReports.where((r) => r['category'] == _selectedCategory).toList();
+    return _regularReports
+        .where((r) => r['category'] == _selectedCategory)
+        .toList();
   }
 
   List<Map<String, dynamic>> get _regularReports =>
