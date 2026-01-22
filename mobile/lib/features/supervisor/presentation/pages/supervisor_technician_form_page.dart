@@ -249,7 +249,7 @@ class _SupervisorTechnicianFormPageState
 
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
-      value: _selectedRole,
+      initialValue: _selectedRole,
       decoration: InputDecoration(
         labelText: 'Spesialisasi',
         prefixIcon: const Icon(LucideIcons.wrench, color: Colors.grey),

@@ -1,0 +1,9 @@
+# Database
+# Database
+# Local Postgres
+# DATABASE_URL=postgres://postgres:postgres@localhost:5432/laporfsm
+# Neon Database (Example)
+# DATABASE_URL=postgres://<user>:<password>@<endpoint>.neon.tech/laporfsm?sslmode=require
+
+# JWT Secret (for auth)
+JWT_SECRET=lapor-fsm-secret-key-change-in-production

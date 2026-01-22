@@ -157,7 +157,7 @@ class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
       title: Text(title, style: const TextStyle(fontSize: 15)),
       value: value,
       onChanged: onChanged,
-      activeColor: AppTheme.secondaryColor,
+      activeThumbColor: AppTheme.secondaryColor,
     );
   }
 }

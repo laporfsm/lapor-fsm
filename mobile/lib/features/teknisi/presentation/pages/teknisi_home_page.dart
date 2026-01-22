@@ -16,7 +16,7 @@ class TeknisiHomePage extends StatefulWidget {
 
 class _TeknisiHomePageState extends State<TeknisiHomePage> {
   int _currentIndex = 0;
-  String _selectedCategory = 'all';
+  final String _selectedCategory = 'all';
   final List<String> _categories = [
     'all',
     'Kelistrikan',

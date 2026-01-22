@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -312,10 +310,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
                             initialCenter: LatLng(_latitude!, _longitude!),
                             initialZoom: 17,
                             onPositionChanged: (position, hasGesture) {
-                              if (hasGesture && position.center != null) {
+                              if (hasGesture) {
                                 setState(() {
-                                  _latitude = position.center!.latitude;
-                                  _longitude = position.center!.longitude;
+                                  _latitude = position.center.latitude;
+                                  _longitude = position.center.longitude;
                                 });
                               }
                             },

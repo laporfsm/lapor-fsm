@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -8,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
 
 /// Simplified Emergency Report Page for faster reporting.
 /// Minimal required fields: Photo + Location (auto-detected).
@@ -282,10 +279,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                     initialCenter: LatLng(_latitude!, _longitude!),
                                     initialZoom: 17,
                                     onPositionChanged: (position, hasGesture) {
-                                      if (hasGesture && position.center != null) {
+                                      if (hasGesture) {
                                         setState(() {
-                                          _latitude = position.center!.latitude;
-                                          _longitude = position.center!.longitude;
+                                          _latitude = position.center.latitude;
+                                          _longitude = position.center.longitude;
                                         });
                                       }
                                     },
