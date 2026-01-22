@@ -184,8 +184,9 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
                   prefixIcon: Icon(LucideIcons.phone),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty)
+                  if (value == null || value.isEmpty) {
                     return 'Nomor HP wajib diisi';
+                  }
                   if (value.length < 10) return 'Nomor HP tidak valid';
                   return null;
                 },

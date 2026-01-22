@@ -365,7 +365,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: DataTable(
-              headingRowColor: MaterialStateProperty.all(Colors.grey.shade50),
+              headingRowColor: WidgetStateProperty.all(Colors.grey.shade50),
               columns: const [
                 DataColumn(
                   label: Text(

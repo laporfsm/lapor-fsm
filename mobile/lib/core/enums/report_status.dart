@@ -8,6 +8,7 @@
 ///     [Supervisor Review]         [Back to PENANGANAN]
 ///          ↓      ↓
 ///      ARCHIVED  PENDING (with LOG)
+library;
 
 enum ReportStatus {
   /// Newly created or returned by supervisor
