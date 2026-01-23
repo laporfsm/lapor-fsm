@@ -26,6 +26,9 @@ import 'package:mobile/features/teknisi/presentation/pages/teknisi_map_view_page
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_settings_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_help_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_edit_profile_page.dart';
+// PJ Gedung imports
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
@@ -40,6 +43,8 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_statist
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_form_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_settings_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_help_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_categories_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_activity_log_page.dart';
 // Admin imports
 import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
@@ -246,6 +251,14 @@ final appRouter = GoRouter(
     ),
 
     // ===============================================
+    // PJ GEDUNG ROUTES
+    // ===============================================
+    GoRoute(
+      path: '/pj-gedung',
+      builder: (context, state) => const PJGedungMainPage(),
+    ),
+
+    // ===============================================
     // SUPERVISOR ROUTES
     // ===============================================
     // Main supervisor shell with persistent bottom navigation
@@ -328,9 +341,22 @@ final appRouter = GoRouter(
       path: '/supervisor/help',
       builder: (context, state) => const SupervisorHelpPage(),
     ),
+    GoRoute(
+      path: '/supervisor/categories',
+      builder: (context, state) => const SupervisorCategoriesPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/activity-log',
+      builder: (context, state) => const SupervisorActivityLogPage(),
+    ),
 
-    // ===============================================
-    // ADMIN SHELL ROUTE - Persistent Bottom Nav
+    GoRoute(
+      path: '/pj-gedung/history',
+      builder: (context, state) {
+        final filter = state.uri.queryParameters['filter'] ?? 'pending';
+        return PJGedungHistoryPage(initialFilter: filter);
+      },
+    ),
     // ===============================================
     ShellRoute(
       navigatorKey: GlobalKey<NavigatorState>(),

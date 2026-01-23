@@ -29,6 +29,12 @@ class Report {
   final String? supervisorId;
   final String? supervisorName;
 
+  // Hold/Pause info
+  final DateTime? pausedAt;
+  final int totalPausedDurationSeconds; // Stored as seconds
+  final String? holdReason;
+  final String? holdPhoto;
+
   // Timeline logs
   final List<ReportLog> logs;
 
@@ -52,11 +58,28 @@ class Report {
     this.handledBy,
     this.supervisorId,
     this.supervisorName,
+    this.pausedAt,
+    this.totalPausedDurationSeconds = 0,
+    this.holdReason,
+    this.holdPhoto,
     this.logs = const [],
   });
 
-  /// Get elapsed time since creation
-  Duration get elapsed => DateTime.now().difference(createdAt);
+  /// Get elapsed time since creation (accounting for pauses)
+  Duration get elapsed {
+    final now = DateTime.now();
+    final rawDuration = now.difference(createdAt);
+
+    // If currently paused, subtract the time since pause started
+    final currentPauseDuration = pausedAt != null
+        ? now.difference(pausedAt!)
+        : Duration.zero;
+
+    final totalPause =
+        Duration(seconds: totalPausedDurationSeconds) + currentPauseDuration;
+
+    return rawDuration - totalPause;
+  }
 
   /// Check if report is being actively handled
   bool get isActive => status.isActive;
@@ -88,7 +111,12 @@ class Report {
     List<String>? handledBy,
     String? supervisorId,
     String? supervisorName,
+    DateTime? pausedAt,
+    int? totalPausedDurationSeconds,
+    String? holdReason,
+    String? holdPhoto,
     List<ReportLog>? logs,
+    bool clearPausedAt = false,
   }) {
     return Report(
       id: id ?? this.id,
@@ -110,6 +138,11 @@ class Report {
       handledBy: handledBy ?? this.handledBy,
       supervisorId: supervisorId ?? this.supervisorId,
       supervisorName: supervisorName ?? this.supervisorName,
+      pausedAt: clearPausedAt ? null : (pausedAt ?? this.pausedAt),
+      totalPausedDurationSeconds:
+          totalPausedDurationSeconds ?? this.totalPausedDurationSeconds,
+      holdReason: holdReason ?? this.holdReason,
+      holdPhoto: holdPhoto ?? this.holdPhoto,
       logs: logs ?? this.logs,
     );
   }
@@ -135,6 +168,13 @@ class Report {
       handledBy: (json['handledBy'] as List<dynamic>?)?.cast<String>(),
       supervisorId: json['supervisorId'] as String?,
       supervisorName: json['supervisorName'] as String?,
+      pausedAt: json['pausedAt'] != null
+          ? DateTime.parse(json['pausedAt'] as String)
+          : null,
+      totalPausedDurationSeconds:
+          json['totalPausedDurationSeconds'] as int? ?? 0,
+      holdReason: json['holdReason'] as String?,
+      holdPhoto: json['holdPhoto'] as String?,
       logs:
           (json['logs'] as List<dynamic>?)
               ?.map((e) => ReportLog.fromJson(e as Map<String, dynamic>))
@@ -164,6 +204,10 @@ class Report {
       'handledBy': handledBy,
       'supervisorId': supervisorId,
       'supervisorName': supervisorName,
+      'pausedAt': pausedAt?.toIso8601String(),
+      'totalPausedDurationSeconds': totalPausedDurationSeconds,
+      'holdReason': holdReason,
+      'holdPhoto': holdPhoto,
       'logs': logs.map((e) => e.toJson()).toList(),
     };
   }

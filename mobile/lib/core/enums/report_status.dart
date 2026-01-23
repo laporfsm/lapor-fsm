@@ -14,11 +14,17 @@ enum ReportStatus {
   /// Newly created or returned by supervisor
   pending,
 
-  /// Being verified by technician
+  /// Verified by PJ Gedung (Ready for Supervisor allocation)
+  terverifikasi,
+
+  /// Being verified by technician (Legacy/Optional if technician needs to verify)
   verifikasi,
 
   /// Being handled by technician
   penanganan,
+
+  /// Paused/Held by technician (waiting for parts etc)
+  onHold,
 
   /// Marked complete, awaiting supervisor approval
   selesai,
@@ -41,10 +47,14 @@ extension ReportStatusX on ReportStatus {
     switch (this) {
       case ReportStatus.pending:
         return 'Pending';
+      case ReportStatus.terverifikasi:
+        return 'Terverifikasi';
       case ReportStatus.verifikasi:
         return 'Verifikasi';
       case ReportStatus.penanganan:
         return 'Penanganan';
+      case ReportStatus.onHold:
+        return 'Ditunda (Hold)';
       case ReportStatus.selesai:
         return 'Selesai';
       case ReportStatus.approved:
@@ -61,6 +71,7 @@ extension ReportStatusX on ReportStatus {
   bool get isActive =>
       this == ReportStatus.verifikasi ||
       this == ReportStatus.penanganan ||
+      this == ReportStatus.onHold ||
       this == ReportStatus.recalled;
 
   bool get isFinal =>

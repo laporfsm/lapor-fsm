@@ -47,6 +47,13 @@ class _SupervisorTechnicianListPageState
       'role': 'Teknisi Jaringan',
       'isActive': true,
     },
+    {
+      'id': 'pj1',
+      'name': 'Rina PJ Gedung',
+      'email': 'pj@undip.ac.id',
+      'role': 'PJ Gedung',
+      'isActive': true,
+    },
   ];
 
   @override
@@ -68,7 +75,7 @@ class _SupervisorTechnicianListPageState
               child: TextField(
                 controller: _searchController,
                 decoration: const InputDecoration(
-                  hintText: 'Cari teknisi...',
+                  hintText: 'Cari staff...',
                   prefixIcon: Icon(LucideIcons.search, color: Colors.grey),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
@@ -211,22 +218,47 @@ class _SupervisorTechnicianListPageState
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
                   ),
                   const Gap(8),
+                  const Gap(8),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: tech['role'] == 'PJ Gedung'
+                          ? const Color(0xFFFFF7ED) // Orange-ish bg for PJ
+                          : Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tech['role'], // e.g. "Teknisi Listrik" -> "Teknisi" tag
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                      border: Border.all(
+                        color: tech['role'] == 'PJ Gedung'
+                            ? const Color(0xFFFDBA74)
+                            : Colors.blue.shade100,
                       ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          tech['role'] == 'PJ Gedung'
+                              ? LucideIcons.building
+                              : LucideIcons.wrench,
+                          size: 12,
+                          color: tech['role'] == 'PJ Gedung'
+                              ? const Color(0xFFEA580C)
+                              : Colors.blue.shade700,
+                        ),
+                        const Gap(4),
+                        Text(
+                          tech['role'],
+                          style: TextStyle(
+                            color: tech['role'] == 'PJ Gedung'
+                                ? const Color(0xFFEA580C)
+                                : Colors.blue.shade700,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],

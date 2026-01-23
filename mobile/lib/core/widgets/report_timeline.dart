@@ -224,6 +224,10 @@ extension ReportActionLabel on ReportAction {
         return 'Penolakan Disetujui';
       case ReportAction.archived:
         return 'Diarsipkan';
+      case ReportAction.paused:
+        return 'Ditunda';
+      case ReportAction.resumed:
+        return 'Dilanjutkan';
     }
   }
 }

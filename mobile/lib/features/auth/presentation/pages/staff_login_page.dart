@@ -44,7 +44,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
       if (email.contains('supervisor')) {
         role = 'supervisor';
         redirectPath = '/supervisor';
-      } else if (email.contains('admin')) {
+      } else if (email.startsWith('pj') || email.contains('pj')) {
+        context.go('/pj-gedung');
+      } else if (email.startsWith('admin') || email.contains('admin')) {
         role = 'admin';
         redirectPath = '/admin';
       }
@@ -321,6 +323,11 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                       LucideIcons.wrench,
                       'Teknisi',
                       'Menangani laporan di lapangan',
+                    ),
+                    _buildRoleItem(
+                      LucideIcons.building,
+                      'PJ Gedung',
+                      'Verifikasi laporan gedung',
                     ),
                     _buildRoleItem(
                       LucideIcons.clipboardCheck,

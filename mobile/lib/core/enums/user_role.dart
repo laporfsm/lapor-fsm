@@ -1,5 +1,5 @@
 /// User role enum with permission definitions
-enum UserRole { pelapor, teknisi, supervisor, admin }
+enum UserRole { pelapor, teknisi, supervisor, admin, pjGedung }
 
 extension UserRoleX on UserRole {
   String get label {
@@ -12,6 +12,8 @@ extension UserRoleX on UserRole {
         return 'Supervisor';
       case UserRole.admin:
         return 'Admin';
+      case UserRole.pjGedung:
+        return 'PJ Gedung';
     }
   }
 
@@ -25,7 +27,8 @@ extension UserRoleX on UserRole {
   bool get canViewAllReports =>
       this == UserRole.teknisi || this == UserRole.supervisor;
 
-  bool get canVerifyReport => this == UserRole.teknisi;
+  // PJ Gedung specific
+  bool get canVerifyReport => this == UserRole.pjGedung;
 
   bool get canHandleReport => this == UserRole.teknisi;
 
@@ -48,6 +51,10 @@ extension UserRoleX on UserRole {
   bool get canExportReports => this == UserRole.supervisor;
 
   bool get canMonitorTechnicians => this == UserRole.supervisor;
+
+  bool get canManagePJ => this == UserRole.supervisor;
+
+  bool get canManageCategories => this == UserRole.supervisor;
 
   bool get canContactReporter =>
       this == UserRole.teknisi || this == UserRole.supervisor;
