@@ -193,6 +193,8 @@ class StaffProfilePage extends StatelessWidget {
         return const Color(0xFF6366F1);
       case 'admin':
         return const Color(0xFF059669);
+      case 'pjGedung':
+        return const Color(0xFFF59E0B);
       default:
         return Colors.grey;
     }
@@ -206,6 +208,8 @@ class StaffProfilePage extends StatelessWidget {
         return 'Supervisor';
       case 'admin':
         return 'Administrator';
+      case 'pjGedung':
+        return 'PJ Gedung';
       default:
         return role;
     }
@@ -219,6 +223,8 @@ class StaffProfilePage extends StatelessWidget {
         return LucideIcons.clipboardCheck;
       case 'admin':
         return LucideIcons.settings;
+      case 'pjGedung':
+        return LucideIcons.building;
       default:
         return LucideIcons.user;
     }

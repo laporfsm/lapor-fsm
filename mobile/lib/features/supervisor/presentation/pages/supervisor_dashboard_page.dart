@@ -125,24 +125,53 @@ class SupervisorDashboardPage extends StatelessWidget {
               const Gap(16),
               _buildStatsSection(context),
               const Gap(24),
-              _buildQuickActions(context),
-              const Gap(24),
+              // Section: Siap Diproses (Ready for Assignment)
+              // Includes: Verified Building Reports & Non-Building Reports
               _buildSectionHeader(
                 context,
-                'Menunggu Review',
+                'Siap Diproses',
                 'Lihat Semua',
-                // Navigate to finished reports
                 () => context.push(
                   Uri(
                     path: '/supervisor/reports/filter',
                     queryParameters: {
-                      'status': 'done',
-                    }, // Changed to 'done' (selesai)
+                      'status': 'pending',
+                    }, // Simplified for now
+                  ).toString(),
+                ),
+              ),
+              const Gap(12),
+              _buildReadyToProcessList(context),
+              const Gap(24),
+
+              // Section: Menunggu Review (Completed by Technician)
+              _buildSectionHeader(
+                context,
+                'Menunggu Review',
+                'Lihat Semua',
+                () => context.push(
+                  Uri(
+                    path: '/supervisor/reports/filter',
+                    queryParameters: {
+                      'status': 'selesai', // Status finished/completed
+                    },
                   ).toString(),
                 ),
               ),
               const Gap(12),
               _buildPendingReviewList(context),
+              const Gap(24),
+
+              _buildSectionHeader(
+                context,
+                "Aktivitas & Log",
+                "Lihat Semua",
+                () {
+                  context.push('/supervisor/activity-log');
+                },
+              ),
+              const Gap(12),
+              _buildActivityLogStub(context),
               const Gap(24),
             ],
           ),
@@ -461,67 +490,6 @@ class SupervisorDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionButton(
-                'Review Penolakan',
-                LucideIcons.xCircle,
-                Colors.red,
-                () => context.push('/supervisor/rejected'),
-              ),
-            ),
-            const Gap(12),
-            Expanded(
-              child: _buildActionButton(
-                'Export',
-                LucideIcons.download,
-                Colors.green,
-                () => context.push('/supervisor/export'),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(
-    String label,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: color),
-            const Gap(8),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildSectionHeader(
     BuildContext context,
     String title,
@@ -648,6 +616,187 @@ class SupervisorDashboardPage extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+
+  // MOCK: Ready to Process (Verified by PJ or Direct Non-Building)
+  Widget _buildReadyToProcessList(BuildContext context) {
+    // Mock data combining Terverifikasi & Non-Gedung Pending
+    final List<Map<String, dynamic>> readyReports = [
+      {
+        'id': 101,
+        'title': 'Atap Bocor Koridor Utama',
+        'category': 'Sipil',
+        'building': 'Gedung A, Lt 2',
+        'source': 'PJ Gedung (Verified)',
+        'time': '10 menit lalu',
+        'isVerified': true,
+      },
+      {
+        'id': 102,
+        'title': 'Lampu Taman Redup',
+        'category': 'Kelistrikan',
+        'building': 'Taman Depan (Non-Gedung)',
+        'source': 'Laporan Langsung',
+        'time': '1 jam lalu',
+        'isVerified': false,
+      },
+    ];
+
+    return Column(
+      children: readyReports.map((report) {
+        return GestureDetector(
+          onTap: () => context.push('/supervisor/review/${report['id']}'),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border(
+                left: BorderSide(
+                  color: report['isVerified'] ? Colors.blue : Colors.grey,
+                  width: 4,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Column(
+                  children: [
+                    Icon(
+                      report['isVerified']
+                          ? LucideIcons.checkCircle
+                          : LucideIcons.alertCircle,
+                      color: report['isVerified'] ? Colors.blue : Colors.grey,
+                    ),
+                  ],
+                ),
+                const Gap(16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        report['source'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: report['isVerified']
+                              ? Colors.blue
+                              : Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        report['title'],
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const Gap(4),
+                      Text(
+                        '${report['building']} • ${report['category']}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Text(
+                  report['time'],
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildActivityLogStub(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        children: [
+          _buildLogItem(
+            'Budi Teknisi',
+            'memulai penanganan',
+            'AC Lab',
+            '5 menit lalu',
+          ),
+          const Divider(),
+          _buildLogItem(
+            'PJ Gedung A',
+            'memverifikasi laporan',
+            'Lampu Koridor',
+            '15 menit lalu',
+          ),
+          const Divider(),
+          _buildLogItem(
+            'Andi Teknisi',
+            'menyelesaikan laporan',
+            'Pipa Toilet',
+            '30 menit lalu',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogItem(
+    String actor,
+    String action,
+    String target,
+    String time,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 12,
+            backgroundColor: Colors.grey.shade200,
+            child: const Icon(LucideIcons.user, size: 12, color: Colors.grey),
+          ),
+          const Gap(12),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(color: Colors.black87, fontSize: 13),
+                children: [
+                  TextSpan(
+                    text: actor,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: ' $action '),
+                  TextSpan(
+                    text: target,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Text(
+            time,
+            style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+          ),
+        ],
+      ),
     );
   }
 }

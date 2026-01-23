@@ -77,6 +77,26 @@ class _SupervisorSettingsPageState extends State<SupervisorSettingsPage> {
               ),
             ),
             const Gap(24),
+            _buildSectionHeader('Sistem'),
+            const Gap(8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListTile(
+                leading: const Icon(
+                  LucideIcons.tags,
+                  color: AppTheme.primaryColor,
+                ),
+                title: const Text('Kelola Kategori'),
+                trailing: const Icon(LucideIcons.chevronRight, size: 18),
+                onTap: () {
+                  context.push('/supervisor/categories');
+                },
+              ),
+            ),
+            const Gap(24),
             _buildSectionHeader('Tampilan'),
             const Gap(8),
             Container(

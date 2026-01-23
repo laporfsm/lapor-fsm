@@ -52,6 +52,10 @@ class ReportLog {
         return 'Penolakan disetujui oleh $actor$reasonText';
       case ReportAction.archived:
         return 'Laporan diarsipkan oleh $actor';
+      case ReportAction.paused:
+        return 'Pengerjaan dipause oleh $actor$reasonText';
+      case ReportAction.resumed:
+        return 'Pengerjaan dilanjutkan oleh $actor';
     }
   }
 
@@ -98,4 +102,6 @@ enum ReportAction {
   overrideRejection,
   approveRejection,
   archived,
+  paused,
+  resumed,
 }

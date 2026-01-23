@@ -37,7 +37,7 @@ class _LoginPageState extends State<LoginPage> {
       await Future.delayed(const Duration(seconds: 1));
 
       final email = _emailController.text.toLowerCase();
-      
+
       // Mock: determine role based on email (in real app, this comes from backend)
       String role = 'pelapor';
       String redirectPath = '/';
@@ -48,6 +48,10 @@ class _LoginPageState extends State<LoginPage> {
       } else if (email.contains('supervisor')) {
         role = 'supervisor';
         redirectPath = '/supervisor';
+      } else if (email.contains('pj')) {
+        // PJ Gedung role
+        role = 'pjGedung';
+        redirectPath = '/pj-gedung';
       } else if (email.contains('admin')) {
         role = 'admin';
         redirectPath = '/admin';
@@ -114,10 +118,7 @@ class _LoginPageState extends State<LoginPage> {
               const Gap(16),
               Text(
                 'Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const Gap(40),
@@ -152,7 +153,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.primaryColor),
+                          borderSide: const BorderSide(
+                            color: AppTheme.primaryColor,
+                          ),
                         ),
                       ),
                       validator: (value) {
@@ -181,10 +184,14 @@ class _LoginPageState extends State<LoginPage> {
                         prefixIcon: const Icon(LucideIcons.lock),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                            _obscurePassword
+                                ? LucideIcons.eyeOff
+                                : LucideIcons.eye,
                           ),
                           onPressed: () {
-                            setState(() => _obscurePassword = !_obscurePassword);
+                            setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            );
                           },
                         ),
                         filled: true,
@@ -199,7 +206,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppTheme.primaryColor),
+                          borderSide: const BorderSide(
+                            color: AppTheme.primaryColor,
+                          ),
                         ),
                       ),
                       validator: (value) {
@@ -223,7 +232,10 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: Text(
                           'Lupa Password?',
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ),
@@ -249,12 +261,17 @@ class _LoginPageState extends State<LoginPage> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Text(
                                 'Masuk',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                       ),
                     ),
@@ -269,7 +286,10 @@ class _LoginPageState extends State<LoginPage> {
                   Expanded(child: Divider(color: Colors.grey.shade300)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('atau', style: TextStyle(color: Colors.grey.shade500)),
+                    child: Text(
+                      'atau',
+                      style: TextStyle(color: Colors.grey.shade500),
+                    ),
                   ),
                   Expanded(child: Divider(color: Colors.grey.shade300)),
                 ],

@@ -4,6 +4,7 @@ import 'package:mobile/core/report.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 import 'package:mobile/theme.dart';
+import 'package:gap/gap.dart';
 
 class SupervisorReviewPage extends StatefulWidget {
   final String reportId;
@@ -36,39 +37,9 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     if (_report.status == ReportStatus.selesai ||
         _report.status == ReportStatus.ditolak) {
       return [
-        OutlinedButton(
-          onPressed: () {
-            setState(() {
-              _report = _report.copyWith(
-                status: ReportStatus.recalled,
-                logs: [
-                  ReportLog(
-                    id: 'new_recall',
-                    fromStatus: _report.status,
-                    toStatus: ReportStatus.recalled,
-                    action: ReportAction.recalled,
-                    actorId: 'spv1',
-                    actorName: 'Supervisor',
-                    actorRole: 'Supervisor',
-                    timestamp: DateTime.now(),
-                    reason: 'Perbaikan belum tuntas',
-                  ),
-                  ..._report.logs,
-                ],
-              );
-            });
-            context.pop();
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.red,
-            side: const BorderSide(color: Colors.red),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: const Text('Tolak / Recall'),
-        ),
+        // OutlinedButton removed as per "Remove Reject Report UI feature" requirement
+        // If "Recall" is needed, it should be re-added as a separate feature distinct from "Reject".
+        const Gap(12), // Placeholder for spacing if needed
         ElevatedButton(
           onPressed: () {
             setState(() {

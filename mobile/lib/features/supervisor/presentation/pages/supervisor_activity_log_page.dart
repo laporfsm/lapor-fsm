@@ -4,172 +4,206 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
-class SupervisorActivityLogPage extends StatelessWidget {
+class SupervisorActivityLogPage extends StatefulWidget {
   const SupervisorActivityLogPage({super.key});
 
   @override
+  State<SupervisorActivityLogPage> createState() =>
+      _SupervisorActivityLogPageState();
+}
+
+class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage> {
+  // Mock Data
+  final List<Map<String, dynamic>> _allLogs = [
+    {
+      'id': 1,
+      'actor': 'Budi Teknisi',
+      'role': 'Teknisi',
+      'action': 'memulai penanganan',
+      'target': 'AC Lab Komputer',
+      'time': '5 menit lalu',
+      'icon': LucideIcons.wrench,
+      'color': Colors.orange,
+    },
+    {
+      'id': 2,
+      'actor': 'PJ Gedung A',
+      'role': 'PJ Gedung',
+      'action': 'memverifikasi laporan',
+      'target': 'Lampu Koridor',
+      'time': '15 menit lalu',
+      'icon': LucideIcons.checkCircle,
+      'color': Colors.green,
+    },
+    {
+      'id': 3,
+      'actor': 'Andi Teknisi',
+      'role': 'Teknisi',
+      'action': 'menyelesaikan laporan',
+      'target': 'Pipa Toilet',
+      'time': '30 menit lalu',
+      'icon': LucideIcons.checkCheck,
+      'color': Colors.blue,
+    },
+    {
+      'id': 4,
+      'actor': 'Siti Pelapor',
+      'role': 'Mahasiswa',
+      'action': 'membuat laporan darurat',
+      'target': 'Kebakaran Lab',
+      'time': '1 jam lalu',
+      'icon': LucideIcons.alertTriangle,
+      'color': Colors.red,
+    },
+    {
+      'id': 5,
+      'actor': 'PJ Gedung B',
+      'role': 'PJ Gedung',
+      'action': 'memverifikasi laporan',
+      'target': 'Air Keran Macet',
+      'time': '2 jam lalu',
+      'icon': LucideIcons.checkCircle,
+      'color': Colors.green,
+    },
+    {
+      'id': 6,
+      'actor': 'Eko Teknisi',
+      'role': 'Teknisi',
+      'action': 'meminta sparepart',
+      'target': 'Kabel LAN',
+      'time': '3 jam lalu',
+      'icon': LucideIcons.package,
+      'color': Colors.purple,
+    },
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    // Mock Data for Activity Logs
-    final List<Map<String, dynamic>> technicians = [
-      {
-        'id': '1',
-        'name': 'Budi Santoso',
-        'status': 'online',
-        'role': 'Teknisi Listrik',
-        'handled': 12,
-        'completed': 10,
-      },
-      {
-        'id': '2',
-        'name': 'Ahmad Hidayat',
-        'status': 'offline',
-        'role': 'Teknisi Sipil',
-        'handled': 8,
-        'completed': 8,
-      },
-      {
-        'id': '3',
-        'name': 'Rudi Hartono',
-        'status': 'busy',
-        'role': 'Teknisi AC',
-        'handled': 15,
-        'completed': 12,
-      },
-    ];
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: technicians.length,
-      separatorBuilder: (context, index) => const Gap(12),
-      itemBuilder: (context, index) {
-        final tech = technicians[index];
-        return _buildActivityCard(context, tech);
-      },
-    );
-  }
-
-  Widget _buildActivityCard(BuildContext context, Map<String, dynamic> tech) {
-    Color statusColor;
-    switch (tech['status']) {
-      case 'online':
-        statusColor = Colors.green;
-        break;
-      case 'busy':
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.grey;
-    }
-
-    return GestureDetector(
-      onTap: () {
-        context.push('/supervisor/technician/${tech['id']}');
-      },
-      child: Container(
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text(
+          'Log Aktivitas',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      body: ListView.separated(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Avatar with Status Badge
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppTheme.supervisorColor.withOpacity(0.1),
-                  child: Text(
-                    tech['name'].toString().substring(0, 1),
-                    style: const TextStyle(
-                      color: AppTheme.supervisorColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: statusColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const Gap(16),
-
-            // Info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tech['name'],
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const Gap(4),
-                  Text(
-                    tech['role'],
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const Gap(8),
-                  Row(
-                    children: [
-                      _buildMiniStat(
-                        LucideIcons.checkCircle2,
-                        '${tech['completed']} Selesai',
-                        Colors.green,
-                      ),
-                      const Gap(12),
-                      _buildMiniStat(
-                        LucideIcons.briefcase,
-                        '${tech['handled']} Total',
-                        AppTheme.primaryColor,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const Icon(LucideIcons.chevronRight, color: Colors.grey),
-          ],
-        ),
+        itemCount: _allLogs.length,
+        separatorBuilder: (context, index) => const Gap(12),
+        itemBuilder: (context, index) {
+          final log = _allLogs[index];
+          return _buildLogCard(log);
+        },
       ),
     );
   }
 
-  Widget _buildMiniStat(IconData icon, String label, Color color) {
-    return Row(
-      children: [
-        Icon(icon, size: 14, color: color),
-        const Gap(4),
-        Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
+  Widget _buildLogCard(Map<String, dynamic> log) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            backgroundColor: (log['color'] as Color).withOpacity(0.1),
+            child: Icon(log['icon'], color: log['color'], size: 20),
+          ),
+          const Gap(16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      log['actor'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Gap(6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Text(
+                        log['role'],
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(4),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(color: Colors.black87, fontSize: 13),
+                    children: [
+                      TextSpan(text: log['action']),
+                      const TextSpan(text: ' '),
+                      TextSpan(
+                        text: log['target'],
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(8),
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.clock,
+                      size: 12,
+                      color: Colors.grey.shade400,
+                    ),
+                    const Gap(4),
+                    Text(
+                      log['time'],
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -183,10 +183,40 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Subject / Title (New)
+                      const Text(
+                        "Judul / Subjek Laporan",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(8),
+                      TextFormField(
+                        decoration: InputDecoration(
+                          hintText: "Contoh: Kebakaran di Lab Kimia",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey.shade50,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Subjek wajib diisi';
+                          }
+                          return null;
+                        },
+                      ),
+                      const Gap(24),
+
                       // Photo Section (Required)
                       const Text(
                         "1. Ambil Foto Bukti *",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Gap(8),
                       GestureDetector(
@@ -198,7 +228,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: _selectedImageBytes != null ? Colors.green : Colors.grey.shade300,
+                              color: _selectedImageBytes != null
+                                  ? Colors.green
+                                  : Colors.grey.shade300,
                               width: _selectedImageBytes != null ? 3 : 1,
                             ),
                           ),
@@ -225,7 +257,11 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                         child: const CircleAvatar(
                                           backgroundColor: Colors.red,
                                           radius: 16,
-                                          child: Icon(LucideIcons.x, color: Colors.white, size: 16),
+                                          child: Icon(
+                                            LucideIcons.x,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -234,9 +270,18 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                               : Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(LucideIcons.camera, size: 48, color: Colors.grey.shade400),
+                                    Icon(
+                                      LucideIcons.camera,
+                                      size: 48,
+                                      color: Colors.grey.shade400,
+                                    ),
                                     const Gap(8),
-                                    Text("Ketuk untuk foto", style: TextStyle(color: Colors.grey.shade500)),
+                                    Text(
+                                      "Ketuk untuk foto",
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                      ),
+                                    ),
                                   ],
                                 ),
                         ),
@@ -246,7 +291,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                       // Location Section
                       const Text(
                         "2. Lokasi (Opsional)",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Gap(8),
                       DropdownButtonFormField<String>(
@@ -254,15 +302,24 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         decoration: InputDecoration(
                           hintText: "Pilih gedung (opsional)",
                           prefixIcon: const Icon(LucideIcons.building),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        items: _buildings.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
-                        onChanged: (value) => setState(() => _selectedBuilding = value),
+                        items: _buildings
+                            .map(
+                              (b) => DropdownMenuItem(value: b, child: Text(b)),
+                            )
+                            .toList(),
+                        onChanged: (value) =>
+                            setState(() => _selectedBuilding = value),
                       ),
                       const Gap(12),
 
                       // Map Preview
-                      if (_latitude != null && _longitude != null && !_isFetchingLocation)
+                      if (_latitude != null &&
+                          _longitude != null &&
+                          !_isFetchingLocation)
                         Container(
                           height: 180,
                           width: double.infinity,
@@ -276,21 +333,27 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                               children: [
                                 FlutterMap(
                                   options: MapOptions(
-                                    initialCenter: LatLng(_latitude!, _longitude!),
+                                    initialCenter: LatLng(
+                                      _latitude!,
+                                      _longitude!,
+                                    ),
                                     initialZoom: 17,
                                     onPositionChanged: (position, hasGesture) {
                                       if (hasGesture) {
                                         setState(() {
                                           _latitude = position.center.latitude;
-                                          _longitude = position.center.longitude;
+                                          _longitude =
+                                              position.center.longitude;
                                         });
                                       }
                                     },
                                   ),
                                   children: [
                                     TileLayer(
-                                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                      userAgentPackageName: 'com.laporfsm.mobile',
+                                      urlTemplate:
+                                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                      userAgentPackageName:
+                                          'com.laporfsm.mobile',
                                     ),
                                   ],
                                 ),
@@ -307,7 +370,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                   top: 8,
                                   left: 8,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.6),
                                       borderRadius: BorderRadius.circular(4),
@@ -315,9 +381,19 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                     child: const Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Icon(LucideIcons.move, color: Colors.white, size: 12),
+                                        Icon(
+                                          LucideIcons.move,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
                                         Gap(4),
-                                        Text('Geser peta', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                        Text(
+                                          'Geser peta',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -328,31 +404,57 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                   left: 0,
                                   right: 0,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 6,
+                                    ),
                                     color: Colors.black.withOpacity(0.7),
                                     child: Row(
                                       children: [
-                                        const Icon(LucideIcons.mapPin, color: Colors.white, size: 14),
+                                        const Icon(
+                                          LucideIcons.mapPin,
+                                          color: Colors.white,
+                                          size: 14,
+                                        ),
                                         const Gap(6),
                                         Expanded(
                                           child: Text(
                                             'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
-                                            style: const TextStyle(color: Colors.white, fontSize: 10),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                            ),
                                           ),
                                         ),
                                         GestureDetector(
                                           onTap: _fetchCurrentLocation,
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(4),
+                                              color: Colors.white.withOpacity(
+                                                0.2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                             child: const Row(
                                               children: [
-                                                Icon(LucideIcons.locate, color: Colors.white, size: 12),
+                                                Icon(
+                                                  LucideIcons.locate,
+                                                  color: Colors.white,
+                                                  size: 12,
+                                                ),
                                                 Gap(4),
-                                                Text('Reset', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                                Text(
+                                                  'Reset',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                  ),
+                                                ),
                                               ],
                                             ),
                                           ),
@@ -401,7 +503,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFFDC2626),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                   icon: _isSubmitting
                       ? const SizedBox(
@@ -412,7 +516,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                       : const Icon(LucideIcons.send, size: 24),
                   label: Text(
                     _isSubmitting ? "MENGIRIM..." : "KIRIM LAPORAN DARURAT",
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),

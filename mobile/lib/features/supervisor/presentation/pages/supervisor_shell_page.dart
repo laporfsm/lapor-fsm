@@ -50,7 +50,7 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(LucideIcons.users),
-            label: 'Teknisi',
+            label: 'Staff',
           ),
           BottomNavigationBarItem(
             icon: Icon(LucideIcons.fileText),
