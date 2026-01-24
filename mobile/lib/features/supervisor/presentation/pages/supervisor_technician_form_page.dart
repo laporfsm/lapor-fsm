@@ -25,6 +25,7 @@ class _SupervisorTechnicianFormPageState
   bool _isLoading = false;
 
   final List<String> _roles = [
+    'PJ Gedung',
     'Teknisi Listrik',
     'Teknisi Sipil',
     'Teknisi AC',
