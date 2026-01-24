@@ -169,35 +169,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          // Realtime indicator instead of refresh button
-          Center(
-            child: Container(
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.withOpacity(0.5)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(LucideIcons.radio, size: 14, color: Colors.green),
-                  Gap(4),
-                  Text(
-                    "Realtime",
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        elevation: 0
       ),
       body: Column(
         children: [
