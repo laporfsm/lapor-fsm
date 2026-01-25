@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:mobile/core/report.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 

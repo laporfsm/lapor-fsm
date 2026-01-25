@@ -4,6 +4,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 
+// Shared Report features
+import '../../../report_common/domain/entities/report.dart';
+import '../../../report_common/domain/enums/report_status.dart';
+import '../../../report_common/presentation/widgets/report_card.dart';
+
+// Now functions as "Riwayat" tab view
 class SupervisorArchivePage extends StatefulWidget {
   const SupervisorArchivePage({super.key});
 
@@ -14,123 +20,146 @@ class SupervisorArchivePage extends StatefulWidget {
 class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
   DateTimeRange? _dateRange;
 
-  // Mock data
-  final List<Map<String, dynamic>> _archives = [
-    {
-      'id': 1,
-      'title': 'AC Mati di Lab Komputer',
-      'category': 'Kelistrikan',
-      'building': 'Gedung G',
-      'teknisi': 'Budi Teknisi',
-      'duration': '45 menit',
-      'completedAt': DateTime.now().subtract(const Duration(days: 1)),
-    },
-    {
-      'id': 2,
-      'title': 'Kebocoran Pipa Toilet',
-      'category': 'Sanitasi / Air',
-      'building': 'Gedung C',
-      'teknisi': 'Andi Teknisi',
-      'duration': '1 jam 20 menit',
-      'completedAt': DateTime.now().subtract(const Duration(days: 2)),
-    },
-    {
-      'id': 3,
-      'title': 'Lampu Koridor Mati',
-      'category': 'Kelistrikan',
-      'building': 'Gedung A',
-      'teknisi': 'Citra Teknisi',
-      'duration': '30 menit',
-      'completedAt': DateTime.now().subtract(const Duration(days: 3)),
-    },
-    {
-      'id': 4,
-      'title': 'Kerusakan Pintu Kelas',
-      'category': 'Sipil & Bangunan',
-      'building': 'Gedung B',
-      'teknisi': 'Budi Teknisi',
-      'duration': '2 jam',
-      'completedAt': DateTime.now().subtract(const Duration(days: 5)),
-    },
+  // Mock data - Only "Approved"
+  // Note: User logic says Riwayat = Approved.
+  // I will also add one 'ditolak' just in case to verify filter if I wanted to, but for now strict Approved.
+  final List<Report> _archives = [
+    Report(
+      id: '1',
+      title: 'AC Mati di Lab Komputer',
+      description: 'Selesai diperbaiki',
+      category: 'Kelistrikan',
+      building: 'Gedung G',
+      status: ReportStatus.approved,
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      isEmergency: false,
+      reporterId: 'user1',
+      reporterName: 'Ahmad Fauzi',
+      handledBy: ['Budi Teknisi'],
+    ),
+    Report(
+      id: '2',
+      title: 'Kebocoran Pipa Toilet',
+      description: 'Pipa diganti baru',
+      category: 'Sanitasi / Air',
+      building: 'Gedung C',
+      status: ReportStatus.approved,
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      isEmergency: false,
+      reporterId: 'user2',
+      reporterName: 'Siti Aminah',
+      handledBy: ['Andi Teknisi'],
+    ),
+    Report(
+      id: '3',
+      title: 'Lampu Koridor Mati',
+      description: 'Bohlam diganti',
+      category: 'Kelistrikan',
+      building: 'Gedung A',
+      status: ReportStatus.approved,
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+      isEmergency: false,
+      reporterId: 'user3',
+      reporterName: 'Citra Teknisi',
+      handledBy: ['Citra Teknisi'],
+    ),
+    Report(
+      id: '4',
+      title: 'Kerusakan Pintu Kelas',
+      description: 'Engsel diperbaiki',
+      category: 'Sipil & Bangunan',
+      building: 'Gedung B',
+      status: ReportStatus.approved,
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      isEmergency: false,
+      reporterId: 'user4',
+      reporterName: 'Budi Teknisi',
+      handledBy: ['Budi Teknisi'],
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
+    // Return content directly (no Scaffold)
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('Arsip Laporan'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false, // No back button for shell tab
-        actions: [
-          IconButton(
-            onPressed: _showExportDialog,
-            icon: const Icon(LucideIcons.download),
-            tooltip: 'Export',
-          ),
-        ],
-      ),
+      // No AppBar, it's handled by Tab container
       body: Column(
         children: [
-          // Date Range Picker
+          // Date Range Picker & Export Actions
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: GestureDetector(
-              onTap: _selectDateRange,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(LucideIcons.calendar, color: Colors.grey.shade600),
-                    const Gap(12),
-                    Expanded(
-                      child: Text(
-                        _dateRange != null
-                            ? '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'
-                            : 'Pilih rentang tanggal',
-                        style: TextStyle(
-                          color: _dateRange != null
-                              ? Colors.black
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                    if (_dateRange != null)
-                      GestureDetector(
-                        onTap: () => setState(() => _dateRange = null),
-                        child: Icon(
-                          LucideIcons.x,
-                          size: 18,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Summary Stats
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            color: Colors.white,
             child: Row(
               children: [
-                _buildSummaryItem('Total', '${_archives.length}', Colors.blue),
-                _buildSummaryItem('Minggu Ini', '2', Colors.green),
-                _buildSummaryItem('Bulan Ini', '4', Colors.orange),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _selectDateRange,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.calendar,
+                            color: Colors.grey.shade600,
+                            size: 20,
+                          ),
+                          const Gap(12),
+                          Expanded(
+                            child: Text(
+                              _dateRange != null
+                                  ? '${_formatDate(_dateRange!.start)} - ${_formatDate(_dateRange!.end)}'
+                                  : 'Filter Tanggal',
+                              style: TextStyle(
+                                color: _dateRange != null
+                                    ? Colors.black
+                                    : Colors.grey.shade600,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (_dateRange != null)
+                            GestureDetector(
+                              onTap: () => setState(() => _dateRange = null),
+                              child: Icon(
+                                LucideIcons.x,
+                                size: 16,
+                                color: Colors.grey.shade500,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const Gap(12),
+                IconButton(
+                  onPressed: _showExportDialog,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  icon: const Icon(
+                    LucideIcons.download,
+                    size: 20,
+                    color: Colors.black87,
+                  ),
+                  tooltip: 'Export',
+                ),
               ],
             ),
           ),
+
           const Divider(height: 1),
 
           // Archive List
@@ -139,143 +168,17 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
               padding: const EdgeInsets.all(16),
               itemCount: _archives.length,
               itemBuilder: (context, index) {
-                return _buildArchiveCard(_archives[index]);
+                // Determine if we need to filter by date logic here if _dateRange is set
+                // For now just showing all mocks
+                return ReportCard(
+                  report: _archives[index],
+                  onTap: () =>
+                      context.push('/supervisor/review/${_archives[index].id}'),
+                );
               },
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryItem(String label, String value, Color color) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildArchiveCard(Map<String, dynamic> archive) {
-    return GestureDetector(
-      onTap: () {
-        context.push('/supervisor/review/${archive['id']}');
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.checkCircle2,
-                        size: 12,
-                        color: Colors.green,
-                      ),
-                      Gap(4),
-                      Text(
-                        'Selesai',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    archive['category'],
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 11),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  _formatDate(archive['completedAt']),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                ),
-              ],
-            ),
-            const Gap(10),
-            Text(
-              archive['title'],
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const Gap(8),
-            Row(
-              children: [
-                Icon(LucideIcons.mapPin, size: 14, color: Colors.grey.shade500),
-                const Gap(4),
-                Text(
-                  archive['building'],
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const Gap(16),
-                Icon(LucideIcons.user, size: 14, color: Colors.grey.shade500),
-                const Gap(4),
-                Text(
-                  archive['teknisi'],
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const Gap(16),
-                Icon(LucideIcons.timer, size: 14, color: Colors.grey.shade500),
-                const Gap(4),
-                Text(
-                  archive['duration'],
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -390,7 +293,6 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
   }
 
   void _exportData(String format) {
-    // TODO: Implement actual export
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Mengexport ke format $format...'),

@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/enums/report_status.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/enums/user_role.dart';
-import 'package:mobile/core/models/report.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/services/report_service.dart';
-import 'package:mobile/core/widgets/report_card.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/features/report_common/presentation/widgets/report_card.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
 
 class PJGedungDashboardPage extends StatefulWidget {
@@ -101,7 +99,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         description: 'Lensa kotor atau rusak.',
         category: 'Fasilitas Kelas',
         building: 'Gedung A, R. 204',
-        status: ReportStatus.verifikasi, // Verified, but not yet handled
+        status: ReportStatus.terverifikasi, // Verified, but not yet handled
         createdAt: DateTime.now().subtract(const Duration(hours: 5)),
         reporterId: 'r4',
         reporterName: 'Dosen A',
@@ -113,7 +111,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         description: 'Kadang tidak mau terbuka.',
         category: 'Sipil',
         building: 'Gedung B, Lt Dasar',
-        status: ReportStatus.verifikasi,
+        status: ReportStatus.terverifikasi,
         createdAt: DateTime.now().subtract(const Duration(hours: 6)),
         reporterId: 'r5',
         reporterName: 'Satpam',
@@ -169,7 +167,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.white,
-        elevation: 0
+        elevation: 0,
       ),
       body: Column(
         children: [

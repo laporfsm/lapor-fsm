@@ -1,4 +1,4 @@
-import '../enums/report_status.dart';
+import '../../features/report_common/domain/enums/report_status.dart';
 
 /// Log entry for report timeline transparency
 class ReportLog {

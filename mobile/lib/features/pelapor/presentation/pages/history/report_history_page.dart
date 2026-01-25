@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/report.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+
+import 'package:mobile/features/report_common/presentation/widgets/report_card.dart';
+import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/theme.dart';
 
 class ReportHistoryPage extends StatelessWidget {
@@ -51,8 +54,9 @@ class ReportHistoryPage extends StatelessWidget {
                 return ReportCard(
                   report: report,
                   viewerRole: UserRole.pelapor,
-                  showTimer: false,
-                  onTap: () => context.push('/report-detail/${report.id}'),
+                  onTap: () => context.push('/report/${report.id}'),
+                  actionLabel: 'Lihat Detail',
+                  onAction: () => context.push('/report/${report.id}'),
                 );
               },
             ),
