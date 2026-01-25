@@ -4,10 +4,13 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/report.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/core/widgets/fullscreen_map_modal.dart';
 import 'package:mobile/core/widgets/media_gallery_widget.dart';
 import 'package:mobile/core/widgets/report_timer_card.dart';
+import 'package:mobile/core/widgets/report_timeline.dart';
 import 'package:mobile/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 

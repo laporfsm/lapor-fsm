@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_dashboard_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_list_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_archive_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_profile_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_main_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_container_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_categories_page.dart';
 
 /// Supervisor theme color - Dark Blue-Purple (Indigo 800) (differentiated from Pelapor blue & Teknisi orange)
 const Color supervisorColor = Color(0xFF3730A3);
@@ -22,12 +22,12 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
   int _currentIndex = 0;
 
   // List of pages for each tab
-  // NOTE: Each page should NOT have its own Scaffold with bottom nav
+  // NOTE: Each page should NOT have its own Scaffold with bottom nav (except ContainerPage which manages its own Scaffold body)
   final List<Widget> _pages = const [
     SupervisorDashboardPage(), // Tab 0: Dashboard
-    SupervisorTechnicianMainPage(), // Tab 1: Teknisi (NEW)
-    SupervisorReportsListPage(), // Tab 2: Laporan
-    SupervisorArchivePage(), // Tab 3: Arsip
+    SupervisorTechnicianMainPage(), // Tab 1: Staff
+    SupervisorReportsContainerPage(), // Tab 2: Laporan (Container with Tabs)
+    SupervisorCategoriesPage(), // Tab 3: Kategori (NEW)
     SupervisorProfilePage(), // Tab 4: Profil
   ];
 
@@ -57,8 +57,8 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
             label: 'Laporan',
           ),
           BottomNavigationBarItem(
-            icon: Icon(LucideIcons.archive),
-            label: 'Arsip',
+            icon: Icon(LucideIcons.tag), // Tag icon for Categories
+            label: 'Kategori',
           ),
           BottomNavigationBarItem(
             icon: Icon(LucideIcons.user),

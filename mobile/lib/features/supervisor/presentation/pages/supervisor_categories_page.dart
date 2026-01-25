@@ -47,10 +47,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
       appBar: AppBar(
         backgroundColor: supervisorColor,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
-        ),
+        leading: null, // Root tab, no back button
         title: const Text(
           'Kelola Kategori',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/enums/user_role.dart';
-import 'package:mobile/core/models/report.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 
 class PJGedungReportDetailPage extends StatefulWidget {
