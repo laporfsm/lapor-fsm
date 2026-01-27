@@ -4,6 +4,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
+import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
@@ -54,63 +56,96 @@ class SupervisorDashboardPage extends StatelessWidget {
               backgroundColor: supervisorColor,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [supervisorColor, Color(0xFF4338CA)],
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background Image
+                    Image.network(
+                      'https://images.unsplash.com/photo-1581094794329-cd675335442b?auto=format&fit=crop&q=80&w=1000',
+                      fit: BoxFit.cover,
                     ),
-                  ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.clipboardCheck,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const Gap(12),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dashboard Supervisor',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Monitoring & Evaluasi',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                    // Gradient Overlay - lighter to show image
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            supervisorColor.withValues(alpha: 0.7),
+                            supervisorColor.withValues(alpha: 0.85),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                    // Content
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.clipboardCheck,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                                const Gap(16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Dashboard Supervisor',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const Gap(4),
+                                      Text(
+                                        'Monitoring & Evaluasi Kinerja',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.9),
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // Notification Bell
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.bell,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -144,10 +179,10 @@ class SupervisorDashboardPage extends StatelessWidget {
               _buildReadyToProcessList(context),
               const Gap(24),
 
-              // Section: Menunggu Review (Completed by Technician)
+              // Section: Menunggu Approval (Completed by Technician)
               _buildSectionHeader(
                 context,
-                'Menunggu Review',
+                'Menunggu Approval',
                 'Lihat Semua',
                 () => context.push(
                   Uri(
@@ -159,7 +194,7 @@ class SupervisorDashboardPage extends StatelessWidget {
                 ),
               ),
               const Gap(12),
-              _buildPendingReviewList(context),
+              _buildApprovalList(context),
               const Gap(24),
 
               _buildSectionHeader(
@@ -508,7 +543,7 @@ class SupervisorDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPendingReviewList(BuildContext context) {
+  Widget _buildApprovalList(BuildContext context) {
     if (_pendingReview.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
@@ -526,7 +561,7 @@ class SupervisorDashboardPage extends StatelessWidget {
               ),
               const Gap(8),
               Text(
-                'Tidak ada laporan menunggu review',
+                'Tidak ada laporan menunggu approval',
                 style: TextStyle(color: Colors.grey.shade500),
               ),
             ],
@@ -535,87 +570,29 @@ class SupervisorDashboardPage extends StatelessWidget {
       );
     }
 
-    return Column(
-      children: _pendingReview.map((report) {
-        return GestureDetector(
-          onTap: () => context.push('/supervisor/review/${report['id']}'),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    LucideIcons.clipboardCheck,
-                    color: Colors.green,
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report['title'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Gap(4),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.user,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const Gap(4),
-                          Text(
-                            report['teknisi'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          const Gap(12),
-                          Icon(
-                            LucideIcons.timer,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const Gap(4),
-                          Text(
-                            report['duration'],
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(LucideIcons.chevronRight, color: Colors.grey),
-              ],
-            ),
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _pendingReview.length,
+      separatorBuilder: (context, index) => const Gap(12),
+      itemBuilder: (context, index) {
+        final r = _pendingReview[index];
+        return UniversalReportCard(
+          id: r['id'].toString(),
+          title: r['title'] as String,
+          location: 'Lab Komputer', // Mock location
+          category: 'Kelistrikan', // Mock category
+          status: ReportStatus.selesai,
+          handledBy: r['teknisi'] as String,
+          handlingTime: const Duration(minutes: 45), // Mock handling time
+          showStatus: true,
+          showTimer: false,
+          onTap: () => context.push(
+            '/supervisor/review/${r['id']}',
+            extra: {'status': ReportStatus.selesai},
           ),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -624,101 +601,46 @@ class SupervisorDashboardPage extends StatelessWidget {
     // Mock data combining Terverifikasi & Non-Gedung Pending
     final List<Map<String, dynamic>> readyReports = [
       {
-        'id': 101,
+        'id': '101',
         'title': 'Atap Bocor Koridor Utama',
+        'location': 'Gedung A, Lt 2',
         'category': 'Sipil',
-        'building': 'Gedung A, Lt 2',
+        'status': ReportStatus.terverifikasi,
+        'createdAt': DateTime.now().subtract(const Duration(minutes: 10)),
         'source': 'PJ Gedung (Verified)',
-        'time': '10 menit lalu',
-        'isVerified': true,
       },
       {
-        'id': 102,
+        'id': '102',
         'title': 'Lampu Taman Redup',
+        'location': 'Taman Depan (Non-Gedung)',
         'category': 'Kelistrikan',
-        'building': 'Taman Depan (Non-Gedung)',
+        'status': ReportStatus.pending,
+        'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
         'source': 'Laporan Langsung',
-        'time': '1 jam lalu',
-        'isVerified': false,
       },
     ];
 
-    return Column(
-      children: readyReports.map((report) {
-        return GestureDetector(
-          onTap: () => context.push('/supervisor/review/${report['id']}'),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border(
-                left: BorderSide(
-                  color: report['isVerified'] ? Colors.blue : Colors.grey,
-                  width: 4,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Column(
-                  children: [
-                    Icon(
-                      report['isVerified']
-                          ? LucideIcons.checkCircle
-                          : LucideIcons.alertCircle,
-                      color: report['isVerified'] ? Colors.blue : Colors.grey,
-                    ),
-                  ],
-                ),
-                const Gap(16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report['source'],
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: report['isVerified']
-                              ? Colors.blue
-                              : Colors.grey,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        report['title'],
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Gap(4),
-                      Text(
-                        '${report['building']} • ${report['category']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  report['time'],
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-              ],
-            ),
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: readyReports.length,
+      separatorBuilder: (context, index) => const Gap(12),
+      itemBuilder: (context, index) {
+        final r = readyReports[index];
+        return UniversalReportCard(
+          id: r['id'] as String,
+          title: r['title'] as String,
+          location: r['location'] as String,
+          category: r['category'] as String,
+          status: r['status'] as ReportStatus,
+          elapsedTime: DateTime.now().difference(r['createdAt'] as DateTime),
+          showStatus: true,
+          onTap: () => context.push(
+            '/supervisor/review/${r['id']}',
+            extra: {'status': r['status']},
           ),
         );
-      }).toList(),
+      },
     );
   }
 

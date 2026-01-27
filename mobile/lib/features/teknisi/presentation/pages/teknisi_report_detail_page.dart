@@ -39,24 +39,13 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
   }
 
   List<Widget> _buildActionButtons() {
-    if (_report.status == ReportStatus.pending) {
+    // Status: diproses - Teknisi bisa mulai penanganan
+    if (_report.status == ReportStatus.diproses) {
       return [
-        // Reject Button
-        OutlinedButton.icon(
-          onPressed: _rejectReport,
-          icon: const Icon(LucideIcons.x),
-          label: const Text('Tolak'),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.red,
-            side: const BorderSide(color: Colors.red),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-        ),
-        // Verify & Handle Button
         ElevatedButton.icon(
-          onPressed: _verifyAndHandle,
-          icon: const Icon(LucideIcons.checkCircle),
-          label: const Text('Verifikasi & Tangani'),
+          onPressed: _startHandling,
+          icon: const Icon(LucideIcons.play),
+          label: const Text('Mulai Penanganan'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -64,48 +53,44 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           ),
         ),
       ];
-    } else if (_report.status == ReportStatus.penanganan ||
-        _report.status == ReportStatus.verifikasi) {
+    }
+    // Status: penanganan - Teknisi bisa pause atau selesaikan
+    else if (_report.status == ReportStatus.penanganan) {
       return [
         // Pause Button
         OutlinedButton.icon(
           onPressed: _pauseReport,
           icon: const Icon(LucideIcons.pauseCircle),
-          label: const Text('Tunda'),
+          label: const Text('Pause'),
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.orange,
             side: const BorderSide(color: Colors.orange),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
-        const Gap(12),
-        // Complete Button
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () =>
-                context.push('/teknisi/report/${widget.reportId}/complete'),
-            icon: const Icon(LucideIcons.checkCircle2),
-            label: const Text('Selesaikan'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF22C55E),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
+        // Selesaikan Button
+        ElevatedButton.icon(
+          onPressed: () =>
+              context.push('/teknisi/report/${widget.reportId}/complete'),
+          icon: const Icon(LucideIcons.checkCircle2),
+          label: const Text('Selesaikan'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF22C55E),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
       ];
     } else if (_report.status == ReportStatus.onHold) {
       return [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: _resumeReport,
-            icon: const Icon(LucideIcons.playCircle),
-            label: const Text('Lanjutkan Pekerjaan'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
+        ElevatedButton.icon(
+          onPressed: _resumeReport,
+          icon: const Icon(LucideIcons.playCircle),
+          label: const Text('Lanjutkan Pekerjaan'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryColor,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
       ];
@@ -113,34 +98,23 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     return [];
   }
 
-  void _verifyAndHandle() {
+  void _startHandling() {
     setState(() {
       final now = DateTime.now();
       _report = _report.copyWith(
         status: ReportStatus.penanganan,
-        handledBy: ['Budi Santoso', 'Ahmad Hidayat'],
+        handledBy: ['Budi Santoso'],
         logs: [
           ReportLog(
-            id: 'new_handling',
-            fromStatus: ReportStatus.verifikasi,
+            id: 'start_handling_${now.millisecondsSinceEpoch}',
+            fromStatus: ReportStatus.diproses,
             toStatus: ReportStatus.penanganan,
             action: ReportAction.handling,
             actorId: 'tech1',
             actorName: 'Budi Santoso',
             actorRole: 'Teknisi',
             timestamp: now,
-            reason: 'Mulai penanganan',
-          ),
-          ReportLog(
-            id: 'new_verify',
-            fromStatus: ReportStatus.pending,
-            toStatus: ReportStatus.verifikasi,
-            action: ReportAction.verified,
-            actorId: 'tech1',
-            actorName: 'Budi Santoso',
-            actorRole: 'Teknisi',
-            timestamp: now,
-            reason: 'Laporan diverifikasi',
+            reason: 'Mulai penanganan laporan',
           ),
           ..._report.logs,
         ],
@@ -149,7 +123,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Laporan diverifikasi - Penanganan dimulai'),
+        content: Text('Penanganan dimulai'),
         backgroundColor: Colors.green,
       ),
     );
@@ -266,79 +240,6 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         content: Text('Pengerjaan dilanjutkan'),
         backgroundColor: Colors.green,
       ),
-    );
-  }
-
-  void _rejectReport() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        String reason = '';
-        return AlertDialog(
-          title: const Text('Tolak Laporan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Masukkan alasan penolakan:'),
-              const Gap(12),
-              TextField(
-                onChanged: (value) => reason = value,
-                decoration: const InputDecoration(
-                  hintText: 'Alasan penolakan...',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                final now = DateTime.now();
-                setState(() {
-                  _report = _report.copyWith(
-                    status: ReportStatus.ditolak,
-                    logs: [
-                      ReportLog(
-                        id: 'new_reject',
-                        fromStatus: _report.status,
-                        toStatus: ReportStatus.ditolak,
-                        action: ReportAction.rejected,
-                        actorId: 'tech1',
-                        actorName: 'Budi Santoso',
-                        actorRole: 'Teknisi',
-                        timestamp: now,
-                        reason: reason.isEmpty ? "Tidak ada alasan" : reason,
-                      ),
-                      ..._report.logs,
-                    ],
-                  );
-                });
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Laporan ditolak dan dikembalikan ke Supervisor',
-                    ),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                context.pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Tolak'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

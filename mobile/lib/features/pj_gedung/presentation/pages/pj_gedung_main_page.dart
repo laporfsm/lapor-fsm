@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/auth/presentation/pages/staff_profile_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_dashboard_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
 
 class PJGedungMainPage extends StatefulWidget {
   const PJGedungMainPage({super.key});
@@ -15,9 +16,7 @@ class _PJGedungMainPageState extends State<PJGedungMainPage> {
 
   final List<Widget> _pages = [
     const PJGedungDashboardPage(),
-    const Scaffold(
-      body: Center(child: Text("Riwayat Verifikasi (Coming Soon)")),
-    ), // Placeholder
+    const PJGedungHistoryPage(),
     const StaffProfilePage(role: 'pjGedung'),
   ];
 

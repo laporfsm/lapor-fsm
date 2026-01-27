@@ -55,7 +55,7 @@ extension ReportStatusX on ReportStatus {
       case ReportStatus.terverifikasi:
         return 'Terverifikasi';
       case ReportStatus.verifikasi: // Legacy mapping
-        return 'Verifikasi';
+        return 'Terverifikasi';
       case ReportStatus.diproses:
         return 'Diproses';
       case ReportStatus.penanganan:

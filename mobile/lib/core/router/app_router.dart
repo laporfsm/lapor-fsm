@@ -26,15 +26,18 @@ import 'package:mobile/features/teknisi/presentation/pages/teknisi_map_view_page
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_settings_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_help_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/teknisi_edit_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/teknisi_all_reports_page.dart';
 // PJ Gedung imports
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_reports_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_review_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_archive_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_list_page.dart';
+
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_rejected_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_export_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_list_page.dart';
@@ -249,6 +252,17 @@ final appRouter = GoRouter(
       path: '/teknisi/edit-profile',
       builder: (context, state) => const TeknisiEditProfilePage(),
     ),
+    GoRoute(
+      path: '/teknisi/all-reports',
+      builder: (context, state) {
+        final status = state.uri.queryParameters['status'];
+        final period = state.uri.queryParameters['period'];
+        return TeknisiAllReportsPage(
+          initialStatus: status,
+          initialPeriod: period,
+        );
+      },
+    ),
 
     // ===============================================
     // PJ GEDUNG ROUTES
@@ -256,6 +270,24 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/pj-gedung',
       builder: (context, state) => const PJGedungMainPage(),
+    ),
+    GoRoute(
+      path: '/pj-gedung/reports',
+      builder: (context, state) =>
+          PJGedungReportsPage(queryParams: state.uri.queryParameters),
+    ),
+    GoRoute(
+      path: '/pj-gedung/report/:id',
+      builder: (context, state) {
+        // Get report from extra or create placeholder
+        final extra = state.extra as Map<String, dynamic>?;
+        final report = extra?['report'];
+        if (report != null) {
+          return PJGedungReportDetailPage(report: report);
+        }
+        // Fallback: navigate back if no report provided
+        return const Scaffold(body: Center(child: Text('Report not found')));
+      },
     ),
 
     // ===============================================
@@ -269,7 +301,8 @@ final appRouter = GoRouter(
     // Detail page (opened on top of shell, has back button)
     GoRoute(
       path: '/supervisor/reports',
-      builder: (context, state) => const SupervisorReportsPage(),
+      builder: (context, state) =>
+          SupervisorReportsPage(queryParams: state.uri.queryParameters),
     ),
     GoRoute(
       path: '/supervisor/statistics',
@@ -278,21 +311,15 @@ final appRouter = GoRouter(
     // Filtered reports page with query parameters
     GoRoute(
       path: '/supervisor/reports/filter',
-      builder: (context, state) {
-        final status = state.uri.queryParameters['status'];
-        final period = state.uri.queryParameters['period'];
-        final emergency = state.uri.queryParameters['emergency'] == 'true';
-        return SupervisorReportsListPage(
-          initialStatus: status,
-          initialPeriod: period,
-          showEmergencyOnly: emergency,
-        );
-      },
+      builder: (context, state) =>
+          SupervisorReportsPage(queryParams: state.uri.queryParameters),
     ),
     GoRoute(
       path: '/supervisor/review/:id',
-      builder: (context, state) =>
-          SupervisorReviewPage(reportId: state.pathParameters['id'] ?? '0'),
+      builder: (context, state) => SupervisorReviewPage(
+        reportId: state.pathParameters['id'] ?? '0',
+        extra: state.extra as Map<String, dynamic>?,
+      ),
     ),
     GoRoute(
       path: '/supervisor/archive',
