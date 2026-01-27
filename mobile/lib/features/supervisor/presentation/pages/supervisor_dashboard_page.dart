@@ -7,6 +7,8 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_p
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 
+import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
+
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
 class SupervisorDashboardPage extends StatelessWidget {
@@ -27,18 +29,11 @@ class SupervisorDashboardPage extends StatelessWidget {
   // TODO: [BACKEND] Replace with API call to fetch pending reviews
   List<Map<String, dynamic>> get _pendingReview => [
     {
-      'id': 1,
+      'id': 'sup-1',
       'title': 'AC Mati di Lab Komputer',
       'teknisi': 'Budi Teknisi',
       'completedAt': DateTime.now().subtract(const Duration(minutes: 30)),
       'duration': '45 menit',
-    },
-    {
-      'id': 2,
-      'title': 'Kebocoran Pipa Toilet',
-      'teknisi': 'Andi Teknisi',
-      'completedAt': DateTime.now().subtract(const Duration(hours: 1)),
-      'duration': '1 jam 20 menit',
     },
   ];
 
@@ -46,6 +41,7 @@ class SupervisorDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: const NotificationFab(),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -59,89 +55,110 @@ class SupervisorDashboardPage extends StatelessWidget {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Background Image
-                    Image.network(
-                      'https://images.unsplash.com/photo-1581094794329-cd675335442b?auto=format&fit=crop&q=80&w=1000',
-                      fit: BoxFit.cover,
+                    // 1. Base Gradient Background
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.supervisorColor,
+                            AppTheme.supervisorColor.withRed(
+                              50,
+                            ), // Slightly different shade
+                          ],
+                        ),
+                      ),
                     ),
-                    // Gradient Overlay - lighter to show image
+                    // 2. Decorative Circles (Pattern)
+                    Positioned(
+                      top: -50,
+                      right: -50,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -30,
+                      left: -30,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.05),
+                        ),
+                      ),
+                    ),
+                    // Gradient Overlay for text readability (optional, but keeps style)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            supervisorColor.withValues(alpha: 0.7),
-                            supervisorColor.withValues(alpha: 0.85),
+                            Colors.transparent,
+                            Colors.black.withOpacity(
+                              0.2,
+                            ), // Subtle shadow at bottom
                           ],
                         ),
                       ),
                     ),
                     // Content
                     SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: const Icon(
+                                  LucideIcons.clipboardCheck,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const Gap(16),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Dashboard Supervisor',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.clipboardCheck,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                                const Gap(16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Dashboard Supervisor',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                    const Gap(4),
+                                    Text(
+                                      'Monitoring & Evaluasi Kinerja',
+                                      style: TextStyle(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontSize: 14,
                                       ),
-                                      const Gap(4),
-                                      Text(
-                                        'Monitoring & Evaluasi Kinerja',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                // Notification Bell
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.bell,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -174,6 +191,8 @@ class SupervisorDashboardPage extends StatelessWidget {
                     }, // Simplified for now
                   ).toString(),
                 ),
+                count:
+                    (_stats['pending'] as int) + (_stats['verifikasi'] as int),
               ),
               const Gap(12),
               _buildReadyToProcessList(context),
@@ -192,6 +211,7 @@ class SupervisorDashboardPage extends StatelessWidget {
                     },
                   ).toString(),
                 ),
+                count: _pendingReview.length,
               ),
               const Gap(12),
               _buildApprovalList(context),
@@ -529,14 +549,37 @@ class SupervisorDashboardPage extends StatelessWidget {
     BuildContext context,
     String title,
     String actionText,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    int? count,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        Row(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            if (count != null && count > 0) ...[
+              const Gap(8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.supervisorColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         TextButton(onPressed: onTap, child: Text(actionText)),
       ],
@@ -601,22 +644,13 @@ class SupervisorDashboardPage extends StatelessWidget {
     // Mock data combining Terverifikasi & Non-Gedung Pending
     final List<Map<String, dynamic>> readyReports = [
       {
-        'id': '101',
-        'title': 'Atap Bocor Koridor Utama',
-        'location': 'Gedung A, Lt 2',
-        'category': 'Sipil',
+        'id': 'sup-2',
+        'title': 'Kebocoran Pipa Toilet',
+        'location': 'Gedung C, Toilet',
+        'category': 'Sanitasi',
         'status': ReportStatus.terverifikasi,
-        'createdAt': DateTime.now().subtract(const Duration(minutes: 10)),
+        'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
         'source': 'PJ Gedung (Verified)',
-      },
-      {
-        'id': '102',
-        'title': 'Lampu Taman Redup',
-        'location': 'Taman Depan (Non-Gedung)',
-        'category': 'Kelistrikan',
-        'status': ReportStatus.pending,
-        'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
-        'source': 'Laporan Langsung',
       },
     ];
 

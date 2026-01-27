@@ -40,12 +40,14 @@ class ReportDetailBase extends StatelessWidget {
   final Report report;
   final UserRole viewerRole;
   final List<Widget>? actionButtons;
+  final Color? appBarColor;
 
   const ReportDetailBase({
     super.key,
     required this.report,
     required this.viewerRole,
     this.actionButtons,
+    this.appBarColor,
   });
 
   /// Get category-specific header image
@@ -393,7 +395,7 @@ class ReportDetailBase extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 250,
       pinned: true,
-      backgroundColor: AppTheme.primaryColor,
+      backgroundColor: appBarColor ?? AppTheme.primaryColor,
       leading: IconButton(
         onPressed: () => context.pop(),
         icon: Container(
@@ -531,8 +533,15 @@ class ReportDetailBase extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(statusIcon, color: statusColor, size: 24),
-          const Gap(12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(statusIcon, color: statusColor, size: 24),
+          ),
+          const Gap(16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -543,12 +552,13 @@ class ReportDetailBase extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
+              const Gap(4),
               Text(
                 report.status.label,
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 18,
                 ),
               ),
             ],

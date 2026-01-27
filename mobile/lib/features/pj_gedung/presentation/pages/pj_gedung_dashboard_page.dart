@@ -7,6 +7,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
 /// PJ Gedung theme color
 const Color pjGedungColor = Color(0xFF059669); // Emerald green
@@ -129,6 +130,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: const NotificationFab(),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -164,50 +166,48 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                     ),
                     // Content
                     SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.building2,
-                                    color: Colors.white,
-                                    size: 26,
-                                  ),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                const Gap(14),
-                                const Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dashboard PJ Gedung',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Gap(2),
-                                    Text(
-                                      'Verifikasi & Monitoring Gedung A',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                                child: const Icon(
+                                  LucideIcons.building2,
+                                  color: Colors.white,
+                                  size: 26,
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const Gap(14),
+                              const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dashboard PJ Gedung',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Gap(2),
+                                  Text(
+                                    'Verifikasi & Monitoring Gedung A',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -233,6 +233,59 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                       ],
                       _buildPeriodStats(context),
                       const Gap(16),
+                      // Stats Button
+                      GestureDetector(
+                        onTap: () => context.push('/pj-gedung/statistics'),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: pjGedungColor.withOpacity(0.3),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: pjGedungColor.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    LucideIcons.barChart2,
+                                    color: pjGedungColor,
+                                    size: 20,
+                                  ),
+                                  Gap(8),
+                                  Text(
+                                    'Lihat Statistik Lengkap',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: pjGedungColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Icon(
+                                LucideIcons.chevronRight,
+                                size: 16,
+                                color: pjGedungColor,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const Gap(16),
                       _buildStatusStats(context),
                       const Gap(16),
                       _buildQuickActions(context),
@@ -242,17 +295,21 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                         'Perlu Verifikasi',
                         'Lihat Semua',
                         () => context.push('/pj-gedung/reports?status=pending'),
+                        count: _stats['pending'],
+                        badgeColor: pjGedungColor,
                       ),
                       const Gap(12),
                       _buildPendingList(context),
                       const Gap(24),
                       _buildSectionHeader(
                         context,
-                        'Terverifikasi Terbaru',
+                        'Menunggu Supervisor',
                         'Lihat Semua',
                         () => context.push(
                           '/pj-gedung/reports?status=terverifikasi',
                         ),
+                        count: _stats['verified'],
+                        badgeColor: pjGedungColor,
                       ),
                       const Gap(12),
                       _buildVerifiedList(context),
@@ -262,134 +319,69 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                 ),
               ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showExportOptions(context),
-        backgroundColor: Colors.white,
-        child: const Icon(LucideIcons.download, color: pjGedungColor),
-      ),
     );
   }
 
-  /// Emergency Alert Banner - View Only (reports handled by Supervisor)
+  /// Emergency Alert Banner - Click to view list
   Widget _buildEmergencyAlert(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.red.shade600, Colors.red.shade800],
+    return GestureDetector(
+      onTap: () => context.push('/pj-gedung/reports?emergency=true'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.red.shade600, Colors.red.shade800],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.red.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  LucideIcons.alertTriangle,
-                  color: Colors.white,
-                  size: 20,
-                ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
               ),
-              const Gap(12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Laporan Darurat di Gedung Anda',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+              child: const Icon(
+                LucideIcons.alertTriangle,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Laporan Darurat',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
                     ),
-                    Text(
-                      '${_emergencyReports.length} laporan ditangani langsung oleh Supervisor',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
-                      ),
+                  ),
+                  Text(
+                    '${_emergencyReports.length} laporan di gedung Anda (View Only)',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
                     ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const Gap(12),
-          // Show emergency reports list (compact)
-          ..._emergencyReports
-              .take(2)
-              .map(
-                (report) => Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              report.title,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const Gap(4),
-                            Text(
-                              '${report.building} • ${report.status.label}',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'View Only',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
-        ],
+            ),
+            const Icon(LucideIcons.chevronRight, color: Colors.white70),
+          ],
+        ),
       ),
     );
   }
@@ -598,8 +590,10 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
     BuildContext context,
     String title,
     String actionText,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    int? count,
+    Color? badgeColor,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -609,24 +603,24 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
               title,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const Gap(8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: pjGedungColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                title.contains('Perlu')
-                    ? _pendingReports.length.toString()
-                    : _verifiedReports.length.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+            if (count != null && count > 0) ...[
+              const Gap(8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: badgeColor ?? AppTheme.secondaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
         TextButton(onPressed: onTap, child: Text(actionText)),
@@ -708,68 +702,6 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showExportOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Export Riwayat Verifikasi',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const Gap(8),
-              Text(
-                'Unduh data riwayat verifikasi laporan.',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const Gap(24),
-              ListTile(
-                leading: const Icon(
-                  LucideIcons.fileSpreadsheet,
-                  color: Colors.green,
-                ),
-                title: const Text('Export ke Excel (.xlsx)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh Excel... (Mock)')),
-                  );
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              const Gap(12),
-              ListTile(
-                leading: const Icon(LucideIcons.fileText, color: Colors.red),
-                title: const Text('Export ke PDF (.pdf)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh PDF... (Mock)')),
-                  );
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

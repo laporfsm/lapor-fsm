@@ -5,7 +5,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/presentation/widgets/report_card.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -230,12 +230,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
   }
 
   void _navigateToDetail(Report report) async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PJGedungReportDetailPage(report: report),
-      ),
-    );
+    final result = await context.push('/pj-gedung/report/${report.id}');
     if (result == true) _fetchReports();
   }
 
@@ -264,105 +259,147 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Cari laporan...',
-                          prefixIcon: const Icon(LucideIcons.search, size: 20),
-                          filled: true,
-                          fillColor: Colors.grey.shade100,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Gap(8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Cari laporan...',
+                      prefixIcon: const Icon(LucideIcons.search, size: 20),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(LucideIcons.x, size: 18),
+                              onPressed: () {
+                                _searchController.clear();
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      child: IconButton(
-                        icon: Icon(
-                          LucideIcons.calendar,
-                          color: _customDateRange != null
-                              ? _pjGedungColor
-                              : Colors.grey.shade600,
-                        ),
-                        onPressed: _showDatePicker,
-                      ),
-                    ),
-                    const Gap(8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
                       ),
-                      child: IconButton(
-                        icon: Icon(
-                          LucideIcons.filter,
-                          color: _activeFilter != 'all'
-                              ? _pjGedungColor
-                              : Colors.grey.shade600,
-                        ),
-                        onPressed: _showFilterDialog,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: _pjGedungColor),
                       ),
-                    ),
-                  ],
-                ),
-                const Gap(12),
-                // Active Filters Only
-                if (_hasActiveFilters())
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        if (_periodFilter != null) ...[
-                          _buildActiveFilterChip(
-                            _getPeriodLabel(_periodFilter!),
-                            () => _setPeriodFilter(null),
-                          ),
-                          const Gap(8),
-                        ],
-                        if (_customDateRange != null) ...[
-                          _buildDateRangeChip(),
-                          const Gap(8),
-                        ],
-                        if (_activeFilter != 'all') ...[
-                          _buildActiveFilterChip(
-                            _activeFilter == 'pending'
-                                ? 'Perlu Verifikasi'
-                                : 'Terverifikasi',
-                            () {
-                              setState(() {
-                                _activeFilter = 'all';
-                                _applyFilters();
-                              });
-                            },
-                          ),
-                          const Gap(8),
-                        ],
-                        TextButton(
-                          onPressed: _resetFilters,
-                          child: const Text('Reset'),
-                        ),
-                      ],
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
                   ),
+                ),
+                const Gap(12),
+                InkWell(
+                  onTap: _showDatePicker,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _customDateRange != null
+                          ? _pjGedungColor
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _customDateRange != null
+                            ? _pjGedungColor
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Icon(
+                      LucideIcons.calendarRange,
+                      color: _customDateRange != null
+                          ? Colors.white
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                const Gap(8),
+                InkWell(
+                  onTap: _showFilterDialog,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _activeFilter != 'all'
+                            ? _pjGedungColor
+                            : Colors.grey.shade300,
+                        width: _activeFilter != 'all' ? 1.5 : 1.0,
+                      ),
+                    ),
+                    child: Icon(
+                      LucideIcons.filter,
+                      color: _activeFilter != 'all'
+                          ? _pjGedungColor
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+
+          // Active Filters (Separate Container for Full Width)
+          if (_hasActiveFilters())
+            Container(
+              width: double.infinity,
+              color: Colors.white,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    if (_periodFilter != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildActiveFilterChip(
+                          _getPeriodLabel(_periodFilter!),
+                          () => _setPeriodFilter(null),
+                        ),
+                      ),
+                    ],
+                    if (_customDateRange != null) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildDateRangeChip(),
+                      ),
+                    ],
+                    if (_activeFilter != 'all') ...[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildActiveFilterChip(
+                          _activeFilter == 'pending'
+                              ? 'Perlu Verifikasi'
+                              : 'Terverifikasi',
+                          () {
+                            setState(() {
+                              _activeFilter = 'all';
+                              _applyFilters();
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                    TextButton(
+                      onPressed: _resetFilters,
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // Reports List
           Expanded(
             child: _isLoading
@@ -434,16 +471,30 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
   }
 
   Widget _buildActiveFilterChip(String label, VoidCallback onRemove) {
-    return Chip(
-      label: Text(label),
-      deleteIcon: const Icon(LucideIcons.x, size: 16),
-      onDeleted: onRemove,
-      backgroundColor: _pjGedungColor.withOpacity(0.2),
-      labelStyle: const TextStyle(
-        color: _pjGedungColor,
-        fontWeight: FontWeight.w500,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _pjGedungColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
       ),
-      deleteIconColor: _pjGedungColor,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: _pjGedungColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Gap(4),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(LucideIcons.x, size: 14, color: _pjGedungColor),
+          ),
+        ],
+      ),
     );
   }
 
@@ -452,18 +503,35 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     final start = dateFormat.format(_customDateRange!.start);
     final end = dateFormat.format(_customDateRange!.end);
 
-    return Chip(
-      label: Text('$start - $end'),
-      deleteIcon: const Icon(LucideIcons.x, size: 16),
-      onDeleted: () {
-        setState(() {
-          _customDateRange = null;
-          _applyFilters();
-        });
-      },
-      backgroundColor: _pjGedungColor.withOpacity(0.2),
-      labelStyle: const TextStyle(color: _pjGedungColor),
-      deleteIconColor: _pjGedungColor,
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: _pjGedungColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$start - $end',
+            style: const TextStyle(
+              color: _pjGedungColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Gap(4),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _customDateRange = null;
+                _applyFilters();
+              });
+            },
+            child: const Icon(LucideIcons.x, size: 14, color: _pjGedungColor),
+          ),
+        ],
+      ),
     );
   }
 
@@ -493,9 +561,26 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(LucideIcons.x),
-                      onPressed: () => Navigator.pop(context),
+                    TextButton(
+                      onPressed: () {
+                        // Reset Logic
+                        setModalState(() {}); // Refresh Modal
+                        setState(() {
+                          _periodFilter = null;
+                          _activeFilter = 'all'; // Default to all (implicit)
+                          _customDateRange = null;
+                          _applyFilters();
+                        });
+                        Navigator.pop(
+                          context,
+                        ); // Optional: Close on reset? Usually just clears.
+                        // User said: "kembali ke keadaan default"
+                        // In SharedAllReportsPage reset clears selection but keeps modal open?
+                        // Let's keep modal open but clear values.
+                        // But _activeFilter = 'all' IS the default.
+                        // And we removed 'Semua' chip.
+                      },
+                      child: const Text('Reset'),
                     ),
                   ],
                 ),
@@ -528,7 +613,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _buildStatusChip('Semua', 'all', setModalState),
+                    // Removed 'Semua' (all) option as requested
                     _buildStatusChip(
                       'Perlu Verifikasi',
                       'pending',

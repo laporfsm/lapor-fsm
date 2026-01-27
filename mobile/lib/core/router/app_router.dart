@@ -32,6 +32,7 @@ import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_reports_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_statistics_page.dart';
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
@@ -48,6 +49,7 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_setting
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_help_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_categories_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_activity_log_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_building_list_page.dart';
 // Admin imports
 import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
 import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
@@ -59,6 +61,7 @@ import 'package:mobile/features/admin/presentation/pages/admin_profile_page.dart
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
 // Auth imports
 import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
 // Navigation key for ShellRoute
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -75,6 +78,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfilePage(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationPage(),
     ),
     GoRoute(
       path: '/forgot-password',
@@ -257,9 +264,11 @@ final appRouter = GoRouter(
       builder: (context, state) {
         final status = state.uri.queryParameters['status'];
         final period = state.uri.queryParameters['period'];
+        final emergency = state.uri.queryParameters['emergency'] == 'true';
         return TeknisiAllReportsPage(
           initialStatus: status,
           initialPeriod: period,
+          initialEmergency: emergency,
         );
       },
     ),
@@ -278,15 +287,14 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/pj-gedung/report/:id',
+      builder: (context, state) =>
+          PJGedungReportDetailPage(reportId: state.pathParameters['id'] ?? '0'),
+    ),
+    GoRoute(
+      path: '/pj-gedung/statistics',
       builder: (context, state) {
-        // Get report from extra or create placeholder
-        final extra = state.extra as Map<String, dynamic>?;
-        final report = extra?['report'];
-        if (report != null) {
-          return PJGedungReportDetailPage(report: report);
-        }
-        // Fallback: navigate back if no report provided
-        return const Scaffold(body: Center(child: Text('Report not found')));
+        final buildingName = state.uri.queryParameters['buildingName'];
+        return PJGedungStatisticsPage(buildingName: buildingName);
       },
     ),
 
@@ -375,6 +383,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/supervisor/activity-log',
       builder: (context, state) => const SupervisorActivityLogPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/buildings',
+      builder: (context, state) => const SupervisorBuildingListPage(),
     ),
 
     GoRoute(
