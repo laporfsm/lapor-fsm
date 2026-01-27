@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:go_router/go_router.dart';
+import 'package:mobile/theme.dart';
 
 class SupervisorActivityLogPage extends StatefulWidget {
   const SupervisorActivityLogPage({super.key});
@@ -11,9 +11,11 @@ class SupervisorActivityLogPage extends StatefulWidget {
       _SupervisorActivityLogPageState();
 }
 
-class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage> {
-  // Mock Data
-  final List<Map<String, dynamic>> _allLogs = [
+class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  final List<Map<String, dynamic>> _technicianLogs = [
     {
       'id': 1,
       'actor': 'Budi Teknisi',
@@ -25,16 +27,6 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage> {
       'color': Colors.orange,
     },
     {
-      'id': 2,
-      'actor': 'PJ Gedung A',
-      'role': 'PJ Gedung',
-      'action': 'memverifikasi laporan',
-      'target': 'Lampu Koridor',
-      'time': '15 menit lalu',
-      'icon': LucideIcons.checkCircle,
-      'color': Colors.green,
-    },
-    {
       'id': 3,
       'actor': 'Andi Teknisi',
       'role': 'Teknisi',
@@ -43,26 +35,6 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage> {
       'time': '30 menit lalu',
       'icon': LucideIcons.checkCheck,
       'color': Colors.blue,
-    },
-    {
-      'id': 4,
-      'actor': 'Siti Pelapor',
-      'role': 'Mahasiswa',
-      'action': 'membuat laporan darurat',
-      'target': 'Kebakaran Lab',
-      'time': '1 jam lalu',
-      'icon': LucideIcons.alertTriangle,
-      'color': Colors.red,
-    },
-    {
-      'id': 5,
-      'actor': 'PJ Gedung B',
-      'role': 'PJ Gedung',
-      'action': 'memverifikasi laporan',
-      'target': 'Air Keran Macet',
-      'time': '2 jam lalu',
-      'icon': LucideIcons.checkCircle,
-      'color': Colors.green,
     },
     {
       'id': 6,
@@ -76,36 +48,101 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage> {
     },
   ];
 
+  final List<Map<String, dynamic>> _pjLogs = [
+    {
+      'id': 2,
+      'actor': 'PJ Gedung A',
+      'role': 'PJ Gedung',
+      'action': 'memverifikasi laporan',
+      'target': 'Lampu Koridor',
+      'time': '15 menit lalu',
+      'icon': LucideIcons.checkCircle,
+      'color': Colors.green,
+    },
+    {
+      'id': 5,
+      'actor': 'PJ Gedung B',
+      'role': 'PJ Gedung',
+      'action': 'memverifikasi laporan',
+      'target': 'Air Keran Macet',
+      'time': '2 jam lalu',
+      'icon': LucideIcons.checkCircle,
+      'color': Colors.green,
+    },
+    {
+      'id': 4,
+      'actor': 'Siti Pelapor',
+      'role': 'PJ Gedung',
+      'action': 'menolak laporan',
+      'target': 'Kursi Patah (Duplikat)',
+      'time': '1 hari lalu',
+      'icon': LucideIcons.xCircle,
+      'color': Colors.red,
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text(
-          'Log Aktivitas',
-          style: TextStyle(fontWeight: FontWeight.bold),
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabController,
+            labelColor: AppTheme.primaryColor,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: AppTheme.primaryColor,
+            tabs: const [
+              Tab(text: 'Teknisi'),
+              Tab(text: 'PJ Gedung'),
+            ],
+          ),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
-          onPressed: () => context.pop(),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [_buildLogList(_technicianLogs), _buildLogList(_pjLogs)],
+          ),
         ),
-        titleTextStyle: const TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+      ],
+    );
+  }
+
+  Widget _buildLogList(List<Map<String, dynamic>> logs) {
+    if (logs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.history, size: 64, color: Colors.grey.shade300),
+            const Gap(16),
+            Text(
+              'Belum ada aktivitas',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
         ),
-      ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _allLogs.length,
-        separatorBuilder: (context, index) => const Gap(12),
-        itemBuilder: (context, index) {
-          final log = _allLogs[index];
-          return _buildLogCard(log);
-        },
-      ),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: logs.length,
+      separatorBuilder: (context, index) => const Gap(12),
+      itemBuilder: (context, index) {
+        return _buildLogCard(logs[index]);
+      },
     );
   }
 

@@ -11,6 +11,7 @@ import 'package:mobile/core/widgets/fullscreen_map_modal.dart';
 import 'package:mobile/core/widgets/media_gallery_widget.dart';
 import 'package:mobile/core/widgets/report_timer_card.dart';
 import 'package:mobile/core/widgets/report_timeline.dart';
+import 'package:mobile/core/models/report_log.dart';
 import 'package:mobile/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -62,6 +63,34 @@ class ReportDetailBase extends StatelessWidget {
     }
   }
 
+  String _formatDurationReadable(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+    if (hours > 0) {
+      return '$hours jam $minutes menit';
+    }
+    return '$minutes menit';
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    final months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
+    ];
+    return '${dateTime.day} ${months[dateTime.month - 1]} ${dateTime.year}, '
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,9 +130,10 @@ class ReportDetailBase extends StatelessWidget {
                   ],
                   const Gap(16),
 
-                  // Reporter Info (Visible to Teknisi & Supervisor)
+                  // Reporter Info (Visible to Teknisi, Supervisor, & PJ Gedung)
                   if (viewerRole == UserRole.teknisi ||
-                      viewerRole == UserRole.supervisor) ...[
+                      viewerRole == UserRole.supervisor ||
+                      viewerRole == UserRole.pjGedung) ...[
                     _buildInfoCard(
                       title: 'Informasi Pelapor',
                       icon: LucideIcons.user,
@@ -204,6 +234,62 @@ class ReportDetailBase extends StatelessWidget {
                     const Gap(16),
                   ],
 
+                  // Time Breakdown (for completed/approved reports)
+                  if (report.handlingStartedAt != null &&
+                      report.completedAt != null) ...[
+                    _buildInfoCard(
+                      title: 'Waktu Penanganan',
+                      icon: LucideIcons.timer,
+                      accentColor: Colors.green,
+                      children: [
+                        // Total handling time
+                        () {
+                          final totalTime = report.completedAt!.difference(
+                            report.handlingStartedAt!,
+                          );
+                          final holdDuration = Duration(
+                            seconds: report.totalPausedDurationSeconds,
+                          );
+                          final actualTime = totalTime - holdDuration;
+
+                          return Column(
+                            children: [
+                              // Actual Work Time
+                              _buildInfoRow(
+                                LucideIcons.hammer,
+                                'Waktu Pengerjaan',
+                                _formatDurationReadable(actualTime),
+                              ),
+                              // Hold Time (if any)
+                              if (holdDuration.inSeconds > 0)
+                                _buildInfoRow(
+                                  LucideIcons.pauseCircle,
+                                  'Waktu Hold',
+                                  _formatDurationReadable(holdDuration),
+                                ),
+                              const Gap(8),
+                              const Divider(),
+                              const Gap(8),
+                              // Started At
+                              _buildInfoRow(
+                                LucideIcons.play,
+                                'Mulai Dikerjakan',
+                                _formatDateTime(report.handlingStartedAt!),
+                              ),
+                              // Completed At
+                              _buildInfoRow(
+                                LucideIcons.checkCircle2,
+                                'Selesai Dikerjakan',
+                                _formatDateTime(report.completedAt!),
+                              ),
+                            ],
+                          );
+                        }(),
+                      ],
+                    ),
+                    const Gap(16),
+                  ],
+
                   // Location Card with Map
                   _buildInfoCard(
                     title: 'Lokasi',
@@ -246,7 +332,24 @@ class ReportDetailBase extends StatelessWidget {
                     title: 'Riwayat Aktivitas',
                     icon: LucideIcons.clock,
                     accentColor: AppTheme.primaryColor,
-                    children: [ReportTimeline(logs: report.logs)],
+                    children: [
+                      ReportTimeline(
+                        logs: [
+                          ReportLog(
+                            id: 'created_${report.id}',
+                            fromStatus: ReportStatus.pending, // Initial
+                            toStatus: ReportStatus.pending,
+                            action: ReportAction
+                                .created, // Map to "Laporan Dibuat" in UI
+                            actorId: report.reporterId,
+                            actorName: report.reporterName,
+                            actorRole: 'Pelapor',
+                            timestamp: report.createdAt,
+                          ),
+                          ...report.logs,
+                        ],
+                      ),
+                    ],
                   ),
 
                   const Gap(100), // Bottom padding for FAB/Buttons

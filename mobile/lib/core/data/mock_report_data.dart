@@ -15,6 +15,9 @@ class MockReportData {
   /// Get a mock report by ID
   static Report? getReport(String id) => _reports[id];
 
+  /// Get all reports as a list
+  static List<Report> get allReports => _reports.values.toList();
+
   /// Get a report with fallback for unknown IDs
   static Report getReportOrDefault(String id) {
     return _reports[id] ??
@@ -44,7 +47,7 @@ class MockReportData {
       building: 'Gedung E',
       latitude: -6.998576,
       longitude: 110.423188,
-      status: ReportStatus.penanganan,
+      status: ReportStatus.diproses,
       isEmergency: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 2)),
       reporterId: 'user1',
@@ -89,7 +92,7 @@ class MockReportData {
       building: 'Gedung C',
       latitude: -6.997200,
       longitude: 110.420500,
-      status: ReportStatus.verifikasi,
+      status: ReportStatus.diproses,
       isEmergency: false,
       createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
       reporterId: 'user2',
@@ -133,7 +136,7 @@ class MockReportData {
       building: 'Gedung D',
       latitude: -6.996000,
       longitude: 110.419000,
-      status: ReportStatus.penanganan,
+      status: ReportStatus.diproses,
       isEmergency: true,
       createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
       reporterId: 'user3',
@@ -178,7 +181,7 @@ class MockReportData {
       building: 'Gedung A',
       latitude: -6.999000,
       longitude: 110.422000,
-      status: ReportStatus.pending,
+      status: ReportStatus.penanganan,
       isEmergency: false,
       createdAt: DateTime.now().subtract(const Duration(hours: 1)),
       reporterId: 'user4',
@@ -213,7 +216,7 @@ class MockReportData {
       building: 'Kantin Utama',
       latitude: -6.995000,
       longitude: 110.418000,
-      status: ReportStatus.pending,
+      status: ReportStatus.diproses,
       isEmergency: true,
       createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
       reporterId: 'user5',
@@ -294,6 +297,11 @@ class MockReportData {
       status: ReportStatus.approved,
       isEmergency: false,
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      handlingStartedAt: DateTime.now().subtract(
+        const Duration(days: 1, hours: 20),
+      ),
+      completedAt: DateTime.now().subtract(const Duration(days: 1, hours: 5)),
+      totalPausedDurationSeconds: 0, // No hold time
       reporterId: 'user1',
       reporterName: 'Saya Sendiri',
       reporterEmail: 'saya@student.undip.ac.id',
@@ -488,6 +496,11 @@ class MockReportData {
       status: ReportStatus.selesai,
       isEmergency: false,
       createdAt: DateTime.now().subtract(const Duration(days: 3)),
+      handlingStartedAt: DateTime.now().subtract(
+        const Duration(days: 2, hours: 10),
+      ),
+      completedAt: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
+      totalPausedDurationSeconds: 1800, // 30 minutes hold time
       reporterId: 'user7',
       reporterName: 'Budiman',
       reporterEmail: 'budiman@staff.undip.ac.id',

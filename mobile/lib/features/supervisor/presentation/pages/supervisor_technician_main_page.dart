@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_activity_log_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_staff_management_page.dart';
 
 class SupervisorTechnicianMainPage extends StatefulWidget {
   const SupervisorTechnicianMainPage({super.key});
@@ -34,7 +34,7 @@ class _SupervisorTechnicianMainPageState
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Menu Teknisi'),
+        title: const Text('Menu Staff'),
         backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -59,9 +59,7 @@ class _SupervisorTechnicianMainPageState
         controller: _tabController,
         children: const [
           SupervisorActivityLogPage(),
-          // Note: SupervisorTechnicianListPage has its own Scaffold.
-          // Ideally should be refactored, but nested Scaffold works.
-          SupervisorTechnicianListPage(),
+          SupervisorStaffManagementPage(),
         ],
       ),
     );

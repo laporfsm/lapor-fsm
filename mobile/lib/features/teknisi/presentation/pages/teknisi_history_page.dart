@@ -2,255 +2,314 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/data/mock_report_data.dart';
+import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
 
-class TeknisiHistoryPage extends StatelessWidget {
+/// History page showing completed reports with filters
+class TeknisiHistoryPage extends StatefulWidget {
   const TeknisiHistoryPage({super.key});
 
-  // TODO: [BACKEND] Replace with API call to get technician's completed reports
-  // IDs should match MockReportData for consistency
-  List<Map<String, dynamic>> get _completedReports => [
-    {
-      'id': '101',
-      'title': 'Lampu Koridor Mati',
-      'category': 'Kelistrikan',
-      'building': 'Gedung E',
-      'status': 'Selesai',
-      'completedAt': '12 Jan 2026, 15:30',
-      'duration': '45 menit',
-      'handledBy': ['Budi Santoso'],
-      'supervisedBy': 'Pak Supervisor',
-    },
-    {
-      'id': '102',
-      'title': 'Kebocoran AC di Lab',
-      'category': 'Infrastruktur Kelas',
-      'building': 'Gedung C',
-      'status': 'Penanganan',
-      'completedAt': '11 Jan 2026, 10:00',
-      'duration': '1 jam 20 menit',
-      'handledBy': ['Joko Susilo', 'Rudi'],
-      'supervisedBy': null,
-    },
-    {
-      'id': '103',
-      'title': 'Kaca Jendela Retak',
-      'category': 'Sipil & Bangunan',
-      'building': 'Gedung B',
-      'status': 'Verifikasi',
-      'completedAt': '10 Jan 2026, 14:15',
-      'duration': '30 menit',
-      'handledBy': ['Budi Santoso'],
-      'supervisedBy': null,
-    },
-  ];
+  @override
+  State<TeknisiHistoryPage> createState() => _TeknisiHistoryPageState();
+}
+
+class _TeknisiHistoryPageState extends State<TeknisiHistoryPage> {
+  String? _selectedCategory;
+  DateTimeRange? _selectedDateRange;
+
+  // TODO: [BACKEND] Replace with API call
+  List<Report> get _completedReports {
+    var reports = MockReportData.allReports
+        .where(
+          (r) =>
+              r.status == ReportStatus.approved ||
+              r.status == ReportStatus.selesai ||
+              r.status == ReportStatus.archived,
+        )
+        .toList();
+
+    // Apply category filter
+    if (_selectedCategory != null) {
+      reports = reports.where((r) => r.category == _selectedCategory).toList();
+    }
+
+    // Apply date range filter
+    if (_selectedDateRange != null) {
+      reports = reports.where((r) {
+        return r.createdAt.isAfter(_selectedDateRange!.start) &&
+            r.createdAt.isBefore(
+              _selectedDateRange!.end.add(const Duration(days: 1)),
+            );
+      }).toList();
+    }
+
+    // Sort by most recent first
+    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return reports;
+  }
+
+  List<String> get _categories {
+    final cats = MockReportData.allReports.map((r) => r.category).toSet();
+    return cats.toList()..sort();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Riwayat Aktivitas'),
+        title: const Text('Riwayat'),
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: Badge(
+              isLabelVisible:
+                  _selectedCategory != null || _selectedDateRange != null,
+              child: const Icon(LucideIcons.filter),
+            ),
+            onPressed: _showFilterSheet,
+          ),
+        ],
       ),
-      body: _completedReports.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        children: [
+          // Active Filters
+          if (_selectedCategory != null || _selectedDateRange != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              color: Colors.white,
+              child: Row(
                 children: [
-                  Icon(
-                    LucideIcons.inbox,
-                    size: 64,
-                    color: Colors.grey.shade300,
-                  ),
-                  const Gap(16),
-                  const Text(
-                    'Belum ada laporan selesai',
-                    style: TextStyle(color: Colors.grey),
+                  if (_selectedCategory != null)
+                    _buildFilterChip(
+                      _selectedCategory!,
+                      () => setState(() => _selectedCategory = null),
+                    ),
+                  if (_selectedDateRange != null) ...[
+                    if (_selectedCategory != null) const Gap(8),
+                    _buildFilterChip(
+                      _formatDateRange(_selectedDateRange!),
+                      () => setState(() => _selectedDateRange = null),
+                    ),
+                  ],
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      _selectedCategory = null;
+                      _selectedDateRange = null;
+                    }),
+                    child: const Text('Reset'),
                   ),
                 ],
               ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _completedReports.length,
-              separatorBuilder: (_, __) => const Gap(12),
-              itemBuilder: (context, index) {
-                final report = _completedReports[index];
-                return GestureDetector(
-                  onTap: () => context.push('/teknisi/report/${report['id']}'),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+            ),
+
+          // Reports List
+          Expanded(
+            child: _completedReports.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          LucideIcons.history,
+                          size: 64,
+                          color: Colors.grey.shade300,
+                        ),
+                        const Gap(16),
+                        Text(
+                          'Tidak ada riwayat',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 16,
+                          ),
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                LucideIcons.checkCircle,
-                                color: Colors.green,
-                                size: 20,
-                              ),
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    report['title'],
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const Gap(4),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        LucideIcons.tag,
-                                        size: 12,
-                                        color: Colors.grey.shade500,
-                                      ),
-                                      const Gap(4),
-                                      Text(
-                                        report['category'],
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(12),
-                        const Divider(height: 1),
-                        const Gap(12),
-                        Row(
-                          children: [
-                            Icon(
-                              LucideIcons.building,
-                              size: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                            const Gap(4),
-                            Expanded(
-                              child: Text(
-                                report['building'],
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            Icon(
-                              LucideIcons.timer,
-                              size: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                            const Gap(4),
-                            Text(
-                              report['duration'],
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const Gap(8),
-                        Row(
-                          children: [
-                            Icon(
-                              LucideIcons.calendar,
-                              size: 14,
-                              color: Colors.grey.shade500,
-                            ),
-                            const Gap(4),
-                            Text(
-                              report['completedAt'],
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        // TK-012: Show teknisi and supervisor info
-                        if (report['handledBy'] != null) ...[
-                          const Gap(8),
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.wrench,
-                                size: 14,
-                                color: AppTheme.secondaryColor,
-                              ),
-                              const Gap(4),
-                              Expanded(
-                                child: Text(
-                                  'Teknisi: ${(report['handledBy'] as List).join(', ')}',
-                                  style: TextStyle(
-                                    color: AppTheme.secondaryColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        if (report['supervisedBy'] != null) ...[
-                          const Gap(4),
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.userCheck,
-                                size: 14,
-                                color: AppTheme.primaryColor,
-                              ),
-                              const Gap(4),
-                              Expanded(
-                                child: Text(
-                                  'Supervisor: ${report['supervisedBy']}',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      setState(() {});
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _completedReports.length,
+                      itemBuilder: (context, index) {
+                        final report = _completedReports[index];
+
+                        // Calculate handling time (completed - started - paused)
+                        Duration? handlingTime;
+                        Duration? holdTime;
+
+                        if (report.handlingStartedAt != null &&
+                            report.completedAt != null) {
+                          final totalTime = report.completedAt!.difference(
+                            report.handlingStartedAt!,
+                          );
+                          holdTime = Duration(
+                            seconds: report.totalPausedDurationSeconds,
+                          );
+                          handlingTime = totalTime - holdTime;
+                        }
+
+                        return UniversalReportCard(
+                          id: report.id,
+                          title: report.title,
+                          location: report.building,
+                          category: report.category,
+                          status: report.status,
+                          isEmergency: report.isEmergency,
+                          handlingTime: handlingTime,
+                          holdTime: holdTime,
+                          showStatus: true,
+                          showTimer: false,
+                          onTap: () =>
+                              context.push('/teknisi/report/${report.id}'),
+                        );
+                      },
                     ),
                   ),
-                );
-              },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, VoidCallback onRemove) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.primaryColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
             ),
+          ),
+          const Gap(4),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(
+              LucideIcons.x,
+              size: 14,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateRange(DateTimeRange range) {
+    final start = '${range.start.day}/${range.start.month}';
+    final end = '${range.end.day}/${range.end.month}';
+    return '$start - $end';
+  }
+
+  void _showFilterSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        maxChildSize: 0.8,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const Gap(20),
+                const Text(
+                  'Filter Riwayat',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const Gap(20),
+
+                // Category Filter
+                const Text(
+                  'Kategori',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const Gap(8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ..._categories.map(
+                      (cat) => ChoiceChip(
+                        label: Text(cat),
+                        selected: _selectedCategory == cat,
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedCategory = selected ? cat : null;
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(20),
+
+                // Date Range Filter
+                const Text(
+                  'Rentang Tanggal',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const Gap(8),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final range = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(2024),
+                      lastDate: DateTime.now(),
+                      initialDateRange: _selectedDateRange,
+                    );
+                    if (range != null) {
+                      setState(() => _selectedDateRange = range);
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  },
+                  icon: const Icon(LucideIcons.calendar),
+                  label: Text(
+                    _selectedDateRange != null
+                        ? _formatDateRange(_selectedDateRange!)
+                        : 'Pilih Tanggal',
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 }

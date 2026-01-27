@@ -37,6 +37,9 @@ class Report {
 
   // Handler info (teknisi)
   final List<String>? handledBy;
+  final DateTime? assignedAt; // When assigned to technician
+  final DateTime? handlingStartedAt; // When technician starts work
+  final DateTime? completedAt; // When technician marks as complete
 
   // Supervisor info
   final String? supervisorId;
@@ -72,6 +75,9 @@ class Report {
     this.pjGedungName,
     this.verifiedAt,
     this.handledBy,
+    this.assignedAt,
+    this.handlingStartedAt,
+    this.completedAt,
     this.supervisorId,
     this.supervisorName,
     this.pausedAt,
@@ -139,6 +145,9 @@ class Report {
     String? pjGedungName,
     DateTime? verifiedAt,
     List<String>? handledBy,
+    DateTime? assignedAt,
+    DateTime? handlingStartedAt,
+    DateTime? completedAt,
     String? supervisorId,
     String? supervisorName,
     DateTime? pausedAt,
@@ -169,6 +178,9 @@ class Report {
       pjGedungName: pjGedungName ?? this.pjGedungName,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       handledBy: handledBy ?? this.handledBy,
+      assignedAt: assignedAt ?? this.assignedAt,
+      handlingStartedAt: handlingStartedAt ?? this.handlingStartedAt,
+      completedAt: completedAt ?? this.completedAt,
       supervisorId: supervisorId ?? this.supervisorId,
       supervisorName: supervisorName ?? this.supervisorName,
       pausedAt: clearPausedAt ? null : (pausedAt ?? this.pausedAt),
