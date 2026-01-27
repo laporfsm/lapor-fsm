@@ -7,6 +7,7 @@ import 'package:mobile/core/widgets/stat_grid_card.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
 /// Dashboard page for Teknisi
 class TeknisiDashboardPage extends StatelessWidget {
@@ -84,11 +85,12 @@ class TeknisiDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: const NotificationFab(),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
             SliverAppBar(
-              expandedHeight: 130,
+              expandedHeight: 140,
               floating: false,
               pinned: true,
               backgroundColor: AppTheme.secondaryColor,
@@ -120,50 +122,48 @@ class TeknisiDashboardPage extends StatelessWidget {
                     ),
                     // Content
                     SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: const Icon(
-                                    LucideIcons.wrench,
-                                    color: Colors.white,
-                                    size: 26,
-                                  ),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(14),
                                 ),
-                                const Gap(14),
-                                const Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Dashboard Teknisi',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    Gap(2),
-                                    Text(
-                                      'Kelola & Selesaikan Laporan',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                                child: const Icon(
+                                  LucideIcons.wrench,
+                                  color: Colors.white,
+                                  size: 26,
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const Gap(14),
+                              const Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Dashboard Teknisi',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Gap(2),
+                                  Text(
+                                    'Kelola & Selesaikan Laporan',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -220,7 +220,8 @@ class TeknisiDashboardPage extends StatelessWidget {
                 context,
                 'Siap Dimulai',
                 'Lihat Semua',
-                () => context.go('/teknisi/masuk'),
+                () => context.push('/teknisi/all-reports?status=diproses'),
+                count: _stats['diproses'],
               ),
               const Gap(12),
               _buildReadyReportsList(context),
@@ -231,7 +232,8 @@ class TeknisiDashboardPage extends StatelessWidget {
                 context,
                 'Sedang Dikerjakan',
                 'Lihat Semua',
-                () => context.go('/teknisi/aktif'),
+                () => context.push('/teknisi/all-reports?status=penanganan'),
+                count: _stats['penanganan'],
               ),
               const Gap(12),
               _buildActiveReportsList(context),
@@ -249,7 +251,8 @@ class TeknisiDashboardPage extends StatelessWidget {
     if (emergencyCount == 0) return const SizedBox.shrink();
 
     return GestureDetector(
-      onTap: () => context.go('/teknisi/masuk'),
+      onTap: () =>
+          context.push('/teknisi/all-reports?status=diproses&emergency=true'),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -378,14 +381,37 @@ class TeknisiDashboardPage extends StatelessWidget {
     BuildContext context,
     String title,
     String actionText,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    int? count,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        Row(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            if (count != null && count > 0) ...[
+              const Gap(8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.secondaryColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ],
         ),
         TextButton(onPressed: onTap, child: Text(actionText)),
       ],

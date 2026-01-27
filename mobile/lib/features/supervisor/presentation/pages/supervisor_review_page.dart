@@ -8,6 +8,7 @@ import 'package:mobile/core/models/report_log.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 import 'package:mobile/core/enums/user_role.dart';
+import 'package:mobile/core/data/mock_report_data.dart';
 
 class SupervisorReviewPage extends StatefulWidget {
   final String reportId;
@@ -34,31 +35,8 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         setState(() {
-          // Use status from extra if available, otherwise default to selesai (mock)
-          final initialStatus =
-              widget.extra?['status'] as ReportStatus? ?? ReportStatus.selesai;
-
-          // Mock data
-          _report = Report(
-            id: widget.reportId,
-            title: 'AC Mati di Lab Komputer',
-            description:
-                'AC tidak mengeluarkan udara dingin sama sekali, sudah dicoba restart tapi tetap sama.',
-            category: 'Kelistrikan',
-            building: 'Gedung G, Lt 2',
-            status: initialStatus,
-            isEmergency: false,
-            createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-            reporterId: 'user1',
-            reporterName: 'John Doe',
-            reporterEmail: 'john@example.com',
-            handledBy: ['tech1'],
-            handlingStartedAt: DateTime.now().subtract(
-              const Duration(hours: 3),
-            ),
-            completedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-            logs: [], // Initialize mock logs
-          );
+          // Use MockReportData instead of hardcoded report
+          _report = MockReportData.getReportOrDefault(widget.reportId);
           _isLoading = false;
         });
       }
@@ -74,6 +52,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     return ReportDetailBase(
       report: _report,
       viewerRole: UserRole.supervisor,
+      appBarColor: AppTheme.supervisorColor,
       actionButtons: _buildActionButtons(),
     );
   }
@@ -83,28 +62,36 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       case ReportStatus.pending:
         // Menunggu Verifikasi
         return [
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: () => _updateReportStatus(
               ReportStatus.ditolak,
               ReportAction.rejected,
             ),
+            icon: const Icon(LucideIcons.xCircle),
+            label: const Text('Tolak'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Tolak'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () => _updateReportStatus(
               ReportStatus.verifikasi,
               ReportAction.verified,
             ),
+            icon: const Icon(LucideIcons.checkCircle),
+            label: const Text('Verifikasi'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.supervisorColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Verifikasi'),
           ),
         ];
 
@@ -118,7 +105,10 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
             label: const Text('Tugaskan Teknisi'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.supervisorColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
         ];
@@ -126,25 +116,33 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       case ReportStatus.selesai:
         // Menunggu Approval
         return [
-          OutlinedButton(
+          OutlinedButton.icon(
             onPressed: _showRecallDialog,
+            icon: const Icon(LucideIcons.rotateCcw),
+            label: const Text('Recall (Revisi)'),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange,
               side: const BorderSide(color: Colors.orange),
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Recall (Revisi)'),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () => _updateReportStatus(
               ReportStatus.approved,
               ReportAction.approved,
             ),
+            icon: const Icon(LucideIcons.checkCircle),
+            label: const Text('Setujui'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Setujui'),
           ),
         ];
 
@@ -182,12 +180,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
             (newStatus == ReportStatus.terverifikasi ||
                 newStatus == ReportStatus.verifikasi)
             ? DateTime.now()
-            : null, // Keep null or dont update? copyWith id null doesn't update. but here I pass conditionally.
-        // If I want to KEEP existing verifiedAt if not verifying now, i should pass null to copyWith (which means "no change" in typical copyWith generated by basic generator, UNLESS explicit nullable wrap).
-        // Looking at copyWith in Step 765:
-        // verifiedAt: verifiedAt ?? this.verifiedAt
-        // So if I pass null, it keeps existing. GOOD.
-        // So logic above: if verifying, pass Now. if not, pass null (keeps existing).
+            : null,
       );
     });
 

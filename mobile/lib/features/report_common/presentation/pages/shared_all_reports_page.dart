@@ -7,6 +7,7 @@ import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
+import 'package:intl/intl.dart';
 
 /// A shared page for displaying a list of reports with filters and search.
 /// Can be used by both Supervisor and Technician.
@@ -211,9 +212,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: AppTheme.primaryColor,
-                      ),
+                      borderSide: BorderSide(color: widget.appBarColor),
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -231,12 +230,12 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: _selectedDateRange != null
-                        ? AppTheme.primaryColor
+                        ? widget.appBarColor
                         : Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _selectedDateRange != null
-                          ? AppTheme.primaryColor
+                          ? widget.appBarColor
                           : Colors.grey.shade300,
                     ),
                   ),
@@ -255,20 +254,19 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _hasActiveFilters
-                        ? widget.appBarColor
-                        : Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _hasActiveFilters
                           ? widget.appBarColor
                           : Colors.grey.shade300,
+                      width: _hasActiveFilters ? 1.5 : 1.0,
                     ),
                   ),
                   child: Icon(
                     LucideIcons.filter,
                     color: _hasActiveFilters
-                        ? Colors.white
+                        ? widget.appBarColor
                         : Colors.grey.shade600,
                   ),
                 ),
@@ -337,8 +335,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: _buildFilterChip(
-                        '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}',
-                        AppTheme.primaryColor,
+                        '${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}',
+                        widget.appBarColor,
                         () => setState(() => _selectedDateRange = null),
                       ),
                     ),

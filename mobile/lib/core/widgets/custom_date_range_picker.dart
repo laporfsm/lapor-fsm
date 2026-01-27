@@ -309,30 +309,69 @@ class _CustomDateRangePickerDialogState
     return Column(
       children: [
         // Month/Year Header (clickable)
-        InkWell(
-          onTap: () => setState(() {
-            _isSelectingMonth = true;
-            _isSelectingYear = true;
-          }),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+        // Month/Year Header with Navigation
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month - 1,
+                  );
+                });
+              },
+              icon: const Icon(LucideIcons.chevronLeft, size: 20),
+              color: Colors.grey.shade600,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const Gap(12),
+            InkWell(
+              onTap: () => setState(() {
+                _isSelectingMonth = true;
+                _isSelectingYear = true;
+              }),
               borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${_monthNames[_currentMonth.month - 1]} ${_currentMonth.year}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
                 ),
-                const Gap(4),
-                const Icon(LucideIcons.chevronDown, size: 16),
-              ],
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${_monthNames[_currentMonth.month - 1]} ${_currentMonth.year}',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const Gap(4),
+                    const Icon(LucideIcons.chevronDown, size: 16),
+                  ],
+                ),
+              ),
             ),
-          ),
+            const Gap(12),
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _currentMonth = DateTime(
+                    _currentMonth.year,
+                    _currentMonth.month + 1,
+                  );
+                });
+              },
+              icon: const Icon(LucideIcons.chevronRight, size: 20),
+              color: Colors.grey.shade600,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ),
         const Gap(12),
 

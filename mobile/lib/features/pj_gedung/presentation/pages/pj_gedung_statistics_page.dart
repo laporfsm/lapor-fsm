@@ -3,16 +3,21 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_dashboard_page.dart'; // Import for pjGedungColor
 
-class SupervisorStatisticsPage extends StatelessWidget {
-  const SupervisorStatisticsPage({super.key});
+class PJGedungStatisticsPage extends StatelessWidget {
+  final String? buildingName;
+
+  const PJGedungStatisticsPage({super.key, this.buildingName});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Statistik Laporan'),
+        title: Text(
+          buildingName != null ? 'Statistik $buildingName' : 'Statistik Gedung',
+        ),
         backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -34,14 +39,9 @@ class SupervisorStatisticsPage extends StatelessWidget {
             const Gap(16),
             _buildCategoryBreakdown(),
             const Gap(16),
-            _buildBuildingBreakdown(context),
+            _buildDailyTrend(), // Option 1
             const Gap(16),
-            _buildDailyTrend(),
-            const Gap(16),
-            _buildMonthlyPerformance(),
-            const Gap(16),
-            _buildTechnicianPerformance(),
-            const Gap(32), // Bottom padding
+            _buildMonthlyPerformance(), // Option 3
           ],
         ),
       ),
@@ -64,18 +64,18 @@ class SupervisorStatisticsPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Ringkasan Minggu Ini',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Chip(
-                label: Text('23 Laporan'),
-                backgroundColor: Color(0xFFE0E7FF),
-                labelStyle: TextStyle(
-                  color: AppTheme.supervisorColor,
+                label: const Text('15 Laporan'),
+                backgroundColor: const Color(0xFFD1FAE5), // Green tint
+                labelStyle: const TextStyle(
+                  color: pjGedungColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -86,10 +86,14 @@ class SupervisorStatisticsPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildBigStat('8', 'Pending', Colors.grey),
-              _buildBigStat('3', 'Verifikasi', Colors.blue),
-              _buildBigStat('5', 'Proses', Colors.orange),
-              _buildBigStat('140', 'Selesai', Colors.green),
+              _buildBigStat('3', 'Pending', Colors.grey),
+              _buildBigStat(
+                '2',
+                'Verifikasi',
+                Colors.amber,
+              ), // Updated to Amber
+              _buildBigStat('4', 'Proses', Colors.purple),
+              _buildBigStat('6', 'Selesai', Colors.green),
             ],
           ),
           const Gap(20),
@@ -101,7 +105,7 @@ class SupervisorStatisticsPage extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'Avg. Penanganan',
+                      'Avg. Penyelesaian',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade600,
@@ -109,7 +113,7 @@ class SupervisorStatisticsPage extends StatelessWidget {
                     ),
                     const Gap(4),
                     const Text(
-                      '45 menit',
+                      '30 menit',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -131,7 +135,7 @@ class SupervisorStatisticsPage extends StatelessWidget {
                     ),
                     const Gap(4),
                     const Text(
-                      '12 laporan',
+                      '2 laporan',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -169,159 +173,13 @@ class SupervisorStatisticsPage extends StatelessWidget {
 
   Widget _buildCategoryBreakdown() {
     return _buildSectionCard(
-      title: 'Berdasarkan Kategori',
+      title: 'Kategori Masalah',
       child: Column(
         children: [
-          _buildBarChartItem('Kelistrikan', 0.8, Colors.blue),
-          _buildBarChartItem('Sipil & Bangunan', 0.6, Colors.orange),
-          _buildBarChartItem('Infrastruktur', 0.4, Colors.red),
+          _buildBarChartItem('Kelistrikan', 0.6, Colors.blue),
+          _buildBarChartItem('Sanitasi', 0.8, Colors.orange),
+          _buildBarChartItem('AC/Pendingin', 0.4, Colors.red),
           _buildBarChartItem('Lainnya', 0.2, Colors.grey),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBuildingBreakdown(BuildContext context) {
-    return _buildSectionCard(
-      title: 'Gedung Paling Bermasalah (Top 3)',
-      child: Column(
-        children: [
-          _buildBarChartItem(
-            'Gedung A',
-            0.9,
-            Colors.teal,
-            onTap: () => context.push(
-              Uri(
-                path: '/pj-gedung/statistics',
-                queryParameters: {'buildingName': 'Gedung A'},
-              ).toString(),
-            ),
-          ),
-          _buildBarChartItem(
-            'Gedung B',
-            0.5,
-            Colors.teal,
-            onTap: () => context.push(
-              Uri(
-                path: '/pj-gedung/statistics',
-                queryParameters: {'buildingName': 'Gedung B'},
-              ).toString(),
-            ),
-          ),
-          _buildBarChartItem(
-            'Gedung C',
-            0.3,
-            Colors.teal,
-            onTap: () => context.push(
-              Uri(
-                path: '/pj-gedung/statistics',
-                queryParameters: {'buildingName': 'Gedung C'},
-              ).toString(),
-            ),
-          ),
-          const Gap(8),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => context.push('/supervisor/buildings'),
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.5)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Lihat Semua Gedung'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBarChartItem(
-    String label,
-    double percentage,
-    Color color, {
-    VoidCallback? onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 120,
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: onTap != null
-                        ? Colors.blue
-                        : Colors.black, // Visual cue for clickable
-                    decoration: onTap != null ? TextDecoration.underline : null,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Stack(
-                  children: [
-                    Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    FractionallySizedBox(
-                      widthFactor: percentage,
-                      child: Container(
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: color,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Gap(12),
-              Text(
-                '${(percentage * 100).toInt()}%',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              if (onTap != null) ...[
-                const Gap(8),
-                const Icon(
-                  LucideIcons.chevronRight,
-                  size: 14,
-                  color: Colors.grey,
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTechnicianPerformance() {
-    return _buildSectionCard(
-      title: 'Performa Teknisi (Top 3)',
-      child: Column(
-        children: [
-          _buildTechItem('Budi Santoso', '4.8', '45 Selesai'),
-          _buildTechItem('Ahmad Hidayat', '4.7', '32 Selesai'),
-          _buildTechItem('Rudi Hartono', '4.5', '28 Selesai'),
         ],
       ),
     );
@@ -335,12 +193,12 @@ class SupervisorStatisticsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           _buildTrendBar('Sen', 0.3),
-          _buildTrendBar('Sel', 0.7),
-          _buildTrendBar('Rab', 0.5),
-          _buildTrendBar('Kam', 0.8), // Peak for supervisor overall
-          _buildTrendBar('Jum', 0.6),
-          _buildTrendBar('Sab', 0.4),
-          _buildTrendBar('Min', 0.2),
+          _buildTrendBar('Sel', 0.5),
+          _buildTrendBar('Rab', 0.8), // Peak
+          _buildTrendBar('Kam', 0.6),
+          _buildTrendBar('Jum', 0.4),
+          _buildTrendBar('Sab', 0.2),
+          _buildTrendBar('Min', 0.1),
         ],
       ),
     );
@@ -355,8 +213,8 @@ class SupervisorStatisticsPage extends StatelessWidget {
           height: 100 * heightFactor,
           decoration: BoxDecoration(
             color: heightFactor > 0.7
-                ? AppTheme.supervisorColor
-                : AppTheme.supervisorColor.withOpacity(0.3),
+                ? pjGedungColor
+                : pjGedungColor.withOpacity(0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -377,18 +235,19 @@ class SupervisorStatisticsPage extends StatelessWidget {
 
   Widget _buildMonthlyPerformance() {
     return _buildSectionCard(
-      title: 'Timeline & Prediksi',
+      title: 'Timeline Jumlah Laporan',
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTrendInfo('Bulan Lalu', '120 Laporan', false),
+              _buildTrendInfo('Bulan Lalu', '12 Laporan', false),
               Container(width: 1, height: 40, color: Colors.grey.shade200),
-              _buildTrendInfo('Bulan Ini', '145 Laporan', true),
+              _buildTrendInfo('Bulan Ini', '15 Laporan', true),
             ],
           ),
           const Gap(20),
+          // Simplified Line Chart Representation for Timeline
           SizedBox(
             height: 100,
             child: Row(
@@ -397,8 +256,8 @@ class SupervisorStatisticsPage extends StatelessWidget {
               children: [
                 _buildLinePoint(0.4, 'Minggu 1'),
                 _buildLinePoint(0.6, 'Minggu 2'),
-                _buildLinePoint(0.8, 'Minggu 3'),
-                _buildLinePoint(0.5, 'Minggu 4'),
+                _buildLinePoint(0.5, 'Minggu 3'),
+                _buildLinePoint(0.8, 'Minggu 4'),
               ],
             ),
           ),
@@ -423,7 +282,10 @@ class SupervisorStatisticsPage extends StatelessWidget {
             Icon(
               isUp ? LucideIcons.trendingUp : LucideIcons.trendingDown,
               size: 16,
-              color: isUp ? Colors.red : Colors.green,
+              color: isUp
+                  ? Colors.red
+                  : Colors
+                        .green, // Red often means "more reports" (bad for building health)
             ),
           ],
         ),
@@ -440,14 +302,14 @@ class SupervisorStatisticsPage extends StatelessWidget {
           height: 12,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: AppTheme.supervisorColor, width: 3),
+            border: Border.all(color: pjGedungColor, width: 3),
             shape: BoxShape.circle,
           ),
         ),
         Container(
           width: 2,
           height: 60 * heightFactor,
-          color: AppTheme.supervisorColor.withOpacity(0.5),
+          color: pjGedungColor.withOpacity(0.5),
         ),
         const Gap(8),
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
@@ -455,52 +317,49 @@ class SupervisorStatisticsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTechItem(String name, String rating, String done) {
+  Widget _buildBarChartItem(String label, double percentage, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppTheme.supervisorColor.withOpacity(0.1),
+          SizedBox(
+            width: 120,
             child: Text(
-              name[0],
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.supervisorColor,
-              ),
+              label,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                Container(
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                FractionallySizedBox(
+                  widthFactor: percentage,
+                  child: Container(
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const Gap(12),
-          Expanded(
-            child: Text(
-              name,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          Text(
+            '${(percentage * 10).toInt()}', // Mock value count
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade600,
             ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                done,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  color: Colors.green,
-                ),
-              ),
-              Row(
-                children: [
-                  const Icon(LucideIcons.star, size: 10, color: Colors.amber),
-                  const Gap(2),
-                  Text(
-                    rating,
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-            ],
           ),
         ],
       ),

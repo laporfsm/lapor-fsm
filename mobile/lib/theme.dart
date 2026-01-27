@@ -22,10 +22,16 @@ class AppTheme {
     switch (status.toLowerCase()) {
       case 'pending':
         return Colors.grey;
-      case 'verifikasi':
-        return Colors.orange;
-      case 'penanganan':
+      case 'terverifikasi': // Supervisor ready
         return Colors.blue;
+      case 'verifikasi': // Legacy
+        return Colors.blue;
+      case 'diproses': // Assigned/Waiting Technician
+        return Colors.purple;
+      case 'penanganan': // Working
+        return Colors.orange;
+      case 'onhold':
+        return Colors.deepOrange;
       case 'selesai':
         return Colors.teal;
       case 'approved':
@@ -33,7 +39,7 @@ class AppTheme {
       case 'ditolak':
         return Colors.red;
       case 'recalled':
-        return Colors.deepOrange;
+        return Colors.deepOrangeAccent;
       case 'archived':
         return Colors.blueGrey;
       default:
@@ -46,10 +52,16 @@ class AppTheme {
     switch (status.toLowerCase()) {
       case 'pending':
         return LucideIcons.clock;
-      case 'verifikasi':
+      case 'terverifikasi':
+        return LucideIcons.checkSquare;
+      case 'verifikasi': // Legacy
         return LucideIcons.search;
+      case 'diproses':
+        return LucideIcons.userCheck;
       case 'penanganan':
         return LucideIcons.wrench;
+      case 'onhold':
+        return LucideIcons.pauseCircle;
       case 'selesai':
         return LucideIcons.checkCircle;
       case 'approved':
@@ -57,7 +69,7 @@ class AppTheme {
       case 'ditolak':
         return LucideIcons.xCircle;
       case 'recalled':
-        return LucideIcons.refreshCw;
+        return LucideIcons.rotateCcw;
       case 'archived':
         return LucideIcons.archive;
       default:
