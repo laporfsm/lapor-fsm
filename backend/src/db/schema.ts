@@ -1,14 +1,20 @@
 import { pgTable, serial, text, timestamp, boolean, doublePrecision, integer, jsonb } from 'drizzle-orm/pg-core';
 
-// Users table (Pelapor - Students/Staff with SSO)
+// Users table (Pelapor)
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
-  ssoId: text('sso_id').unique(), // SSO Undip ID
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
+  password: text('password').notNull(), // Hashed password
   phone: text('phone'),
-  faculty: text('faculty').default('Sains dan Matematika'),
+  nimNip: text('nim_nip'),
   department: text('department'),
+  faculty: text('faculty').default('Sains dan Matematika'),
+  address: text('address'),
+  emergencyName: text('emergency_name'),
+  emergencyPhone: text('emergency_phone'),
+  idCardUrl: text('id_card_url'), // For non-undip users
+  isVerified: boolean('is_verified').default(false), // Admin verification
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -37,8 +43,8 @@ export const categories = pgTable('categories', {
 // Reports table
 export const reports = pgTable('reports', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id), // If reported by Pelapor
-  staffId: integer('staff_id').references(() => staff.id), // If reported by Staff (e.g. PJ Gedung)
+  userId: integer('user_id').references(() => users.id),
+  staffId: integer('staff_id').references(() => staff.id),
   categoryId: integer('category_id').references(() => categories.id),
   title: text('title').notNull(),
   description: text('description').notNull(),
@@ -46,16 +52,22 @@ export const reports = pgTable('reports', {
   locationDetail: text('location_detail'),
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
-  mediaUrls: jsonb('media_urls').default([]), // List of image URLs
+  mediaUrls: jsonb('media_urls').default([]),
   isEmergency: boolean('is_emergency').default(false),
   status: text('status').default('pending'), 
-  // Statuses: pending, verifikasi, terverifikasi, penanganan, diproses, selesai, approved, rejected
-  
+  // Mobile Enum: pending, terverifikasi, verifikasi, penanganan, onHold, selesai, approved, ditolak, recalled, archived
+
   // Handling Details
   assignedTo: integer('assigned_to').references(() => staff.id),
   assignedAt: timestamp('assigned_at'),
   handlingStartedAt: timestamp('handling_started_at'),
   handlingCompletedAt: timestamp('handling_completed_at'),
+  
+  // Pause/Hold Logic (Synced with Mobile)
+  pausedAt: timestamp('paused_at'),
+  totalPausedDurationSeconds: integer('total_paused_duration_seconds').default(0),
+  holdReason: text('hold_reason'),
+  holdPhoto: text('hold_photo'),
   
   // Technician Result
   handlerNotes: text('handler_notes'),
@@ -78,14 +90,18 @@ export const reports = pgTable('reports', {
 export const reportLogs = pgTable('report_logs', {
   id: serial('id').primaryKey(),
   reportId: integer('report_id').references(() => reports.id).notNull(),
-  actorType: text('actor_type').notNull(), // 'user' or 'staff'
-  actorId: integer('actor_id').notNull(),
-  action: text('action').notNull(), // 'created', 'verified', 'assigned', 'handling', 'completed', 'approved', 'rejected'
   fromStatus: text('from_status'),
   toStatus: text('to_status'),
-  notes: text('notes'),
+  action: text('action').notNull(), // created, verified, handling, completed, rejected, approved, recalled, overrideRejection, approveRejection, archived, paused, resumed
+  
+  // Actor details (Denormalized for timeline performance, as expected by mobile app)
+  actorId: text('actor_id').notNull(),
+  actorName: text('actor_name').notNull(),
+  actorRole: text('actor_role').notNull(),
+  
+  reason: text('reason'), // Mobile app uses 'reason' instead of 'notes'
   mediaUrls: jsonb('media_urls').default([]),
-  createdAt: timestamp('created_at').defaultNow(),
+  timestamp: timestamp('timestamp').defaultNow(),
 });
 
 // Type exports

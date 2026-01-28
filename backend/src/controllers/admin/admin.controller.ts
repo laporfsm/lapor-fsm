@@ -26,7 +26,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         return {
             status: 'success',
-            data: staffList,
+            data: staffList.map(s => ({ ...s, id: s.id.toString() })),
         };
     })
 

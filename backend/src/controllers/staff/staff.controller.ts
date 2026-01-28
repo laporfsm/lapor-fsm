@@ -27,7 +27,10 @@ export const staffController = new Elysia({ prefix: '/staff' })
 
         return {
             status: 'success',
-            data: foundStaff[0],
+            data: {
+                ...foundStaff[0],
+                id: foundStaff[0].id.toString()
+            },
         };
     })
 
@@ -45,7 +48,13 @@ export const staffController = new Elysia({ prefix: '/staff' })
 
         if (updated.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
         
-        return { status: 'success', data: updated[0] };
+        return { 
+            status: 'success', 
+            data: {
+                ...updated[0],
+                id: updated[0].id.toString()
+            } 
+        };
     }, {
         body: t.Object({
             name: t.Optional(t.String()),

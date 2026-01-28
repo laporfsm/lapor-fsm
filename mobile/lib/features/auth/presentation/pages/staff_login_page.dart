@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class StaffLoginPage extends StatefulWidget {
   const StaffLoginPage({super.key});
@@ -33,32 +34,23 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
     });
 
     try {
-      // TODO: Call API to login
-      // Mock login - check for role based on email pattern
-      await Future.delayed(const Duration(seconds: 1));
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      final email = _emailController.text.toLowerCase();
-      String role = 'teknisi';
-      String redirectPath = '/teknisi';
+      final result = await authService.staffLogin(email: email, password: password);
 
-      if (email.contains('supervisor')) {
-        role = 'supervisor';
-        redirectPath = '/supervisor';
-      } else if (email.startsWith('pj') || email.contains('pj')) {
-        context.go('/pj-gedung');
-      } else if (email.startsWith('admin') || email.contains('admin')) {
-        role = 'admin';
-        redirectPath = '/admin';
-      }
+      if (mounted && result['success']) {
+        final role = result['role'];
+        String redirectPath = '/teknisi';
+        if (role == 'supervisor') redirectPath = '/supervisor';
+        else if (role == 'pj_gedung') redirectPath = '/pj-gedung';
+        else if (role == 'admin') redirectPath = '/admin';
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login berhasil sebagai $role'),
-            backgroundColor: Colors.green,
-          ),
-        );
         context.go(redirectPath);
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result['message'] ?? 'Login failed'), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       if (mounted) {

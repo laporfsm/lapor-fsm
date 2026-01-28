@@ -7,6 +7,7 @@ import { uploadController } from "./controllers/upload.controller";
 import { staffController } from "./controllers/staff/staff.controller";
 import { technicianController } from "./controllers/technician/technician.controller";
 import { supervisorController } from "./controllers/supervisor/supervisor.controller";
+import { pjController } from "./controllers/staff/pj.controller";
 import { adminController } from "./controllers/admin/admin.controller";
 
 const app = new Elysia()
@@ -19,6 +20,7 @@ const app = new Elysia()
   .use(staffController)
   .use(technicianController)
   .use(supervisorController)
+  .use(pjController)
   .use(adminController)
   .listen(3000);
 

@@ -1,10 +1,11 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
-import { eq, desc, and, or, isNull } from 'drizzle-orm';
+import { eq, desc, and, or, sql } from 'drizzle-orm';
+import { mapToMobileReport } from '../../utils/mapper';
 
 export const technicianController = new Elysia({ prefix: '/technician' })
-    // Get all reports for technician (pending and assigned to this technician)
+    // Get all reports for technician (new tasks and active tasks)
     .get('/reports/:staffId', async ({ params }) => {
         const staffId = parseInt(params.staffId);
 
@@ -21,29 +22,24 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 isEmergency: reports.isEmergency,
                 status: reports.status,
                 createdAt: reports.createdAt,
-                assignedTo: reports.assignedTo,
-                assignedAt: reports.assignedAt,
-                handlingStartedAt: reports.handlingStartedAt,
-                // Reporter info
+                userId: reports.userId,
+                // Detailed Info
                 reporterName: users.name,
                 reporterPhone: users.phone,
-                // Category info
                 categoryName: categories.name,
-                categoryType: categories.type,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
             .where(
                 or(
-                    eq(reports.status, 'pending'),
-                    eq(reports.status, 'verifikasi'),
-                    eq(reports.status, 'terverifikasi'),
+                    eq(reports.status, 'diproses'), // Waiting for tech to accept
                     and(
                         eq(reports.assignedTo, staffId),
                         or(
                             eq(reports.status, 'penanganan'),
-                            eq(reports.status, 'diproses')
+                            eq(reports.status, 'onHold'),
+                            eq(reports.status, 'recalled')
                         )
                     )
                 )
@@ -52,95 +48,132 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
         return {
             status: 'success',
-            data: reportsList,
+            data: reportsList.map(r => mapToMobileReport(r)),
         };
     })
 
-    // Start handling a report (Accepting the task)
+    // Accept task (Start Penanganan)
     .post('/reports/:id/accept', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+        if (foundStaff.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
 
         const updated = await db
             .update(reports)
             .set({
                 status: 'penanganan',
-                assignedTo: staffId,
-                assignedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
-
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
-
-        await db.insert(reportLogs).values({
-            reportId,
-            actorType: 'staff',
-            actorId: staffId,
-            action: 'assigned',
-            fromStatus: updated[0].status || 'pending',
-            toStatus: 'penanganan',
-            notes: 'Laporan diterima oleh teknisi',
-        });
-
-        return {
-            status: 'success',
-            message: 'Laporan diterima',
-            data: updated[0],
-        };
-    }, {
-        body: t.Object({
-            staffId: t.Number(),
-        }),
-    })
-
-    // Begin work (On-site)
-    .post('/reports/:id/start-work', async ({ params, body }) => {
-        const reportId = parseInt(params.id);
-        const staffId = body.staffId;
-
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'diproses',
                 handlingStartedAt: new Date(),
                 updatedAt: new Date(),
             })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
         await db.insert(reportLogs).values({
             reportId,
-            actorType: 'staff',
-            actorId: staffId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0].name,
+            actorRole: foundStaff[0].role,
             action: 'handling',
-            fromStatus: 'penanganan',
-            toStatus: 'diproses',
-            notes: 'Teknisi mulai mengerjakan perbaikan di lokasi',
+            fromStatus: 'diproses',
+            toStatus: 'penanganan',
+            reason: 'Mulai penanganan laporan',
         });
 
-        return {
-            status: 'success',
-            message: 'Pengerjaan dimulai',
-            data: updated[0],
-        };
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
-        body: t.Object({
-            staffId: t.Number(),
-        }),
+        body: t.Object({ staffId: t.Number() }),
     })
 
-    // Complete a report (with proof photo)
+    // Pause task (On Hold)
+    .post('/reports/:id/pause', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'onHold',
+                pausedAt: new Date(),
+                holdReason: body.reason,
+                holdPhoto: body.photoUrl,
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Technician",
+            actorRole: foundStaff[0]?.role || "teknisi",
+            action: 'paused',
+            fromStatus: 'penanganan',
+            toStatus: 'onHold',
+            reason: body.reason,
+            mediaUrls: body.photoUrl ? [body.photoUrl] : [],
+        });
+
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
+    }, {
+        body: t.Object({ staffId: t.Number(), reason: t.String(), photoUrl: t.Optional(t.String()) }),
+    })
+
+    // Resume task
+    .post('/reports/:id/resume', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        const currentReport = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (currentReport.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        let additionalPausedSeconds = 0;
+        if (currentReport[0].pausedAt) {
+            additionalPausedSeconds = Math.floor((new Date().getTime() - currentReport[0].pausedAt.getTime()) / 1000);
+        }
+
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'penanganan',
+                pausedAt: null,
+                totalPausedDurationSeconds: (currentReport[0].totalPausedDurationSeconds || 0) + additionalPausedSeconds,
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Technician",
+            actorRole: foundStaff[0]?.role || "teknisi",
+            action: 'resumed',
+            fromStatus: 'onHold',
+            toStatus: 'penanganan',
+            reason: 'Pengerjaan dilanjutkan',
+        });
+
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
+    }, {
+        body: t.Object({ staffId: t.Number() }),
+    })
+
+    // Complete task
     .post('/reports/:id/complete', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
         const updated = await db
             .update(reports)
@@ -154,39 +187,34 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
         await db.insert(reportLogs).values({
             reportId,
-            actorType: 'staff',
-            actorId: staffId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Technician",
+            actorRole: foundStaff[0]?.role || "teknisi",
             action: 'completed',
-            fromStatus: 'diproses',
+            fromStatus: 'penanganan',
             toStatus: 'selesai',
-            notes: body.notes || 'Penanganan selesai',
+            reason: body.notes,
             mediaUrls: body.mediaUrls || [],
         });
 
-        return {
-            status: 'success',
-            message: 'Laporan selesai ditangani',
-            data: updated[0],
-        };
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({
             staffId: t.Number(),
             notes: t.Optional(t.String()),
-            mediaUrls: t.Array(t.String()), // Required proof
+            mediaUrls: t.Array(t.String()),
         }),
     })
 
-    // Get single report detail for technician
+    // Detail for technician
     .get('/reports/detail/:id', async ({ params }) => {
         const reportId = parseInt(params.id);
 
-        const reportDetail = await db
+        const result = await db
             .select({
                 id: reports.id,
                 title: reports.title,
@@ -201,38 +229,36 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 handlerNotes: reports.handlerNotes,
                 handlerMediaUrls: reports.handlerMediaUrls,
                 createdAt: reports.createdAt,
-                assignedAt: reports.assignedAt,
-                handlingStartedAt: reports.handlingStartedAt,
-                handlingCompletedAt: reports.handlingCompletedAt,
-                // Reporter info
+                userId: reports.userId,
+                pausedAt: reports.pausedAt,
+                totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
+                holdReason: reports.holdReason,
+                holdPhoto: reports.holdPhoto,
+                // Detailed Info
                 reporterName: users.name,
-                reporterPhone: users.phone,
                 reporterEmail: users.email,
-                // Category info
+                reporterPhone: users.phone,
                 categoryName: categories.name,
-                categoryType: categories.type,
+                handlerName: staff.name,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(eq(reports.id, reportId))
             .limit(1);
 
-        if (reportDetail.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
+        if (result.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
-        const logs = await db
+        const logsList = await db
             .select()
             .from(reportLogs)
             .where(eq(reportLogs.reportId, reportId))
-            .orderBy(desc(reportLogs.createdAt));
+            .orderBy(desc(reportLogs.timestamp));
 
         return {
             status: 'success',
-            data: {
-                ...reportDetail[0],
-                logs,
-            },
+            data: mapToMobileReport(result[0], logsList),
         };
     });

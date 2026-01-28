@@ -11,23 +11,29 @@ export const authController = new Elysia({ prefix: '/auth' })
       secret: process.env.JWT_SECRET || 'lapor-fsm-secret-key-change-in-production'
     })
   )
-  // User Login (SSO Mock)
-  .post('/login', async ({ body, jwt }) => {
-    let user = await db
+  // User Login (Pelapor)
+  .post('/login', async ({ body, jwt, set }) => {
+    const user = await db
       .select()
       .from(users)
       .where(eq(users.email, body.email))
       .limit(1);
 
     if (user.length === 0) {
-      const newUser = await db.insert(users).values({
-        ssoId: body.ssoId || `SSO-${Date.now()}`,
-        name: body.name,
-        email: body.email,
-        faculty: 'Sains dan Matematika',
-      }).returning();
-      
-      user = newUser;
+      set.status = 401;
+      return { status: 'error', message: 'Email atau password salah' };
+    }
+
+    const isPasswordCorrect = await Bun.password.verify(body.password, user[0].password);
+    
+    if (!isPasswordCorrect) {
+      set.status = 401;
+      return { status: 'error', message: 'Email atau password salah' };
+    }
+
+    if (!user[0].isVerified && !body.email.endsWith('@undip.ac.id') && !body.email.endsWith('.undip.ac.id')) {
+        set.status = 403;
+        return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi admin' };
     }
 
     const token = await jwt.sign({
@@ -40,18 +46,78 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       message: 'Login berhasil',
       data: {
-        user: user[0],
+        user: {
+          ...user[0],
+          id: user[0].id.toString(),
+          password: '', // Don't send password back
+        },
         token,
-        needsPhone: !user[0].phone,
         role: 'pelapor'
       },
     };
   }, {
     body: t.Object({
       email: t.String(),
-      name: t.String(),
-      ssoId: t.Optional(t.String()),
+      password: t.String(),
     }),
+  })
+
+  // User Registration (Pelapor)
+  .post('/register', async ({ body, set }) => {
+      try {
+          // Check if email already exists
+          const existing = await db.select().from(users).where(eq(users.email, body.email)).limit(1);
+          if (existing.length > 0) {
+              set.status = 400;
+              return { status: 'error', message: 'Email sudah terdaftar' };
+          }
+
+          const isUndip = body.email.toLowerCase().endsWith('@undip.ac.id') || 
+                          body.email.toLowerCase().endsWith('.undip.ac.id');
+          
+          const hashedPassword = await Bun.password.hash(body.password);
+
+          const newUser = await db.insert(users).values({
+              name: body.name,
+              email: body.email,
+              password: hashedPassword,
+              phone: body.phone,
+              nimNip: body.nimNip,
+              department: body.department,
+              address: body.address,
+              emergencyName: body.emergencyName,
+              emergencyPhone: body.emergencyPhone,
+              isVerified: isUndip, // Auto-verify if UNDIP email
+          }).returning();
+
+          return {
+              status: 'success',
+              message: isUndip ? 'Registrasi berhasil' : 'Registrasi berhasil, menunggu verifikasi admin',
+              data: {
+                  user: {
+                      ...newUser[0],
+                      id: newUser[0].id.toString(),
+                      password: '',
+                  },
+                  needsApproval: !isUndip
+              }
+          };
+      } catch (error: any) {
+          set.status = 500;
+          return { status: 'error', message: error.message };
+      }
+  }, {
+      body: t.Object({
+          name: t.String(),
+          email: t.String(),
+          password: t.String(),
+          phone: t.String(),
+          nimNip: t.String(),
+          department: t.Optional(t.String()),
+          address: t.Optional(t.String()),
+          emergencyName: t.Optional(t.String()),
+          emergencyPhone: t.Optional(t.String()),
+      })
   })
 
   // Staff Login (Email & Password)
@@ -85,7 +151,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       message: 'Staff login berhasil',
       data: {
         user: {
-          id: foundStaff[0].id,
+          id: foundStaff[0].id.toString(),
           name: foundStaff[0].name,
           email: foundStaff[0].email,
           role: foundStaff[0].role,
@@ -102,12 +168,12 @@ export const authController = new Elysia({ prefix: '/auth' })
     }),
   })
 
-  // Register Phone Number for Pelapor
+  // Register Phone Number (Update Profile)
   .post('/register-phone', async ({ body }) => {
     const updated = await db
       .update(users)
       .set({ phone: body.phone, department: body.department })
-      .where(eq(users.id, body.userId))
+      .where(eq(users.id, Number(body.userId)))
       .returning();
 
     if (updated.length === 0) {
@@ -116,12 +182,16 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     return {
       status: 'success',
-      message: 'Nomor HP berhasil disimpan',
-      data: updated[0],
+      message: 'Profil berhasil diperbarui',
+      data: {
+        ...updated[0],
+        id: updated[0].id.toString(),
+        password: '',
+      },
     };
   }, {
     body: t.Object({
-      userId: t.Number(),
+      userId: t.String(),
       phone: t.String(),
       department: t.Optional(t.String()),
     }),

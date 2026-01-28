@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// Unified Login Page for all roles
 /// Single form for Pelapor, Teknisi, Supervisor, Admin
@@ -33,38 +34,35 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Call API to login - verify credentials and get role
-      await Future.delayed(const Duration(seconds: 1));
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
 
-      final email = _emailController.text.toLowerCase();
-
-      // Mock: determine role based on email (in real app, this comes from backend)
-      String role = 'pelapor';
-      String redirectPath = '/';
-
-      if (email.contains('teknisi')) {
-        role = 'teknisi';
-        redirectPath = '/teknisi';
-      } else if (email.contains('supervisor')) {
-        role = 'supervisor';
-        redirectPath = '/supervisor';
-      } else if (email.contains('pj')) {
-        // PJ Gedung role
-        role = 'pjGedung';
-        redirectPath = '/pj-gedung';
-      } else if (email.contains('admin')) {
-        role = 'admin';
-        redirectPath = '/admin';
+      Map<String, dynamic> result;
+      // Staff uses @laporfsm.com domain
+      if (email.endsWith('@laporfsm.com')) {
+        result = await authService.staffLogin(email: email, password: password);
+      } else {
+        result = await authService.login(email: email, password: password);
       }
 
-      if (mounted) {
+      if (mounted && result['success']) {
+        final role = result['role'];
+        String redirectPath = '/';
+
+        if (role == 'teknisi') redirectPath = '/teknisi';
+        else if (role == 'supervisor') redirectPath = '/supervisor';
+        else if (role == 'pj_gedung') redirectPath = '/pj-gedung';
+        else if (role == 'admin') redirectPath = '/admin';
+
+        if (role == 'pelapor' && result['needsPhone'] == true) {
+          context.go('/complete-profile');
+        } else {
+          context.go(redirectPath);
+        }
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login berhasil sebagai $role'),
-            backgroundColor: Colors.green,
-          ),
+          SnackBar(content: Text(result['message'] ?? 'Login gagal'), backgroundColor: Colors.red),
         );
-        context.go(redirectPath);
       }
     } catch (e) {
       if (mounted) {

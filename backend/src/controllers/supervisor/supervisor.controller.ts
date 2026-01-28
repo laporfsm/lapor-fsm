@@ -2,14 +2,11 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte } from 'drizzle-orm';
+import { mapToMobileReport } from '../../utils/mapper';
 
 export const supervisorController = new Elysia({ prefix: '/supervisor' })
     // Dashboard statistics
     .get('/dashboard/:staffId', async ({ params }) => {
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-
         // Count reports by status
         const statusCounts = await db
             .select({
@@ -19,34 +16,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .from(reports)
             .groupBy(reports.status);
 
-        // Count today's reports
-        const todayCount = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(gte(reports.createdAt, startOfDay));
-
-        // Recent completed reports (for review)
-        const pendingReview = await db
+        // Recent reports
+        const recentReports = await db
             .select({
                 id: reports.id,
                 title: reports.title,
                 status: reports.status,
-                handlingCompletedAt: reports.handlingCompletedAt,
-                handlerMediaUrls: reports.handlerMediaUrls,
+                createdAt: reports.createdAt,
             })
             .from(reports)
-            .where(eq(reports.status, 'selesai'))
-            .orderBy(desc(reports.handlingCompletedAt))
+            .orderBy(desc(reports.createdAt))
             .limit(5);
-
-        // Active technicians
-        const activeTechnicians = await db
-            .select({
-                id: staff.id,
-                name: staff.name,
-            })
-            .from(staff)
-            .where(and(eq(staff.role, 'teknisi'), eq(staff.isActive, true)));
 
         return {
             status: 'success',
@@ -55,44 +35,25 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                     acc[curr.status || 'unknown'] = curr.count;
                     return acc;
                 }, {} as Record<string, number>),
-                todayReports: todayCount[0]?.count || 0,
-                pendingReview,
-                activeTechnicians,
+                recentReports: recentReports.map(r => ({ ...r, id: r.id.toString() })),
             },
         };
     })
 
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
-        const { status, building, startDate, endDate, page = '1', limit = '20' } = query;
+        const { status, building, page = '1', limit = '20' } = query;
         const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
         const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
-
-        if (status && status !== 'all') {
-            conditions.push(eq(reports.status, status));
-        }
-        if (building) {
-            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
-        }
-        if (startDate) {
-            const date = new Date(startDate);
-            if (!isNaN(date.getTime())) {
-                conditions.push(gte(reports.createdAt, date));
-            }
-        }
-        if (endDate) {
-            const date = new Date(endDate);
-            if (!isNaN(date.getTime())) {
-                conditions.push(lte(reports.createdAt, date));
-            }
-        }
+        if (status && status !== 'all') conditions.push(eq(reports.status, status));
+        if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-        const reportsList = await db
+        const result = await db
             .select({
                 id: reports.id,
                 title: reports.title,
@@ -103,17 +64,12 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 isEmergency: reports.isEmergency,
                 status: reports.status,
                 createdAt: reports.createdAt,
-                assignedAt: reports.assignedAt,
-                handlingStartedAt: reports.handlingStartedAt,
-                handlingCompletedAt: reports.handlingCompletedAt,
-                handlerNotes: reports.handlerNotes,
-                handlerMediaUrls: reports.handlerMediaUrls,
-                // Reporter info
+                userId: reports.userId,
+                // Detailed Info
                 reporterName: users.name,
-                // Category info
                 categoryName: categories.name,
-                // Handler info
                 handlerName: staff.name,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
@@ -124,27 +80,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .limit(limitNum)
             .offset(offset);
 
-        const totalCountResult = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(whereClause);
-
         return {
             status: 'success',
-            data: reportsList,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total: totalCountResult[0]?.count || 0,
-                totalPages: Math.ceil((totalCountResult[0]?.count || 0) / limitNum),
-            },
+            data: result.map(r => mapToMobileReport(r)),
         };
     })
 
-    // Verify report (by PJ Gedung or Supervisor)
+    // Verify report (pending -> terverifikasi)
     .post('/reports/:id/verify', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
         const updated = await db
             .update(reports)
@@ -161,27 +107,30 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         await db.insert(reportLogs).values({
             reportId,
-            actorType: 'staff',
-            actorId: staffId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Supervisor",
+            actorRole: foundStaff[0]?.role || "supervisor",
             action: 'verified',
             fromStatus: 'pending',
             toStatus: 'terverifikasi',
-            notes: body.notes || 'Laporan telah diverifikasi',
+            reason: body.notes || 'Laporan telah diverifikasi',
         });
 
-        return { status: 'success', data: updated[0] };
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
 
-    // Assign technician
+    // Assign technician (terverifikasi -> diproses)
     .post('/reports/:id/assign', async ({ params, body }) => {
         const reportId = parseInt(params.id);
-        
+        const supervisorId = body.supervisorId;
+        const foundSupervisor = await db.select().from(staff).where(eq(staff.id, supervisorId)).limit(1);
+
         const updated = await db
             .update(reports)
             .set({
-                status: 'penanganan',
+                status: 'diproses',
                 assignedTo: body.technicianId,
                 assignedAt: new Date(),
                 updatedAt: new Date(),
@@ -193,15 +142,16 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         await db.insert(reportLogs).values({
             reportId,
-            actorType: 'staff',
-            actorId: body.supervisorId,
-            action: 'assigned',
-            fromStatus: updated[0].status || 'terverifikasi',
-            toStatus: 'penanganan',
-            notes: `Laporan ditugaskan ke teknisi`,
+            actorId: supervisorId.toString(),
+            actorName: foundSupervisor[0]?.name || "Supervisor",
+            actorRole: foundSupervisor[0]?.role || "supervisor",
+            action: 'handling',
+            fromStatus: 'terverifikasi',
+            toStatus: 'diproses',
+            reason: `Laporan ditugaskan ke teknisi`,
         });
 
-        return { status: 'success', data: updated[0] };
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({
             supervisorId: t.Number(),
@@ -209,10 +159,44 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         })
     })
 
-    // Review and approve
+    // Recall from Technician (any active state -> recalled)
+    .post('/reports/:id/recall', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+
+        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'recalled',
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Supervisor",
+            actorRole: foundStaff[0]?.role || "supervisor",
+            action: 'recalled',
+            fromStatus: current[0].status || 'penanganan',
+            toStatus: 'recalled',
+            reason: body.reason,
+        });
+
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
+    }, {
+        body: t.Object({ staffId: t.Number(), reason: t.String() })
+    })
+
+    // Approve Completed Task (selesai -> approved)
     .post('/reports/:id/approve', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
         const updated = await db
             .update(reports)
@@ -225,50 +209,18 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
-
         await db.insert(reportLogs).values({
             reportId,
-            actorType: 'staff',
-            actorId: staffId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Supervisor",
+            actorRole: foundStaff[0]?.role || "supervisor",
             action: 'approved',
             fromStatus: 'selesai',
             toStatus: 'approved',
-            notes: body.notes || 'Penanganan disetujui',
+            reason: body.notes || 'Penanganan disetujui',
         });
 
-        return { status: 'success', data: updated[0] };
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
-    })
-
-    // Reject / Recall
-    .post('/reports/:id/reject', async ({ params, body }) => {
-        const reportId = parseInt(params.id);
-        const staffId = body.staffId;
-
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'penanganan', // Send back to handling
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
-
-        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
-
-        await db.insert(reportLogs).values({
-            reportId,
-            actorType: 'staff',
-            actorId: staffId,
-            action: 'rejected',
-            fromStatus: 'selesai',
-            toStatus: 'penanganan',
-            notes: body.reason,
-        });
-
-        return { status: 'success', data: updated[0] };
-    }, {
-        body: t.Object({ staffId: t.Number(), reason: t.String() })
     });
