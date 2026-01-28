@@ -8,6 +8,7 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
@@ -242,7 +243,7 @@ class SupervisorDashboardPage extends StatelessWidget {
     final emergencyCount = _stats['emergency'] ?? 0;
     if (emergencyCount == 0) return const SizedBox.shrink();
 
-    return GestureDetector(
+    return BouncingButton(
       onTap: () => context.push(
         Uri(
           path: '/supervisor/reports/filter',
@@ -344,7 +345,7 @@ class SupervisorDashboardPage extends StatelessWidget {
         ),
         const Gap(12),
         // Clickable Stats Header
-        GestureDetector(
+        BouncingButton(
           onTap: () => context.push('/supervisor/statistics'),
           child: Container(
             width: double.infinity,
@@ -463,7 +464,7 @@ class SupervisorDashboardPage extends StatelessWidget {
     String filter,
   ) {
     return Expanded(
-      child: GestureDetector(
+      child: BouncingButton(
         onTap: () => context.push(
           Uri(
             path: '/supervisor/reports/filter',
@@ -516,7 +517,7 @@ class SupervisorDashboardPage extends StatelessWidget {
     String status,
   ) {
     return Expanded(
-      child: GestureDetector(
+      child: BouncingButton(
         onTap: () => context.push(
           Uri(
             path: '/supervisor/reports/filter',

@@ -8,6 +8,7 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Dashboard page for Teknisi
 class TeknisiDashboardPage extends StatelessWidget {
@@ -252,7 +253,7 @@ class TeknisiDashboardPage extends StatelessWidget {
     final emergencyCount = _stats['emergency'] ?? 0;
     if (emergencyCount == 0) return const SizedBox.shrink();
 
-    return GestureDetector(
+    return BouncingButton(
       onTap: () =>
           context.push('/teknisi/all-reports?status=diproses&emergency=true'),
       child: Container(
@@ -319,7 +320,7 @@ class TeknisiDashboardPage extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
+          child: BouncingButton(
             onTap: () => context.push('/teknisi/all-reports'),
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -349,7 +350,7 @@ class TeknisiDashboardPage extends StatelessWidget {
         ),
         const Gap(12),
         Expanded(
-          child: GestureDetector(
+          child: BouncingButton(
             onTap: () => context.push('/teknisi/search'),
             child: Container(
               padding: const EdgeInsets.all(16),

@@ -72,12 +72,26 @@ class SupervisorReportsContainerPage extends StatelessWidget {
                 ReportStatus.pending,
                 ReportStatus.terverifikasi,
                 ReportStatus.verifikasi,
+                ReportStatus.diproses,
                 ReportStatus.penanganan,
                 ReportStatus.onHold,
                 ReportStatus.selesai,
-                ReportStatus.recalled,
+                ReportStatus.recalled, // Added Recalled to initial
+              ],
+              allowedStatuses: const [
+                // Only show relevant active statuses in filter
+                ReportStatus.pending,
+                ReportStatus.terverifikasi,
+                ReportStatus.verifikasi,
+                ReportStatus.diproses,
+                ReportStatus.penanganan,
+                ReportStatus.onHold,
+                ReportStatus.selesai,
+                ReportStatus
+                    .recalled, // Optional: keep recycled here if supervisor needs to filter it, otherwise remove
               ],
               showBackButton: false, // It's a tab
+              appBarColor: supervisorColor, // Pass supervisor theme
             ),
 
             // Tab 2: Riwayat
@@ -90,7 +104,14 @@ class SupervisorReportsContainerPage extends StatelessWidget {
                 ReportStatus.approved,
                 ReportStatus.ditolak,
               ],
+              allowedStatuses: const [
+                // Only show Approved & Ditolak in filter
+                ReportStatus.approved,
+                ReportStatus.ditolak,
+                // Removed Arsip as requested
+              ],
               showBackButton: false,
+              appBarColor: supervisorColor, // Pass supervisor theme
             ),
           ],
         ),

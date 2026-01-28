@@ -8,11 +8,13 @@ import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// A shared page for displaying a list of reports with filters and search.
 /// Can be used by both Supervisor and Technician.
 class SharedAllReportsPage extends StatefulWidget {
   final List<ReportStatus>? initialStatuses;
+  final List<ReportStatus>? allowedStatuses; // New: Restrict filter options
   final String? initialPeriod;
   final bool initialEmergency; // New parameter
   final Function(String reportId, ReportStatus status) onReportTap;
@@ -27,6 +29,7 @@ class SharedAllReportsPage extends StatefulWidget {
   const SharedAllReportsPage({
     super.key,
     this.initialStatuses,
+    this.allowedStatuses,
     this.initialPeriod,
     this.initialEmergency = false, // Default false
     this.enableDateFilter = true, // Default true
@@ -204,12 +207,15 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     hintText: 'Cari laporan...',
                     prefixIcon: const Icon(LucideIcons.search, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(LucideIcons.x, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
+                        ? Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: BouncingButton(
+                              onTap: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                              child: const Icon(LucideIcons.x, size: 18),
+                            ),
                           )
                         : null,
                     border: OutlineInputBorder(
@@ -234,9 +240,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
               ),
               if (widget.enableDateFilter) ...[
                 const Gap(12),
-                InkWell(
+                BouncingButton(
                   onTap: _showCustomDateRangePicker,
-                  borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -260,9 +265,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                 ),
               ],
               const Gap(8),
-              InkWell(
+              BouncingButton(
                 onTap: _showFilterSheet,
-                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -270,7 +274,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: _hasActiveFilters
-                          ? widget.appBarColor
+                          ? (widget.appBarColor == Colors.white
+                                ? AppTheme.primaryColor
+                                : widget.appBarColor)
                           : Colors.grey.shade300,
                       width: _hasActiveFilters ? 1.5 : 1.0,
                     ),
@@ -278,7 +284,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   child: Icon(
                     LucideIcons.filter,
                     color: _hasActiveFilters
-                        ? widget.appBarColor
+                        ? (widget.appBarColor == Colors.white
+                              ? AppTheme.primaryColor
+                              : widget.appBarColor)
                         : Colors.grey.shade600,
                   ),
                 ),
@@ -630,25 +638,32 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: ReportStatus.values.map((status) {
-                        final isSelected = _selectedStatuses.contains(status);
-                        return FilterChip(
-                          label: Text(status.label),
-                          selected: isSelected,
-                          selectedColor: status.color.withOpacity(0.2),
-                          checkmarkColor: status.color,
-                          onSelected: (selected) {
-                            setModalState(() {
-                              if (selected) {
-                                _selectedStatuses.add(status);
-                              } else {
-                                _selectedStatuses.remove(status);
-                              }
-                            });
-                            setState(() {});
-                          },
-                        );
-                      }).toList(),
+                      children:
+                          (widget.allowedStatuses != null
+                                  ? widget.allowedStatuses!
+                                  : ReportStatus.values)
+                              .map((status) {
+                                final isSelected = _selectedStatuses.contains(
+                                  status,
+                                );
+                                return FilterChip(
+                                  label: Text(status.label),
+                                  selected: isSelected,
+                                  selectedColor: status.color.withOpacity(0.2),
+                                  checkmarkColor: status.color,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      if (selected) {
+                                        _selectedStatuses.add(status);
+                                      } else {
+                                        _selectedStatuses.remove(status);
+                                      }
+                                    });
+                                    setState(() {});
+                                  },
+                                );
+                              })
+                              .toList(),
                     ),
                     const Gap(20),
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
 
@@ -57,9 +58,35 @@ class UniversalReportCard extends StatelessWidget {
 
   Color get _timerColor {
     if (elapsedTime == null) return Colors.grey;
-    if (elapsedTime!.inMinutes >= 30) return Colors.red;
-    if (elapsedTime!.inMinutes >= 15) return Colors.orange;
-    return AppTheme.secondaryColor;
+    // User requested less alarming colors for elapsed time
+    if (elapsedTime!.inHours >= 24) return Colors.orange; // Very long
+    return AppTheme.primaryColor; // Standard blue for active tracking
+  }
+
+  IconData _getStatusIcon(ReportStatus status) {
+    switch (status) {
+      case ReportStatus.pending:
+        return LucideIcons.clock;
+      case ReportStatus.terverifikasi:
+      case ReportStatus.verifikasi:
+        return LucideIcons.checkCircle;
+      case ReportStatus.diproses:
+        return LucideIcons.userCheck;
+      case ReportStatus.penanganan:
+        return LucideIcons.wrench;
+      case ReportStatus.onHold:
+        return LucideIcons.pauseCircle;
+      case ReportStatus.selesai:
+        return LucideIcons.checkSquare;
+      case ReportStatus.approved:
+        return LucideIcons.badgeCheck;
+      case ReportStatus.ditolak:
+        return LucideIcons.xCircle;
+      case ReportStatus.recalled:
+        return LucideIcons.rotateCcw;
+      case ReportStatus.archived:
+        return LucideIcons.archive;
+    }
   }
 
   String _formatCompact(Duration duration) {
@@ -73,8 +100,9 @@ class UniversalReportCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingButton(
       onTap: onTap,
+      scaleFactor: 0.98,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -82,13 +110,15 @@ class UniversalReportCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: isEmergency
               ? Border.all(color: AppTheme.emergencyColor, width: 2)
-              : null,
+              : Border.all(color: Colors.grey.shade100), // Subtle border
           boxShadow: [
             BoxShadow(
               color: isEmergency
                   ? AppTheme.emergencyColor.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
+                  : Colors.black.withValues(
+                      alpha: 0.08,
+                    ), // Increased visibility
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
@@ -134,7 +164,7 @@ class UniversalReportCard extends StatelessWidget {
                   // Header Row: Status Badge + Timer
                   Row(
                     children: [
-                      // Status Badge
+                      // Status Badge with Icon (Accessibility)
                       if (showStatus && status != null) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -142,16 +172,30 @@ class UniversalReportCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: status!.color.withValues(alpha: 0.15),
+                            color: status!.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            status!.label.toUpperCase(),
-                            style: TextStyle(
-                              color: status!.color,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
+                            border: Border.all(
+                              color: status!.color.withValues(alpha: 0.2),
                             ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getStatusIcon(status!),
+                                size: 10,
+                                color: status!.color,
+                              ),
+                              const Gap(4),
+                              Text(
+                                status!.label.toUpperCase(),
+                                style: TextStyle(
+                                  color: status!.color,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                         const Spacer(),
@@ -160,7 +204,7 @@ class UniversalReportCard extends StatelessWidget {
 
                       // Timer OR Handling/Hold Times
                       if (handlingTime != null) ...[
-                        // Handling Time (for completed reports)
+                        // Handling Time
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
@@ -190,7 +234,7 @@ class UniversalReportCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Hold Time (optional)
+                        // Hold Time
                         if (holdTime != null && holdTime!.inSeconds > 0) ...[
                           const Gap(6),
                           Container(
@@ -256,71 +300,94 @@ class UniversalReportCard extends StatelessWidget {
                     ],
                   ),
 
-                  if (showStatus || (showTimer && elapsedTime != null))
-                    const Gap(10),
+                  const Gap(12),
 
                   // Title
                   Text(
                     title,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: compact ? 14 : 15,
+                      fontSize: compact ? 14 : 16,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
 
-                  const Gap(6),
+                  const Gap(12),
 
                   // Location & Category
                   Row(
                     children: [
-                      Icon(
-                        LucideIcons.mapPin,
-                        size: 13,
-                        color: Colors.grey.shade500,
-                      ),
-                      const Gap(4),
+                      // Location (Reverted to Left)
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            Text(
-                              location,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                                fontWeight:
-                                    FontWeight.bold, // Bold for main location
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            Icon(
+                              LucideIcons.mapPin,
+                              size: 13,
+                              color: Colors.grey.shade500,
                             ),
-                            if (locationDetail != null &&
-                                locationDetail!.isNotEmpty)
-                              Text(
-                                locationDetail!,
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 11,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            const Gap(4),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    location,
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  if (locationDetail != null &&
+                                      locationDetail!.isNotEmpty)
+                                    Text(
+                                      locationDetail!,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 11,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
                               ),
+                            ),
                           ],
                         ),
                       ),
+
                       const Gap(12),
-                      Icon(
-                        LucideIcons.tag,
-                        size: 13,
-                        color: Colors.grey.shade500,
-                      ),
-                      const Gap(4),
-                      Text(
-                        category,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
+
+                      // Category (Reverted to Right, but kept styled)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.tag,
+                              size: 12,
+                              color: Colors.blue.shade700,
+                            ),
+                            const Gap(4),
+                            Text(
+                              category,
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -328,7 +395,7 @@ class UniversalReportCard extends StatelessWidget {
 
                   // Handled By
                   if (handledBy != null && !compact) ...[
-                    const Gap(8),
+                    const Gap(12),
                     Row(
                       children: [
                         Icon(
