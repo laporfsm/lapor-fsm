@@ -16,6 +16,8 @@ class Report {
   final String description;
   final String category;
   final String building;
+  final String?
+  locationDetail; // New field for specific location details (e.g., floor, room)
   final double? latitude;
   final double? longitude;
   final String? imageUrl;
@@ -60,6 +62,7 @@ class Report {
     required this.description,
     required this.category,
     required this.building,
+    this.locationDetail,
     this.latitude,
     this.longitude,
     this.imageUrl,
@@ -130,6 +133,7 @@ class Report {
     String? description,
     String? category,
     String? building,
+    String? locationDetail,
     double? latitude,
     double? longitude,
     String? imageUrl,
@@ -163,6 +167,7 @@ class Report {
       description: description ?? this.description,
       category: category ?? this.category,
       building: building ?? this.building,
+      locationDetail: locationDetail ?? this.locationDetail,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -202,6 +207,7 @@ class Report {
       description: json['description'] as String,
       category: json['category'] as String,
       building: json['building'] as String,
+      locationDetail: json['locationDetail'] as String?,
       latitude: json['latitude'] as double?,
       longitude: json['longitude'] as double?,
       imageUrl: json['imageUrl'] as String?,
@@ -243,6 +249,7 @@ class Report {
       'description': description,
       'category': category,
       'building': building,
+      'locationDetail': locationDetail,
       'latitude': latitude,
       'longitude': longitude,
       'imageUrl': imageUrl,

@@ -142,7 +142,7 @@ final appRouter = GoRouter(
               ),
               BottomNavigationBarItem(
                 icon: Icon(LucideIcons.fileText),
-                label: "Aktivitas",
+                label: "Riwayat",
               ),
               BottomNavigationBarItem(
                 icon: Icon(LucideIcons.user),

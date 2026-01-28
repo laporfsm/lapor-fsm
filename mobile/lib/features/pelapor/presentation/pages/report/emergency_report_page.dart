@@ -22,6 +22,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes; // For web compatibility
   String? _selectedBuilding;
+  final _locationDetailController = TextEditingController(); // New Controller
   double? _latitude;
   double? _longitude;
   bool _isSubmitting = false;
@@ -45,6 +46,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     'Masjid',
     'Gedung Acintya Prasada',
     'Taman Rumah Kita',
+    'Kantin',
     'Lainnya',
   ];
 
@@ -129,6 +131,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     setState(() => _isSubmitting = true);
 
     // Simulate API call
+    debugPrint("Submitting Emergency Report:");
+    debugPrint("Building: $_selectedBuilding");
+    debugPrint("Detail Lokasi: ${_locationDetailController.text}");
+
     await Future.delayed(const Duration(seconds: 1));
 
     if (mounted) {
@@ -143,9 +149,12 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFDC2626),
       appBar: AppBar(
-        title: const Text("LAPOR DARURAT"),
+        title: const Text(
+          "LAPOR DARURAT",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFDC2626),
-        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
         elevation: 0,
       ),
       body: SafeArea(
@@ -300,7 +309,8 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                       DropdownButtonFormField<String>(
                         initialValue: _selectedBuilding,
                         decoration: InputDecoration(
-                          hintText: "Pilih gedung (opsional)",
+                          labelText: "Pilih Lokasi (Opsional)",
+                          hintText: "Pilih lokasi",
                           prefixIcon: const Icon(LucideIcons.building),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -313,6 +323,21 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                             .toList(),
                         onChanged: (value) =>
                             setState(() => _selectedBuilding = value),
+                      ),
+                      const Gap(12),
+
+                      // Location Detail (New)
+                      TextFormField(
+                        controller: _locationDetailController,
+                        maxLength: 50,
+                        decoration: InputDecoration(
+                          labelText: "Detail Lokasi (Opsional)",
+                          hintText: "Contoh: Lt 2, Ruang 204",
+                          prefixIcon: const Icon(LucideIcons.mapPin),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                       const Gap(12),
 

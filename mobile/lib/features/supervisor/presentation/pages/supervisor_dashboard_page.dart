@@ -32,6 +32,8 @@ class SupervisorDashboardPage extends StatelessWidget {
       'id': 'sup-1',
       'title': 'AC Mati di Lab Komputer',
       'teknisi': 'Budi Teknisi',
+      'location': 'Gedung A',
+      'locationDetail': 'Ruang Server',
       'completedAt': DateTime.now().subtract(const Duration(minutes: 30)),
       'duration': '45 menit',
     },
@@ -623,7 +625,8 @@ class SupervisorDashboardPage extends StatelessWidget {
         return UniversalReportCard(
           id: r['id'].toString(),
           title: r['title'] as String,
-          location: 'Lab Komputer', // Mock location
+          location: r['location'] as String,
+          locationDetail: r['locationDetail'] as String?,
           category: 'Kelistrikan', // Mock category
           status: ReportStatus.selesai,
           handledBy: r['teknisi'] as String,
@@ -646,7 +649,8 @@ class SupervisorDashboardPage extends StatelessWidget {
       {
         'id': 'sup-2',
         'title': 'Kebocoran Pipa Toilet',
-        'location': 'Gedung C, Toilet',
+        'location': 'Gedung C',
+        'locationDetail': 'Toilet Pria',
         'category': 'Sanitasi',
         'status': ReportStatus.terverifikasi,
         'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
@@ -665,6 +669,7 @@ class SupervisorDashboardPage extends StatelessWidget {
           id: r['id'] as String,
           title: r['title'] as String,
           location: r['location'] as String,
+          locationDetail: r['locationDetail'] as String?,
           category: r['category'] as String,
           status: r['status'] as ReportStatus,
           elapsedTime: DateTime.now().difference(r['createdAt'] as DateTime),

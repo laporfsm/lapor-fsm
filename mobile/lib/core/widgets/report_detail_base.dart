@@ -132,37 +132,33 @@ class ReportDetailBase extends StatelessWidget {
                   ],
                   const Gap(16),
 
-                  // Reporter Info (Visible to Teknisi, Supervisor, & PJ Gedung)
-                  if (viewerRole == UserRole.teknisi ||
-                      viewerRole == UserRole.supervisor ||
-                      viewerRole == UserRole.pjGedung) ...[
-                    _buildInfoCard(
-                      title: 'Informasi Pelapor',
-                      icon: LucideIcons.user,
-                      accentColor: AppTheme.primaryColor,
-                      children: [
+                  // Reporter Info (Visible to Everyone)
+                  _buildInfoCard(
+                    title: 'Informasi Pelapor',
+                    icon: LucideIcons.user,
+                    accentColor: AppTheme.primaryColor,
+                    children: [
+                      _buildInfoRow(
+                        LucideIcons.user,
+                        'Nama',
+                        report.reporterName,
+                      ),
+                      if (report.reporterEmail != null)
                         _buildInfoRow(
-                          LucideIcons.user,
-                          'Nama',
-                          report.reporterName,
+                          LucideIcons.mail,
+                          'Email',
+                          report.reporterEmail!,
                         ),
-                        if (report.reporterEmail != null)
-                          _buildInfoRow(
-                            LucideIcons.mail,
-                            'Email',
-                            report.reporterEmail!,
-                          ),
-                        if (report.reporterPhone != null)
-                          _buildInfoRowWithAction(
-                            LucideIcons.phone,
-                            'Telepon',
-                            report.reporterPhone!,
-                            onTap: () => _launchPhone(report.reporterPhone),
-                          ),
-                      ],
-                    ),
-                    const Gap(16),
-                  ],
+                      if (report.reporterPhone != null)
+                        _buildInfoRowWithAction(
+                          LucideIcons.phone,
+                          'Telepon',
+                          report.reporterPhone!,
+                          onTap: () => _launchPhone(report.reporterPhone),
+                        ),
+                    ],
+                  ),
+                  const Gap(16),
 
                   // Handled By (Visible to Everyone if assigned)
                   if (report.handledBy != null &&
@@ -300,9 +296,16 @@ class ReportDetailBase extends StatelessWidget {
                     children: [
                       _buildInfoRow(
                         LucideIcons.building,
-                        'Gedung',
+                        'Tempat',
                         report.building,
                       ),
+                      if (report.locationDetail != null &&
+                          report.locationDetail!.isNotEmpty)
+                        _buildInfoRow(
+                          LucideIcons.mapPin,
+                          'Detail Lokasi',
+                          report.locationDetail!,
+                        ),
                       if (report.latitude != null &&
                           report.longitude != null) ...[
                         const Gap(12),

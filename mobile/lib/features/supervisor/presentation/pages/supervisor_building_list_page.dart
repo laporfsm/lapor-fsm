@@ -26,6 +26,7 @@ class _SupervisorBuildingListPageState
     {'name': 'Gedung F', 'reports': 0, 'status': 'Safe'},
     {'name': 'Gedung G', 'reports': 0, 'status': 'Safe'},
     {'name': 'Gedung H', 'reports': 0, 'status': 'Safe'},
+    {'name': 'Kantin', 'reports': 3, 'status': 'Safe'},
   ];
 
   List<Map<String, dynamic>> _filteredBuildings = [];
