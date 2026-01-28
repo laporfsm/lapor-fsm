@@ -17,6 +17,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 email: staff.email,
                 phone: staff.phone,
                 role: staff.role,
+                specialization: staff.specialization,
                 isActive: staff.isActive,
                 createdAt: staff.createdAt,
             })
@@ -31,7 +32,6 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     // Create new staff
     .post('/staff', async ({ body }) => {
-        // Check if email already exists
         const existing = await db
             .select()
             .from(staff)
@@ -42,12 +42,15 @@ export const adminController = new Elysia({ prefix: '/admin' })
             return { status: 'error', message: 'Email sudah terdaftar' };
         }
 
+        const hashedPassword = await Bun.password.hash(body.password);
+
         const newStaff = await db.insert(staff).values({
             name: body.name,
             email: body.email,
             phone: body.phone,
-            password: body.password, // In production, hash this
+            password: hashedPassword,
             role: body.role,
+            specialization: body.specialization,
             isActive: true,
         }).returning();
 
@@ -67,20 +70,19 @@ export const adminController = new Elysia({ prefix: '/admin' })
             email: t.String(),
             phone: t.Optional(t.String()),
             password: t.String(),
-            role: t.String(), // 'teknisi', 'supervisor', 'admin'
+            role: t.String(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
+            specialization: t.Optional(t.String()),
         }),
     })
 
     // Update staff
     .put('/staff/:id', async ({ params, body }) => {
         const staffId = parseInt(params.id);
-
-        const updateData: any = {};
-        if (body.name) updateData.name = body.name;
-        if (body.phone) updateData.phone = body.phone;
-        if (body.role) updateData.role = body.role;
-        if (body.isActive !== undefined) updateData.isActive = body.isActive;
-        if (body.password) updateData.password = body.password;
+        const updateData: any = { ...body };
+        
+        if (body.password) {
+            updateData.password = await Bun.password.hash(body.password);
+        }
 
         const updated = await db
             .update(staff)
@@ -108,6 +110,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             name: t.Optional(t.String()),
             phone: t.Optional(t.String()),
             role: t.Optional(t.String()),
+            specialization: t.Optional(t.String()),
             isActive: t.Optional(t.Boolean()),
             password: t.Optional(t.String()),
         }),
@@ -115,116 +118,36 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     // Delete/Deactivate staff
     .delete('/staff/:id', async ({ params }) => {
-        const staffId = parseInt(params.id);
-
         const updated = await db
             .update(staff)
             .set({ isActive: false })
-            .where(eq(staff.id, staffId))
+            .where(eq(staff.id, parseInt(params.id)))
             .returning();
 
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Staff tidak ditemukan' };
-        }
-
-        return {
-            status: 'success',
-            message: 'Staff berhasil dinonaktifkan',
-        };
+        if (updated.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
+        return { status: 'success', message: 'Staff berhasil dinonaktifkan' };
     })
 
     // ==========================================
     // CATEGORY MANAGEMENT
     // ==========================================
 
-    // Get all categories
-    .get('/categories', async () => {
-        const categoryList = await db
-            .select()
-            .from(categories)
-            .orderBy(categories.type, categories.name);
-
-        return {
-            status: 'success',
-            data: categoryList,
-        };
-    })
-
-    // Create category
     .post('/categories', async ({ body }) => {
         const newCategory = await db.insert(categories).values({
             name: body.name,
             type: body.type,
             icon: body.icon,
+            description: body.description,
         }).returning();
 
-        return {
-            status: 'success',
-            message: 'Kategori berhasil ditambahkan',
-            data: newCategory[0],
-        };
-    }, {
-        body: t.Object({
-            name: t.String(),
-            type: t.String(), // 'emergency' or 'non-emergency'
-            icon: t.Optional(t.String()),
-        }),
-    })
-
-    // Update category
-    .put('/categories/:id', async ({ params, body }) => {
-        const categoryId = parseInt(params.id);
-
-        const updated = await db
-            .update(categories)
-            .set({
-                name: body.name,
-                type: body.type,
-                icon: body.icon,
-            })
-            .where(eq(categories.id, categoryId))
-            .returning();
-
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Kategori tidak ditemukan' };
-        }
-
-        return {
-            status: 'success',
-            message: 'Kategori berhasil diupdate',
-            data: updated[0],
-        };
+        return { status: 'success', data: newCategory[0] };
     }, {
         body: t.Object({
             name: t.String(),
             type: t.String(),
             icon: t.Optional(t.String()),
+            description: t.Optional(t.String()),
         }),
-    })
-
-    // Delete category
-    .delete('/categories/:id', async ({ params }) => {
-        const categoryId = parseInt(params.id);
-
-        // Check if category is being used
-        const usedInReports = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(eq(reports.categoryId, categoryId));
-
-        if ((usedInReports[0]?.count || 0) > 0) {
-            return {
-                status: 'error',
-                message: 'Kategori tidak dapat dihapus karena sedang digunakan'
-            };
-        }
-
-        await db.delete(categories).where(eq(categories.id, categoryId));
-
-        return {
-            status: 'success',
-            message: 'Kategori berhasil dihapus',
-        };
     })
 
     // ==========================================
@@ -232,79 +155,26 @@ export const adminController = new Elysia({ prefix: '/admin' })
     // ==========================================
 
     .get('/dashboard', async () => {
-        // Total reports
-        const totalReports = await db
-            .select({ count: count() })
-            .from(reports);
+        const totalReports = await db.select({ count: count() }).from(reports);
+        const reportsByStatus = await db.select({ status: reports.status, count: count() }).from(reports).groupBy(reports.status);
+        const totalUsers = await db.select({ count: count() }).from(users);
 
-        // Reports by status
-        const reportsByStatus = await db
-            .select({
-                status: reports.status,
-                count: count(),
-            })
-            .from(reports)
-            .groupBy(reports.status);
-
-        // Reports by category
-        const reportsByCategory = await db
-            .select({
-                categoryId: reports.categoryId,
-                categoryName: categories.name,
-                count: count(),
-            })
-            .from(reports)
-            .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .groupBy(reports.categoryId, categories.name);
-
-        // Emergency vs Non-emergency
-        const emergencyStats = await db
-            .select({
-                isEmergency: reports.isEmergency,
-                count: count(),
-            })
-            .from(reports)
-            .groupBy(reports.isEmergency);
-
-        // Staff count by role
-        const staffByRole = await db
-            .select({
-                role: staff.role,
-                count: count(),
-            })
-            .from(staff)
-            .where(eq(staff.isActive, true))
-            .groupBy(staff.role);
-
-        // Total users (reporters)
-        const totalUsers = await db
-            .select({ count: count() })
-            .from(users);
-
-        // Recent reports (last 7 days)
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        const recentReports = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(sql`${reports.createdAt} >= ${sevenDaysAgo}`);
-
-        // Average handling time (for completed reports)
-        // This is a simplified calculation
+        // Average handling time calculation
         const completedWithTime = await db
             .select({
                 id: reports.id,
-                handledAt: reports.handledAt,
-                completedAt: reports.completedAt,
+                handlingStartedAt: reports.handlingStartedAt,
+                handlingCompletedAt: reports.handlingCompletedAt,
             })
             .from(reports)
             .where(eq(reports.status, 'selesai'))
             .limit(100);
 
         let avgHandlingMinutes = 0;
-        const validReports = completedWithTime.filter(r => r.handledAt && r.completedAt);
+        const validReports = completedWithTime.filter(r => r.handlingStartedAt && r.handlingCompletedAt);
         if (validReports.length > 0) {
             const totalMinutes = validReports.reduce((sum, r) => {
-                const diff = new Date(r.completedAt!).getTime() - new Date(r.handledAt!).getTime();
+                const diff = new Date(r.handlingCompletedAt!).getTime() - new Date(r.handlingStartedAt!).getTime();
                 return sum + (diff / 60000);
             }, 0);
             avgHandlingMinutes = Math.round(totalMinutes / validReports.length);
@@ -315,42 +185,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
             data: {
                 totalReports: totalReports[0]?.count || 0,
                 totalUsers: totalUsers[0]?.count || 0,
-                recentReports: recentReports[0]?.count || 0,
                 avgHandlingMinutes,
                 reportsByStatus: reportsByStatus.reduce((acc, curr) => {
                     acc[curr.status || 'unknown'] = curr.count;
                     return acc;
                 }, {} as Record<string, number>),
-                reportsByCategory,
-                emergencyStats: {
-                    emergency: emergencyStats.find(e => e.isEmergency)?.count || 0,
-                    nonEmergency: emergencyStats.find(e => !e.isEmergency)?.count || 0,
-                },
-                staffByRole: staffByRole.reduce((acc, curr) => {
-                    acc[curr.role] = curr.count;
-                    return acc;
-                }, {} as Record<string, number>),
             },
-        };
-    })
-
-    // Get all users (reporters)
-    .get('/users', async () => {
-        const userList = await db
-            .select({
-                id: users.id,
-                name: users.name,
-                email: users.email,
-                phone: users.phone,
-                faculty: users.faculty,
-                department: users.department,
-                createdAt: users.createdAt,
-            })
-            .from(users)
-            .orderBy(desc(users.createdAt));
-
-        return {
-            status: 'success',
-            data: userList,
         };
     });

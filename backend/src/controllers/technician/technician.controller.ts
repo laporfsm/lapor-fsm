@@ -8,25 +8,22 @@ export const technicianController = new Elysia({ prefix: '/technician' })
     .get('/reports/:staffId', async ({ params }) => {
         const staffId = parseInt(params.staffId);
 
-        // Get reports that are either:
-        // 1. Pending (not assigned yet)
-        // 2. Assigned to this technician
         const reportsList = await db
             .select({
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
                 building: reports.building,
+                locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
-                imageUrl: reports.imageUrl,
+                mediaUrls: reports.mediaUrls,
                 isEmergency: reports.isEmergency,
                 status: reports.status,
-                notes: reports.notes,
                 createdAt: reports.createdAt,
                 assignedTo: reports.assignedTo,
                 assignedAt: reports.assignedAt,
-                handledAt: reports.handledAt,
+                handlingStartedAt: reports.handlingStartedAt,
                 // Reporter info
                 reporterName: users.name,
                 reporterPhone: users.phone,
@@ -41,11 +38,12 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 or(
                     eq(reports.status, 'pending'),
                     eq(reports.status, 'verifikasi'),
+                    eq(reports.status, 'terverifikasi'),
                     and(
                         eq(reports.assignedTo, staffId),
                         or(
                             eq(reports.status, 'penanganan'),
-                            eq(reports.status, 'penanganan_ulang')
+                            eq(reports.status, 'diproses')
                         )
                     )
                 )
@@ -58,16 +56,15 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         };
     })
 
-    // Verify a report (first step by teknisi)
-    .post('/reports/:id/verify', async ({ params, body }) => {
+    // Start handling a report (Accepting the task)
+    .post('/reports/:id/accept', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
 
-        // Update report status to verifikasi and assign to teknisi
         const updated = await db
             .update(reports)
             .set({
-                status: 'verifikasi',
+                status: 'penanganan',
                 assignedTo: staffId,
                 assignedAt: new Date(),
                 updatedAt: new Date(),
@@ -79,37 +76,37 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return { status: 'error', message: 'Laporan tidak ditemukan' };
         }
 
-        // Log the action
         await db.insert(reportLogs).values({
             reportId,
-            staffId,
-            action: 'verified',
-            notes: body.notes || 'Laporan diverifikasi',
+            actorType: 'staff',
+            actorId: staffId,
+            action: 'assigned',
+            fromStatus: updated[0].status || 'pending',
+            toStatus: 'penanganan',
+            notes: 'Laporan diterima oleh teknisi',
         });
 
         return {
             status: 'success',
-            message: 'Laporan berhasil diverifikasi',
+            message: 'Laporan diterima',
             data: updated[0],
         };
     }, {
         body: t.Object({
             staffId: t.Number(),
-            notes: t.Optional(t.String()),
         }),
     })
 
-    // Start handling a report (teknisi on-site)
-    .post('/reports/:id/handle', async ({ params, body }) => {
+    // Begin work (On-site)
+    .post('/reports/:id/start-work', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
 
-        // Update report status to penanganan
         const updated = await db
             .update(reports)
             .set({
-                status: 'penanganan',
-                handledAt: new Date(), // Start timer
+                status: 'diproses',
+                handlingStartedAt: new Date(),
                 updatedAt: new Date(),
             })
             .where(eq(reports.id, reportId))
@@ -119,23 +116,24 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return { status: 'error', message: 'Laporan tidak ditemukan' };
         }
 
-        // Log the action
         await db.insert(reportLogs).values({
             reportId,
-            staffId,
+            actorType: 'staff',
+            actorId: staffId,
             action: 'handling',
-            notes: body.notes || 'Teknisi mulai menangani laporan',
+            fromStatus: 'penanganan',
+            toStatus: 'diproses',
+            notes: 'Teknisi mulai mengerjakan perbaikan di lokasi',
         });
 
         return {
             status: 'success',
-            message: 'Penanganan dimulai',
+            message: 'Pengerjaan dimulai',
             data: updated[0],
         };
     }, {
         body: t.Object({
             staffId: t.Number(),
-            notes: t.Optional(t.String()),
         }),
     })
 
@@ -144,14 +142,13 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
 
-        // Update report status to selesai
         const updated = await db
             .update(reports)
             .set({
                 status: 'selesai',
-                completedAt: new Date(), // Stop timer
+                handlingCompletedAt: new Date(),
                 handlerNotes: body.notes,
-                handlerMediaUrl: body.mediaUrl, // Proof photo/video
+                handlerMediaUrls: body.mediaUrls || [],
                 updatedAt: new Date(),
             })
             .where(eq(reports.id, reportId))
@@ -161,12 +158,15 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return { status: 'error', message: 'Laporan tidak ditemukan' };
         }
 
-        // Log the action
         await db.insert(reportLogs).values({
             reportId,
-            staffId,
+            actorType: 'staff',
+            actorId: staffId,
             action: 'completed',
+            fromStatus: 'diproses',
+            toStatus: 'selesai',
             notes: body.notes || 'Penanganan selesai',
+            mediaUrls: body.mediaUrls || [],
         });
 
         return {
@@ -178,11 +178,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         body: t.Object({
             staffId: t.Number(),
             notes: t.Optional(t.String()),
-            mediaUrl: t.String(), // Required proof
+            mediaUrls: t.Array(t.String()), // Required proof
         }),
     })
 
-    // Get single report detail
+    // Get single report detail for technician
     .get('/reports/detail/:id', async ({ params }) => {
         const reportId = parseInt(params.id);
 
@@ -192,18 +192,18 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 title: reports.title,
                 description: reports.description,
                 building: reports.building,
+                locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
-                imageUrl: reports.imageUrl,
+                mediaUrls: reports.mediaUrls,
                 isEmergency: reports.isEmergency,
                 status: reports.status,
-                notes: reports.notes,
                 handlerNotes: reports.handlerNotes,
-                handlerMediaUrl: reports.handlerMediaUrl,
+                handlerMediaUrls: reports.handlerMediaUrls,
                 createdAt: reports.createdAt,
                 assignedAt: reports.assignedAt,
-                handledAt: reports.handledAt,
-                completedAt: reports.completedAt,
+                handlingStartedAt: reports.handlingStartedAt,
+                handlingCompletedAt: reports.handlingCompletedAt,
                 // Reporter info
                 reporterName: users.name,
                 reporterPhone: users.phone,
@@ -222,17 +222,9 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return { status: 'error', message: 'Laporan tidak ditemukan' };
         }
 
-        // Get report logs
         const logs = await db
-            .select({
-                id: reportLogs.id,
-                action: reportLogs.action,
-                notes: reportLogs.notes,
-                createdAt: reportLogs.createdAt,
-                staffName: staff.name,
-            })
+            .select()
             .from(reportLogs)
-            .leftJoin(staff, eq(reportLogs.staffId, staff.id))
             .where(eq(reportLogs.reportId, reportId))
             .orderBy(desc(reportLogs.createdAt));
 
