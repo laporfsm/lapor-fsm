@@ -1,11 +1,11 @@
 import { db } from './index';
 import { staff, categories, users, reports, reportLogs } from './schema';
-import { sql } from 'drizzle-orm';
 
 async function seed() {
-    console.log('🚀 Starting deep database seeding...');
+    console.log('🚀 Starting EXTENDED database seeding for Testing...');
+    try {
 
-    // Clean start to avoid duplicates and ensure clean relationships
+    // Clean start
     console.log('🧹 Cleaning existing data...');
     await db.delete(reportLogs);
     await db.delete(reports);
@@ -16,172 +16,247 @@ async function seed() {
     // 1. Seed Categories
     console.log('📂 Seeding categories...');
     const cats = await db.insert(categories).values([
-        { name: 'Kelistrikan', type: 'non-emergency', icon: 'zap', description: 'Masalah terkait instalasi listrik, lampu, AC, dan stop kontak.' },
-        { name: 'Sanitasi', type: 'non-emergency', icon: 'droplet', description: 'Masalah terkait saluran air, kran, toilet, dan kebocoran pipa.' },
-        { name: 'Infrastruktur', type: 'non-emergency', icon: 'building', description: 'Gedung, atap, plafon, pintu, jendela, dan fasilitas fisik lainnya.' },
-        { name: 'Kebersihan', type: 'non-emergency', icon: 'trash', description: 'Sampah menumpuk, ruangan kotor, atau kebutuhan pembersihan mendesak.' },
-        { name: 'Emergency', type: 'emergency', icon: 'alert-triangle', description: 'Kejadian berbahaya seperti kebakaran, pohon tumbang, atau korsleting besar.' },
+        { name: 'Kelistrikan', type: 'non-emergency', icon: 'zap', description: 'Masalah instalasi listrik, lampu, AC, dan stop kontak.' },
+        { name: 'Sanitasi', type: 'non-emergency', icon: 'droplet', description: 'Masalah saluran air, kran, toilet, dan kebocoran pipa.' },
+        { name: 'Infrastruktur', type: 'non-emergency', icon: 'building', description: 'Gedung, atap, plafon, pintu, jendela.' },
+        { name: 'Kebersihan', type: 'non-emergency', icon: 'trash', description: 'Sampah menumpuk atau ruangan kotor.' },
+        { name: 'Fasilitas Umum', type: 'non-emergency', icon: 'box', description: 'Meja, kursi, proyektor, papan tulis.' },
+        { name: 'Internet/IT', type: 'non-emergency', icon: 'wifi', description: 'Masalah WiFi, LAN, atau proyektor IT.' },
     ]).returning();
 
     const catListrik = cats.find(c => c.name === 'Kelistrikan')!;
     const catSanitasi = cats.find(c => c.name === 'Sanitasi')!;
     const catInfra = cats.find(c => c.name === 'Infrastruktur')!;
     const catBersih = cats.find(c => c.name === 'Kebersihan')!;
-    const catEmergency = cats.find(c => c.name === 'Emergency')!;
+    const catIT = cats.find(c => c.name === 'Internet/IT')!;
 
     // 2. Seed Users (Pelapor)
-    console.log('👤 Seeding users...');
+    console.log('👤 Seeding users (Pelapor)...');
+    const uPass = await Bun.password.hash('password123');
     const createdUsers = await db.insert(users).values([
-        { name: 'Andi Mahasiswa', email: 'andi@student.undip.ac.id', ssoId: 'SSO-001', phone: '081234567890', faculty: 'FSM', department: 'Informatika' },
-        { name: 'Siska Mahasiswa', email: 'siska@student.undip.ac.id', ssoId: 'SSO-002', phone: '081234567891', faculty: 'FSM', department: 'Biologi' },
-        { name: 'Budi Dosen', email: 'budi@lecturer.undip.ac.id', ssoId: 'SSO-003', phone: '081234567892', faculty: 'FSM', department: 'Fisika' },
+        { name: 'Andi Mahasiswa', email: 'andi@student.undip.ac.id', password: uPass, phone: '081234567890', faculty: 'FSM', department: 'Informatika', isVerified: true, nimNip: '24060120130001' },
+        { name: 'Siska Mahasiswa', email: 'siska@student.undip.ac.id', password: uPass, phone: '081234567891', faculty: 'FSM', department: 'Biologi', isVerified: true, nimNip: '24060120140002' },
+        { name: 'Budi Dosen', email: 'budi@lecturer.undip.ac.id', password: uPass, phone: '081234567892', faculty: 'FSM', department: 'Fisika', isVerified: true, nimNip: '198001012005011001' },
     ]).returning();
 
-    // 3. Seed Staff
-    console.log('👮 Seeding staff...');
+    // 3. Seed Staff (Multiple Roles)
+    console.log('👮 Seeding staff members...');
     const pass = await Bun.password.hash('password123');
     const createdStaff = await db.insert(staff).values([
         { name: 'Admin Utama', email: 'admin@laporfsm.com', password: pass, role: 'admin' },
-        { name: 'Supervisor Sapto', email: 'supervisor@laporfsm.com', password: pass, role: 'supervisor' },
-        { name: 'Teknisi Agus (Listrik)', email: 'agus@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Kelistrikan' },
-        { name: 'Teknisi Bambang (Plumbing)', email: 'bambang@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Sanitasi' },
-        { name: 'Siti PJ Gedung E', email: 'siti@laporfsm.com', password: pass, role: 'pj_gedung' },
+        { name: 'Sapto Supervisor', email: 'supervisor@laporfsm.com', password: pass, role: 'supervisor' },
+        { name: 'Agus Teknisi', email: 'teknisi@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Kelistrikan' },
+        { name: 'Bambang Teknisi', email: 'bambang@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Sanitasi' },
+        { name: 'Dodi Teknisi', email: 'dodi@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Umum' },
+        { name: 'Siti PJ Gedung A', email: 'siti@laporfsm.com', password: pass, role: 'pj_gedung' },
+        { name: 'Eko PJ Gedung E', email: 'eko@laporfsm.com', password: pass, role: 'pj_gedung' },
     ]).returning();
 
-    const tAgus = createdStaff.find(s => s.name.includes('Agus'))!;
-    const tBambang = createdStaff.find(s => s.name.includes('Bambang'))!;
+    const tAgus = createdStaff.find(s => s.email === 'teknisi@laporfsm.com')!;
+    const tBambang = createdStaff.find(s => s.email === 'bambang@laporfsm.com')!;
+    const tDodi = createdStaff.find(s => s.email === 'dodi@laporfsm.com')!;
     const sSapto = createdStaff.find(s => s.role === 'supervisor')!;
-    const pSiti = createdStaff.find(s => s.role === 'pj_gedung')!;
+    const pSiti = createdStaff.find(s => s.email === 'siti@laporfsm.com')!;
 
-    // 4. Seed Reports
-    console.log('📝 Seeding realistic reports...');
+    // 4. Seed Reports (Diverse Scenarios)
+    console.log('📝 Seeding 15+ diverse reports...');
     
-    // -- REPORT 1: PENDING (New)
+    // -- GEDUNG E (Area Eko)
     const [r1] = await db.insert(reports).values({
         userId: createdUsers[0].id,
         categoryId: catListrik.id,
-        title: 'AC Ruang E101 Tidak Dingin',
-        description: 'Sudah dinyalakan 1 jam tapi hanya keluar angin. Sangat panas untuk perkuliahan.',
+        title: 'AC Mati di E101',
+        description: 'AC tidak dingin sama sekali sejak pagi.',
         building: 'Gedung E',
-        locationDetail: 'Lantai 1, Ruang Kelas E101',
-        isEmergency: false,
+        locationDetail: 'Ruang Kelas E101',
         status: 'pending',
         mediaUrls: ['https://images.unsplash.com/photo-1545241047-6083a3684587?w=500'],
     }).returning();
 
-    await db.insert(reportLogs).values({
-        reportId: r1.id,
-        actorType: 'user',
-        actorId: createdUsers[0].id,
-        action: 'created',
-        toStatus: 'pending',
-        notes: 'Laporan baru dikirim',
-    });
-
-    // -- REPORT 2: VERIFIED (Waiting for Assignment)
+    // -- GEDUNG A (Area Siti)
     const [r2] = await db.insert(reports).values({
         userId: createdUsers[1].id,
         categoryId: catBersih.id,
-        title: 'Sampah Menumpuk di Kantin',
-        description: 'Area sampah di belakang kantin sudah meluap, bau sampai ke area makan.',
-        building: 'Kantin FSM',
-        locationDetail: 'Area Belakang / Tempat Sampah',
+        title: 'Sampah Menumpuk di Koridor',
+        description: 'Sampah sudah 2 hari tidak diangkat.',
+        building: 'Gedung A',
+        locationDetail: 'Lantai 2, depan Lift',
         status: 'terverifikasi',
         verifiedBy: pSiti.id,
         verifiedAt: new Date(Date.now() - 3600000),
     }).returning();
 
-    await db.insert(reportLogs).values([
-        { reportId: r2.id, actorType: 'user', actorId: createdUsers[1].id, action: 'created', toStatus: 'pending', notes: 'Bau tidak sedap tercium' },
-        { reportId: r2.id, actorType: 'staff', actorId: pSiti.id, action: 'verified', fromStatus: 'pending', toStatus: 'terverifikasi', notes: 'Dikonfirmasi oleh PJ Gedung' },
-    ]);
-
-    // -- REPORT 3: IN PROGRESS (Handling)
+    // -- GEDUNG C (InProgress)
     const [r3] = await db.insert(reports).values({
         userId: createdUsers[2].id,
         categoryId: catSanitasi.id,
-        title: 'Wastafel Mampet di Gedung C',
-        description: 'Wastafel di toilet lantai 2 tidak mengalir sama sekali.',
+        title: 'Kran Air Patah',
+        description: 'Air mengalir terus di wastafel.',
         building: 'Gedung C',
-        locationDetail: 'Lantai 2, Toilet Dosen',
-        status: 'diproses',
+        locationDetail: 'Toilet Dosen Lt 1',
+        status: 'penanganan',
         assignedTo: tBambang.id,
         assignedAt: new Date(Date.now() - 7200000),
         handlingStartedAt: new Date(Date.now() - 3600000),
-        mediaUrls: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400'],
     }).returning();
 
-    await db.insert(reportLogs).values([
-        { reportId: r3.id, actorType: 'user', actorId: createdUsers[2].id, action: 'created', toStatus: 'pending' },
-        { reportId: r3.id, actorType: 'staff', actorId: sSapto.id, action: 'assigned', toStatus: 'penanganan', notes: 'Tolong segera dicek Pak Bambang' },
-        { reportId: r3.id, actorType: 'staff', actorId: tBambang.id, action: 'handling', fromStatus: 'penanganan', toStatus: 'diproses', notes: 'Sedang dibongkar pipanya' },
-    ]);
-
-    // -- REPORT 4: COMPLETED (Waiting Approval)
+    // -- LAB KOMPUTER (On Hold)
     const [r4] = await db.insert(reports).values({
         userId: createdUsers[0].id,
-        categoryId: catInfra.id,
-        title: 'Gagang Pintu Kelas Lepas',
-        description: 'Gagang pintu kelas A202 lepas, mahasiswa kesulitan keluar masuk.',
-        building: 'Gedung A',
-        locationDetail: 'Lantai 2, Ruang A202',
-        status: 'selesai',
-        assignedTo: tBambang.id,
-        assignedAt: new Date(Date.now() - 172800000),
-        handlingStartedAt: new Date(Date.now() - 86400000),
-        handlingCompletedAt: new Date(Date.now() - 10800000),
-        handlerNotes: 'Sekrup gagang pintu sudah diganti dengan yang lebih kuat.',
-        handlerMediaUrls: ['https://images.unsplash.com/photo-1516962215378-7fa2e137ae93?w=400'],
+        categoryId: catIT.id,
+        title: 'WiFi Lab MIPA 1 Mati',
+        description: 'Satu ruangan tidak bisa akses internet.',
+        building: 'Laboratorium',
+        locationDetail: 'Lab Komputer MIPA 1',
+        status: 'onHold',
+        assignedTo: tAgus.id,
+        assignedAt: new Date(Date.now() - 86400000),
+        handlingStartedAt: new Date(Date.now() - 43200000),
+        pausedAt: new Date(Date.now() - 3600000),
+        holdReason: 'Menunggu perangkat pengganti dari gudang.',
     }).returning();
 
-    await db.insert(reportLogs).values([
-        { reportId: r4.id, actorId: createdUsers[0].id, actorType: 'user', action: 'created', toStatus: 'pending' },
-        { reportId: r4.id, actorId: sSapto.id, actorType: 'staff', action: 'assigned', toStatus: 'penanganan' },
-        { reportId: r4.id, actorId: tBambang.id, actorType: 'staff', action: 'completed', toStatus: 'selesai', notes: 'Gagang pintu sudah kokoh kembali' },
-    ]);
-
-    // -- REPORT 5: EMERGENCY (Immediate Action)
+    // -- RECALLED (Needs revision)
     const [r5] = await db.insert(reports).values({
         userId: createdUsers[1].id,
-        categoryId: catEmergency.id,
-        title: 'Korsleting Listrik di Kantin',
-        description: 'Ada suara ledakan kecil dan bau kabel terbakar di area dapur kantin.',
-        building: 'Kantin FSM',
-        locationDetail: 'Dapur Utama',
+        categoryId: catInfra.id,
+        title: 'Engsel Pintu Rusak',
+        description: 'Pintu tidak bisa ditutup rapat karena engselnya bengkok.',
+        building: 'Gedung B',
+        status: 'recalled',
+        assignedTo: tDodi.id,
+        updatedAt: new Date(),
+    }).returning();
+
+    // -- EMERGENCY (High Priority)
+    const [r6] = await db.insert(reports).values({
+        userId: createdUsers[2].id,
+        categoryId: catListrik.id,
+        title: 'Korsleting Panel Listrik',
+        description: 'Ada bau terbakar dari boks panel.',
+        building: 'Gedung D',
         isEmergency: true,
-        status: 'penanganan',
+        status: 'diproses',
         assignedTo: tAgus.id,
         assignedAt: new Date(),
     }).returning();
 
-    await db.insert(reportLogs).values([
-        { reportId: r5.id, actorId: createdUsers[1].id, actorType: 'user', action: 'created', toStatus: 'pending', notes: 'MENDESAK: Ada percikan api!' },
-        { reportId: r5.id, actorId: sSapto.id, actorType: 'staff', action: 'assigned', toStatus: 'penanganan', notes: 'DARURAT - Pak Agus merapat sekarang!' },
-    ]);
-
-    // -- REPORT 6: APPROVED (History)
-    const [r6] = await db.insert(reports).values({
-        userId: createdUsers[2].id,
-        categoryId: catListrik.id,
-        title: 'Lampu Selasar Gedung B Mati',
-        description: 'Ada 3 lampu selasar yang mati, sangat gelap di malam hari.',
-        building: 'Gedung B',
-        locationDetail: 'Lantai dasar, depan Mushola',
-        status: 'approved',
-        assignedTo: tAgus.id,
-        handlingCompletedAt: new Date(Date.now() - 259200000),
-        approvedBy: sSapto.id,
-        approvedAt: new Date(Date.now() - 172800000),
-        handlerNotes: 'Ganti 3 bohlam LED 12 Watt.',
+    // -- COMPLETED (Pending Approval)
+    const [r7] = await db.insert(reports).values({
+        userId: createdUsers[0].id,
+        categoryId: catBersih.id,
+        title: 'Genangan Air di Lobby',
+        description: 'Ada genangan air di lobby depan pintu masuk, sepertinya dari atap yang bocor.',
+        building: 'Gedung A',
+        status: 'selesai',
+        assignedTo: tBambang.id,
+        handlingCompletedAt: new Date(Date.now() - 1800000),
+        handlerNotes: 'Atap sudah ditambal sementara.',
     }).returning();
 
-    await db.insert(reportLogs).values([
-        { reportId: r6.id, actorId: createdUsers[2].id, actorType: 'user', action: 'created', toStatus: 'pending' },
-        { reportId: r6.id, actorId: tAgus.id, actorType: 'staff', action: 'completed', toStatus: 'selesai' },
-        { reportId: r6.id, actorId: sSapto.id, actorType: 'staff', action: 'approved', toStatus: 'approved', notes: 'Sudah terang kembali' },
+    // -- HISTORY (Approved)
+    await db.insert(reports).values([
+        {
+            userId: createdUsers[1].id,
+            categoryId: catListrik.id,
+            title: 'Lampu Kelas Mati',
+            description: 'Lampu di bagian belakang kelas mati 2 baris.',
+            building: 'Gedung B',
+            status: 'approved',
+            assignedTo: tAgus.id,
+            approvedBy: sSapto.id,
+            approvedAt: new Date(Date.now() - 86400000),
+        },
+        {
+            userId: createdUsers[2].id,
+            categoryId: catSanitasi.id,
+            title: 'Toilet Mampet',
+            description: 'Saluran pembuangan toilet lantai 1 mampet.',
+            building: 'Gedung C',
+            status: 'approved',
+            assignedTo: tBambang.id,
+            approvedBy: sSapto.id,
+            approvedAt: new Date(Date.now() - 172800000),
+        }
     ]);
 
-    console.log('✅ Deep seeding completed! 6 realistic reports created with full audit logs.');
+    // 5. Seed Logs (Make timeline rich)
+    console.log('📜 Seeding audit logs for all reports...');
+    const allReports = await db.select().from(reports);
+    console.log(`Found ${allReports.length} reports to process.`);
+    
+    for (const r of allReports) {
+        // Log Creation
+        await db.insert(reportLogs).values({
+            reportId: r.id,
+            actorId: r.userId?.toString() || "0",
+            actorName: createdUsers.find(u => u.id === r.userId)?.name || "Reporter",
+            actorRole: 'pelapor',
+            action: 'created',
+            toStatus: 'pending',
+            reason: 'Laporan baru dikirim melalui aplikasi.',
+            timestamp: new Date(r.createdAt!.getTime() - 1000),
+        });
+
+        if (r.status !== 'pending') {
+            // Log Verification
+            await db.insert(reportLogs).values({
+                reportId: r.id,
+                actorId: pSiti.id.toString(),
+                actorName: pSiti.name,
+                actorRole: 'pj_gedung',
+                action: 'verified',
+                fromStatus: 'pending',
+                toStatus: 'terverifikasi',
+                reason: 'Sudah diinspeksi di lapangan.',
+                timestamp: new Date(r.createdAt!.getTime() + 600000),
+            });
+        }
+
+        if (r.assignedTo) {
+            // Log Assignment
+            await db.insert(reportLogs).values({
+                reportId: r.id,
+                actorId: sSapto.id.toString(),
+                actorName: sSapto.name,
+                actorRole: 'supervisor',
+                action: 'handling',
+                fromStatus: 'terverifikasi',
+                toStatus: 'diproses',
+                reason: 'Teknisi ditugaskan.',
+                timestamp: new Date(r.createdAt!.getTime() + 1200000),
+            });
+        }
+
+        if (r.status === 'onHold' && r.holdReason) {
+             await db.insert(reportLogs).values({
+                reportId: r.id,
+                actorId: r.assignedTo!.toString(),
+                actorName: createdStaff.find(s => s.id === r.assignedTo)?.name || "Teknisi",
+                actorRole: 'teknisi',
+                action: 'paused',
+                fromStatus: 'penanganan',
+                toStatus: 'onHold',
+                reason: r.holdReason,
+            });
+        }
+    }
+
+    console.log('✅ EXTENDED seeding completed! Use credentials below for testing.');
+    console.log('------------------------------------------------------------');
+    console.log('PELAPOR (Login with Email & "password123"):');
+    console.log(' - andi@student.undip.ac.id');
+    console.log(' - siska@student.undip.ac.id');
+    console.log(' - budi@lecturer.undip.ac.id');
+    console.log('STAFF (Login with Email & "password123"):');
+    console.log(' - Admin: admin@laporfsm.com');
+    console.log(' - Supervisor: supervisor@laporfsm.com');
+    console.log(' - Teknisi: teknisi@laporfsm.com (Agus)');
+    console.log(' - PJ Gedung: siti@laporfsm.com');
+    } catch (err) {
+        console.error('❌ SEED ERROR:', err);
+        throw err;
+    }
 }
 
 seed().catch(err => {

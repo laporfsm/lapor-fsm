@@ -7,53 +7,142 @@ class AuthService {
   static const String _userNameKey = 'user_name';
   static const String _userEmailKey = 'user_email';
   static const String _userPhoneKey = 'user_phone';
+  static const String _userRoleKey = 'user_role';
 
-  // Login with SSO (mock)
+  // Login for Pelapor (Email & Password)
   Future<Map<String, dynamic>> login({
     required String email,
-    required String name,
-    String? ssoId,
+    required String password,
   }) async {
     try {
       final response = await apiService.dio.post('/auth/login', data: {
         'email': email,
-        'name': name,
-        'ssoId': ssoId,
+        'password': password,
       });
 
       if (response.data['status'] == 'success') {
         final user = response.data['data']['user'];
         final token = response.data['data']['token'];
+        final role = response.data['data']['role'] ?? 'pelapor';
         
-        // Save to local storage
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(_userIdKey, user['id']);
-        await prefs.setString(_tokenKey, token);
-        await prefs.setString(_userNameKey, user['name']);
-        await prefs.setString(_userEmailKey, user['email']);
-        if (user['phone'] != null) {
-          await prefs.setString(_userPhoneKey, user['phone']);
-        }
-        
-        // Set token in API service
-        apiService.setAuthToken(token);
+        await _saveAuthData(user, token, role);
         
         return {
           'success': true,
-          'needsPhone': response.data['data']['needsPhone'],
           'user': user,
+          'role': role,
         };
       }
       
-      return {'success': false, 'message': 'Login failed'};
+      return {'success': false, 'message': response.data['message'] ?? 'Login gagal'};
+    } catch (e) {
+      return {'success': false, 'message': 'Email atau password salah'};
+    }
+  }
+
+  // Register for Pelapor
+  Future<Map<String, dynamic>> register({
+    required String name,
+    required String email,
+    required String password,
+    required String phone,
+    required String nimNip,
+    String? department,
+    String? address,
+    String? emergencyName,
+    String? emergencyPhone,
+  }) async {
+    try {
+      final response = await apiService.dio.post('/auth/register', data: {
+        'name': name,
+        'email': email,
+        'password': password,
+        'phone': phone,
+        'nimNip': nimNip,
+        'department': department,
+        'address': address,
+        'emergencyName': emergencyName,
+        'emergencyPhone': emergencyPhone,
+      });
+
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'needsApproval': response.data['data']['needsApproval'],
+          'message': response.data['message'],
+        };
+      }
+      return {'success': false, 'message': response.data['message'] ?? 'Registrasi gagal'};
     } catch (e) {
       return {'success': false, 'message': e.toString()};
     }
   }
 
-  // Register phone number
+  // Login for Staff (Email & Password)
+  Future<Map<String, dynamic>> staffLogin({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await apiService.dio.post('/auth/staff-login', data: {
+        'email': email,
+        'password': password,
+      });
+
+      if (response.data['status'] == 'success') {
+        final user = response.data['data']['user'];
+        final token = response.data['data']['token'];
+        final role = response.data['data']['role'];
+        
+        await _saveAuthData(user, token, role);
+        
+        return {
+          'success': true,
+          'user': user,
+          'role': role,
+        };
+      }
+      
+      return {'success': false, 'message': response.data['message'] ?? 'Login staff gagal'};
+    } catch (e) {
+      return {'success': false, 'message': 'Email atau password salah'};
+    }
+  }
+
+  // Shared method to save auth data
+  Future<void> _saveAuthData(Map<String, dynamic> user, String token, String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userIdKey, user['id'].toString());
+    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_userNameKey, user['name']);
+    await prefs.setString(_userEmailKey, user['email']);
+    await prefs.setString(_userRoleKey, role);
+    if (user['phone'] != null) {
+      await prefs.setString(_userPhoneKey, user['phone']);
+    }
+    
+    apiService.setAuthToken(token);
+  }
+
+  // Get current user from local storage
+  Future<Map<String, dynamic>?> getCurrentUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(_userIdKey);
+    
+    if (userId == null) return null;
+    
+    return {
+      'id': userId,
+      'name': prefs.getString(_userNameKey),
+      'email': prefs.getString(_userEmailKey),
+      'phone': prefs.getString(_userPhoneKey),
+      'role': prefs.getString(_userRoleKey),
+    };
+  }
+
+  // Register phone number / Update Profile
   Future<bool> registerPhone({
-    required int userId,
+    required String userId,
     required String phone,
     String? department,
   }) async {
@@ -73,21 +162,6 @@ class AuthService {
     } catch (e) {
       return false;
     }
-  }
-
-  // Get current user from local storage
-  Future<Map<String, dynamic>?> getCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt(_userIdKey);
-    
-    if (userId == null) return null;
-    
-    return {
-      'id': userId,
-      'name': prefs.getString(_userNameKey),
-      'email': prefs.getString(_userEmailKey),
-      'phone': prefs.getString(_userPhoneKey),
-    };
   }
 
   // Check if logged in

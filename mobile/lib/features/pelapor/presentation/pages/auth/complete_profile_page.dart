@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class CompleteProfilePage extends StatefulWidget {
   const CompleteProfilePage({super.key});
@@ -21,12 +22,35 @@ class _CompleteProfilePageState extends State<CompleteProfilePage> {
     
     setState(() => _isLoading = true);
     
-    // Simulate save
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (mounted) {
-      setState(() => _isLoading = false);
-      context.go('/'); // Go to Home
+    try {
+      final user = await authService.getCurrentUser();
+      if (user == null) {
+          if (mounted) context.go('/login');
+          return;
+      }
+
+      final success = await authService.registerPhone(
+        userId: user['id'],
+        phone: _phoneController.text,
+      );
+      
+      if (mounted && success) {
+        context.go('/'); // Go to Home
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menyimpan profil'), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

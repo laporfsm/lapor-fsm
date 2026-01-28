@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// Registration Page with email validation
 /// - If email is *.undip.ac.id -> proceed directly
@@ -194,22 +195,38 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _isLoading = true);
 
     try {
-      // TODO: Call API to register
-      await Future.delayed(const Duration(seconds: 2));
+      final result = await authService.register(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        phone: _phoneController.text,
+        nimNip: _nimNipController.text,
+        department: 'Sains dan Matematika', // Default or from form if added
+        address: _addressController.text,
+        emergencyName: _emergencyNameController.text,
+        emergencyPhone: _emergencyPhoneController.text,
+      );
 
       if (mounted) {
-        if (_requiresIdCard) {
-          // Account needs admin approval
-          _showPendingApprovalDialog();
+        if (result['success']) {
+          if (result['needsApproval'] == true) {
+            _showPendingApprovalDialog();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Registrasi berhasil! Silakan login.'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.go('/login');
+          }
         } else {
-          // Account is active immediately
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registrasi berhasil! Silakan login.'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: Text(result['message'] ?? 'Registrasi gagal'),
+              backgroundColor: Colors.red,
             ),
           );
-          context.go('/login');
         }
       }
     } catch (e) {
