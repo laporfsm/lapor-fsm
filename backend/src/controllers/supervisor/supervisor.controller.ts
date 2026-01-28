@@ -9,7 +9,6 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
         // Count reports by status
         const statusCounts = await db
@@ -26,30 +25,18 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .from(reports)
             .where(gte(reports.createdAt, startOfDay));
 
-        // Count this week's reports
-        const weekCount = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(gte(reports.createdAt, startOfWeek));
-
-        // Count this month's reports
-        const monthCount = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(gte(reports.createdAt, startOfMonth));
-
         // Recent completed reports (for review)
         const pendingReview = await db
             .select({
                 id: reports.id,
                 title: reports.title,
                 status: reports.status,
-                completedAt: reports.completedAt,
-                handlerMediaUrl: reports.handlerMediaUrl,
+                handlingCompletedAt: reports.handlingCompletedAt,
+                handlerMediaUrls: reports.handlerMediaUrls,
             })
             .from(reports)
             .where(eq(reports.status, 'selesai'))
-            .orderBy(desc(reports.completedAt))
+            .orderBy(desc(reports.handlingCompletedAt))
             .limit(5);
 
         // Active technicians
@@ -69,8 +56,6 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                     return acc;
                 }, {} as Record<string, number>),
                 todayReports: todayCount[0]?.count || 0,
-                weekReports: weekCount[0]?.count || 0,
-                monthReports: monthCount[0]?.count || 0,
                 pendingReview,
                 activeTechnicians,
             },
@@ -79,9 +64,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
-        const { status, category, building, startDate, endDate, page = '1', limit = '20' } = query;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        const { status, building, startDate, endDate, page = '1', limit = '20' } = query;
+        const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
+        const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
@@ -93,10 +78,16 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         }
         if (startDate) {
-            conditions.push(gte(reports.createdAt, new Date(startDate)));
+            const date = new Date(startDate);
+            if (!isNaN(date.getTime())) {
+                conditions.push(gte(reports.createdAt, date));
+            }
         }
         if (endDate) {
-            conditions.push(lte(reports.createdAt, new Date(endDate)));
+            const date = new Date(endDate);
+            if (!isNaN(date.getTime())) {
+                conditions.push(lte(reports.createdAt, date));
+            }
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -107,15 +98,16 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 title: reports.title,
                 description: reports.description,
                 building: reports.building,
-                imageUrl: reports.imageUrl,
+                locationDetail: reports.locationDetail,
+                mediaUrls: reports.mediaUrls,
                 isEmergency: reports.isEmergency,
                 status: reports.status,
                 createdAt: reports.createdAt,
                 assignedAt: reports.assignedAt,
-                handledAt: reports.handledAt,
-                completedAt: reports.completedAt,
+                handlingStartedAt: reports.handlingStartedAt,
+                handlingCompletedAt: reports.handlingCompletedAt,
                 handlerNotes: reports.handlerNotes,
-                handlerMediaUrl: reports.handlerMediaUrl,
+                handlerMediaUrls: reports.handlerMediaUrls,
                 // Reporter info
                 reporterName: users.name,
                 // Category info
@@ -132,8 +124,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .limit(limitNum)
             .offset(offset);
 
-        // Total count for pagination
-        const totalCount = await db
+        const totalCountResult = await db
             .select({ count: count() })
             .from(reports)
             .where(whereClause);
@@ -144,13 +135,81 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             pagination: {
                 page: pageNum,
                 limit: limitNum,
-                total: totalCount[0]?.count || 0,
-                totalPages: Math.ceil((totalCount[0]?.count || 0) / limitNum),
+                total: totalCountResult[0]?.count || 0,
+                totalPages: Math.ceil((totalCountResult[0]?.count || 0) / limitNum),
             },
         };
     })
 
-    // Review and approve a completed report
+    // Verify report (by PJ Gedung or Supervisor)
+    .post('/reports/:id/verify', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'terverifikasi',
+                verifiedBy: staffId,
+                verifiedAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorType: 'staff',
+            actorId: staffId,
+            action: 'verified',
+            fromStatus: 'pending',
+            toStatus: 'terverifikasi',
+            notes: body.notes || 'Laporan telah diverifikasi',
+        });
+
+        return { status: 'success', data: updated[0] };
+    }, {
+        body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
+    })
+
+    // Assign technician
+    .post('/reports/:id/assign', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'penanganan',
+                assignedTo: body.technicianId,
+                assignedAt: new Date(),
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorType: 'staff',
+            actorId: body.supervisorId,
+            action: 'assigned',
+            fromStatus: updated[0].status || 'terverifikasi',
+            toStatus: 'penanganan',
+            notes: `Laporan ditugaskan ke teknisi`,
+        });
+
+        return { status: 'success', data: updated[0] };
+    }, {
+        body: t.Object({
+            supervisorId: t.Number(),
+            technicianId: t.Number(),
+        })
+    })
+
+    // Review and approve
     .post('/reports/:id/approve', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
@@ -158,213 +217,58 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const updated = await db
             .update(reports)
             .set({
-                reviewedBy: staffId,
-                reviewedAt: new Date(),
+                status: 'approved',
+                approvedBy: staffId,
+                approvedAt: new Date(),
                 updatedAt: new Date(),
             })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
         await db.insert(reportLogs).values({
             reportId,
-            staffId,
+            actorType: 'staff',
+            actorId: staffId,
             action: 'approved',
-            notes: body.notes || 'Penanganan disetujui oleh Supervisor',
+            fromStatus: 'selesai',
+            toStatus: 'approved',
+            notes: body.notes || 'Penanganan disetujui',
         });
 
-        return {
-            status: 'success',
-            message: 'Laporan disetujui',
-            data: updated[0],
-        };
+        return { status: 'success', data: updated[0] };
     }, {
-        body: t.Object({
-            staffId: t.Number(),
-            notes: t.Optional(t.String()),
-        }),
+        body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
 
-    // Recall technician (penanganan ulang)
-    .post('/reports/:id/recall', async ({ params, body }) => {
+    // Reject / Recall
+    .post('/reports/:id/reject', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
 
         const updated = await db
             .update(reports)
             .set({
-                status: 'penanganan_ulang',
-                reviewedBy: staffId,
-                reviewedAt: new Date(),
+                status: 'penanganan', // Send back to handling
                 updatedAt: new Date(),
             })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) {
-            return { status: 'error', message: 'Laporan tidak ditemukan' };
-        }
+        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
         await db.insert(reportLogs).values({
             reportId,
-            staffId,
-            action: 'recalled',
-            notes: body.reason || 'Teknisi dipanggil kembali untuk penanganan ulang',
+            actorType: 'staff',
+            actorId: staffId,
+            action: 'rejected',
+            fromStatus: 'selesai',
+            toStatus: 'penanganan',
+            notes: body.reason,
         });
 
-        return {
-            status: 'success',
-            message: 'Teknisi dipanggil kembali',
-            data: updated[0],
-        };
+        return { status: 'success', data: updated[0] };
     }, {
-        body: t.Object({
-            staffId: t.Number(),
-            reason: t.String(),
-        }),
-    })
-
-    // Get archive (completed and reviewed reports)
-    .get('/archive', async ({ query }) => {
-        const { startDate, endDate, page = '1', limit = '20' } = query;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const offset = (pageNum - 1) * limitNum;
-
-        let conditions = [eq(reports.status, 'selesai')];
-
-        if (startDate) {
-            conditions.push(gte(reports.createdAt, new Date(startDate)));
-        }
-        if (endDate) {
-            conditions.push(lte(reports.createdAt, new Date(endDate)));
-        }
-
-        const archiveList = await db
-            .select({
-                id: reports.id,
-                title: reports.title,
-                building: reports.building,
-                isEmergency: reports.isEmergency,
-                createdAt: reports.createdAt,
-                completedAt: reports.completedAt,
-                handlerNotes: reports.handlerNotes,
-                categoryName: categories.name,
-                reporterName: users.name,
-                handlerName: staff.name,
-            })
-            .from(reports)
-            .leftJoin(users, eq(reports.userId, users.id))
-            .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
-            .where(and(...conditions))
-            .orderBy(desc(reports.completedAt))
-            .limit(limitNum)
-            .offset(offset);
-
-        const totalCount = await db
-            .select({ count: count() })
-            .from(reports)
-            .where(and(...conditions));
-
-        return {
-            status: 'success',
-            data: archiveList,
-            pagination: {
-                page: pageNum,
-                limit: limitNum,
-                total: totalCount[0]?.count || 0,
-                totalPages: Math.ceil((totalCount[0]?.count || 0) / limitNum),
-            },
-        };
-    })
-
-    // Get technician performance stats
-    .get('/technicians/performance', async () => {
-        const technicians = await db
-            .select({
-                id: staff.id,
-                name: staff.name,
-            })
-            .from(staff)
-            .where(eq(staff.role, 'teknisi'));
-
-        // For each technician, get their stats
-        const performanceData = await Promise.all(
-            technicians.map(async (tech) => {
-                const handled = await db
-                    .select({ count: count() })
-                    .from(reports)
-                    .where(eq(reports.assignedTo, tech.id));
-
-                const completed = await db
-                    .select({ count: count() })
-                    .from(reports)
-                    .where(and(
-                        eq(reports.assignedTo, tech.id),
-                        eq(reports.status, 'selesai')
-                    ));
-
-                return {
-                    id: tech.id,
-                    name: tech.name,
-                    totalHandled: handled[0]?.count || 0,
-                    totalCompleted: completed[0]?.count || 0,
-                };
-            })
-        );
-
-        return {
-            status: 'success',
-            data: performanceData,
-        };
-    })
-
-    // Export data endpoint (returns JSON, frontend will handle PDF/Excel conversion)
-    .get('/export', async ({ query }) => {
-        const { format, startDate, endDate } = query;
-
-        let conditions = [];
-        if (startDate) {
-            conditions.push(gte(reports.createdAt, new Date(startDate)));
-        }
-        if (endDate) {
-            conditions.push(lte(reports.createdAt, new Date(endDate)));
-        }
-
-        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-        const exportData = await db
-            .select({
-                id: reports.id,
-                title: reports.title,
-                description: reports.description,
-                building: reports.building,
-                isEmergency: reports.isEmergency,
-                status: reports.status,
-                createdAt: reports.createdAt,
-                assignedAt: reports.assignedAt,
-                handledAt: reports.handledAt,
-                completedAt: reports.completedAt,
-                handlerNotes: reports.handlerNotes,
-                reporterName: users.name,
-                reporterEmail: users.email,
-                categoryName: categories.name,
-                handlerName: staff.name,
-            })
-            .from(reports)
-            .leftJoin(users, eq(reports.userId, users.id))
-            .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
-            .where(whereClause)
-            .orderBy(desc(reports.createdAt));
-
-        return {
-            status: 'success',
-            format: format || 'json',
-            data: exportData,
-        };
+        body: t.Object({ staffId: t.Number(), reason: t.String() })
     });
