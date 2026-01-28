@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { staff, users, categories, reports, reportLogs } from '../../db/schema';
-import { eq, desc, count, sql } from 'drizzle-orm';
+import { eq, desc, count, sql, and, not } from 'drizzle-orm';
 
 export const adminController = new Elysia({ prefix: '/admin' })
     // ==========================================
@@ -78,6 +78,20 @@ export const adminController = new Elysia({ prefix: '/admin' })
     // Update staff
     .put('/staff/:id', async ({ params, body }) => {
         const staffId = parseInt(params.id);
+        
+        // If email is being updated, check if it's already taken
+        if (body.email) {
+            const existing = await db
+                .select()
+                .from(staff)
+                .where(and(eq(staff.email, body.email), not(eq(staff.id, staffId))))
+                .limit(1);
+
+            if (existing.length > 0) {
+                return { status: 'error', message: 'Email sudah digunakan oleh staff lain' };
+            }
+        }
+
         const updateData: any = { ...body };
         
         if (body.password) {
@@ -108,6 +122,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
     }, {
         body: t.Object({
             name: t.Optional(t.String()),
+            email: t.Optional(t.String()),
             phone: t.Optional(t.String()),
             role: t.Optional(t.String()),
             specialization: t.Optional(t.String()),

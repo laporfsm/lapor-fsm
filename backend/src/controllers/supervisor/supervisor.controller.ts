@@ -65,8 +65,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
         const { status, building, startDate, endDate, page = '1', limit = '20' } = query;
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
+        const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
+        const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
@@ -78,10 +78,16 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         }
         if (startDate) {
-            conditions.push(gte(reports.createdAt, new Date(startDate)));
+            const date = new Date(startDate);
+            if (!isNaN(date.getTime())) {
+                conditions.push(gte(reports.createdAt, date));
+            }
         }
         if (endDate) {
-            conditions.push(lte(reports.createdAt, new Date(endDate)));
+            const date = new Date(endDate);
+            if (!isNaN(date.getTime())) {
+                conditions.push(lte(reports.createdAt, date));
+            }
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
