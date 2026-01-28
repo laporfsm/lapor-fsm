@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Unified Login Page for all roles
 /// Single form for Pelapor, Teknisi, Supervisor, Admin
@@ -49,10 +50,14 @@ class _LoginPageState extends State<LoginPage> {
         final role = result['role'];
         String redirectPath = '/';
 
-        if (role == 'teknisi') redirectPath = '/teknisi';
-        else if (role == 'supervisor') redirectPath = '/supervisor';
-        else if (role == 'pj_gedung') redirectPath = '/pj-gedung';
-        else if (role == 'admin') redirectPath = '/admin';
+        if (role == 'teknisi')
+          redirectPath = '/teknisi';
+        else if (role == 'supervisor')
+          redirectPath = '/supervisor';
+        else if (role == 'pj_gedung')
+          redirectPath = '/pj-gedung';
+        else if (role == 'admin')
+          redirectPath = '/admin';
 
         if (role == 'pelapor' && result['needsPhone'] == true) {
           context.go('/complete-profile');
@@ -61,7 +66,10 @@ class _LoginPageState extends State<LoginPage> {
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result['message'] ?? 'Login gagal'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(result['message'] ?? 'Login gagal'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
@@ -242,35 +250,43 @@ class _LoginPageState extends State<LoginPage> {
                     // Login Button
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.primaryColor,
-                          foregroundColor: Colors.white,
+                      child: BouncingButton(
+                        onTap: _isLoading ? null : _handleLogin,
+                        child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor,
                             borderRadius: BorderRadius.circular(12),
-                          ),
-                          disabledBackgroundColor: Colors.grey.shade300,
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Text(
-                                'Masuk',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
+                            ],
+                          ),
+                          child: Center(
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Masuk',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       ),
                     ),
                   ],

@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -346,17 +347,35 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        icon,
-        color: isDestructive ? Colors.red : Colors.grey.shade700,
-      ),
-      title: Text(
-        label,
-        style: TextStyle(color: isDestructive ? Colors.red : Colors.black),
-      ),
-      trailing: const Icon(LucideIcons.chevronRight, size: 18),
+    return BouncingButton(
       onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : Colors.grey.shade700,
+              size: 24,
+            ),
+            const Gap(16),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isDestructive ? Colors.red : Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, size: 20, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 }

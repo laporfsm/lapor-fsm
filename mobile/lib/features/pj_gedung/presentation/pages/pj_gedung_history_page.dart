@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/features/report_common/presentation/widgets/report_card.dart';
+import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 import 'package:intl/intl.dart';
@@ -428,13 +427,18 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                     separatorBuilder: (c, i) => const Gap(16),
                     itemBuilder: (context, index) {
                       final report = _filteredReports[index];
-                      return ReportCard(
-                        report: report,
-                        viewerRole: UserRole.pjGedung,
-                        actionLabel: report.status == ReportStatus.pending
-                            ? "Verifikasi"
-                            : "Lihat",
-                        onAction: () => _navigateToDetail(report),
+                      return UniversalReportCard(
+                        id: report.id,
+                        title: report.title,
+                        location: report.building,
+                        category: report.category,
+                        status: report.status,
+                        isEmergency: report.isEmergency,
+                        elapsedTime: DateTime.now().difference(
+                          report.createdAt,
+                        ),
+                        showStatus: true,
+                        showTimer: true,
                         onTap: () => _navigateToDetail(report),
                       );
                     },

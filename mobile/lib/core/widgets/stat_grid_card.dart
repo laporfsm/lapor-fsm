@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Clickable stat card for dashboard grids.
 /// Shows icon, value, and label with tap navigation.
@@ -23,7 +24,7 @@ class StatGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingButton(
       onTap: onTap,
       child: Container(
         padding: EdgeInsets.all(compact ? 12 : 16),
@@ -88,7 +89,7 @@ class StatusBadgeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: BouncingButton(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),

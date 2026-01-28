@@ -7,6 +7,7 @@ import 'package:mobile/features/notification/presentation/providers/notification
 import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/theme.dart';
 
 class HomePage extends ConsumerWidget {
@@ -26,7 +27,7 @@ class HomePage extends ConsumerWidget {
                 Stack(
                   children: [
                     Container(
-                      height: 200,
+                      height: 160, // Reduced from 200
                       width: double.infinity,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -114,7 +115,7 @@ class HomePage extends ConsumerWidget {
                               final unreadCount = ref
                                   .watch(notificationProvider)
                                   .unreadCount;
-                              return GestureDetector(
+                              return BouncingButton(
                                 onTap: () {
                                   showModalBottomSheet(
                                     context: context,
@@ -184,11 +185,12 @@ class HomePage extends ConsumerWidget {
                   ],
                 ),
 
-                const Gap(40),
+                const Gap(30),
 
                 // 2. Big Circular Panic Button (Mimic Damkar Button)
                 Center(
-                  child: GestureDetector(
+                  child: BouncingButton(
+                    scaleFactor: 0.90,
                     onTap: () {
                       context.push('/emergency-report');
                     },
@@ -237,7 +239,7 @@ class HomePage extends ConsumerWidget {
                   ),
                 ),
 
-                const Gap(40),
+                const Gap(30),
 
                 // 3. Grid Menu
                 Padding(
@@ -362,14 +364,14 @@ class HomePage extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        childAspectRatio: 0.65, // Adjusted for more vertical space
+        childAspectRatio: 0.75, // Increased from 0.65 to reduce spacing
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
       itemCount: menus.length,
       itemBuilder: (context, index) {
         final menu = menus[index];
-        return GestureDetector(
+        return BouncingButton(
           onTap: () {
             context.push(
               '/create-report',
@@ -417,7 +419,7 @@ class HomePage extends ConsumerWidget {
       {
         'id': '1',
         'title': 'AC Mati di Ruang E102',
-        'category': 'Maintenance',
+        'category': 'Infrastruktur Kelas', // Specific category
         'location': 'Gedung E',
         'locationDetail': 'R. E102',
         'elapsedTime': const Duration(hours: 2),
@@ -426,7 +428,7 @@ class HomePage extends ConsumerWidget {
       {
         'id': '2',
         'title': 'Kebocoran Pipa Toilet',
-        'category': 'Maintenance',
+        'category': 'Sanitasi / Air', // Specific category
         'location': 'Gedung C',
         'locationDetail': 'Toilet Wanita',
         'elapsedTime': const Duration(minutes: 30),
@@ -435,7 +437,7 @@ class HomePage extends ConsumerWidget {
       {
         'id': '4',
         'title': 'Sampah Menumpuk Area Parkir',
-        'category': 'Kebersihan',
+        'category': 'Kebersihan Area', // Specific category
         'location': 'Gedung A',
         'elapsedTime': const Duration(hours: 1),
         'status': ReportStatus.pending,

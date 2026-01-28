@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class CreateReportPage extends StatefulWidget {
   final String category;
@@ -34,8 +35,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
   final _notesController = TextEditingController();
 
   // State
-  XFile? _selectedImage;
-  Uint8List? _selectedImageBytes; // For web compatibility
+  final List<XFile> _selectedImages = [];
+  final List<Uint8List> _selectedImagesBytes = []; // For web compatibility
   String? _selectedBuilding;
   double? _latitude;
   double? _longitude;
@@ -88,25 +89,58 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: source,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 80,
-      );
-      if (image != null) {
-        final bytes = await image.readAsBytes();
-        setState(() {
-          _selectedImage = image;
-          _selectedImageBytes = bytes;
-        });
+      if (source == ImageSource.gallery) {
+        final List<XFile> images = await _imagePicker.pickMultiImage(
+          maxWidth: 1920,
+          maxHeight: 1080,
+          imageQuality: 80,
+        );
+
+        if (images.isNotEmpty) {
+          for (var image in images) {
+            if (_selectedImages.length >= 3) break;
+            final bytes = await image.readAsBytes();
+            setState(() {
+              _selectedImages.add(image);
+              _selectedImagesBytes.add(bytes);
+            });
+          }
+        }
+      } else {
+        final XFile? image = await _imagePicker.pickImage(
+          source: source,
+          maxWidth: 1920,
+          maxHeight: 1080,
+          imageQuality: 80,
+        );
+        if (image != null) {
+          final bytes = await image.readAsBytes();
+          setState(() {
+            _selectedImages.add(image);
+            _selectedImagesBytes.add(bytes);
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
     }
   }
 
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+      _selectedImagesBytes.removeAt(index);
+    });
+  }
+
   void _showImageSourceDialog() {
+    if (_selectedImages.length >= 3) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Maksimal 3 foto')));
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -138,7 +172,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
 
-    if (_selectedImage == null) {
+    if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bukti foto wajib disertakan!')),
       );
@@ -222,70 +256,91 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 "Bukti Foto/Video *",
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
+              const Text(
+                "Maksimal 3 foto",
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
               const Gap(8),
-              GestureDetector(
-                onTap: _showImageSourceDialog,
-                child: Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _selectedImageBytes != null
-                          ? AppTheme.primaryColor
-                          : Colors.grey.shade300,
-                      width: _selectedImageBytes != null ? 2 : 1,
-                    ),
-                  ),
-                  child: _selectedImageBytes != null
-                      ? Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(15),
-                              child: Image.memory(
-                                _selectedImageBytes!,
-                                height: 200,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+              SizedBox(
+                height: 120,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _selectedImagesBytes.length < 3
+                      ? _selectedImagesBytes.length + 1
+                      : _selectedImagesBytes.length,
+                  separatorBuilder: (context, index) => const Gap(12),
+                  itemBuilder: (context, index) {
+                    // Add Button
+                    if (index == _selectedImagesBytes.length) {
+                      return BouncingButton(
+                        onTap: _showImageSourceDialog,
+                        child: Container(
+                          width: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                              style: BorderStyle.solid,
                             ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () => setState(() {
-                                  _selectedImage = null;
-                                  _selectedImageBytes = null;
-                                }),
-                                child: const CircleAvatar(
-                                  backgroundColor: Colors.red,
-                                  radius: 16,
-                                  child: Icon(
-                                    LucideIcons.x,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.camera,
+                                size: 32,
+                                color: Colors.grey.shade400,
+                              ),
+                              const Gap(8),
+                              Text(
+                                "Tambah",
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 12,
                                 ),
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.camera,
-                              size: 48,
-                              color: Colors.grey.shade400,
-                            ),
-                            const Gap(12),
-                            Text(
-                              "Ketuk untuk ambil foto bukti",
-                              style: TextStyle(color: Colors.grey.shade500),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                      );
+                    }
+
+                    // Image Thumbnail
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.memory(
+                            _selectedImagesBytes[index],
+                            width: 120,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: BouncingButton(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                LucideIcons.x,
+                                color: Colors.white,
+                                size: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
               const Gap(24),
@@ -549,23 +604,51 @@ class _CreateReportPageState extends State<CreateReportPage> {
               const Gap(32),
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitReport,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.isEmergency
-                        ? AppTheme.emergencyColor
-                        : AppTheme.primaryColor,
+                child: BouncingButton(
+                  onTap: _isSubmitting ? null : _submitReport,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                    ), // Match standard button height
+                    decoration: BoxDecoration(
+                      color: widget.isEmergency
+                          ? AppTheme.emergencyColor
+                          : AppTheme.primaryColor,
+                      borderRadius: BorderRadius.circular(
+                        24,
+                      ), // Match standard rounded corners for buttons/badges
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              (widget.isEmergency
+                                      ? AppTheme.emergencyColor
+                                      : AppTheme.primaryColor)
+                                  .withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              "KIRIM LAPORAN",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                    ),
                   ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text("KIRIM LAPORAN"),
                 ),
               ),
             ],

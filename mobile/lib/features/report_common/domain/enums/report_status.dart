@@ -61,7 +61,7 @@ extension ReportStatusX on ReportStatus {
       case ReportStatus.penanganan:
         return 'Penanganan';
       case ReportStatus.onHold:
-        return 'Ditunda';
+        return 'On Hold';
       case ReportStatus.selesai:
         return 'Selesai';
       case ReportStatus.approved:
