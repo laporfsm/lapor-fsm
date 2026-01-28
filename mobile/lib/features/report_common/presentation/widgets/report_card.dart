@@ -7,6 +7,7 @@ import '../../domain/enums/report_status.dart';
 import '../../../../core/enums/user_role.dart';
 import '../../../../theme.dart';
 
+@Deprecated('Use UniversalReportCard instead')
 class ReportCard extends StatelessWidget {
   final Report report;
   final VoidCallback onTap;

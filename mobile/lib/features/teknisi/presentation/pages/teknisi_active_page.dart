@@ -115,6 +115,7 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                     id: report.id,
                     title: report.title,
                     location: report.building,
+                    locationDetail: report.locationDetail,
                     category: report.category,
                     status: report.status,
                     isEmergency: report.isEmergency,

@@ -1,58 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/features/notification/data/notification_data.dart';
+import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 
-/// Admin Notifications Page - untuk notifikasi pendaftaran baru
-class AdminNotificationsPage extends StatefulWidget {
+/// Admin Notifications Page - using unified provider
+class AdminNotificationsPage extends ConsumerWidget {
   const AdminNotificationsPage({super.key});
 
-  @override
-  State<AdminNotificationsPage> createState() => _AdminNotificationsPageState();
-}
-
-class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
-  // Mock data - notifikasi pendaftaran baru
-  final List<Map<String, dynamic>> _notifications = [
-    {
-      'id': 1,
-      'name': 'Rudi Setiawan',
-      'email': 'rudi.setiawan@gmail.com',
-      'time': DateTime.now().subtract(const Duration(minutes: 30)),
-      'isRead': false,
-    },
-    {
-      'id': 2,
-      'name': 'Sri Wahyuni',
-      'email': 'sri.wahyuni@yahoo.com',
-      'time': DateTime.now().subtract(const Duration(hours: 2)),
-      'isRead': false,
-    },
-    {
-      'id': 3,
-      'name': 'Agus Pratama',
-      'email': 'agus.pratama@gmail.com',
-      'time': DateTime.now().subtract(const Duration(days: 1)),
-      'isRead': true,
-    },
-  ];
-
-  int get _unreadCount => _notifications.where((n) => !n['isRead']).length;
-
-  void _markAsRead(int id) {
-    setState(() {
-      final index = _notifications.indexWhere((n) => n['id'] == id);
-      if (index != -1) {
-        _notifications[index]['isRead'] = true;
-      }
-    });
+  void _markAsRead(WidgetRef ref, String id) {
+    ref.read(notificationProvider.notifier).markAsRead(id);
   }
 
-  void _markAllAsRead() {
-    setState(() {
-      for (var n in _notifications) {
-        n['isRead'] = true;
-      }
-    });
+  void _markAllAsRead(WidgetRef ref, BuildContext context) {
+    ref.read(notificationProvider.notifier).markAllAsRead();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Semua ditandai sudah dibaca'),
@@ -62,19 +24,47 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     );
   }
 
-  void _deleteNotification(int id) {
-    setState(() {
-      _notifications.removeWhere((n) => n['id'] == id);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notifikasi dihapus'),
-        behavior: SnackBarBehavior.floating,
+  void _deleteNotification(WidgetRef ref, String id) {
+    ref.read(notificationProvider.notifier).delete(id);
+  }
+
+  void _deleteAllNotifications(WidgetRef ref, BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Semua?'),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus semua notifikasi?',
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(notificationProvider.notifier).deleteAll();
+              Navigator.pop(context); // Close dialog
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Semua notifikasi dihapus'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _confirmDelete(int id) async {
+  Future<void> _confirmDelete(
+    WidgetRef ref,
+    BuildContext context,
+    String id,
+  ) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -95,46 +85,17 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     );
 
     if (confirm == true) {
-      _deleteNotification(id);
+      _deleteNotification(ref, id);
     }
   }
 
-  void _deleteAllNotifications() {
-    if (_notifications.isEmpty) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Semua?'),
-        content: const Text('Apakah Anda yakin ingin menghapus semua notifikasi?'),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              setState(() {
-                _notifications.clear();
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Semua notifikasi dihapus'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            child: const Text('Hapus', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notificationState = ref.watch(notificationProvider);
+    final notifications = notificationState
+        .items; // For Admin, we might filter specific types if needed
+    final unreadCount = notificationState.unreadCount;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -146,15 +107,15 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         actions: [
-          if (_notifications.isNotEmpty) ...[
-            if (_unreadCount > 0)
+          if (notifications.isNotEmpty) ...[
+            if (unreadCount > 0)
               IconButton(
-                onPressed: _markAllAsRead,
+                onPressed: () => _markAllAsRead(ref, context),
                 icon: const Icon(LucideIcons.checkCheck, color: Colors.white),
                 tooltip: 'Baca Semua',
               ),
             IconButton(
-              onPressed: _deleteAllNotifications,
+              onPressed: () => _deleteAllNotifications(ref, context),
               icon: const Icon(LucideIcons.trash2, color: Colors.white),
               tooltip: 'Hapus Semua',
             ),
@@ -162,13 +123,13 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
           ],
         ],
       ),
-      body: _notifications.isEmpty
+      body: notifications.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _notifications.length,
+              itemCount: notifications.length,
               itemBuilder: (context, index) =>
-                  _buildNotificationCard(_notifications[index]),
+                  _buildNotificationCard(context, ref, notifications[index]),
             ),
     );
   }
@@ -190,7 +151,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
           ),
           const Gap(4),
           Text(
-            'Notifikasi pendaftaran baru akan muncul di sini',
+            'Notifikasi baru akan muncul di sini',
             style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
           ),
         ],
@@ -198,11 +159,15 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
     );
   }
 
-  Widget _buildNotificationCard(Map<String, dynamic> notification) {
-    final bool isRead = notification['isRead'] ?? true;
+  Widget _buildNotificationCard(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationItem notification,
+  ) {
+    final bool isRead = notification.isRead;
 
     return Dismissible(
-      key: Key(notification['id'].toString()),
+      key: Key(notification.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
         return await showDialog(
@@ -210,7 +175,9 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
           builder: (context) => AlertDialog(
             title: const Text('Hapus Notifikasi?'),
             content: const Text('Notifikasi ini akan dihapus permanen.'),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -235,11 +202,11 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
         child: const Icon(LucideIcons.trash2, color: Colors.white),
       ),
       onDismissed: (direction) {
-        _deleteNotification(notification['id']);
+        _deleteNotification(ref, notification.id);
       },
       child: GestureDetector(
         onTap: () {
-          _markAsRead(notification['id']);
+          _markAsRead(ref, notification.id);
         },
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
@@ -249,10 +216,14 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
             border: isRead
                 ? null
                 : Border.all(
-                    color: const Color(0xFF3B82F6).withAlpha(100), width: 1.5),
+                    color: const Color(
+                      0xFF3B82F6,
+                    ).withValues(alpha: 0.39), // aprox 100/255
+                    width: 1.5,
+                  ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isRead ? 8 : 15),
+                color: Colors.black.withValues(alpha: isRead ? 0.03 : 0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -266,11 +237,14 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF3B82F6).withAlpha(26),
+                    color: NotificationData.getBgColor(notification.type),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(LucideIcons.userPlus,
-                      color: Color(0xFF3B82F6), size: 20),
+                  child: Icon(
+                    NotificationData.getIcon(notification.type),
+                    color: NotificationData.getIconColor(notification.type),
+                    size: 20,
+                  ),
                 ),
                 const Gap(12),
 
@@ -283,10 +257,11 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              'Pendaftaran Baru',
+                              notification.title,
                               style: TextStyle(
-                                fontWeight:
-                                    isRead ? FontWeight.w500 : FontWeight.bold,
+                                fontWeight: isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.bold,
                                 fontSize: 14,
                               ),
                             ),
@@ -302,8 +277,13 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                             ),
                           // Explicit delete button on card
                           IconButton(
-                            icon: Icon(LucideIcons.x, size: 16, color: Colors.grey.shade400),
-                            onPressed: () => _confirmDelete(notification['id']),
+                            icon: Icon(
+                              LucideIcons.x,
+                              size: 16,
+                              color: Colors.grey.shade400,
+                            ),
+                            onPressed: () =>
+                                _confirmDelete(ref, context, notification.id),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
                             visualDensity: VisualDensity.compact,
@@ -312,7 +292,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                       ),
                       const Gap(4),
                       Text(
-                        '${notification['name']} mendaftar dan menunggu verifikasi',
+                        notification.message,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 12,
@@ -320,7 +300,7 @@ class _AdminNotificationsPageState extends State<AdminNotificationsPage> {
                       ),
                       const Gap(4),
                       Text(
-                        _formatTime(notification['time']),
+                        _formatTime(notification.time),
                         style: TextStyle(
                           color: Colors.grey.shade400,
                           fontSize: 11,

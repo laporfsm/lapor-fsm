@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
+import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 
-class NotificationBottomSheet extends StatelessWidget {
+class NotificationBottomSheet extends ConsumerWidget {
   const NotificationBottomSheet({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notificationState = ref.watch(notificationProvider);
+    final notifications = notificationState.items;
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: const BoxDecoration(
@@ -34,7 +39,9 @@ class NotificationBottomSheet extends StatelessWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    ref.read(notificationProvider.notifier).markAllAsRead();
+                  },
                   child: const Text('Tandai semua dibaca'),
                 ),
               ],
@@ -42,15 +49,42 @@ class NotificationBottomSheet extends StatelessWidget {
           ),
           const Divider(height: 1),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: NotificationData.notifications.length,
-              separatorBuilder: (context, index) => const Gap(16),
-              itemBuilder: (context, index) {
-                final item = NotificationData.notifications[index];
-                return _buildModalNotificationItem(item);
-              },
-            ),
+            child: notifications.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.notifications_off_outlined,
+                          size: 48,
+                          color: Colors.grey.shade300,
+                        ),
+                        const Gap(16),
+                        Text(
+                          'Tidak ada notifikasi',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(20),
+                    itemCount: notifications.length,
+                    separatorBuilder: (context, index) => const Gap(16),
+                    itemBuilder: (context, index) {
+                      final item = notifications[index];
+                      // Use InkWell to allow tapping to mark as read
+                      return InkWell(
+                        onTap: () {
+                          ref
+                              .read(notificationProvider.notifier)
+                              .markAsRead(item.id);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: _buildModalNotificationItem(item),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -89,14 +123,19 @@ class NotificationBottomSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      item.title,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: item.isRead ? Colors.black87 : Colors.black,
+                    Expanded(
+                      child: Text(
+                        item.title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: item.isRead ? Colors.black87 : Colors.black,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const Gap(8),
                     Text(
                       _formatTime(item.time),
                       style: TextStyle(

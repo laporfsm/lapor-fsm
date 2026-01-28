@@ -10,6 +10,7 @@ class UniversalReportCard extends StatelessWidget {
   final String id;
   final String title;
   final String location;
+  final String? locationDetail; // New field
   final String category;
   final ReportStatus? status;
   final bool isEmergency;
@@ -28,6 +29,7 @@ class UniversalReportCard extends StatelessWidget {
     required this.id,
     required this.title,
     required this.location,
+    this.locationDetail,
     required this.category,
     this.status,
     this.isEmergency = false,
@@ -280,13 +282,31 @@ class UniversalReportCard extends StatelessWidget {
                       ),
                       const Gap(4),
                       Expanded(
-                        child: Text(
-                          location,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              location,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12,
+                                fontWeight:
+                                    FontWeight.bold, // Bold for main location
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (locationDetail != null &&
+                                locationDetail!.isNotEmpty)
+                              Text(
+                                locationDetail!,
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 11,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
                         ),
                       ),
                       const Gap(12),

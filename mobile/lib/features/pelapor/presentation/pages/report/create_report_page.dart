@@ -25,12 +25,14 @@ class CreateReportPage extends StatefulWidget {
 class _CreateReportPageState extends State<CreateReportPage> {
   final _formKey = GlobalKey<FormState>();
   final _imagePicker = ImagePicker();
-  
+
   // Controllers
   final _subjectController = TextEditingController();
   final _descController = TextEditingController();
+
+  final _locationDetailController = TextEditingController(); // New Controller
   final _notesController = TextEditingController();
-  
+
   // State
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes; // For web compatibility
@@ -59,6 +61,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
     'Masjid',
     'Gedung Acintya Prasada',
     'Taman Rumah Kita',
+    'Kantin',
     'Lainnya',
   ];
 
@@ -70,10 +73,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   Future<void> _fetchCurrentLocation() async {
     setState(() => _isFetchingLocation = true);
-    
+
     // Simulate GPS fetch (real implementation uses geolocator)
     await Future.delayed(const Duration(seconds: 1));
-    
+
     if (mounted) {
       setState(() {
         _latitude = -6.998576; // Mock: FSM Undip coordinates
@@ -134,14 +137,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   Future<void> _submitReport() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     if (_selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Bukti foto wajib disertakan!')),
       );
       return;
     }
-    
+
     if (_selectedBuilding == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih lokasi gedung terlebih dahulu!')),
@@ -152,6 +155,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
     setState(() => _isSubmitting = true);
 
     // Simulate API call
+    debugPrint("Submitting Report:");
+    debugPrint("Building: $_selectedBuilding");
+    debugPrint("Detail Lokasi: ${_locationDetailController.text}");
+
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
@@ -165,7 +172,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEmergency ? "Lapor Darurat" : "Buat Laporan"),
-        backgroundColor: widget.isEmergency ? AppTheme.emergencyColor : Colors.white,
+        backgroundColor: widget.isEmergency
+            ? AppTheme.emergencyColor
+            : Colors.white,
         foregroundColor: widget.isEmergency ? Colors.white : Colors.black,
       ),
       body: SingleChildScrollView(
@@ -177,9 +186,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
             children: [
               // Category Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: widget.isEmergency ? Colors.red.shade100 : Colors.blue.shade100,
+                  color: widget.isEmergency
+                      ? Colors.red.shade100
+                      : Colors.blue.shade100,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -202,9 +216,12 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 ),
               ),
               const Gap(24),
-              
+
               // Photo Upload Section
-              const Text("Bukti Foto/Video *", style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                "Bukti Foto/Video *",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const Gap(8),
               GestureDetector(
                 onTap: _showImageSourceDialog,
@@ -215,7 +232,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: _selectedImageBytes != null ? AppTheme.primaryColor : Colors.grey.shade300,
+                      color: _selectedImageBytes != null
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade300,
                       width: _selectedImageBytes != null ? 2 : 1,
                     ),
                   ),
@@ -242,7 +261,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
                                 child: const CircleAvatar(
                                   backgroundColor: Colors.red,
                                   radius: 16,
-                                  child: Icon(LucideIcons.x, color: Colors.white, size: 16),
+                                  child: Icon(
+                                    LucideIcons.x,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),
@@ -251,9 +274,16 @@ class _CreateReportPageState extends State<CreateReportPage> {
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(LucideIcons.camera, size: 48, color: Colors.grey.shade400),
+                            Icon(
+                              LucideIcons.camera,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
                             const Gap(12),
-                            Text("Ketuk untuk ambil foto bukti", style: TextStyle(color: Colors.grey.shade500)),
+                            Text(
+                              "Ketuk untuk ambil foto bukti",
+                              style: TextStyle(color: Colors.grey.shade500),
+                            ),
                           ],
                         ),
                 ),
@@ -268,32 +298,53 @@ class _CreateReportPageState extends State<CreateReportPage> {
                   hintText: "Contoh: AC Bocor di Ruang E102",
                   helperText: "Tuliskan deskripsi singkat masalah",
                 ),
-                validator: (value) => value!.isEmpty ? "Subjek tidak boleh kosong" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Subjek tidak boleh kosong" : null,
               ),
               const Gap(16),
-              
+
               // Building Selection
               DropdownButtonFormField<String>(
                 initialValue: _selectedBuilding,
                 decoration: const InputDecoration(
-                  labelText: "Lokasi Gedung *",
+                  labelText: "Pilih Lokasi *",
                   prefixIcon: Icon(LucideIcons.building),
                 ),
-                items: _buildings.map((b) => DropdownMenuItem(value: b, child: Text(b))).toList(),
+                items: _buildings
+                    .map((b) => DropdownMenuItem(value: b, child: Text(b)))
+                    .toList(),
                 onChanged: (value) => setState(() => _selectedBuilding = value),
                 validator: (value) => value == null ? "Pilih gedung" : null,
               ),
               const Gap(16),
-              
+
+              // Location Detail (New)
+              TextFormField(
+                controller: _locationDetailController,
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  labelText: "Detail Lokasi (Opsional)",
+                  hintText: "Contoh: Lt 2, Ruang 204",
+                  helperText: "Lantai atau nama ruangan spesifik",
+                  prefixIcon: Icon(LucideIcons.mapPin),
+                ),
+              ),
+              const Gap(16),
+
               // Map Preview - Interactive
-              const Text("Lokasi *", style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                "Lokasi *",
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const Gap(4),
               Text(
                 'Geser peta untuk menyesuaikan lokasi',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               const Gap(8),
-              if (_latitude != null && _longitude != null && !_isFetchingLocation)
+              if (_latitude != null &&
+                  _longitude != null &&
+                  !_isFetchingLocation)
                 Container(
                   height: 200,
                   width: double.infinity,
@@ -320,7 +371,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           ),
                           children: [
                             TileLayer(
-                              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                              urlTemplate:
+                                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                               userAgentPackageName: 'com.laporfsm.mobile',
                             ),
                           ],
@@ -339,31 +391,54 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           left: 0,
                           right: 0,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 6,
+                            ),
                             color: Colors.black.withOpacity(0.7),
                             child: Row(
                               children: [
-                                const Icon(LucideIcons.mapPin, color: Colors.white, size: 14),
+                                const Icon(
+                                  LucideIcons.mapPin,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
                                 const Gap(6),
                                 Expanded(
                                   child: Text(
                                     'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
-                                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                    ),
                                   ),
                                 ),
                                 GestureDetector(
                                   onTap: _fetchCurrentLocation,
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.white.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Row(
                                       children: [
-                                        Icon(LucideIcons.locate, color: Colors.white, size: 12),
+                                        Icon(
+                                          LucideIcons.locate,
+                                          color: Colors.white,
+                                          size: 12,
+                                        ),
                                         Gap(4),
-                                        Text('Reset', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                        Text(
+                                          'Reset',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -377,7 +452,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           top: 8,
                           left: 8,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(4),
@@ -385,9 +463,19 @@ class _CreateReportPageState extends State<CreateReportPage> {
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.move, color: Colors.white, size: 12),
+                                Icon(
+                                  LucideIcons.move,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
                                 Gap(4),
-                                Text('Geser peta', style: TextStyle(color: Colors.white, fontSize: 10)),
+                                Text(
+                                  'Geser peta',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -414,7 +502,11 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           const Gap(8),
                           const Text('Mendeteksi lokasi...'),
                         ] else ...[
-                          const Icon(LucideIcons.mapPin, size: 32, color: Colors.grey),
+                          const Icon(
+                            LucideIcons.mapPin,
+                            size: 32,
+                            color: Colors.grey,
+                          ),
                           const Gap(8),
                           const Text('Lokasi tidak tersedia'),
                           TextButton(
@@ -434,13 +526,15 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 maxLines: 4,
                 decoration: const InputDecoration(
                   labelText: "Deskripsi Detail *",
-                  hintText: "Jelaskan kronologi atau kondisi kerusakan secara detail...",
+                  hintText:
+                      "Jelaskan kronologi atau kondisi kerusakan secara detail...",
                   alignLabelWithHint: true,
                 ),
-                validator: (value) => value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
+                validator: (value) =>
+                    value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
               ),
               const Gap(16),
-              
+
               // Additional Notes
               TextFormField(
                 controller: _notesController,
@@ -458,15 +552,20 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 child: ElevatedButton(
                   onPressed: _isSubmitting ? null : _submitReport,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.isEmergency ? AppTheme.emergencyColor : AppTheme.primaryColor,
+                    backgroundColor: widget.isEmergency
+                        ? AppTheme.emergencyColor
+                        : AppTheme.primaryColor,
                   ),
-                  child: _isSubmitting 
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      )
-                    : const Text("KIRIM LAPORAN"),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text("KIRIM LAPORAN"),
                 ),
               ),
             ],

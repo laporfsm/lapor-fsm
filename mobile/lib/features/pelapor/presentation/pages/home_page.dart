@@ -1,250 +1,316 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
+import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/theme.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // 1. Header Image Section with Lapor FSM Branding
-            Stack(
+      body: Stack(
+        children: [
+          // Main Scrollable Content
+          SingleChildScrollView(
+            child: Column(
               children: [
-                Container(
-                  height: 200,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.primaryColor,
-                        AppTheme.primaryColor.withOpacity(0.8),
-                        const Color(0xFF1565C0),
-                      ],
+                // 1. Header Image Section with Lapor FSM Branding
+                Stack(
+                  children: [
+                    Container(
+                      height: 200,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primaryColor,
+                            AppTheme.primaryColor.withOpacity(0.8),
+                            const Color(0xFF1565C0),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                // Background Pattern
-                Positioned.fill(
-                  child: Opacity(
-                    opacity: 0.1,
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: NetworkImage(
-                            'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop',
+                    // Background Pattern
+                    Positioned.fill(
+                      child: Opacity(
+                        opacity: 0.1,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            image: DecorationImage(
+                              image: NetworkImage(
+                                'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop',
+                              ),
+                              fit: BoxFit.cover,
+                            ),
                           ),
-                          fit: BoxFit.cover,
                         ),
+                      ),
+                    ),
+                    // Content
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      right: 20,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: const Text(
+                                    "UNIVERSITAS DIPONEGORO",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 9,
+                                    ),
+                                  ),
+                                ),
+                                const Gap(8),
+                                const Text(
+                                  "Lapor FSM!",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const Gap(4),
+                                const Text(
+                                  "Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika",
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Notification Icon
+                          Consumer(
+                            builder: (context, ref, child) {
+                              final unreadCount = ref
+                                  .watch(notificationProvider)
+                                  .unreadCount;
+                              return GestureDetector(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    backgroundColor: Colors.transparent,
+                                    isScrollControlled: true,
+                                    builder: (context) =>
+                                        const NotificationBottomSheet(),
+                                  );
+                                },
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.bell,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    if (unreadCount > 0)
+                                      Positioned(
+                                        top: -2,
+                                        right: -2,
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            minWidth: 16,
+                                            minHeight: 16,
+                                          ),
+                                          child: Text(
+                                            unreadCount > 9
+                                                ? '9+'
+                                                : '$unreadCount',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Gap(40),
+
+                // 2. Big Circular Panic Button (Mimic Damkar Button)
+                Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      context.push('/emergency-report');
+                    },
+                    child: Container(
+                      height: 180,
+                      width: 180,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFDC2626), // Deep Red
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFDC2626).withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(
+                            LucideIcons.siren,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                          Gap(8),
+                          Text(
+                            "LAPOR",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "DARURAT",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                // Content
-                Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                "UNIVERSITAS DIPONEGORO",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 9,
-                                ),
-                              ),
-                            ),
-                            const Gap(8),
-                            const Text(
-                              "Lapor FSM!",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Gap(4),
-                            const Text(
-                              "Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(12),
-                      // Report Icon - Minimal & Compact
-                      Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          LucideIcons.siren,
-                          color: Color(0xFFDC2626),
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
 
-            const Gap(40),
+                const Gap(40),
 
-            // 2. Big Circular Panic Button (Mimic Damkar Button)
-            Center(
-              child: GestureDetector(
-                onTap: () {
-                  context.push('/emergency-report');
-                },
-                child: Container(
-                  height: 180,
-                  width: 180,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDC2626), // Deep Red
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFDC2626).withOpacity(0.4),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
+                // 3. Grid Menu
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(LucideIcons.siren, color: Colors.white, size: 50),
-                      Gap(8),
-                      Text(
-                        "LAPOR",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "DARURAT",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const Gap(40),
-
-            // 3. Grid Menu
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        "Laporan Non-Darurat",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Laporan Non-Darurat",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            "Pilih kategori untuk melaporkan kerusakan atau masalah fasilitas",
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
                       ),
-                      Text(
-                        "Pilih kategori untuk melaporkan kerusakan atau masalah fasilitas",
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  const Gap(16),
-                  _buildMenuGrid(context),
-                  const Gap(24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "Info Terkini",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                      const Gap(16),
+                      _buildMenuGrid(context),
+                      const Gap(24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  "Info Terkini",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  "Preview laporan terbaru",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/feed'),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
                               ),
                             ),
-                            Text(
-                              "Preview laporan terbaru",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
+                            child: const Text("Lihat Semua"),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () => context.go('/feed'),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
-                        child: const Text("Lihat Semua"),
-                      ),
+                      const Gap(12),
+                      _buildPublicFeed(context),
                     ],
                   ),
-                  const Gap(12),
-                  _buildPublicFeed(),
-                ],
-              ),
+                ),
+                const Gap(80), // Extra bottom padding for floating feel
+              ],
             ),
-            const Gap(40),
-          ],
-        ),
+          ),
+
+          // End Fixed Notification Icon
+        ],
       ),
     );
   }
@@ -345,161 +411,55 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildPublicFeed() {
-    // Mock data matching Feed page and report_detail_page
+  Widget _buildPublicFeed(BuildContext context) {
+    // Mock data using UniversalReportCard
     final feedItems = [
       {
         'id': '1',
         'title': 'AC Mati di Ruang E102',
         'category': 'Maintenance',
-        'building': 'Gedung E',
-        'time': '2 jam lalu',
-        'status': 'Penanganan',
-        'color': Colors.orange,
+        'location': 'Gedung E',
+        'locationDetail': 'R. E102',
+        'elapsedTime': const Duration(hours: 2),
+        'status': ReportStatus.penanganan,
       },
       {
         'id': '2',
         'title': 'Kebocoran Pipa Toilet',
         'category': 'Maintenance',
-        'building': 'Gedung C',
-        'time': '30 menit lalu',
-        'status': 'Verifikasi',
-        'color': Colors.blue,
+        'location': 'Gedung C',
+        'locationDetail': 'Toilet Wanita',
+        'elapsedTime': const Duration(minutes: 30),
+        'status': ReportStatus.verifikasi,
       },
       {
         'id': '4',
         'title': 'Sampah Menumpuk Area Parkir',
         'category': 'Kebersihan',
-        'building': 'Gedung A',
-        'time': '1 jam lalu',
-        'status': 'Pending',
-        'color': Colors.grey,
+        'location': 'Gedung A',
+        'elapsedTime': const Duration(hours: 1),
+        'status': ReportStatus.pending,
       },
     ];
 
-    return ListView.separated(
+    return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: feedItems.length,
-      separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
         final item = feedItems[index];
-        return GestureDetector(
+        return UniversalReportCard(
+          id: item['id'] as String,
+          title: item['title'] as String,
+          location: item['location'] as String,
+          locationDetail: item['locationDetail'] as String?,
+          category: item['category'] as String,
+          status: item['status'] as ReportStatus?,
+          elapsedTime: item['elapsedTime'] as Duration?,
+          showStatus: true,
+          showTimer: true,
+          compact: false,
           onTap: () => context.push('/report-detail/${item['id']}'),
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-              border: Border.all(color: Colors.grey.shade100),
-            ),
-            child: Row(
-              children: [
-                // Status Icon
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: (item['color'] as Color).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    LucideIcons.fileText,
-                    color: item['color'] as Color,
-                  ),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (item['color'] as Color).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              item['category'] as String,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: item['color'] as Color,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            item['time'] as String,
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(4),
-                      Text(
-                        item['title'] as String,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const Gap(2),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.mapPin,
-                            size: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                          const Gap(4),
-                          Flexible(
-                            child: Text(
-                              item['building'] as String,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 11,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const Gap(8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              item['status'] as String,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         );
       },
     );

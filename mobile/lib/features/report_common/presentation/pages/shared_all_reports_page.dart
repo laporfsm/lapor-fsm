@@ -22,12 +22,14 @@ class SharedAllReportsPage extends StatefulWidget {
   final TextStyle? appBarTitleStyle;
   final bool showBackButton;
   final bool showAppBar;
+  final bool enableDateFilter; // New parameter to toggle date filter visibility
 
   const SharedAllReportsPage({
     super.key,
     this.initialStatuses,
     this.initialPeriod,
     this.initialEmergency = false, // Default false
+    this.enableDateFilter = true, // Default true
     required this.onReportTap,
     this.appBarTitle = 'Semua Laporan',
     this.appBarColor = Colors.white,
@@ -112,32 +114,36 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       reports = reports.where((r) => r.isEmergency).toList();
     }
 
-    // Period/Date filter
-    if (_selectedDateRange != null) {
-      reports = reports.where((r) {
-        return r.createdAt.isAfter(_selectedDateRange!.start) &&
-            r.createdAt.isBefore(
-              _selectedDateRange!.end.add(const Duration(days: 1)),
-            );
-      }).toList();
-    } else if (_selectedPeriod != null) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+    // Period/Date filter - Only apply if enabled
+    if (widget.enableDateFilter) {
+      if (_selectedDateRange != null) {
+        reports = reports.where((r) {
+          return r.createdAt.isAfter(_selectedDateRange!.start) &&
+              r.createdAt.isBefore(
+                _selectedDateRange!.end.add(const Duration(days: 1)),
+              );
+        }).toList();
+      } else if (_selectedPeriod != null) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
 
-      switch (_selectedPeriod) {
-        case 'today':
-          reports = reports.where((r) => r.createdAt.isAfter(today)).toList();
-          break;
-        case 'week':
-          final weekAgo = today.subtract(const Duration(days: 7));
-          reports = reports.where((r) => r.createdAt.isAfter(weekAgo)).toList();
-          break;
-        case 'month':
-          final monthStart = DateTime(now.year, now.month, 1);
-          reports = reports
-              .where((r) => r.createdAt.isAfter(monthStart))
-              .toList();
-          break;
+        switch (_selectedPeriod) {
+          case 'today':
+            reports = reports.where((r) => r.createdAt.isAfter(today)).toList();
+            break;
+          case 'week':
+            final weekAgo = today.subtract(const Duration(days: 7));
+            reports = reports
+                .where((r) => r.createdAt.isAfter(weekAgo))
+                .toList();
+            break;
+          case 'month':
+            final monthStart = DateTime(now.year, now.month, 1);
+            reports = reports
+                .where((r) => r.createdAt.isAfter(monthStart))
+                .toList();
+            break;
+        }
       }
     }
 
@@ -156,13 +162,17 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       ..sort();
   }
 
-  bool get _hasActiveFilters =>
-      _selectedStatuses.isNotEmpty ||
-      _selectedCategory != null ||
-      _selectedBuilding != null ||
-      _selectedPeriod != null ||
-      _selectedDateRange != null ||
-      _emergencyOnly;
+  bool get _hasActiveFilters {
+    bool hasDateFilter = false;
+    if (widget.enableDateFilter) {
+      hasDateFilter = _selectedPeriod != null || _selectedDateRange != null;
+    }
+    return _selectedStatuses.isNotEmpty ||
+        _selectedCategory != null ||
+        _selectedBuilding != null ||
+        hasDateFilter ||
+        _emergencyOnly;
+  }
 
   String _getPeriodLabel(String period) {
     switch (period) {
@@ -222,31 +232,33 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   onChanged: (value) => setState(() => _searchQuery = value),
                 ),
               ),
-              const Gap(12),
-              InkWell(
-                onTap: _showCustomDateRangePicker,
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _selectedDateRange != null
-                        ? widget.appBarColor
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+              if (widget.enableDateFilter) ...[
+                const Gap(12),
+                InkWell(
+                  onTap: _showCustomDateRangePicker,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
                       color: _selectedDateRange != null
                           ? widget.appBarColor
-                          : Colors.grey.shade300,
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _selectedDateRange != null
+                            ? widget.appBarColor
+                            : Colors.grey.shade300,
+                      ),
+                    ),
+                    child: Icon(
+                      LucideIcons.calendarRange,
+                      color: _selectedDateRange != null
+                          ? Colors.white
+                          : Colors.grey.shade600,
                     ),
                   ),
-                  child: Icon(
-                    LucideIcons.calendarRange,
-                    color: _selectedDateRange != null
-                        ? Colors.white
-                        : Colors.grey.shade600,
-                  ),
                 ),
-              ),
+              ],
               const Gap(8),
               InkWell(
                 onTap: _showFilterSheet,
@@ -391,6 +403,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       id: report.id,
                       title: report.title,
                       location: report.building,
+                      locationDetail: report.locationDetail,
                       category: report.category,
                       status: report.status,
                       isEmergency: report.isEmergency,
