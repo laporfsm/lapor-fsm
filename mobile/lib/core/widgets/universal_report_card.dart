@@ -3,7 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 /// Universal Report Card widget for consistent display across the app.
 /// Use this for all report list displays (Teknisi, Supervisor, Pelapor).
@@ -66,17 +66,27 @@ class UniversalReportCard extends StatelessWidget {
 
   IconData _getStatusIcon(ReportStatus status) {
     switch (status) {
-      case ReportStatus.pending: return LucideIcons.clock;
+      case ReportStatus.pending:
+        return LucideIcons.clock;
       case ReportStatus.terverifikasi:
-      case ReportStatus.verifikasi: return LucideIcons.checkCircle;
-      case ReportStatus.diproses: return LucideIcons.userCheck;
-      case ReportStatus.penanganan: return LucideIcons.wrench;
-      case ReportStatus.onHold: return LucideIcons.pauseCircle;
-      case ReportStatus.selesai: return LucideIcons.checkSquare;
-      case ReportStatus.approved: return LucideIcons.badgeCheck;
-      case ReportStatus.ditolak: return LucideIcons.xCircle;
-      case ReportStatus.recalled: return LucideIcons.rotateCcw;
-      case ReportStatus.archived: return LucideIcons.archive;
+      case ReportStatus.verifikasi:
+        return LucideIcons.checkCircle;
+      case ReportStatus.diproses:
+        return LucideIcons.userCheck;
+      case ReportStatus.penanganan:
+        return LucideIcons.wrench;
+      case ReportStatus.onHold:
+        return LucideIcons.pauseCircle;
+      case ReportStatus.selesai:
+        return LucideIcons.checkSquare;
+      case ReportStatus.approved:
+        return LucideIcons.badgeCheck;
+      case ReportStatus.ditolak:
+        return LucideIcons.xCircle;
+      case ReportStatus.recalled:
+        return LucideIcons.rotateCcw;
+      case ReportStatus.archived:
+        return LucideIcons.archive;
     }
   }
 
@@ -103,8 +113,8 @@ class UniversalReportCard extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: isEmergency
-                  ? AppTheme.emergencyColor.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.08),
+                  ? AppTheme.emergencyColor.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -124,7 +134,11 @@ class UniversalReportCard extends StatelessWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.alertTriangle, color: Colors.white, size: 14),
+                    Icon(
+                      LucideIcons.alertTriangle,
+                      color: Colors.white,
+                      size: 14,
+                    ),
                     Gap(6),
                     Text(
                       'DARURAT',
@@ -147,16 +161,25 @@ class UniversalReportCard extends StatelessWidget {
                     children: [
                       if (showStatus && status != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: status!.color.withOpacity(0.1),
+                            color: status!.color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: status!.color.withOpacity(0.2)),
+                            border: Border.all(
+                              color: status!.color.withValues(alpha: 0.2),
+                            ),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(_getStatusIcon(status!), size: 10, color: status!.color),
+                              Icon(
+                                _getStatusIcon(status!),
+                                size: 10,
+                                color: status!.color,
+                              ),
                               const Gap(4),
                               Text(
                                 status!.label.toUpperCase(),
@@ -175,15 +198,22 @@ class UniversalReportCard extends StatelessWidget {
 
                       if (handlingTime != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(LucideIcons.timer, size: 12, color: Colors.green),
+                              const Icon(
+                                LucideIcons.timer,
+                                size: 12,
+                                color: Colors.green,
+                              ),
                               const Gap(4),
                               Text(
                                 _formatCompact(handlingTime!),
@@ -198,15 +228,22 @@ class UniversalReportCard extends StatelessWidget {
                         ),
                       ] else if (showTimer && elapsedTime != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: _timerColor.withOpacity(0.1),
+                            color: _timerColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(LucideIcons.timer, size: 12, color: _timerColor),
+                              Icon(
+                                LucideIcons.timer,
+                                size: 12,
+                                color: _timerColor,
+                              ),
                               const Gap(4),
                               Text(
                                 _formatDuration(elapsedTime!),
@@ -239,7 +276,11 @@ class UniversalReportCard extends StatelessWidget {
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(LucideIcons.mapPin, size: 13, color: Colors.grey.shade500),
+                            Icon(
+                              LucideIcons.mapPin,
+                              size: 13,
+                              color: Colors.grey.shade500,
+                            ),
                             const Gap(4),
                             Expanded(
                               child: Column(
@@ -254,7 +295,8 @@ class UniversalReportCard extends StatelessWidget {
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (locationDetail != null && locationDetail!.isNotEmpty)
+                                  if (locationDetail != null &&
+                                      locationDetail!.isNotEmpty)
                                     Text(
                                       locationDetail!,
                                       style: TextStyle(
@@ -272,14 +314,21 @@ class UniversalReportCard extends StatelessWidget {
                       ),
                       const Gap(12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           children: [
-                            Icon(LucideIcons.tag, size: 12, color: Colors.blue.shade700),
+                            Icon(
+                              LucideIcons.tag,
+                              size: 12,
+                              color: Colors.blue.shade700,
+                            ),
                             const Gap(4),
                             Text(
                               category,
@@ -297,14 +346,19 @@ class UniversalReportCard extends StatelessWidget {
 
                   // Info Pelapor & Handler
                   if (!compact) ...[
-                    if (reporterName != null || handledBy != null) const Divider(height: 24),
-                    
+                    if (reporterName != null || handledBy != null)
+                      const Divider(height: 24),
+
                     if (reporterName != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Row(
                           children: [
-                            const Icon(LucideIcons.user, size: 13, color: Colors.blueGrey),
+                            const Icon(
+                              LucideIcons.user,
+                              size: 13,
+                              color: Colors.blueGrey,
+                            ),
                             const Gap(4),
                             Expanded(
                               child: Text(
@@ -323,7 +377,11 @@ class UniversalReportCard extends StatelessWidget {
                     if (handledBy != null)
                       Row(
                         children: [
-                          Icon(LucideIcons.wrench, size: 13, color: AppTheme.secondaryColor),
+                          Icon(
+                            LucideIcons.wrench,
+                            size: 13,
+                            color: AppTheme.secondaryColor,
+                          ),
                           const Gap(4),
                           Expanded(
                             child: Text(

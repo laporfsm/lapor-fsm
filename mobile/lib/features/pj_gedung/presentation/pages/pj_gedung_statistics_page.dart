@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/theme.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_dashboard_page.dart'; // Import for pjGedungColor
+import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/widgets/statistics_widgets.dart';
 
 class PJGedungStatisticsPage extends StatelessWidget {
   final String? buildingName;
@@ -37,11 +37,127 @@ class PJGedungStatisticsPage extends StatelessWidget {
           children: [
             _buildSummaryCard(),
             const Gap(16),
-            _buildCategoryBreakdown(),
+            StatsSectionCard(
+              title: 'Kategori Masalah',
+              child: Column(
+                children: [
+                  StatsBarChartItem(
+                    label: 'Kelistrikan',
+                    percentage: 0.6,
+                    color: Colors.blue,
+                    valueSuffix: '6',
+                  ),
+                  StatsBarChartItem(
+                    label: 'Sanitasi',
+                    percentage: 0.8,
+                    color: Colors.orange,
+                    valueSuffix: '8',
+                  ),
+                  StatsBarChartItem(
+                    label: 'AC/Pendingin',
+                    percentage: 0.4,
+                    color: Colors.red,
+                    valueSuffix: '4',
+                  ),
+                  StatsBarChartItem(
+                    label: 'Lainnya',
+                    percentage: 0.2,
+                    color: Colors.grey,
+                    valueSuffix: '2',
+                  ),
+                ],
+              ),
+            ),
             const Gap(16),
-            _buildDailyTrend(), // Option 1
+            StatsSectionCard(
+              title: 'Tren Kesibukan (Harian)',
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  StatsTrendBar(
+                    label: 'Sen',
+                    heightFactor: 0.3,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Sel',
+                    heightFactor: 0.5,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Rab',
+                    heightFactor: 0.8,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Kam',
+                    heightFactor: 0.6,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Jum',
+                    heightFactor: 0.4,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Sab',
+                    heightFactor: 0.2,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                  StatsTrendBar(
+                    label: 'Min',
+                    heightFactor: 0.1,
+                    activeColor: AppTheme.pjGedungColor,
+                  ),
+                ],
+              ),
+            ),
             const Gap(16),
-            _buildMonthlyPerformance(), // Option 3
+            StatsSectionCard(
+              title: 'Timeline Jumlah Laporan',
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      StatsTrendInfo(
+                        label: 'Bulan Lalu',
+                        value: '12 Laporan',
+                        isUp: false,
+                        emphasizeUpAsBad: true,
+                      ),
+                      Container(
+                        width: 1,
+                        height: 40,
+                        color: Colors.grey.shade200,
+                      ),
+                      StatsTrendInfo(
+                        label: 'Bulan Ini',
+                        value: '15 Laporan',
+                        isUp: true,
+                        emphasizeUpAsBad: true,
+                      ),
+                    ],
+                  ),
+                  const Gap(20),
+                  SizedBox(
+                    height: 100,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildLinePoint(0.4, 'Minggu 1'),
+                        _buildLinePoint(0.6, 'Minggu 2'),
+                        _buildLinePoint(0.5, 'Minggu 3'),
+                        _buildLinePoint(0.8, 'Minggu 4'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Gap(32),
           ],
         ),
       ),
@@ -56,7 +172,7 @@ class PJGedungStatisticsPage extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -73,9 +189,9 @@ class PJGedungStatisticsPage extends StatelessWidget {
               ),
               Chip(
                 label: const Text('15 Laporan'),
-                backgroundColor: const Color(0xFFD1FAE5), // Green tint
+                backgroundColor: const Color(0xFFD1FAE5),
                 labelStyle: const TextStyle(
-                  color: pjGedungColor,
+                  color: AppTheme.pjGedungColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -83,17 +199,29 @@ class PJGedungStatisticsPage extends StatelessWidget {
             ],
           ),
           const Gap(20),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildBigStat('3', 'Pending', Colors.grey),
-              _buildBigStat(
-                '2',
-                'Verifikasi',
-                Colors.amber,
-              ), // Updated to Amber
-              _buildBigStat('4', 'Proses', Colors.purple),
-              _buildBigStat('6', 'Selesai', Colors.green),
+              StatsBigStatItem(
+                value: '3',
+                label: 'Pending',
+                color: Colors.grey,
+              ),
+              StatsBigStatItem(
+                value: '2',
+                label: 'Verifikasi',
+                color: Colors.amber,
+              ),
+              StatsBigStatItem(
+                value: '4',
+                label: 'Proses',
+                color: Colors.purple,
+              ),
+              StatsBigStatItem(
+                value: '6',
+                label: 'Selesai',
+                color: Colors.green,
+              ),
             ],
           ),
           const Gap(20),
@@ -151,148 +279,6 @@ class PJGedungStatisticsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildBigStat(String value, String label, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
-          ),
-        ),
-        const Gap(4),
-        Text(
-          label,
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryBreakdown() {
-    return _buildSectionCard(
-      title: 'Kategori Masalah',
-      child: Column(
-        children: [
-          _buildBarChartItem('Kelistrikan', 0.6, Colors.blue),
-          _buildBarChartItem('Sanitasi', 0.8, Colors.orange),
-          _buildBarChartItem('AC/Pendingin', 0.4, Colors.red),
-          _buildBarChartItem('Lainnya', 0.2, Colors.grey),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDailyTrend() {
-    return _buildSectionCard(
-      title: 'Tren Kesibukan (Harian)',
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          _buildTrendBar('Sen', 0.3),
-          _buildTrendBar('Sel', 0.5),
-          _buildTrendBar('Rab', 0.8), // Peak
-          _buildTrendBar('Kam', 0.6),
-          _buildTrendBar('Jum', 0.4),
-          _buildTrendBar('Sab', 0.2),
-          _buildTrendBar('Min', 0.1),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendBar(String label, double heightFactor) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: 8,
-          height: 100 * heightFactor,
-          decoration: BoxDecoration(
-            color: heightFactor > 0.7
-                ? pjGedungColor
-                : pjGedungColor.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-        const Gap(8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-            fontWeight: heightFactor > 0.7
-                ? FontWeight.bold
-                : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMonthlyPerformance() {
-    return _buildSectionCard(
-      title: 'Timeline Jumlah Laporan',
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildTrendInfo('Bulan Lalu', '12 Laporan', false),
-              Container(width: 1, height: 40, color: Colors.grey.shade200),
-              _buildTrendInfo('Bulan Ini', '15 Laporan', true),
-            ],
-          ),
-          const Gap(20),
-          // Simplified Line Chart Representation for Timeline
-          SizedBox(
-            height: 100,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildLinePoint(0.4, 'Minggu 1'),
-                _buildLinePoint(0.6, 'Minggu 2'),
-                _buildLinePoint(0.5, 'Minggu 3'),
-                _buildLinePoint(0.8, 'Minggu 4'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendInfo(String label, String value, bool isUp) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const Gap(4),
-        Row(
-          children: [
-            Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const Gap(4),
-            Icon(
-              isUp ? LucideIcons.trendingUp : LucideIcons.trendingDown,
-              size: 16,
-              color: isUp
-                  ? Colors.red
-                  : Colors
-                        .green, // Red often means "more reports" (bad for building health)
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildLinePoint(double heightFactor, String label) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -302,96 +288,18 @@ class PJGedungStatisticsPage extends StatelessWidget {
           height: 12,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: pjGedungColor, width: 3),
+            border: Border.all(color: AppTheme.pjGedungColor, width: 3),
             shape: BoxShape.circle,
           ),
         ),
         Container(
           width: 2,
           height: 60 * heightFactor,
-          color: pjGedungColor.withOpacity(0.5),
+          color: AppTheme.pjGedungColor.withValues(alpha: 0.5),
         ),
         const Gap(8),
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
       ],
-    );
-  }
-
-  Widget _buildBarChartItem(String label, double percentage, Color color) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                Container(
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: percentage,
-                  child: Container(
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Gap(12),
-          Text(
-            '${(percentage * 10).toInt()}', // Mock value count
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const Gap(16),
-          child,
-        ],
-      ),
     );
   }
 }

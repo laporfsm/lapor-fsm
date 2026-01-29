@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
 import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 class NotificationPage extends ConsumerWidget {
   const NotificationPage({super.key});
@@ -149,16 +149,16 @@ class NotificationPage extends ConsumerWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: item.isRead ? Colors.white : Colors.blue.withOpacity(0.05),
+            color: item.isRead ? Colors.white : Colors.blue.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: item.isRead
-                  ? Colors.grey.withOpacity(0.2)
-                  : Colors.blue.withOpacity(0.2),
+                  ? Colors.grey.withValues(alpha: 0.2)
+                  : Colors.blue.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),

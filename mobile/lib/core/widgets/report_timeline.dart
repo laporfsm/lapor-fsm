@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
-import '../models/report_log.dart';
+import 'package:mobile/core/theme.dart';
+import 'package:mobile/features/report_common/domain/entities/report_log.dart';
 
 /// Shared Report Timeline widget for transparent log display
 class ReportTimeline extends StatelessWidget {
@@ -47,7 +47,10 @@ class ReportTimeline extends StatelessWidget {
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(width: 2, color: color.withOpacity(0.3)),
+                  child: Container(
+                    width: 2,
+                    color: color.withValues(alpha: 0.3),
+                  ),
                 ),
             ],
           ),

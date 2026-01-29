@@ -73,15 +73,18 @@ Repositori ini menggunakan arsitektur **Monorepo** yang berisi kode untuk Mobile
 lapor-fsm/
 ├── 📱 mobile/          # Aplikasi Flutter (Android/iOS)
 │   ├── lib/
-│   │   ├── core/       # Router, Services, Theme
+│   │   ├── core/       # Router, Services, Theme, Widgets, Utils, Models
 │   │   ├── features/   # Fitur per Role
-│   │   │   ├── admin/       # Panel Admin
-│   │   │   ├── auth/        # Autentikasi
-│   │   │   ├── pelapor/     # Fitur Pelapor
-│   │   │   ├── supervisor/  # Dashboard Supervisor
-│   │   │   └── teknisi/     # Panel Teknisi
-│   │   └── models/     # Data Models
-│   └── assets/         # Logo & Gambar
+│   │   │   ├── admin/         # Panel Admin & Manajemen
+│   │   │   ├── auth/          # Autentikasi Pelapor & Staff
+│   │   │   ├── notification/  # Sistem Notifikasi
+│   │   │   ├── pelapor/       # Fitur Pelapor & Feed Umum
+│   │   │   ├── pj_gedung/     # Dashboard & Verifikasi Gedung
+│   │   │   ├── report_common/ # Komponen Laporan Bersama
+│   │   │   ├── supervisor/    # Dashboard & Review Supervisor
+│   │   │   └── teknisi/       # Panel Penanganan Teknisi
+│   │   └── main.dart
+│   └── assets/         # Logo, Icon, & Gambar
 │
 └── 🖥️ backend/         # Server ElysiaJS + Bun (API)
     ├── src/
@@ -90,9 +93,11 @@ lapor-fsm/
     │   │   ├── reporter/
     │   │   ├── staff/
     │   │   ├── supervisor/
-    │   │   └── technician/
-    │   └── db/             # Database Schema & Seed
-    └── uploads/            # File Upload Storage
+    │   │   ├── technician/
+    │   │   ├── auth.controller.ts
+    │   │   └── notification.controller.ts
+    │   ├── db/             # Schema & Seeding
+    │   └── uploads/        # Media Storage
 ```
 
 ---
@@ -101,30 +106,27 @@ lapor-fsm/
 
 | Role | Deskripsi | Fitur Utama |
 |------|-----------|-------------|
-| **Pelapor** | Warga FSM | Kirim laporan, lacak status real-time, pantau public feed |
-| **Teknisi** | Responder | Validasi laporan, ubah status lifecycle, tangani masalah di lokasi |
-| **Supervisor** | Manajer | Evaluasi kinerja, lihat arsip, unduh laporan PDF/Excel |
-| **Admin** | Pengelola Sistem | Kelola akun pengguna, hak akses, dan kategori laporan |
+| **Pelapor** | Mahasiswa / Dosen FSM | Kirim laporan, lacak status real-time, pantau public feed |
+| **Teknisi** | Petugas Lapangan | Terima tugas, update progress penanganan, upload bukti selesai |
+| **PJ Gedung** | Penanggung Jawab Area | Verifikasi laporan awal, pantau statistik gedung spesifik |
+| **Supervisor** | Manajer & Verifikator | Evaluasi kinerja teknisi, ulas laporan ditolak, ekspor data |
+| **Admin** | Pengelola Sistem | Manajemen user/staf, konfigurasi kategori, audit log sistem |
 
 ---
 
 ## 📊 Kategori Laporan
 
 ### 🔴 Emergency
-- Kecelakaan Lab (K3)
-- Medis / Kesehatan
-- Keamanan (Security)
-- Bencana / Api
+- **Darurat**: Kategori khusus untuk respon cepat (Kebakaran, Medis, K3, Keamanan).
 
 ### 🟢 Non-Emergency
-
-- Infrastruktur Kelas
-- Kelistrikan
-- Sipil & Bangunan
-- Sanitasi / Air
-- Kebersihan Area
-- Taman / Outdoor
-- Lain-lain
+- **Kelistrikan**: Lampu, AC, Stop kontak, dsb.
+- **Sanitasi**: Kran bocor, wastafel, toilet mampet.
+- **Infrastruktur**: Kerusakan bangunan, atap, plafon, pintu.
+- **Kebersihan**: Sampah menumpuk, ruangan kotor.
+- **Fasilitas Umum**: Meja, kursi, proyektor.
+- **Internet/IT**: Masalah WiFi, LAN, Proyektor IT.
+- **Lainnya**: Laporan di luar kategori utama.
 
 ---
 
@@ -133,21 +135,34 @@ lapor-fsm/
 ### Frontend (Mobile)
 | Teknologi | Versi | Kegunaan |
 |-----------|-------|----------|
-| Flutter | ^3.9.2 | Cross-platform mobile framework |
+| Flutter | ^3.9.2 | SDK Utama |
 | Riverpod | ^3.1.0 | State management |
 | Go Router | ^17.0.1 | Navigation & routing |
 | Geolocator | ^14.0.2 | GPS & location services |
 | Flutter Map | ^8.2.2 | Interactive map preview |
 | Dio | ^5.9.0 | HTTP client |
 | Image Picker | ^1.2.1 | Camera & gallery access |
+| Lucide Icons | ^0.257.0 | Icon system |
+| FL Chart | ^1.1.1 | Statistik & Grafik |
 
 ### Backend
-| Teknologi | Kegunaan |
-|-----------|----------|
-| ElysiaJS | Web framework (dengan WebSocket support) |
-| Bun | JavaScript/TypeScript runtime |
-| Drizzle ORM | Database ORM |
-| PostgreSQL | Database dengan dukungan data spasial |
+| Teknologi | Versi | Kegunaan |
+|-----------|-------|----------|
+| ElysiaJS | ^1.4.x | Web framework (WebSocket support) |
+| Bun | ^1.3.x | JS/TS runtime & package manager |
+| Drizzle ORM | ^0.45.1 | Database ORM |
+| PostgreSQL | ^3.4.8 | Database driver (node-postgres/postgres.js) |
+
+---
+
+## 🎨 UI Design System
+
+Untuk memastikan konsistensi visual di seluruh role, proyek ini menggunakan sekumpulan widget kustom yang terstandarisasi:
+
+- **Base Templates**: `mobile/lib/core/widgets/base_templates.dart` melayani pembuatan halaman bantuan (`BaseHelpPage`) yang seragam.
+- **Statistics Widgets**: `mobile/lib/core/widgets/statistics_widgets.dart` menyediakan komponen visualisasi data (Cards, Bar Charts, Trend Info) yang kohesif.
+- **Profile Widgets**: `mobile/lib/core/widgets/profile_widgets.dart` mengatur tata letak informasi profil dan menu navigasi.
+- **Settings Widgets**: `mobile/lib/core/widgets/settings_widgets.dart` menyatukan elemen interaktif seperti Switch dan List Tiles untuk pengaturan aplikasi.
 
 ---
 
@@ -190,32 +205,61 @@ lapor-fsm/
 
 ### Status Lifecycle Laporan
 
-```
-PENDING ──► VERIFIKASI ──► PENANGANAN ──► SELESAI ──► APPROVED (Arsip)
-                │                            │
-                ▼                            ▼
-             DITOLAK                      RECALLED
-                │                            │
-                ▼                            ▼
-        [Supervisor Review]          [Kembali ke Teknisi]
-              │   │
-              ▼   ▼
-          ARSIP   KEMBALIKAN
+Sistem membedakan alur verifikasi berdasarkan tingkat urgensi laporan (Darurat vs Non-Darurat). PENDING dalam Bahasa Indonesia diistilahkan sebagai **"Menunggu"** atau **"Menunggu Verifikasi"**.
+
+#### 🟢 Alur Non-Darurat
+Laporan melewati verifikasi wilayah oleh PJ Gedung sebelum diteruskan ke Supervisor.
+
+```text
+[Pelapor membuat laporan : PENDING]
+              │
+              ▼
+[PJ Gedung Verifikasi : TERVERIFIKASI] ──► [Laporan tidak valid : TOLAK] ──► [ARSIP]
+              │
+              ▼
+[Supervisor alokasi teknisi : DIPROSES]
+              │
+              ▼
+[Teknisi Menerima & Menangani : PENANGANAN] ◄────────────────┐
+              │                                              │
+              ▼                                         (RECALLED)
+[Teknisi Menyelesaikan : SELESAI] ───(Supervisor Re-Review)──┘
+              │
+              ▼
+[Supervisor Approval : APPROVED] ──► [ARSIP]
 ```
 
-#### Keterangan Status:
+#### 🔴 Alur Darurat
+Laporan melewati tahap PJ Gedung dan langsung masuk ke antrean alokasi Supervisor (Fast-track).
+
+```text
+[Pelapor membuat laporan : PENDING]
+              │
+              ▼
+[Supervisor alokasi teknisi : DIPROSES]
+              │
+              ▼
+[Teknisi Menerima & Menangani : PENANGANAN] ◄────────────────┐
+              │                                              │
+              ▼                                         (RECALLED)
+[Teknisi Menyelesaikan : SELESAI] ───(Supervisor Re-Review)──┘
+              │
+              ▼
+[Supervisor Approval : APPROVED] ──► [ARSIP]
+```
 
 | Status | Deskripsi |
 |--------|-----------|
-| **PENDING** | Laporan baru masuk, menunggu verifikasi teknisi |
-| **VERIFIKASI** | Teknisi sedang memverifikasi laporan |
-| **PENANGANAN** | Laporan sedang dalam proses penanganan oleh teknisi |
-| **SELESAI** | Teknisi menyelesaikan penanganan, menunggu review supervisor |
-| **APPROVED** | Supervisor menyetujui hasil penanganan → masuk arsip |
-| **DITOLAK** | Teknisi menolak laporan, menunggu review supervisor |
-| **RECALLED** | Supervisor meminta teknisi untuk menangani ulang |
-| **ARSIP** | Laporan yang ditolak dan disetujui supervisor untuk diarsipkan |
-| **KEMBALIKAN** | Laporan ditolak dikembalikan ke teknisi untuk ditinjau ulang |
+| **PENDING** | Laporan baru masuk, menunggu verifikasi awal dari **PJ Gedung**. |
+| **TERVERIFIKASI** | Sudah diverifikasi lokasi oleh PJ Gedung, menunggu alokasi teknisi oleh **Supervisor**. |
+| **DIPROSES** | Teknisi sudah ditugaskan, menunggu konfirmasi teknisi untuk mulai bekerja. |
+| **PENANGANAN** | Laporan sedang dalam proses pengerjaan oleh **Teknisi**. |
+| **ON HOLD** | Pengerjaan ditunda sementara oleh teknisi (contoh: menunggu *sparepart*). |
+| **SELESAI** | Teknisi selesai bekerja, menunggu persetujuan akhir dari **Supervisor**. |
+| **APPROVED** | Supervisor menyetujui hasil, laporan dianggap selesai dan diarsipkan. |
+| **RECALLED** | Supervisor menolak hasil pengerjaan, teknisi diminta menangani kembali. |
+| **DITOLAK** | Laporan ditolak di tahap verifikasi (karena tidak valid atau duplikat). |
+| **ARSIP** | Logika history untuk laporan yang sudah berada di state final (Approved/Ditolak). |
 
 ---
 
@@ -327,6 +371,13 @@ http://localhost:3000
 - ✅ Riwayat Penanganan
 - ✅ Profil & Settings
 
+### PJ Gedung
+- ✅ Dashboard Statistik Gedung Terfokus
+- ✅ Manajemen Laporan per Gedung
+- ✅ Validasi Awal Laporan
+- ✅ Halaman Bantuan & Pengaturan Terstandarisasi
+- ✅ Profil PJ Gedung
+
 ### Supervisor
 - ✅ Dashboard Overview
 - ✅ Review Hasil Penanganan
@@ -364,7 +415,7 @@ Proyek ini dikembangkan sebagai bagian dari **PKL (Praktek Kerja Lapangan) di UP
 | Nama | Pembagian Role |
 |------|----------------|
 | **Syafiq Abiyyu Taqi** | Teknisi, Supervisor |
-| **Sulhan Fuadi** | Pelapor, Admin |
+| **Sulhan Fuadi** | Pelapor, Admin, PJ Gedung |
 
 ---
 
@@ -372,14 +423,14 @@ Proyek ini dikembangkan sebagai bagian dari **PKL (Praktek Kerja Lapangan) di UP
 
 ```
 Mobile (Flutter)
-├── Shared: lib/core (router, services), lib/features/auth
+├── Shared: lib/core (router, services), lib/features/auth, lib/features/notification
 ├── Syafiq: lib/features/teknisi, lib/features/supervisor
-└── Sulhan: lib/features/pelapor, lib/features/admin
+└── Sulhan: lib/features/pelapor, lib/features/admin, lib/features/pj_gedung
 
 Backend (ElysiaJS)
-├── Shared: src/db, src/controllers/auth, src/controllers/staff, src/controllers/upload
+├── Shared: src/db, src/controllers/auth.controller.ts, src/controllers/notification.controller.ts, src/controllers/upload.controller.ts
 ├── Syafiq: src/controllers/technician, src/controllers/supervisor
-└── Sulhan: src/controllers/reporter, src/controllers/admin
+└── Sulhan: src/controllers/reporter, src/controllers/admin, src/controllers/staff (PJ Gedung)
 ```
 
 <!-- --- -->

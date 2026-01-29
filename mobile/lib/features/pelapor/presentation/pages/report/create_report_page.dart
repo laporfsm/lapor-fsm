@@ -8,7 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class CreateReportPage extends StatefulWidget {
@@ -174,7 +174,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
   }
 
   Future<void> _submitReport() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     if (_selectedImages.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -240,6 +242,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
       final result = await reportService.createReport(
         userId: !isStaff ? user['id'] : null,
         staffId: isStaff ? user['id'] : null,
+        categoryId: categoryId,
         title: _subjectController.text,
         description: _descController.text,
         building: _selectedBuilding!,
@@ -518,7 +521,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                               horizontal: 8,
                               vertical: 6,
                             ),
-                            color: Colors.black.withOpacity(0.7),
+                            color: Colors.black.withValues(alpha: 0.7),
                             child: Row(
                               children: [
                                 const Icon(
@@ -544,7 +547,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Row(
@@ -580,7 +585,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
+                              color: Colors.black.withValues(alpha: 0.6),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: const Row(
@@ -691,7 +696,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                               (widget.isEmergency
                                       ? AppTheme.emergencyColor
                                       : AppTheme.primaryColor)
-                                  .withOpacity(0.3),
+                                  .withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

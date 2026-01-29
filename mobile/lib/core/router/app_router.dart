@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/login_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/register_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/complete_profile_page.dart';
@@ -16,52 +16,59 @@ import 'package:mobile/features/pelapor/presentation/pages/profile/edit_profile_
 import 'package:mobile/features/pelapor/presentation/pages/profile/settings_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/help_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/emergency_report_page.dart';
-// Staff Profile (shared)
-import 'package:mobile/features/auth/presentation/pages/staff_profile_page.dart';
+
 // Teknisi imports
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_home_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_report_detail_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_complete_report_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_map_view_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_settings_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_help_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_edit_profile_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/teknisi_all_reports_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/dashboard/teknisi_home_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_report_detail_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_complete_report_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_map_view_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_settings_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_help_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_edit_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_all_reports_page.dart';
+
 // PJ Gedung imports
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_reports_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_statistics_page.dart';
-// Supervisor imports
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_reports_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_review_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_archive_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_help_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_settings_page.dart';
 
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_rejected_reports_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_export_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_list_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_detail_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_statistics_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_technician_form_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_settings_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_help_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_categories_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_activity_log_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_building_list_page.dart';
+// Supervisor imports
+import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_reports_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_review_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_archive_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_rejected_reports_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_export_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_detail_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_statistics_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_form_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_settings_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_help_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_profile_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_activity_log_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_building_list_page.dart';
+
 // Admin imports
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_dashboard_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_users_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_reports_page.dart';
-import 'package:mobile/features/admin/presentation/pages/user_detail_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_settings_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_statistics_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_help_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_report_detail_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_activity_log_page.dart';
-// Auth imports
+import 'package:mobile/features/admin/presentation/pages/dashboard/admin_dashboard_page.dart';
+import 'package:mobile/features/admin/presentation/pages/management/admin_users_page.dart';
+import 'package:mobile/features/admin/presentation/pages/reports/admin_reports_page.dart';
+import 'package:mobile/features/admin/presentation/pages/management/user_detail_page.dart';
+import 'package:mobile/features/admin/presentation/pages/profile/admin_settings_page.dart';
+import 'package:mobile/features/admin/presentation/pages/management/admin_statistics_page.dart';
+import 'package:mobile/features/admin/presentation/pages/profile/admin_help_page.dart';
+import 'package:mobile/features/admin/presentation/pages/reports/admin_report_detail_page.dart';
+import 'package:mobile/features/admin/presentation/pages/management/admin_activity_log_page.dart';
+import 'package:mobile/features/admin/presentation/pages/profile/admin_profile_page.dart';
+
+// Auth & Common imports
 import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
@@ -237,7 +244,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/teknisi/profile',
-      builder: (context, state) => const StaffProfilePage(role: 'teknisi'),
+      builder: (context, state) => const TeknisiProfilePage(),
     ),
     GoRoute(
       path: '/teknisi/map',
@@ -338,7 +345,7 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/supervisor/profile',
-      builder: (context, state) => const StaffProfilePage(role: 'supervisor'),
+      builder: (context, state) => const SupervisorProfilePage(),
     ),
     // Rejected reports review page
     GoRoute(
@@ -399,6 +406,14 @@ final appRouter = GoRouter(
         return PJGedungHistoryPage(initialFilter: filter);
       },
     ),
+    GoRoute(
+      path: '/pj-gedung/settings',
+      builder: (context, state) => const PJGedungSettingsPage(),
+    ),
+    GoRoute(
+      path: '/pj-gedung/help',
+      builder: (context, state) => const PJGedungHelpPage(),
+    ),
     // ===============================================
     // ===============================================
     // ADMIN ROUTES
@@ -436,7 +451,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/admin/profile',
-          builder: (context, state) => const StaffProfilePage(role: 'admin'),
+          builder: (context, state) => const AdminProfilePage(),
         ),
       ],
     ),

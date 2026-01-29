@@ -253,7 +253,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               child: const Row(
                 children: [
                   Icon(LucideIcons.alertTriangle, color: Colors.white),
@@ -524,7 +524,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Row(
@@ -557,7 +559,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                       horizontal: 8,
                                       vertical: 6,
                                     ),
-                                    color: Colors.black.withOpacity(0.7),
+                                    color: Colors.black.withValues(alpha: 0.7),
                                     child: Row(
                                       children: [
                                         const Icon(
@@ -583,8 +585,8 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                               vertical: 4,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(
-                                                0.2,
+                                              color: Colors.white.withValues(
+                                                alpha: 0.2,
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(4),

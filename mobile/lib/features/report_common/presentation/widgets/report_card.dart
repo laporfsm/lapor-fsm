@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
-import '../../domain/entities/report.dart';
-import '../../domain/enums/report_status.dart';
-import '../../../../core/enums/user_role.dart';
-import '../../../../theme.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+import 'package:mobile/features/report_common/domain/enums/user_role.dart';
+import 'package:mobile/core/theme.dart';
 
 @Deprecated('Use UniversalReportCard instead')
 class ReportCard extends StatelessWidget {
@@ -38,7 +38,7 @@ class ReportCard extends StatelessWidget {
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -65,7 +65,7 @@ class ReportCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Colors.red.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
@@ -104,7 +104,7 @@ class ReportCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: report.status.color.withOpacity(0.1),
+                      color: report.status.color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(

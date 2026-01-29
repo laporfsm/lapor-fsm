@@ -89,7 +89,10 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.black.withOpacity(0.7), Colors.transparent],
+                    colors: [
+                      Colors.black.withValues(alpha: 0.7),
+                      Colors.transparent,
+                    ],
                   ),
                 ),
                 child: Row(
@@ -135,7 +138,7 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
                         shape: BoxShape.circle,
                         color: _currentIndex == index
                             ? Colors.white
-                            : Colors.white.withOpacity(0.4),
+                            : Colors.white.withValues(alpha: 0.4),
                       ),
                     ),
                   ),

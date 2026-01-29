@@ -133,25 +133,27 @@ class AuthService {
     await prefs.setString(_userRoleKey, role);
 
     // Optional fields
-    if (user['phone'] != null)
+    if (user['phone'] != null) {
       await prefs.setString(_userPhoneKey, user['phone']);
-    if (user['nimNip'] != null)
-      await prefs.setString(
-        _userNimNipKey,
-        user['nimNip'],
-      ); // Check if backend sends camelCase or snake_case. Controller sends spread ...user[0], so it matches DB schema but Drizzle/Elysia might verify.
-    // Wait, Drizzle keys are camelCase in the schema definition: `nimNip: text('nim_nip')`. When spread ...user[0], it returns the Drizzle object which uses schema keys (camelCase).
-    // So 'nimNip' is correct.
-    if (user['department'] != null)
+    }
+    if (user['nimNip'] != null) {
+      await prefs.setString(_userNimNipKey, user['nimNip']);
+    }
+    if (user['department'] != null) {
       await prefs.setString(_userDepartmentKey, user['department']);
-    if (user['address'] != null)
+    }
+    if (user['address'] != null) {
       await prefs.setString(_userAddressKey, user['address']);
-    if (user['emergencyName'] != null)
+    }
+    if (user['emergencyName'] != null) {
       await prefs.setString(_userEmergencyNameKey, user['emergencyName']);
-    if (user['emergencyPhone'] != null)
+    }
+    if (user['emergencyPhone'] != null) {
       await prefs.setString(_userEmergencyPhoneKey, user['emergencyPhone']);
-    if (user['isVerified'] != null)
+    }
+    if (user['isVerified'] != null) {
       await prefs.setBool(_userIsVerifiedKey, user['isVerified']);
+    }
 
     apiService.setAuthToken(token);
   }

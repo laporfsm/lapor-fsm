@@ -1,8 +1,6 @@
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/models/report_log.dart';
-
-import 'package:mobile/core/enums/user_role.dart';
+import 'package:mobile/features/report_common/domain/entities/report_log.dart';
 
 /// Centralized mock report data - shared across all detail pages
 /// This ensures consistency between cards and detail pages

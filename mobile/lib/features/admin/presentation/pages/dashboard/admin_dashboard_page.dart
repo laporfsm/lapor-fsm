@@ -1,0 +1,818 @@
+import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/services/api_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
+import 'package:mobile/core/theme.dart';
+
+class AdminDashboardPage extends StatefulWidget {
+  const AdminDashboardPage({super.key});
+
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  Map<String, dynamic>? _stats;
+  List<Map<String, dynamic>> _recentReports = [];
+  bool _isLoading = true;
+  String _userName = 'Admin';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await Future.wait([_loadStats(), _loadUserProfile()]);
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = await authService.getCurrentUser();
+    if (mounted && user != null) {
+      setState(() {
+        _userName = user['name'] ?? 'Admin';
+      });
+    }
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final responses = await Future.wait([
+        apiService.dio.get('/admin/dashboard'),
+        // Fetch emergency count manually
+        apiService.dio.get(
+          '/reports',
+          queryParameters: {'isEmergency': true, 'limit': 1},
+        ),
+        // Fetch recent reports
+        apiService.dio.get(
+          '/reports',
+          queryParameters: {
+            'limit': 5,
+            'sort': 'desc',
+          }, // assuming sort param or default is desc
+        ),
+      ]);
+
+      final dashboardRes = responses[0];
+      final recentRes = responses[2];
+
+      if (mounted) {
+        setState(() {
+          if (dashboardRes.data['status'] == 'success') {
+            _stats = dashboardRes.data['data'];
+          }
+          if (recentRes.data['status'] == 'success') {
+            _recentReports = List<Map<String, dynamic>>.from(
+              recentRes.data['data'],
+            );
+          }
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: const NotificationFab(
+        backgroundColor: AppTheme.adminColor,
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                return [
+                  SliverAppBar(
+                    expandedHeight: 140, // Restored height
+                    floating: false,
+                    pinned: true,
+                    backgroundColor: AppTheme.adminColor,
+                    automaticallyImplyLeading: false,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background Image
+                          Image.network(
+                            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(color: AppTheme.adminColor);
+                            },
+                          ),
+                          // Gradient Overlay
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  AppTheme.adminColor.withValues(alpha: 0.85),
+                                  AppTheme.adminColor.withValues(alpha: 0.95),
+                                ],
+                              ),
+                            ),
+                          ),
+                          // Content
+                          SafeArea(
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                      child: const Icon(
+                                        LucideIcons.shieldCheck,
+                                        color: Colors.white,
+                                        size: 26,
+                                      ),
+                                    ),
+                                    const Gap(14),
+                                    Expanded(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Halo, $_userName',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const Gap(2),
+                                          const Text(
+                                            'Administrator',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ];
+              },
+              body: RefreshIndicator(
+                onRefresh: _loadData,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildEmergencyAlert(context),
+                      if (_stats?['totalEmergency'] != null &&
+                          _stats!['totalEmergency'] > 0)
+                        const Gap(16),
+
+                      const Text(
+                        'Statistik Ringkas',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(16),
+
+                      // Stats Row (Compact Single Line)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _CompactStatItem(
+                              label: 'Laporan',
+                              value: _stats?['totalReports']?.toString() ?? '0',
+                              icon: LucideIcons.fileText,
+                              color: Colors.blue,
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade200,
+                            ),
+                            _CompactStatItem(
+                              label: 'User',
+                              value: _stats?['totalUsers']?.toString() ?? '0',
+                              icon: LucideIcons.users,
+                              color: Colors.purple,
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade200,
+                            ),
+                            _CompactStatItem(
+                              label: 'Handling',
+                              value: '${_stats?['avgHandlingMinutes'] ?? 0}m',
+                              icon: LucideIcons.clock,
+                              color: Colors.orange,
+                            ),
+                            Container(
+                              width: 1,
+                              height: 40,
+                              color: Colors.grey.shade200,
+                            ),
+                            const _CompactStatItem(
+                              label: 'Server',
+                              value: 'Online',
+                              icon: LucideIcons.server,
+                              color: Colors.green,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(16),
+
+                      // Full Stats Link
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/admin/statistics'),
+                          icon: const Icon(LucideIcons.barChart2, size: 18),
+                          label: const Text('Lihat Statistik Lengkap'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.adminColor,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(
+                              color: AppTheme.adminColor.withValues(alpha: 0.5),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(24),
+
+                      // Quick Actions
+                      const Text(
+                        'Akses Cepat',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment
+                            .spaceAround, // Changed to spaceAround for 3 items
+                        children: [
+                          _QuickActionButton(
+                            label: 'Verifikasi',
+                            icon: LucideIcons.userCheck,
+                            color: Colors.orange,
+                            onTap: () => context.go(
+                              '/admin/users?tab=1',
+                            ), // Tab 1: Verifikasi
+                          ),
+                          _QuickActionButton(
+                            label: 'Broadcast',
+                            icon: LucideIcons.megaphone,
+                            color: Colors.red,
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Broadcast Info...'),
+                                ),
+                              );
+                            },
+                          ),
+                          _QuickActionButton(
+                            label: 'Staff',
+                            icon: LucideIcons.userPlus,
+                            color: Colors.green,
+                            onTap: () => context.go(
+                              '/admin/users?tab=2&action=add',
+                            ), // Tab 2: Staff, Action: Add
+                          ),
+                        ],
+                      ),
+                      const Gap(24),
+
+                      // Periodic Stats (Mock Chart)
+                      const Text(
+                        'Grafik Mingguan',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Gap(12),
+                      Container(
+                        height: 220, // Increased height to prevent overflow
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Laporan Masuk vs Selesai',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const Gap(20),
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildMockBar(context, 'Sen', 0.4, 0.3),
+                                  _buildMockBar(context, 'Sel', 0.6, 0.5),
+                                  _buildMockBar(context, 'Rab', 0.8, 0.7),
+                                  _buildMockBar(context, 'Kam', 0.5, 0.4),
+                                  _buildMockBar(context, 'Jum', 0.7, 0.6),
+                                  _buildMockBar(context, 'Sab', 0.3, 0.2),
+                                  _buildMockBar(context, 'Min', 0.2, 0.2),
+                                ],
+                              ),
+                            ),
+                            const Gap(10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  color: AppTheme.adminColor,
+                                ),
+                                const Gap(4),
+                                const Text(
+                                  'Masuk',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                                const Gap(16),
+                                Container(
+                                  width: 10,
+                                  height: 10,
+                                  color: Colors.green,
+                                ),
+                                const Gap(4),
+                                const Text(
+                                  'Selesai',
+                                  style: TextStyle(fontSize: 10),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Gap(24),
+
+                      // Recent Reports
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Laporan Terkini',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/admin/reports'),
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
+                      ),
+
+                      if (_recentReports.isEmpty)
+                        const Center(
+                          child: Text(
+                            'Belum ada laporan',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _recentReports.length > 3
+                              ? 3
+                              : _recentReports.length, // Limit to 3
+                          separatorBuilder: (_, __) => const Gap(12),
+                          itemBuilder: (context, index) {
+                            final report = _recentReports[index];
+                            return _ReportListItem(report: report);
+                          },
+                        ),
+                      const Gap(24),
+
+                      // System Logs (New List)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Log Sistem',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.go('/admin/logs'),
+                            child: const Text('Lihat Semua'),
+                          ),
+                        ],
+                      ),
+                      const Gap(12),
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: 3, // Display 3 mock logs
+                        separatorBuilder: (_, __) => const Gap(12),
+                        itemBuilder: (context, index) {
+                          // Mock Data for Dashboard display
+                          final logs = [
+                            {
+                              'text': 'User "Budi Santoso" mendaftar',
+                              'time': '2 menit lalu',
+                              'icon': LucideIcons.userPlus,
+                              'color': Colors.green,
+                            },
+                            {
+                              'text': 'Laporan #123 diselesaikan',
+                              'time': '15 menit lalu',
+                              'icon': LucideIcons.checkCircle,
+                              'color': Colors.blue,
+                            },
+                            {
+                              'text': 'Server backup otomatis',
+                              'time': '1 jam lalu',
+                              'icon': LucideIcons.database,
+                              'color': Colors.purple,
+                            },
+                          ];
+                          final log = logs[index];
+                          return _ActivityItem(
+                            text: log['text'] as String,
+                            time: log['time'] as String,
+                            icon: log['icon'] as IconData,
+                            color: log['color'] as Color,
+                          );
+                        },
+                      ),
+
+                      const Gap(80), // Bottom padding for FAB
+                    ],
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildEmergencyAlert(BuildContext context) {
+    // Check if 'totalEmergency' is in stats, otherwise assume 0
+    final emergencyCount = _stats?['totalEmergency'] ?? 0;
+
+    if (emergencyCount == 0) return const SizedBox.shrink();
+
+    return GestureDetector(
+      onTap: () {
+        // Todo: Navigate to report list filtered by emergency
+        // context.push('/admin/reports?isEmergency=true');
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.red.shade600, Colors.red.shade800],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.alertTriangle,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Laporan Darurat!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    '$emergencyCount laporan darurat perlu perhatian!',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(LucideIcons.chevronRight, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReportListItem extends StatelessWidget {
+  final Map<String, dynamic> report;
+
+  const _ReportListItem({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor = Colors.grey;
+    String status = report['status'] ?? 'Unknown';
+
+    if (status == 'Menunggu') statusColor = Colors.orange;
+    if (status == 'Diproses') statusColor = Colors.blue;
+    if (status == 'Selesai') statusColor = Colors.green;
+    if (status == 'Ditolak') statusColor = Colors.red;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(LucideIcons.fileText, color: statusColor, size: 20),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  report['title'] ?? 'Laporan Tanpa Judul',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  '${report['building']} • $status',
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const Gap(8),
+          Icon(LucideIcons.chevronRight, size: 16, color: Colors.grey.shade400),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActivityItem extends StatelessWidget {
+  final String text;
+  final String time;
+  final IconData icon;
+  final Color color;
+
+  const _ActivityItem({
+    required this.text,
+    required this.time,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade100),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Gap(4),
+                Text(
+                  time,
+                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const Gap(8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Widget _buildMockBar(
+  BuildContext context,
+  String label,
+  double pct1,
+  double pct2,
+) {
+  return Column(
+    mainAxisAlignment: MainAxisAlignment.end,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            width: 8,
+            height: 100 * pct1,
+            decoration: BoxDecoration(
+              color: AppTheme.adminColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const Gap(4),
+          Container(
+            width: 8,
+            height: 100 * pct2,
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ],
+      ),
+      const Gap(8),
+      Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+    ],
+  );
+}
+
+class _CompactStatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _CompactStatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: color, size: 20),
+        const Gap(4),
+        Text(
+          value,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        Text(
+          label,
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
+        ),
+      ],
+    );
+  }
+}

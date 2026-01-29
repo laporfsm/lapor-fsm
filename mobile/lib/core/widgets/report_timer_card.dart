@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 class ReportTimerCard extends StatefulWidget {
   final DateTime createdAt;
@@ -83,8 +83,8 @@ class _ReportTimerCardState extends State<ReportTimerCard> {
         boxShadow: [
           BoxShadow(
             color: widget.isEmergency
-                ? Colors.red.withOpacity(0.3)
-                : AppTheme.primaryColor.withOpacity(0.3),
+                ? Colors.red.withValues(alpha: 0.3)
+                : AppTheme.primaryColor.withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -95,7 +95,7 @@ class _ReportTimerCardState extends State<ReportTimerCard> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(

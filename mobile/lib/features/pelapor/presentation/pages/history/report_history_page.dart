@@ -6,7 +6,7 @@ import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 class ReportHistoryPage extends StatefulWidget {
   const ReportHistoryPage({super.key});

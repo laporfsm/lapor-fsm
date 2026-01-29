@@ -478,7 +478,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _pjGedungColor.withOpacity(0.1),
+        color: _pjGedungColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -510,7 +510,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _pjGedungColor.withOpacity(0.1),
+        color: _pjGedungColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(

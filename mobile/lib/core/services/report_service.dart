@@ -39,7 +39,7 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      print('Error fetching reports: $e');
+      debugPrint('Error fetching reports: $e');
       return [];
     }
   }
@@ -60,7 +60,7 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      print('Error fetching my reports: $e');
+      debugPrint('Error fetching my reports: $e');
       return [];
     }
   }
@@ -75,7 +75,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error fetching report detail: $e');
+      debugPrint('Error fetching report detail: $e');
       return null;
     }
   }
@@ -123,7 +123,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error creating report: $e');
+      debugPrint('Error creating report: $e');
       return null;
     }
   }
@@ -152,7 +152,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error uploading image: $e');
+      debugPrint('Error uploading image: $e');
       return null;
     }
   }
@@ -169,7 +169,7 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      print('Error fetching categories: $e');
+      debugPrint('Error fetching categories: $e');
       return [];
     }
   }
@@ -183,7 +183,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error creating category: $e');
+      debugPrint('Error creating category: $e');
       return false;
     }
   }
@@ -197,7 +197,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error updating category: $e');
+      debugPrint('Error updating category: $e');
       return false;
     }
   }
@@ -212,7 +212,7 @@ class ReportService {
         return {'success': false, 'message': response.data['message']};
       }
     } catch (e) {
-      print('Error deleting category: $e');
+      debugPrint('Error deleting category: $e');
       // Extract error message if available
       String msg = 'Gagal menghapus kategori.';
       if (e is DioException && e.response?.data != null) {
@@ -233,7 +233,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error fetching PJ dashboard stats: $e');
+      debugPrint('Error fetching PJ dashboard stats: $e');
       return null;
     }
   }
@@ -251,7 +251,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error fetching Supervisor dashboard stats: $e');
+      debugPrint('Error fetching Supervisor dashboard stats: $e');
       return null;
     }
   }
@@ -269,7 +269,7 @@ class ReportService {
       }
       return null;
     } catch (e) {
-      print('Error fetching Technician dashboard stats: $e');
+      debugPrint('Error fetching Technician dashboard stats: $e');
       return null;
     }
   }
@@ -297,7 +297,7 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      print('Error fetching staff reports ($role): $e');
+      debugPrint('Error fetching staff reports ($role): $e');
       return [];
     }
   }
@@ -318,7 +318,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error verifying report: $e');
+      debugPrint('Error verifying report: $e');
       return false;
     }
   }
@@ -338,7 +338,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error assigning technician: $e');
+      debugPrint('Error assigning technician: $e');
       return false;
     }
   }
@@ -355,7 +355,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error recalling report: $e');
+      debugPrint('Error recalling report: $e');
       return false;
     }
   }
@@ -372,7 +372,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error approving report: $e');
+      debugPrint('Error approving report: $e');
       return false;
     }
   }
@@ -389,7 +389,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error rejecting report: $e');
+      debugPrint('Error rejecting report: $e');
       return false;
     }
   }
@@ -402,7 +402,7 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      print('Error fetching technicians: $e');
+      debugPrint('Error fetching technicians: $e');
       return [];
     }
   }
@@ -417,7 +417,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error accepting report: $e');
+      debugPrint('Error accepting report: $e');
       return false;
     }
   }
@@ -439,7 +439,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error pausing report: $e');
+      debugPrint('Error pausing report: $e');
       return false;
     }
   }
@@ -452,7 +452,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error resuming report: $e');
+      debugPrint('Error resuming report: $e');
       return false;
     }
   }
@@ -474,7 +474,7 @@ class ReportService {
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      print('Error completing report: $e');
+      debugPrint('Error completing report: $e');
       return false;
     }
   }
