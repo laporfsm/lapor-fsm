@@ -1,4 +1,5 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'api_service.dart';
 
@@ -8,12 +9,26 @@ class ReportService {
     String? category,
     String? building,
     String? status,
+    String? search,
+    bool? isEmergency,
+    String? period,
+    String? startDate,
+    String? endDate,
+    int limit = 50,
+    int offset = 0,
   }) async {
     try {
       final response = await apiService.dio.get('/reports', queryParameters: {
         if (category != null) 'category': category,
         if (building != null) 'building': building,
         if (status != null) 'status': status,
+        if (search != null) 'search': search,
+        if (isEmergency != null) 'isEmergency': isEmergency.toString(),
+        if (period != null) 'period': period,
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
+        'limit': limit.toString(),
+        'offset': offset.toString(),
       });
 
       if (response.data['status'] == 'success') {
@@ -27,9 +42,11 @@ class ReportService {
   }
 
   // Get user's own reports
-  Future<List<Map<String, dynamic>>> getMyReports(int userId) async {
+  Future<List<Map<String, dynamic>>> getMyReports(String userId, {String? role}) async {
     try {
-      final response = await apiService.dio.get('/reports/my/$userId');
+      final response = await apiService.dio.get('/reports/my/$userId', queryParameters: {
+        if (role != null) 'role': role,
+      });
 
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -42,7 +59,7 @@ class ReportService {
   }
 
   // Get single report detail
-  Future<Map<String, dynamic>?> getReportDetail(int reportId) async {
+  Future<Map<String, dynamic>?> getReportDetail(String reportId) async {
     try {
       final response = await apiService.dio.get('/reports/$reportId');
 
@@ -58,30 +75,41 @@ class ReportService {
 
   // Create new report
   Future<Map<String, dynamic>?> createReport({
-    int? userId,
-    int? categoryId,
+    String? userId,
+    String? staffId,
+    String? categoryId,
     required String title,
     required String description,
     required String building,
     double? latitude,
     double? longitude,
     String? imageUrl,
+    List<String>? mediaUrls,
     bool isEmergency = false,
     String? notes,
+    String? locationDetail,
   }) async {
     try {
-      final response = await apiService.dio.post('/reports', data: {
-        'userId': userId,
-        'categoryId': categoryId,
+      final requestBody = {
+        'userId': userId != null ? int.tryParse(userId) : null,
+        'staffId': staffId != null ? int.tryParse(staffId) : null,
+        'categoryId': categoryId != null ? int.tryParse(categoryId) : null,
         'title': title,
         'description': description,
         'building': building,
         'latitude': latitude,
         'longitude': longitude,
         'imageUrl': imageUrl,
+        'mediaUrls': mediaUrls,
         'isEmergency': isEmergency,
         'notes': notes,
-      });
+        'locationDetail': locationDetail,
+      };
+
+      // Remove null values to avoid backend validation errors (422)
+      requestBody.removeWhere((key, value) => value == null);
+
+      final response = await apiService.dio.post('/reports', data: requestBody);
 
       if (response.data['status'] == 'created') {
         return response.data['data'];
@@ -94,10 +122,25 @@ class ReportService {
   }
 
   // Upload image
-  Future<String?> uploadImage(File file) async {
+  Future<String?> uploadImage(XFile xfile) async {
     try {
+      MultipartFile multipartFile;
+      
+      if (kIsWeb) {
+        final bytes = await xfile.readAsBytes();
+        multipartFile = MultipartFile.fromBytes(
+          bytes,
+          filename: xfile.name,
+        );
+      } else {
+        multipartFile = await MultipartFile.fromFile(
+          xfile.path,
+          filename: xfile.path.split('/').last,
+        );
+      }
+
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
+        'file': multipartFile,
       });
 
       final response = await apiService.dio.post('/upload', data: formData);
@@ -124,6 +167,209 @@ class ReportService {
     } catch (e) {
       print('Error fetching categories: $e');
       return [];
+    }
+  }
+  // STAFF ENDPOINTS
+
+  // Get PJ Gedung Dashboard Stats
+  Future<Map<String, dynamic>?> getPJDashboardStats(String staffId) async {
+    try {
+      final response = await apiService.dio.get('/pj-gedung/dashboard');
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching PJ dashboard stats: $e');
+      return null;
+    }
+  }
+
+  // Get Supervisor Dashboard Stats
+  Future<Map<String, dynamic>?> getSupervisorDashboardStats(String staffId) async {
+    try {
+      final response = await apiService.dio.get('/supervisor/dashboard/$staffId');
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching Supervisor dashboard stats: $e');
+      return null;
+    }
+  }
+
+  // Get Technician Dashboard Stats
+  Future<Map<String, dynamic>?> getTechnicianDashboardStats(String staffId) async {
+    try {
+      final response = await apiService.dio.get('/technician/dashboard/$staffId');
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      print('Error fetching Technician dashboard stats: $e');
+      return null;
+    }
+  }
+
+  // Get Reports for Staff (with filtering)
+  Future<List<Map<String, dynamic>>> getStaffReports({
+    required String role, // 'pj', 'supervisor', 'technician'
+    String? status,
+    bool? isEmergency,
+    String? period,
+  }) async {
+    try {
+      final prefix = role == 'pj' ? 'pj-gedung' : role;
+      final response = await apiService.dio.get('/$prefix/reports', queryParameters: {
+        if (status != null) 'status': status,
+        if (isEmergency != null) 'isEmergency': isEmergency.toString(),
+        if (period != null) 'period': period,
+      });
+
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching staff reports ($role): $e');
+      return [];
+    }
+  }
+
+  // --- Report Actions ---
+
+  Future<bool> verifyReport(String reportId, String staffId, {String? notes, String? role}) async {
+    try {
+      final prefix = role == 'pj' ? 'pj-gedung' : 'supervisor';
+      final response = await apiService.dio.post('/$prefix/reports/$reportId/verify', data: {
+        'staffId': int.parse(staffId),
+        'notes': notes,
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error verifying report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> assignTechnician(String reportId, String supervisorId, String technicianId) async {
+    try {
+      final response = await apiService.dio.post('/supervisor/reports/$reportId/assign', data: {
+        'supervisorId': int.parse(supervisorId),
+        'technicianId': int.parse(technicianId),
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error assigning technician: $e');
+      return false;
+    }
+  }
+
+  Future<bool> recallReport(String reportId, String staffId, String reason) async {
+    try {
+      final response = await apiService.dio.post('/supervisor/reports/$reportId/recall', data: {
+        'staffId': int.parse(staffId),
+        'reason': reason,
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error recalling report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> approveReport(String reportId, String staffId, {String? notes}) async {
+    try {
+      final response = await apiService.dio.post('/supervisor/reports/$reportId/approve', data: {
+        'staffId': int.parse(staffId),
+        'notes': notes,
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error approving report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> rejectReport(String reportId, String staffId, String reason) async {
+    try {
+      final response = await apiService.dio.post('/supervisor/reports/$reportId/reject', data: {
+        'staffId': int.parse(staffId),
+        'reason': reason,
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error rejecting report: $e');
+      return false;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTechnicians() async {
+    try {
+      final response = await apiService.dio.get('/supervisor/technicians');
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      print('Error fetching technicians: $e');
+      return [];
+    }
+  }
+
+  // --- Technician Actions ---
+
+  Future<bool> acceptReport(String reportId, String staffId) async {
+    try {
+      final response = await apiService.dio.post('/technician/reports/$reportId/accept', data: {
+        'staffId': int.parse(staffId),
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error accepting report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> pauseReport(String reportId, String staffId, String reason, {String? photoUrl}) async {
+    try {
+      final response = await apiService.dio.post('/technician/reports/$reportId/pause', data: {
+        'staffId': int.parse(staffId),
+        'reason': reason,
+        'photoUrl': photoUrl,
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error pausing report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> resumeReport(String reportId, String staffId) async {
+    try {
+      final response = await apiService.dio.post('/technician/reports/$reportId/resume', data: {
+        'staffId': int.parse(staffId),
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error resuming report: $e');
+      return false;
+    }
+  }
+
+  Future<bool> completeReport(String reportId, String staffId, {String? notes, List<String>? mediaUrls}) async {
+    try {
+      final response = await apiService.dio.post('/technician/reports/$reportId/complete', data: {
+        'staffId': int.parse(staffId),
+        'notes': notes,
+        'mediaUrls': mediaUrls ?? [],
+      });
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error completing report: $e');
+      return false;
     }
   }
 }

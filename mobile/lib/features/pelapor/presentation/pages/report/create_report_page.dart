@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
@@ -188,16 +190,65 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     setState(() => _isSubmitting = true);
 
-    // Simulate API call
-    debugPrint("Submitting Report:");
-    debugPrint("Building: $_selectedBuilding");
-    debugPrint("Detail Lokasi: ${_locationDetailController.text}");
+    try {
+      // 1. Get current user
+      final user = await authService.getCurrentUser();
+      if (user == null) {
+        throw Exception('User tidak ditemukan. Silakan login kembali.');
+      }
 
-    await Future.delayed(const Duration(seconds: 2));
+      // 2. Fetch categories to find matching ID
+      final categories = await reportService.getCategories();
+      final category = categories.firstWhere(
+        (c) => c['name'].toString().toLowerCase() == widget.category.toLowerCase(),
+        orElse: () => categories.firstWhere((c) => c['type'] == (widget.isEmergency ? 'emergency' : 'non-emergency'), orElse: () => {'id': 1}),
+      );
+      final String categoryId = category['id'].toString();
 
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      context.go('/report-success');
+      // 3. Upload images
+      final List<String> uploadedUrls = [];
+      for (var xfile in _selectedImages) {
+        final url = await reportService.uploadImage(xfile);
+        if (url != null) {
+          uploadedUrls.add(url);
+        }
+      }
+
+      if (uploadedUrls.isEmpty) {
+        throw Exception('Gagal mengunggah foto. Periksa koneksi internet Anda.');
+      }
+
+      // 4. Create report
+      final isStaff = user['role'] != 'pelapor';
+      final result = await reportService.createReport(
+        userId: !isStaff ? user['id'] : null,
+        staffId: isStaff ? user['id'] : null,
+        title: _subjectController.text,
+        description: _descController.text,
+        building: _selectedBuilding!,
+        locationDetail: _locationDetailController.text,
+        latitude: _latitude,
+        longitude: _longitude,
+        mediaUrls: uploadedUrls,
+        isEmergency: widget.isEmergency,
+        notes: _notesController.text,
+      );
+
+      if (result != null) {
+        if (mounted) {
+          setState(() => _isSubmitting = false);
+          context.go('/report-success');
+        }
+      } else {
+        throw Exception('Gagal membuat laporan. Silakan coba lagi.');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 

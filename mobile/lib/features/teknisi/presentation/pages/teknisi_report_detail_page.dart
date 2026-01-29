@@ -6,6 +6,8 @@ import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/enums/user_role.dart';
 import 'package:mobile/core/models/report_log.dart'; // Keep logs in core for now or check if moved
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 import 'package:mobile/theme.dart';
@@ -21,31 +23,59 @@ class TeknisiReportDetailPage extends StatefulWidget {
 }
 
 class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
-  late Report _report;
+  Report? _report;
+  bool _isLoading = true;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    _report = MockReportData.getReportOrDefault(widget.reportId);
+    _loadReport();
+  }
+
+  Future<void> _loadReport() async {
+    try {
+      final data = await reportService.getReportDetail(widget.reportId);
+      if (data != null && mounted) {
+        setState(() {
+          _report = Report.fromJson(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_report == null) {
+      return const Scaffold(body: Center(child: Text('Laporan tidak ditemukan')));
+    }
+
     return ReportDetailBase(
-      report: _report,
+      report: _report!,
       viewerRole: UserRole.teknisi,
       actionButtons: _buildActionButtons(),
     );
   }
 
   List<Widget> _buildActionButtons() {
+    final r = _report!;
+    
     // Status: diproses - Teknisi bisa mulai penanganan
-    if (_report.status == ReportStatus.diproses) {
+    if (r.status == ReportStatus.diproses) {
       return [
         ElevatedButton.icon(
-          onPressed: _startHandling,
-          icon: const Icon(LucideIcons.play),
-          label: const Text('Mulai Penanganan'),
+          onPressed: _isProcessing ? null : _startHandling,
+          icon: _isProcessing 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(LucideIcons.play),
+          label: Text(_isProcessing ? 'Memproses...' : 'Mulai Penanganan'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -55,11 +85,11 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
       ];
     }
     // Status: penanganan - Teknisi bisa pause atau selesaikan
-    else if (_report.status == ReportStatus.penanganan) {
+    else if (r.status == ReportStatus.penanganan) {
       return [
         // Pause Button
         OutlinedButton.icon(
-          onPressed: _pauseReport,
+          onPressed: _isProcessing ? null : _pauseReport,
           icon: const Icon(LucideIcons.pauseCircle),
           label: const Text('Pause'),
           style: OutlinedButton.styleFrom(
@@ -81,12 +111,14 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           ),
         ),
       ];
-    } else if (_report.status == ReportStatus.onHold) {
+    } else if (r.status == ReportStatus.onHold) {
       return [
         ElevatedButton.icon(
-          onPressed: _resumeReport,
-          icon: const Icon(LucideIcons.playCircle),
-          label: const Text('Lanjutkan Pekerjaan'),
+          onPressed: _isProcessing ? null : _resumeReport,
+          icon: _isProcessing 
+            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : const Icon(LucideIcons.playCircle),
+          label: Text(_isProcessing ? 'Memproses...' : 'Lanjutkan Pekerjaan'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -98,35 +130,25 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     return [];
   }
 
-  void _startHandling() {
-    setState(() {
-      final now = DateTime.now();
-      _report = _report.copyWith(
-        status: ReportStatus.penanganan,
-        handledBy: ['Budi Santoso'],
-        logs: [
-          ReportLog(
-            id: 'start_handling_${now.millisecondsSinceEpoch}',
-            fromStatus: ReportStatus.diproses,
-            toStatus: ReportStatus.penanganan,
-            action: ReportAction.handling,
-            actorId: 'tech1',
-            actorName: 'Budi Santoso',
-            actorRole: 'Teknisi',
-            timestamp: now,
-            reason: 'Mulai penanganan laporan',
-          ),
-          ..._report.logs,
-        ],
-      );
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Penanganan dimulai'),
-        backgroundColor: Colors.green,
-      ),
-    );
+  void _startHandling() async {
+    setState(() => _isProcessing = true);
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        final success = await reportService.acceptReport(widget.reportId, staffId);
+        if (success) {
+          await _loadReport();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Penanganan dimulai'), backgroundColor: Colors.green),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error accepting report: $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   void _pauseReport() {
@@ -160,37 +182,26 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
               child: const Text('Batal'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                final now = DateTime.now();
-                setState(() {
-                  _report = _report.copyWith(
-                    status: ReportStatus.onHold,
-                    pausedAt: now,
-                    holdReason: reason,
-                    logs: [
-                      ReportLog(
-                        id: 'hold_${now.millisecondsSinceEpoch}',
-                        fromStatus: _report.status,
-                        toStatus: ReportStatus.onHold,
-                        action: ReportAction.paused,
-                        actorId: 'tech1',
-                        actorName: 'Budi Santoso',
-                        actorRole: 'Teknisi',
-                        timestamp: now,
-                        reason: reason.isEmpty ? "Ditunda sementara" : reason,
-                      ),
-                      ..._report.logs,
-                    ],
-                  );
-                });
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Pengerjaan ditunda (Pause)'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                setState(() => _isProcessing = true);
+                try {
+                  final user = await authService.getCurrentUser();
+                  if (user != null) {
+                    final staffId = user['id'];
+                    final success = await reportService.pauseReport(widget.reportId, staffId, reason);
+                    if (success) {
+                      await _loadReport();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Pengerjaan ditunda (Pause)'), backgroundColor: Colors.orange),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  debugPrint('Error pausing report: $e');
+                } finally {
+                  if (mounted) setState(() => _isProcessing = false);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -204,42 +215,24 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     );
   }
 
-  void _resumeReport() {
-    final now = DateTime.now();
-    // Calculate pause duration
-    int pauseDuration = 0;
-    if (_report.pausedAt != null) {
-      pauseDuration = now.difference(_report.pausedAt!).inSeconds;
+  void _resumeReport() async {
+    setState(() => _isProcessing = true);
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        final success = await reportService.resumeReport(widget.reportId, staffId);
+        if (success) {
+          await _loadReport();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pengerjaan dilanjutkan'), backgroundColor: Colors.green),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error resuming report: $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
-
-    setState(() {
-      _report = _report.copyWith(
-        status: ReportStatus.penanganan,
-        clearPausedAt: true,
-        totalPausedDurationSeconds:
-            _report.totalPausedDurationSeconds + pauseDuration,
-        logs: [
-          ReportLog(
-            id: 'resume_${now.millisecondsSinceEpoch}',
-            fromStatus: ReportStatus.onHold,
-            toStatus: ReportStatus.penanganan,
-            action: ReportAction.resumed,
-            actorId: 'tech1',
-            actorName: 'Budi Santoso',
-            actorRole: 'Teknisi',
-            timestamp: now,
-            reason: 'Pengerjaan dilanjutkan',
-          ),
-          ..._report.logs,
-        ],
-      );
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Pengerjaan dilanjutkan'),
-        backgroundColor: Colors.green,
-      ),
-    );
   }
 }

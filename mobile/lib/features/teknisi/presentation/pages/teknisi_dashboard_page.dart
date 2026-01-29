@@ -7,81 +7,86 @@ import 'package:mobile/core/widgets/stat_grid_card.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'dart:async';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Dashboard page for Teknisi
-class TeknisiDashboardPage extends StatelessWidget {
+class TeknisiDashboardPage extends StatefulWidget {
   const TeknisiDashboardPage({super.key});
 
-  // TODO: [BACKEND] Replace with API call
-  Map<String, dynamic> get _stats {
-    final reports = MockReportData.allReports;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final weekAgo = today.subtract(const Duration(days: 7));
-    final monthStart = DateTime(now.year, now.month, 1);
+  @override
+  State<TeknisiDashboardPage> createState() => _TeknisiDashboardPageState();
+}
 
-    return {
-      'diproses': reports
-          .where((r) => r.status == ReportStatus.diproses)
-          .length,
-      'penanganan': reports
-          .where((r) => r.status == ReportStatus.penanganan)
-          .length,
-      'onHold': reports.where((r) => r.status == ReportStatus.onHold).length,
-      'selesai': reports
-          .where(
-            (r) =>
-                r.status == ReportStatus.selesai ||
-                r.status == ReportStatus.approved,
-          )
-          .length,
-      'todayReports': reports.where((r) => r.createdAt.isAfter(today)).length,
-      'weekReports': reports.where((r) => r.createdAt.isAfter(weekAgo)).length,
-      'monthReports': reports
-          .where((r) => r.createdAt.isAfter(monthStart))
-          .length,
-      'emergency': reports
-          .where((r) => r.isEmergency && r.status == ReportStatus.diproses)
-          .length,
-    };
+class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
+  bool _isLoading = true;
+  Timer? _refreshTimer;
+
+  Map<String, int> _dashboardStats = {
+    'diproses': 0,
+    'penanganan': 0,
+    'onHold': 0,
+    'selesai': 0,
+    'todayReports': 0,
+    'weekReports': 0,
+    'monthReports': 0,
+    'emergency': 0,
+  };
+
+  List<Report> _readyReports = [];
+  List<Report> _activeReports = [];
+
+  Map<String, int> get _stats => _dashboardStats;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) _loadData(silent: true);
+    });
   }
 
-  List<Map<String, dynamic>> get _readyReports {
-    return MockReportData.allReports
-        .where((r) => r.status == ReportStatus.diproses)
-        .take(3)
-        .map(
-          (r) => {
-            'id': r.id,
-            'title': r.title,
-            'location': r.building,
-            'locationDetail': r.locationDetail,
-            'category': r.category,
-            'isEmergency': r.isEmergency,
-            'elapsed': DateTime.now().difference(r.createdAt),
-          },
-        )
-        .toList();
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
-  List<Map<String, dynamic>> get _activeReports {
-    return MockReportData.allReports
-        .where((r) => r.status == ReportStatus.penanganan)
-        .take(2)
-        .map(
-          (r) => {
-            'id': r.id,
-            'title': r.title,
-            'location': r.building,
-            'locationDetail': r.locationDetail,
-            'category': r.category,
-            'status': r.status,
-            'elapsed': DateTime.now().difference(r.createdAt),
-          },
-        )
-        .toList();
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
+    
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        
+        // Fetch stats and lists
+        final results = await Future.wait([
+          reportService.getTechnicianDashboardStats(staffId),
+          reportService.getStaffReports(role: 'technician', status: 'diproses'),
+          reportService.getStaffReports(role: 'technician', status: 'penanganan'),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            if (results[0] != null) {
+              _dashboardStats = Map<String, int>.from(results[0] as Map);
+            }
+            _readyReports = (results[1] as List).map((json) => Report.fromJson(json)).toList();
+            _activeReports = (results[2] as List).map((json) => Report.fromJson(json)).toList();
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading Technician dashboard data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -176,75 +181,80 @@ class TeknisiDashboardPage extends StatelessWidget {
             ),
           ];
         },
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Emergency Alert
-              _buildEmergencyAlert(context),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Emergency Alert
+                    _buildEmergencyAlert(context),
 
-              // Quick Actions
-              const Gap(16),
-              _buildQuickActions(context),
+                    // Quick Actions
+                    const Gap(16),
+                    _buildQuickActions(context),
 
-              // Period Stats
-              const Gap(16),
-              PeriodStatsRow(
-                todayCount: _stats['todayReports'],
-                weekCount: _stats['weekReports'],
-                monthCount: _stats['monthReports'],
-                onTap: (period) => context.push(
-                  Uri(
-                    path: '/teknisi/all-reports',
-                    queryParameters: {'period': period},
-                  ).toString(),
+                    // Period Stats
+                    const Gap(16),
+                    PeriodStatsRow(
+                      todayCount: _stats['todayReports'] ?? 0,
+                      weekCount: _stats['weekReports'] ?? 0,
+                      monthCount: _stats['monthReports'] ?? 0,
+                      onTap: (period) => context.push(
+                        Uri(
+                          path: '/teknisi/all-reports',
+                          queryParameters: {'period': period},
+                        ).toString(),
+                      ),
+                    ),
+
+                    // Status Stats
+                    const Gap(12),
+                    StatusStatsRow(
+                      diprosesCount: _stats['diproses'] ?? 0,
+                      penangananCount: _stats['penanganan'] ?? 0,
+                      onHoldCount: _stats['onHold'] ?? 0,
+                      selesaiCount: _stats['selesai'] ?? 0,
+                      onTap: (status) => context.push(
+                        Uri(
+                          path: '/teknisi/all-reports',
+                          queryParameters: {'status': status},
+                        ).toString(),
+                      ),
+                    ),
+
+                    // Ready to Start Section
+                    const Gap(24),
+                    _buildSectionHeader(
+                      context,
+                      'Siap Dimulai',
+                      'Lihat Semua',
+                      () => context.push('/teknisi/all-reports?status=diproses'),
+                      count: _stats['diproses'],
+                    ),
+                    const Gap(12),
+                    _buildReadyReportsList(context),
+
+                    // Active Reports Section
+                    const Gap(24),
+                    _buildSectionHeader(
+                      context,
+                      'Sedang Dikerjakan',
+                      'Lihat Semua',
+                      () => context.push('/teknisi/all-reports?status=penanganan'),
+                      count: _stats['penanganan'],
+                    ),
+                    const Gap(12),
+                    _buildActiveReportsList(context),
+
+                    const Gap(32),
+                  ],
                 ),
               ),
-
-              // Status Stats
-              const Gap(12),
-              StatusStatsRow(
-                diprosesCount: _stats['diproses'],
-                penangananCount: _stats['penanganan'],
-                onHoldCount: _stats['onHold'],
-                selesaiCount: _stats['selesai'],
-                onTap: (status) => context.push(
-                  Uri(
-                    path: '/teknisi/all-reports',
-                    queryParameters: {'status': status},
-                  ).toString(),
-                ),
-              ),
-
-              // Ready to Start Section
-              const Gap(24),
-              _buildSectionHeader(
-                context,
-                'Siap Dimulai',
-                'Lihat Semua',
-                () => context.push('/teknisi/all-reports?status=diproses'),
-                count: _stats['diproses'],
-              ),
-              const Gap(12),
-              _buildReadyReportsList(context),
-
-              // Active Reports Section
-              const Gap(24),
-              _buildSectionHeader(
-                context,
-                'Sedang Dikerjakan',
-                'Lihat Semua',
-                () => context.push('/teknisi/all-reports?status=penanganan'),
-                count: _stats['penanganan'],
-              ),
-              const Gap(12),
-              _buildActiveReportsList(context),
-
-              const Gap(32),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -429,18 +439,18 @@ class TeknisiDashboardPage extends StatelessWidget {
     return Column(
       children: _readyReports.map((report) {
         return UniversalReportCard(
-          id: report['id'],
-          title: report['title'],
-          location: report['location'],
-          locationDetail: report['locationDetail'],
-          category: report['category'],
-          status: ReportStatus.diproses,
-          isEmergency: report['isEmergency'],
-          elapsedTime: report['elapsed'],
+          id: report.id,
+          title: report.title,
+          location: report.building,
+          locationDetail: report.locationDetail,
+          category: report.category,
+          status: report.status,
+          isEmergency: report.isEmergency,
+          elapsedTime: DateTime.now().difference(report.createdAt),
           showStatus: true,
           showTimer: true,
           compact: true,
-          onTap: () => context.push('/teknisi/report/${report['id']}'),
+          onTap: () => context.push('/teknisi/report/${report.id}'),
         );
       }).toList(),
     );
@@ -454,17 +464,17 @@ class TeknisiDashboardPage extends StatelessWidget {
     return Column(
       children: _activeReports.map((report) {
         return UniversalReportCard(
-          id: report['id'],
-          title: report['title'],
-          location: report['location'],
-          locationDetail: report['locationDetail'],
-          category: report['category'],
-          status: report['status'],
-          elapsedTime: report['elapsed'],
+          id: report.id,
+          title: report.title,
+          location: report.building,
+          locationDetail: report.locationDetail,
+          category: report.category,
+          status: report.status,
+          elapsedTime: DateTime.now().difference(report.createdAt),
           showStatus: true,
           showTimer: true,
           compact: true,
-          onTap: () => context.push('/teknisi/report/${report['id']}'),
+          onTap: () => context.push('/teknisi/report/${report.id}'),
         );
       }).toList(),
     );

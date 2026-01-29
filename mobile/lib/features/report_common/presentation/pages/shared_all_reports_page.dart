@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/data/mock_report_data.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
@@ -9,6 +8,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/theme.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 /// A shared page for displaying a list of reports with filters and search.
 /// Can be used by both Supervisor and Technician.
@@ -50,6 +50,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  List<Report> _reports = [];
+  bool _isLoading = true;
+
   Set<ReportStatus> _selectedStatuses = {};
   String? _selectedCategory;
   String? _selectedBuilding;
@@ -58,10 +61,13 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   String? _selectedPeriod; // 'today', 'week', 'month'
   DateTimeRange? _selectedDateRange; // Custom date range
 
+  List<String> _categoryNames = [];
+
   @override
   void initState() {
     super.initState();
     _initFilters();
+    _fetchData();
   }
 
   void _initFilters() {
@@ -76,93 +82,80 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     _emergencyOnly = widget.initialEmergency; // Initialize emergency filter
   }
 
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    await Future.wait([
+      _fetchReports(),
+      _fetchCategories(),
+    ]);
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      final categories = await reportService.getCategories();
+      if (mounted) {
+        setState(() {
+          _categoryNames = categories.map((c) => c['name'] as String).toList()..sort();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching categories: $e');
+    }
+  }
+
+  Future<void> _fetchReports() async {
+    try {
+      final reportsData = await reportService.getPublicReports(
+        search: _searchQuery.isNotEmpty ? _searchQuery : null,
+        status: _selectedStatuses.isNotEmpty 
+            ? _selectedStatuses.map((s) => s.name).join(',') 
+            : (widget.allowedStatuses != null ? widget.allowedStatuses!.map((s) => s.name).join(',') : null),
+        category: _selectedCategory,
+        building: _selectedBuilding,
+        isEmergency: _emergencyOnly,
+        period: _selectedPeriod,
+        startDate: _selectedDateRange?.start.toIso8601String(),
+        endDate: _selectedDateRange?.end.toIso8601String(),
+      );
+
+      debugPrint('Fetched ${reportsData.length} reports from API');
+
+      if (mounted) {
+        setState(() {
+          _reports = reportsData.map((json) {
+            final r = Report.fromJson(json);
+            debugPrint('Mapping Report ID: ${r.id}, Title: ${r.title}');
+            return r;
+          }).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching reports: $e');
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  // TODO: [BACKEND] Replace with API call
-  List<Report> get _filteredReports {
-    var reports = MockReportData.allReports.toList();
-
-    // Search filter
-    if (_searchQuery.isNotEmpty) {
-      final query = _searchQuery.toLowerCase();
-      reports = reports.where((r) {
-        return r.title.toLowerCase().contains(query) ||
-            r.description.toLowerCase().contains(query);
-      }).toList();
-    }
-
-    // Status filter
-    if (_selectedStatuses.isNotEmpty) {
-      reports = reports
-          .where((r) => _selectedStatuses.contains(r.status))
-          .toList();
-    }
-
-    // Category filter
-    if (_selectedCategory != null) {
-      reports = reports.where((r) => r.category == _selectedCategory).toList();
-    }
-
-    // Building filter
-    if (_selectedBuilding != null) {
-      reports = reports.where((r) => r.building == _selectedBuilding).toList();
-    }
-
-    // Emergency filter
-    if (_emergencyOnly) {
-      reports = reports.where((r) => r.isEmergency).toList();
-    }
-
-    // Period/Date filter - Only apply if enabled
-    if (widget.enableDateFilter) {
-      if (_selectedDateRange != null) {
-        reports = reports.where((r) {
-          return r.createdAt.isAfter(_selectedDateRange!.start) &&
-              r.createdAt.isBefore(
-                _selectedDateRange!.end.add(const Duration(days: 1)),
-              );
-        }).toList();
-      } else if (_selectedPeriod != null) {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-
-        switch (_selectedPeriod) {
-          case 'today':
-            reports = reports.where((r) => r.createdAt.isAfter(today)).toList();
-            break;
-          case 'week':
-            final weekAgo = today.subtract(const Duration(days: 7));
-            reports = reports
-                .where((r) => r.createdAt.isAfter(weekAgo))
-                .toList();
-            break;
-          case 'month':
-            final monthStart = DateTime(now.year, now.month, 1);
-            reports = reports
-                .where((r) => r.createdAt.isAfter(monthStart))
-                .toList();
-            break;
-        }
-      }
-    }
-
-    // Sort by most recent
-    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    return reports;
-  }
-
-  List<String> get _categories {
-    return MockReportData.allReports.map((r) => r.category).toSet().toList()
-      ..sort();
-  }
+  List<String> get _categories => _categoryNames;
 
   List<String> get _buildings {
-    return MockReportData.allReports.map((r) => r.building).toSet().toList()
-      ..sort();
+    // Static list of major buildings for FSM
+    return [
+      'Gedung A',
+      'Gedung B',
+      'Gedung C',
+      'Gedung D',
+      'Gedung E',
+      'Gedung F',
+      'Lab Terpadu',
+      'Perpustakaan',
+      'Dekanat',
+    ];
   }
 
   bool get _hasActiveFilters {
@@ -235,7 +228,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       vertical: 12,
                     ),
                   ),
-                  onChanged: (value) => setState(() => _searchQuery = value),
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                    _fetchReports();
+                  }
                 ),
               ),
               if (widget.enableDateFilter) ...[
@@ -311,7 +307,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         s.label,
                         s.color,
-                        () => setState(() => _selectedStatuses.remove(s)),
+                        () {
+                          setState(() => _selectedStatuses.remove(s));
+                          _fetchReports();
+                        }
                       ),
                     ),
                   ),
@@ -321,7 +320,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         _selectedCategory!,
                         Colors.purple,
-                        () => setState(() => _selectedCategory = null),
+                        () {
+                          setState(() => _selectedCategory = null);
+                          _fetchReports();
+                        }
                       ),
                     ),
                   if (_selectedBuilding != null)
@@ -330,7 +332,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         _selectedBuilding!,
                         Colors.teal,
-                        () => setState(() => _selectedBuilding = null),
+                        () {
+                          setState(() => _selectedBuilding = null);
+                          _fetchReports();
+                        }
                       ),
                     ),
                   if (_emergencyOnly)
@@ -339,7 +344,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         'Darurat',
                         AppTheme.emergencyColor,
-                        () => setState(() => _emergencyOnly = false),
+                        () {
+                          setState(() => _emergencyOnly = false);
+                          _fetchReports();
+                        }
                       ),
                     ),
                   if (_selectedPeriod != null)
@@ -348,7 +356,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         _getPeriodLabel(_selectedPeriod!),
                         Colors.blue,
-                        () => setState(() => _selectedPeriod = null),
+                        () {
+                          setState(() => _selectedPeriod = null);
+                          _fetchReports();
+                        }
                       ),
                     ),
                   if (_selectedDateRange != null)
@@ -357,7 +368,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       child: _buildFilterChip(
                         '${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}',
                         widget.appBarColor,
-                        () => setState(() => _selectedDateRange = null),
+                        () {
+                          setState(() => _selectedDateRange = null);
+                          _fetchReports();
+                        }
                       ),
                     ),
                   TextButton(
@@ -374,55 +388,61 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           alignment: Alignment.centerLeft,
           child: Text(
-            '${_filteredReports.length} laporan ditemukan',
+            '${_reports.length} laporan ditemukan',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ),
 
         // Reports List
         Expanded(
-          child: _filteredReports.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        LucideIcons.searchX,
-                        size: 64,
-                        color: Colors.grey.shade300,
-                      ),
-                      const Gap(16),
-                      Text(
-                        'Tidak ada laporan ditemukan',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 16,
+          child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
+                onRefresh: _fetchReports,
+                child: _reports.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.searchX,
+                              size: 64,
+                              color: Colors.grey.shade300,
+                            ),
+                            const Gap(16),
+                            Text(
+                              'Tidak ada laporan ditemukan',
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
                         ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _reports.length,
+                        itemBuilder: (context, index) {
+                          final report = _reports[index];
+                          return UniversalReportCard(
+                            id: report.id,
+                            title: report.title,
+                            location: report.building,
+                            locationDetail: report.locationDetail,
+                            category: report.category,
+                            status: report.status,
+                            isEmergency: report.isEmergency,
+                            reporterName: report.reporterName,
+                            handledBy: report.handledBy?.join(', '),
+                            elapsedTime: DateTime.now().difference(report.createdAt),
+                            showStatus: true,
+                            showTimer: true,
+                            onTap: () => widget.onReportTap(report.id, report.status),
+                          );
+                        },
                       ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _filteredReports.length,
-                  itemBuilder: (context, index) {
-                    final report = _filteredReports[index];
-                    return UniversalReportCard(
-                      id: report.id,
-                      title: report.title,
-                      location: report.building,
-                      locationDetail: report.locationDetail,
-                      category: report.category,
-                      status: report.status,
-                      isEmergency: report.isEmergency,
-                      handledBy: report.handledBy?.join(', '),
-                      elapsedTime: DateTime.now().difference(report.createdAt),
-                      showStatus: true,
-                      showTimer: true,
-                      onTap: () => widget.onReportTap(report.id, report.status),
-                    );
-                  },
-                ),
+              ),
         ),
       ],
     );
@@ -496,7 +516,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       _selectedBuilding = null;
       _emergencyOnly = false;
       _selectedPeriod = null;
+      _selectedDateRange = null;
     });
+    _fetchReports();
   }
 
   void _showFilterSheet() {
@@ -738,6 +760,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
         _selectedDateRange = newDateRange;
         _selectedPeriod = null; // Clear preset period if custom range selected
       });
+      _fetchReports();
     }
   }
 }

@@ -202,30 +202,34 @@ class Report {
 
   factory Report.fromJson(Map<String, dynamic> json) {
     return Report(
-      id: json['id'] as String,
+      id: json['id'].toString(),
       title: json['title'] as String,
       description: json['description'] as String,
       category: json['category'] as String,
       building: json['building'] as String,
       locationDetail: json['locationDetail'] as String?,
-      latitude: json['latitude'] as double?,
-      longitude: json['longitude'] as double?,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       imageUrl: json['imageUrl'] as String?,
-      mediaUrls: (json['mediaUrls'] as List<dynamic>?)?.cast<String>(),
+      mediaUrls: json['mediaUrls'] != null
+          ? List<String>.from(json['mediaUrls'] as List)
+          : null,
       status: ReportStatus.values.byName(json['status'] as String),
       isEmergency: json['isEmergency'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
-      reporterId: json['reporterId'] as String,
+      reporterId: json['reporterId'].toString(),
       reporterName: json['reporterName'] as String,
       reporterEmail: json['reporterEmail'] as String?,
       reporterPhone: json['reporterPhone'] as String?,
-      pjGedungId: json['pjGedungId'] as String?,
+      pjGedungId: json['pjGedungId']?.toString(),
       pjGedungName: json['pjGedungName'] as String?,
       verifiedAt: json['verifiedAt'] != null
           ? DateTime.parse(json['verifiedAt'] as String)
           : null,
-      handledBy: (json['handledBy'] as List<dynamic>?)?.cast<String>(),
-      supervisorId: json['supervisorId'] as String?,
+      handledBy: json['handledBy'] != null
+          ? List<String>.from(json['handledBy'] as List)
+          : null,
+      supervisorId: json['supervisorId']?.toString(),
       supervisorName: json['supervisorName'] as String?,
       pausedAt: json['pausedAt'] != null
           ? DateTime.parse(json['pausedAt'] as String)

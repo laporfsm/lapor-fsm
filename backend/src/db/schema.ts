@@ -104,6 +104,18 @@ export const reportLogs = pgTable('report_logs', {
   timestamp: timestamp('timestamp').defaultNow(),
 });
 
+// Notifications table
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id').references(() => users.id),
+  staffId: integer('staff_id').references(() => staff.id),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: text('type').notNull().default('info'), // 'info', 'success', 'warning', 'emergency'
+  isRead: boolean('is_read').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -114,4 +126,6 @@ export type NewReport = typeof reports.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type ReportLog = typeof reportLogs.$inferSelect;
 export type NewReportLog = typeof reportLogs.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
 

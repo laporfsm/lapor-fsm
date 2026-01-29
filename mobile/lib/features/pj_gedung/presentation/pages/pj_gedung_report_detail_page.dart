@@ -6,6 +6,8 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/models/report_log.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
 
 class PJGedungReportDetailPage extends StatefulWidget {
@@ -19,7 +21,7 @@ class PJGedungReportDetailPage extends StatefulWidget {
 }
 
 class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
-  late Report _report;
+  Report? _report;
   bool _isLoading = true;
   bool _isProcessing = false;
 
@@ -29,59 +31,51 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     _loadReport();
   }
 
-  void _loadReport() {
-    // Simulate API call
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
+  Future<void> _loadReport() async {
+    try {
+      final data = await reportService.getReportDetail(widget.reportId);
+      if (data != null && mounted) {
         setState(() {
-          _report = MockReportData.getReportOrDefault(widget.reportId);
+          _report = Report.fromJson(data);
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _handleVerification(bool approve) async {
+    if (_report == null) return;
     setState(() => _isProcessing = true);
 
-    // Simulate API call
-    await Future.delayed(const Duration(seconds: 1, milliseconds: 500));
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        bool success = false;
+        
+        if (approve) {
+          success = await reportService.verifyReport(_report!.id, staffId, role: 'pj');
+        } else {
+          success = await reportService.rejectReport(_report!.id, staffId, 'Ditolak oleh PJ Gedung');
+        }
 
-    if (mounted) {
-      if (approve) {
-        setState(() {
-          _report = _report.copyWith(
-            status:
-                ReportStatus.verifikasi, // Or terverifikasi depending on flow
-            verifiedAt: DateTime.now(),
-            logs: [
-              ReportLog(
-                id: 'verify_${DateTime.now().millisecondsSinceEpoch}',
-                fromStatus: _report.status,
-                toStatus: ReportStatus.verifikasi,
-                action: ReportAction.verified,
-                actorId: 'pj1',
-                actorName: 'PJ Gedung',
-                actorRole: 'PJ Gedung',
-                timestamp: DateTime.now(),
-              ),
-              ..._report.logs,
-            ],
+        if (success && mounted) {
+          await _loadReport(); // Reload to get updated status and logs
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(approve ? 'Laporan berhasil diverifikasi.' : 'Laporan ditolak.'),
+              backgroundColor: approve ? Colors.green : Colors.red,
+            ),
           );
-        });
+          if (!approve) context.pop();
+        }
       }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            approve ? 'Laporan berhasil diverifikasi.' : 'Laporan ditolak.',
-          ),
-          backgroundColor: approve ? Colors.green : Colors.red,
-        ),
-      );
-
-      if (!approve) context.pop(); // Pop if rejected
-      setState(() => _isProcessing = false);
+    } catch (e) {
+      debugPrint('Error processing verification: $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -91,8 +85,12 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    if (_report == null) {
+      return const Scaffold(body: Center(child: Text('Laporan tidak ditemukan')));
+    }
+
     return ReportDetailBase(
-      report: _report,
+      report: _report!,
       viewerRole: UserRole.pjGedung,
       appBarColor: const Color(0xFF059669), // PJ Gedung Theme Color
       // Inject Action Buttons for PJ Gedung
@@ -101,9 +99,12 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
   }
 
   List<Widget>? _buildActionButtons() {
+    final r = _report;
+    if (r == null) return null;
+
     // Only show Verify/Reject for Pending reports that are NOT emergency
     // (Emergency reports bypass verification)
-    if (_report.status == ReportStatus.pending && !_report.isEmergency) {
+    if (r.status == ReportStatus.pending && !r.isEmergency) {
       return [
         OutlinedButton.icon(
           onPressed: _isProcessing ? null : () => _handleVerification(false),

@@ -207,4 +207,63 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 }, {} as Record<string, number>),
             },
         };
+    })
+
+    // ==========================================
+    // USER MANAGEMENT
+    // ==========================================
+
+    // Get all users
+    .get('/users', async () => {
+        const userList = await db
+            .select()
+            .from(users)
+            .orderBy(desc(users.createdAt));
+
+        return {
+            status: 'success',
+            data: userList.map(u => ({ ...u, id: u.id.toString(), password: '' })),
+        };
+    })
+
+    // Get pending users (unverified)
+    .get('/users/pending', async () => {
+        const pendingList = await db
+            .select()
+            .from(users)
+            .where(eq(users.isVerified, false))
+            .orderBy(desc(users.createdAt));
+
+        return {
+            status: 'success',
+            data: pendingList.map(u => ({ ...u, id: u.id.toString(), password: '' })),
+        };
+    })
+
+    // Verify user
+    .post('/users/:id/verify', async ({ params }) => {
+        const updated = await db
+            .update(users)
+            .set({ isVerified: true })
+            .where(eq(users.id, parseInt(params.id)))
+            .returning();
+
+        if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
+        
+        return { 
+            status: 'success', 
+            message: 'User berhasil diverifikasi',
+            data: { ...updated[0], id: updated[0].id.toString(), password: '' }
+        };
+    })
+
+    // Delete user
+    .delete('/users/:id', async ({ params }) => {
+        const deleted = await db
+            .delete(users)
+            .where(eq(users.id, parseInt(params.id)))
+            .returning();
+
+        if (deleted.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
+        return { status: 'success', message: 'User berhasil dihapus' };
     });

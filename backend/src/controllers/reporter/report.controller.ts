@@ -1,14 +1,87 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, categories, reportLogs, users, staff } from '../../db/schema';
-import { eq, desc, and, or, sql } from 'drizzle-orm';
+import { eq, desc, and, or, sql, gte, lte, ilike } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 
 export const reportController = new Elysia({ prefix: '/reports' })
-  // Get All Reports (with optional filters)
+  // Get All Reports (Public Feed with database filtering)
   .get('/', async ({ query }) => {
-    const { categoryId, category, building, status } = query;
+    const { 
+        categoryId, 
+        category, 
+        building, 
+        status, 
+        search, 
+        isEmergency,
+        period,
+        startDate,
+        endDate,
+        limit = '50', 
+        offset = '0' 
+    } = query;
+    const limitNum = parseInt(limit);
+    const offsetNum = parseInt(offset);
     
+    let conditions = [];
+    
+    if (categoryId) conditions.push(eq(reports.categoryId, parseInt(categoryId)));
+    if (category) conditions.push(eq(categories.name, category));
+    if (building) conditions.push(eq(reports.building, building));
+    
+    // Status Filter (Support comma-separated or single)
+    if (status) {
+        const statuses = status.split(',');
+        if (statuses.length > 1) {
+            conditions.push(or(...statuses.map(s => eq(reports.status, s))));
+        } else {
+            conditions.push(eq(reports.status, status));
+        }
+    }
+
+    // Search filter - more robust using built-in ilike helper if available or better sql template
+    if (search && search.trim().length > 0) {
+        const searchTerms = search.trim().split(/\s+/);
+        searchTerms.forEach(term => {
+            const pattern = `%${term}%`;
+            conditions.push(or(
+                ilike(reports.title, pattern),
+                ilike(reports.description, pattern)
+            ));
+        });
+    }
+
+    // Emergency filter
+    if (isEmergency === 'true') {
+        conditions.push(eq(reports.isEmergency, true));
+    }
+
+    // Date/Period Filter
+    if (startDate && endDate) {
+        conditions.push(and(
+            gte(reports.createdAt, new Date(startDate)),
+            lte(reports.createdAt, new Date(endDate))
+        ));
+    } else if (period) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        if (period === 'today') {
+            conditions.push(gte(reports.createdAt, today));
+        } else if (period === 'week') {
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            conditions.push(gte(reports.createdAt, weekAgo));
+        } else if (period === 'month') {
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            conditions.push(gte(reports.createdAt, monthStart));
+        }
+    }
+    
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const reporterStaff = alias(staff, 'reporter_staff');
+    const handlerStaff = alias(staff, 'handler_staff');
+
     const result = await db
       .select({
         id: reports.id,
@@ -25,30 +98,33 @@ export const reportController = new Elysia({ prefix: '/reports' })
         userId: reports.userId,
         staffId: reports.staffId,
         categoryId: reports.categoryId,
-        // Detailed Info
-        reporterName: users.name,
-        reporterEmail: users.email,
-        reporterPhone: users.phone,
+        // Coalesce reporter info from either users or staff
+        reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
+        reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
+        reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
-        handlerName: staff.name,
+        handlerName: handlerStaff.name,
+        approvedBy: reports.approvedBy,
+        verifiedBy: reports.verifiedBy,
         supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        pausedAt: reports.pausedAt,
+        totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
+        holdReason: reports.holdReason,
+        holdPhoto: reports.holdPhoto,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
+      .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .leftJoin(staff, eq(reports.assignedTo, staff.id))
+      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
+      .where(whereClause)
       .orderBy(desc(reports.createdAt))
-      .limit(100);
+      .limit(limitNum)
+      .offset(offsetNum);
 
-    let filtered = result;
-    if (categoryId) filtered = filtered.filter(r => r.categoryId === parseInt(categoryId as string));
-    if (category) filtered = filtered.filter(r => r.categoryName === category);
-    if (building) filtered = filtered.filter(r => r.building === building);
-    if (status) filtered = filtered.filter(r => r.status === status);
-    
     return {
       status: 'success',
-      data: filtered.map(r => mapToMobileReport(r)),
+      data: result.map(r => mapToMobileReport(r)),
     };
   }, {
     query: t.Object({
@@ -56,11 +132,33 @@ export const reportController = new Elysia({ prefix: '/reports' })
       category: t.Optional(t.String()),
       building: t.Optional(t.String()),
       status: t.Optional(t.String()),
+      search: t.Optional(t.String()),
+      isEmergency: t.Optional(t.String()),
+      period: t.Optional(t.String()),
+      startDate: t.Optional(t.String()),
+      endDate: t.Optional(t.String()),
+      limit: t.Optional(t.String()),
+      offset: t.Optional(t.String()),
     }),
   })
   
-  // Get User's Own Reports
-  .get('/my/:userId', async ({ params }) => {
+  // Get User's Own Reports (History)
+  .get('/my/:id', async ({ params, query }) => {
+    const id = parseInt(params.id);
+    const { role = 'user' } = query;
+    console.log(`Fetching history for ID: ${id}, Role: ${role}`);
+    
+    let condition;
+    if (role === 'user' || role === 'pelapor') {
+        condition = eq(reports.userId, id);
+    } else {
+        // For staff (teknisi, supervisor, pj_gedung), filter by reports.staffId
+        condition = eq(reports.staffId, id);
+    }
+
+    const reporterStaff = alias(staff, 'reporter_staff');
+    const handlerStaff = alias(staff, 'handler_staff');
+
     const result = await db
       .select({
         id: reports.id,
@@ -75,25 +173,47 @@ export const reportController = new Elysia({ prefix: '/reports' })
         status: reports.status,
         createdAt: reports.createdAt,
         userId: reports.userId,
-        // Detailed Info
-        reporterName: users.name,
+        staffId: reports.staffId,
+        categoryId: reports.categoryId,
+        reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
+        reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
+        reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
+        handlerName: handlerStaff.name,
+        approvedBy: reports.approvedBy,
+        verifiedBy: reports.verifiedBy,
+        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        pausedAt: reports.pausedAt,
+        totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
+        holdReason: reports.holdReason,
+        holdPhoto: reports.holdPhoto,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
+      .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .where(eq(reports.userId, parseInt(params.userId)))
+      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
+      .where(condition)
       .orderBy(desc(reports.createdAt));
+    
+    console.log(`Found ${result.length} reports for history.`);
 
     return {
       status: 'success',
       data: result.map(r => mapToMobileReport(r)),
     };
+  }, {
+    query: t.Object({
+        role: t.Optional(t.String()),
+    })
   })
 
   // Get Single Report by ID
   .get('/:id', async ({ params }) => {
     const reportId = parseInt(params.id);
+    const reporterStaff = alias(staff, 'reporter_staff');
+    const handlerStaff = alias(staff, 'handler_staff');
+
     const result = await db
       .select({
         id: reports.id,
@@ -108,22 +228,23 @@ export const reportController = new Elysia({ prefix: '/reports' })
         status: reports.status,
         createdAt: reports.createdAt,
         userId: reports.userId,
+        staffId: reports.staffId,
         pausedAt: reports.pausedAt,
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
         holdPhoto: reports.holdPhoto,
-        // Detailed Info
-        reporterName: users.name,
-        reporterEmail: users.email,
-        reporterPhone: users.phone,
+        reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
+        reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
+        reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
-        handlerName: staff.name,
+        handlerName: handlerStaff.name,
         supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
+      .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .leftJoin(staff, eq(reports.assignedTo, staff.id))
+      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
       .where(eq(reports.id, reportId))
       .limit(1);
 
@@ -188,6 +309,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
     });
 
     // Fetch the full report with joins for the response
+    const reporterStaff = alias(staff, 'reporter_staff');
     const fullReport = await db
         .select({
             id: reports.id,
@@ -202,11 +324,13 @@ export const reportController = new Elysia({ prefix: '/reports' })
             status: reports.status,
             createdAt: reports.createdAt,
             userId: reports.userId,
-            reporterName: users.name,
+            staffId: reports.staffId,
+            reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
             categoryName: categories.name,
         })
         .from(reports)
         .leftJoin(users, eq(reports.userId, users.id))
+        .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
         .leftJoin(categories, eq(reports.categoryId, categories.id))
         .where(eq(reports.id, newReport[0].id))
         .limit(1);
