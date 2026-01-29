@@ -98,10 +98,10 @@ class NotificationBottomSheet extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: item.isRead ? Colors.white : Colors.blue.withOpacity(0.05),
+        color: item.isRead ? Colors.white : Colors.blue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: item.isRead ? Colors.grey.shade200 : color.withOpacity(0.2),
+          color: item.isRead ? Colors.grey.shade200 : color.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -110,7 +110,7 @@ class NotificationBottomSheet extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 20),

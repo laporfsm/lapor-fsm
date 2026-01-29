@@ -4,7 +4,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
 
 /// Registration Page with email validation
@@ -34,7 +34,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _obscureConfirmPassword = true;
   int _currentStep = 0; // 0 = email, 1 = ID card (if needed), 2 = user data
   bool _requiresIdCard = false;
-  XFile? _idCardImage;
   Uint8List? _idCardBytes; // For web compatibility
 
   final _imagePicker = ImagePicker();
@@ -120,7 +119,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       if (image != null) {
                         final bytes = await image.readAsBytes();
                         setState(() {
-                          _idCardImage = image;
                           _idCardBytes = bytes;
                         });
                       }
@@ -141,7 +139,6 @@ class _RegisterPageState extends State<RegisterPage> {
                       if (image != null) {
                         final bytes = await image.readAsBytes();
                         setState(() {
-                          _idCardImage = image;
                           _idCardBytes = bytes;
                         });
                       }
@@ -196,7 +193,9 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _handleRegister() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
@@ -263,7 +262,7 @@ class _RegisterPageState extends State<RegisterPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -582,7 +581,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         right: 8,
                         child: GestureDetector(
                           onTap: () => setState(() {
-                            _idCardImage = null;
                             _idCardBytes = null;
                           }),
                           child: Container(
@@ -726,7 +724,9 @@ class _RegisterPageState extends State<RegisterPage> {
               LucideIcons.user,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Nama wajib diisi';
+              if (value == null || value.isEmpty) {
+                return 'Nama wajib diisi';
+              }
               return null;
             },
           ),
@@ -745,7 +745,9 @@ class _RegisterPageState extends State<RegisterPage> {
               LucideIcons.hash,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'NIM/NIP wajib diisi';
+              if (value == null || value.isEmpty) {
+                return 'NIM/NIP wajib diisi';
+              }
               return null;
             },
           ),
@@ -762,7 +764,9 @@ class _RegisterPageState extends State<RegisterPage> {
             keyboardType: TextInputType.phone,
             decoration: _inputDecoration('08xxxxxxxxxx', LucideIcons.phone),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Nomor HP wajib diisi';
+              if (value == null || value.isEmpty) {
+                return 'Nomor HP wajib diisi';
+              }
               return null;
             },
           ),
@@ -821,8 +825,9 @@ class _RegisterPageState extends State<RegisterPage> {
               LucideIcons.userCircle,
             ),
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.isEmpty) {
                 return 'Nama kontak darurat wajib diisi';
+              }
               return null;
             },
           ),
@@ -839,10 +844,12 @@ class _RegisterPageState extends State<RegisterPage> {
             keyboardType: TextInputType.phone,
             decoration: _inputDecoration('08xxxxxxxxxx', LucideIcons.phoneCall),
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.isEmpty) {
                 return 'Nomor kontak darurat wajib diisi';
-              if (value == _phoneController.text)
+              }
+              if (value == _phoneController.text) {
                 return 'Nomor darurat tidak boleh sama dengan nomor HP Anda';
+              }
               return null;
             },
           ),
@@ -883,8 +890,12 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Password wajib diisi';
-              if (value.length < 6) return 'Password minimal 6 karakter';
+              if (value == null || value.isEmpty) {
+                return 'Password wajib diisi';
+              }
+              if (value.length < 6) {
+                return 'Password minimal 6 karakter';
+              }
               return null;
             },
           ),
@@ -928,10 +939,12 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty)
+              if (value == null || value.isEmpty) {
                 return 'Konfirmasi password wajib diisi';
-              if (value != _passwordController.text)
+              }
+              if (value != _passwordController.text) {
                 return 'Password tidak cocok';
+              }
               return null;
             },
           ),

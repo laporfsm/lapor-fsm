@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
@@ -32,8 +32,8 @@ class NotificationFab extends StatelessWidget {
           ), // Slightly more square than circle for modern feel
           boxShadow: [
             BoxShadow(
-              color: (backgroundColor ?? AppTheme.primaryColor).withOpacity(
-                0.3,
+              color: (backgroundColor ?? AppTheme.primaryColor).withValues(
+                alpha: 0.3,
               ),
               blurRadius: 10,
               offset: const Offset(0, 4),

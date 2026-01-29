@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/core/services/auth_service.dart';
 
@@ -75,7 +75,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       border: Border.all(
                         color: AppTheme.primaryColor,
                         width: 3,
@@ -111,8 +111,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     decoration: BoxDecoration(
                       color: isVerified
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.orange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

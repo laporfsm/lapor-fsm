@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'media_viewer_modal.dart';
 
 /// A gallery widget that displays media thumbnails and opens fullscreen viewer on tap
@@ -31,7 +31,7 @@ class MediaGalleryWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -98,7 +98,7 @@ class MediaGalleryWidget extends StatelessWidget {
             // Overlay for extra count
             if (extraCount != null)
               Container(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 child: Center(
                   child: Text(
                     '+$extraCount',

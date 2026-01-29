@@ -5,7 +5,7 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/core/services/report_service.dart';
@@ -110,9 +110,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
         status: _selectedStatuses.isNotEmpty
             ? _selectedStatuses.map((s) => s.name).join(',')
-            : (widget.allowedStatuses != null
-                  ? widget.allowedStatuses!.map((s) => s.name).join(',')
-                  : null),
+            : widget.allowedStatuses?.map((s) => s.name).join(','),
         category: _selectedCategory,
         building: _selectedBuilding,
         isEmergency: _emergencyOnly,
@@ -488,7 +486,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -674,7 +672,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                                 return FilterChip(
                                   label: Text(status.label),
                                   selected: isSelected,
-                                  selectedColor: status.color.withOpacity(0.2),
+                                  selectedColor: status.color.withValues(
+                                    alpha: 0.2,
+                                  ),
                                   checkmarkColor: status.color,
                                   onSelected: (selected) {
                                     setModalState(() {

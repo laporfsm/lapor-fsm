@@ -1,5 +1,5 @@
-import '../enums/report_status.dart';
-import '../../../../core/models/report_log.dart'; // Keep pointing to core for logs for now, or migrate logs too? Plan didn't specify logs migration but it makes sense. I will keep it pointing to core for now to minimize breakage scope in one step, or I can copy ReportLog too if needed. Let's keep ReportLog in core for a moment or check if it needs moving. Plan didn't explicitly say "Move ReportLog", but "Report model". I will update import to relative if I move ReportLog, but for now I'll assume ReportLog stays or I will move it in next step. Wait, `report.dart` import `report_log.dart`. It's better to move ReportLog too if it's tightly coupled.
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+import 'report_log.dart';
 
 // Re-reading plan: "Migrate Report model". Usually implies dependencies too.
 // I will check if ReportLog is used elsewhere.

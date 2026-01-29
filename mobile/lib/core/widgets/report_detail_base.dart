@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -7,13 +6,13 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/enums/user_role.dart';
+import 'package:mobile/features/report_common/domain/enums/user_role.dart';
 import 'package:mobile/core/widgets/fullscreen_map_modal.dart';
 import 'package:mobile/core/widgets/media_gallery_widget.dart';
 import 'package:mobile/core/widgets/report_timer_card.dart';
 import 'package:mobile/core/widgets/report_timeline.dart';
-import 'package:mobile/core/models/report_log.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/features/report_common/domain/entities/report_log.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ReportDetailBase extends StatelessWidget {
@@ -369,7 +368,7 @@ class ReportDetailBase extends StatelessWidget {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -404,7 +403,7 @@ class ReportDetailBase extends StatelessWidget {
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: const Icon(
@@ -423,7 +422,9 @@ class ReportDetailBase extends StatelessWidget {
 
             // 2. Pattern Overlay
             CustomPaint(
-              painter: _PatternPainter(color: Colors.white.withOpacity(0.1)),
+              painter: _PatternPainter(
+                color: Colors.white.withValues(alpha: 0.1),
+              ),
             ),
 
             // 3. Large Watermark Icon (Category/Status)
@@ -435,7 +436,7 @@ class ReportDetailBase extends StatelessWidget {
                 child: Icon(
                   AppTheme.getStatusIcon(report.status.name),
                   size: 180,
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                 ),
               ),
             ),
@@ -498,10 +499,10 @@ class ReportDetailBase extends StatelessWidget {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -539,9 +540,9 @@ class ReportDetailBase extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
+        color: statusColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -560,7 +561,7 @@ class ReportDetailBase extends StatelessWidget {
               Text(
                 'Status Laporan',
                 style: TextStyle(
-                  color: statusColor.withOpacity(0.8),
+                  color: statusColor.withValues(alpha: 0.8),
                   fontSize: 12,
                 ),
               ),
@@ -593,7 +594,7 @@ class ReportDetailBase extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
@@ -28,7 +28,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -46,12 +48,13 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
       if (mounted && result['success']) {
         final role = result['role'];
         String redirectPath = '/teknisi';
-        if (role == 'supervisor')
+        if (role == 'supervisor') {
           redirectPath = '/supervisor';
-        else if (role == 'pj_gedung')
+        } else if (role == 'pj_gedung') {
           redirectPath = '/pj-gedung';
-        else if (role == 'admin')
+        } else if (role == 'admin') {
           redirectPath = '/admin/dashboard';
+        }
 
         context.go(redirectPath);
       } else if (mounted) {
@@ -236,7 +239,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [
                               BoxShadow(
-                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.3,
+                                ),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -367,7 +372,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 16, color: AppTheme.primaryColor),

@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
@@ -57,12 +57,12 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
 
   Future<void> _loadData({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
-    
+
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        
+
         final results = await Future.wait([
           reportService.getPJDashboardStats(staffId),
           reportService.getStaffReports(role: 'pj', status: 'pending'),
@@ -75,9 +75,15 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
             if (results[0] != null) {
               _dashboardStats = Map<String, int>.from(results[0] as Map);
             }
-            _pendingReports = (results[1] as List).map((json) => Report.fromJson(json)).toList();
-            _emergencyReports = (results[2] as List).map((json) => Report.fromJson(json)).toList();
-            _verifiedReports = (results[3] as List).map((json) => Report.fromJson(json)).toList();
+            _pendingReports = (results[1] as List)
+                .map((json) => Report.fromJson(json))
+                .toList();
+            _emergencyReports = (results[2] as List)
+                .map((json) => Report.fromJson(json))
+                .toList();
+            _verifiedReports = (results[3] as List)
+                .map((json) => Report.fromJson(json))
+                .toList();
           });
         }
       }
@@ -120,8 +126,8 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            pjGedungColor.withOpacity(0.85),
-                            pjGedungColor.withOpacity(0.95),
+                            pjGedungColor.withValues(alpha: 0.85),
+                            pjGedungColor.withValues(alpha: 0.95),
                           ],
                         ),
                       ),
@@ -136,7 +142,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
@@ -208,11 +214,11 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: pjGedungColor.withOpacity(0.3),
+                              color: pjGedungColor.withValues(alpha: 0.3),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: pjGedungColor.withOpacity(0.05),
+                                color: pjGedungColor.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -298,7 +304,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.red.withOpacity(0.3),
+              color: Colors.red.withValues(alpha: 0.3),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -309,7 +315,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
@@ -334,7 +340,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                   Text(
                     '${_emergencyReports.length} laporan di gedung Anda (View Only)',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       fontSize: 12,
                     ),
                   ),
@@ -399,7 +405,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -438,7 +444,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -497,7 +503,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Column(
@@ -527,7 +533,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: pjGedungColor.withOpacity(0.3)),
+          border: Border.all(color: pjGedungColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

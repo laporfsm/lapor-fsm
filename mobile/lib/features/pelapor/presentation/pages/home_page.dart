@@ -7,7 +7,7 @@ import 'package:mobile/features/notification/presentation/providers/notification
 import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/utils/icon_helper.dart';
@@ -92,7 +92,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         end: Alignment.bottomRight,
                         colors: [
                           AppTheme.primaryColor,
-                          AppTheme.primaryColor.withOpacity(0.8),
+                          AppTheme.primaryColor.withValues(alpha: 0.8),
                           const Color(0xFF1565C0),
                         ],
                       ),
@@ -131,7 +131,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Text(
@@ -260,9 +260,11 @@ class _HomePageState extends ConsumerState<HomePage> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: const Icon(
                   LucideIcons.bell,
@@ -318,7 +320,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFDC2626).withOpacity(0.4),
+                color: const Color(0xFFDC2626).withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -425,7 +427,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -511,7 +513,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

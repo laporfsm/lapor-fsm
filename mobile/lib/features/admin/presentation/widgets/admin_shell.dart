@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 /// Admin Shell - Persistent Bottom Navigation for Admin Pages
 class AdminShell extends StatefulWidget {

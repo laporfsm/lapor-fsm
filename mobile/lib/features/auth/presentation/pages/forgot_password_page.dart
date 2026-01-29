@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 /// Forgot Password Page
 /// Flow:
@@ -94,7 +94,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -225,7 +225,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             shape: BoxShape.circle,
           ),
           child: const Icon(

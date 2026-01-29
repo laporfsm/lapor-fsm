@@ -3,7 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Fullscreen map modal with interactive controls
@@ -75,7 +75,7 @@ class FullscreenMapModal extends StatelessWidget {
                   color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/theme.dart';
+import 'package:mobile/core/theme.dart';
 
 /// A scaffold wrapper that includes persistent BottomNavigationBar for Pelapor role.
 class PelaporScaffold extends StatelessWidget {
