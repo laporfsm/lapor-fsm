@@ -78,7 +78,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
     // Update staff
     .put('/staff/:id', async ({ params, body }) => {
         const staffId = parseInt(params.id);
-        
+
         // If email is being updated, check if it's already taken
         if (body.email) {
             const existing = await db
@@ -93,7 +93,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
         }
 
         const updateData: any = { ...body };
-        
+
         if (body.password) {
             updateData.password = await Bun.password.hash(body.password);
         }
@@ -249,12 +249,91 @@ export const adminController = new Elysia({ prefix: '/admin' })
             .returning();
 
         if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
-        
-        return { 
-            status: 'success', 
+
+        return {
+            status: 'success',
             message: 'User berhasil diverifikasi',
             data: { ...updated[0], id: updated[0].id.toString(), password: '' }
         };
+    })
+
+    // Suspend/Activate User
+    .put('/users/:id/suspend', async ({ params, body }) => {
+        const updated = await db
+            .update(users)
+            .set({ isActive: body.isActive })
+            .where(eq(users.id, parseInt(params.id)))
+            .returning();
+
+        if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
+
+        const action = body.isActive ? 'diaktifkan' : 'dinonaktifkan';
+        return {
+            status: 'success',
+            message: `User berhasil ${action}`,
+            data: { ...updated[0], id: updated[0].id.toString(), password: '' }
+        };
+    }, {
+        body: t.Object({
+            isActive: t.Boolean(),
+        }),
+    })
+
+    // Get User Details (Inspection)
+    .get('/users/:id', async ({ params }) => {
+        const user = await db.select().from(users).where(eq(users.id, parseInt(params.id))).limit(1);
+        if (user.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
+
+        // Get user reports history
+        const userReports = await db.select().from(reports).where(eq(reports.userId, parseInt(params.id))).orderBy(desc(reports.createdAt));
+
+        return {
+            status: 'success',
+            data: {
+                user: { ...user[0], id: user[0].id.toString(), password: '' },
+                reports: userReports.map(r => ({ ...r, id: r.id.toString() })),
+            }
+        };
+    })
+
+    // Force Close Report
+    .put('/reports/:id/force-close', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+
+        const existingReport = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (existingReport.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        const updatedReport = await db
+            .update(reports)
+            .set({
+                status: 'selesai',
+                handlingCompletedAt: new Date(),
+                handlerNotes: `[Admin Force Close] ${body.reason}`,
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        // Log the action
+        await db.insert(reportLogs).values({
+            reportId: reportId,
+            fromStatus: existingReport[0].status,
+            toStatus: 'selesai',
+            action: 'force_close',
+            actorId: 'admin', // Ideally current admin ID
+            actorName: 'Admin System',
+            actorRole: 'admin',
+            reason: body.reason,
+        });
+
+        return {
+            status: 'success',
+            message: 'Laporan berhasil ditutup paksa',
+            data: { ...updatedReport[0], id: updatedReport[0].id.toString() }
+        };
+    }, {
+        body: t.Object({
+            reason: t.String(),
+        }),
     })
 
     // Delete user

@@ -4,12 +4,55 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  Map<String, dynamic>? _currentUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      setState(() {
+        _currentUser = user;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_currentUser == null) {
+      // Should not happen if guarded by auth, but just in case
+      return Scaffold(
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () => context.go('/login'),
+            child: const Text('Silakan Login'),
+          ),
+        ),
+      );
+    }
+
+    final isVerified = _currentUser!['isVerified'] == true;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -45,37 +88,52 @@ class ProfilePage extends StatelessWidget {
                     ),
                   ),
                   const Gap(16),
-                  const Text(
-                    "Sulhan Fuadi",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    _currentUser!['name'] ?? "Nama Tidak Tersedia",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                   const Gap(4),
-                  const Text(
-                    "24060123130115",
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    _currentUser!['nimNip'] ?? "-",
+                    style: const TextStyle(color: Colors.grey),
                   ),
                   const Gap(8),
+
+                  // Status Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: isVerified
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          LucideIcons.checkCircle,
+                          isVerified
+                              ? LucideIcons.checkCircle
+                              : LucideIcons.clock,
                           size: 14,
-                          color: Colors.green,
+                          color: isVerified ? Colors.green : Colors.orange,
                         ),
-                        Gap(4),
+                        const Gap(4),
                         Text(
-                          "Akun Terverifikasi",
-                          style: TextStyle(color: Colors.green, fontSize: 12),
+                          isVerified
+                              ? "Akun Terverifikasi"
+                              : "Menunggu Verifikasi",
+                          style: TextStyle(
+                            color: isVerified ? Colors.green : Colors.orange,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -98,25 +156,25 @@ class ProfilePage extends StatelessWidget {
                   _InfoRow(
                     icon: LucideIcons.mail,
                     label: "Email",
-                    value: "sulhan.fuadi@students.undip.ac.id",
+                    value: _currentUser!['email'] ?? "-",
                   ),
                   const Divider(height: 24),
                   _InfoRow(
                     icon: LucideIcons.hash,
                     label: "NIM/NIP",
-                    value: "24060123130115",
+                    value: _currentUser!['nimNip'] ?? "-",
                   ),
                   const Divider(height: 24),
                   _InfoRow(
                     icon: LucideIcons.phone,
                     label: "Nomor HP",
-                    value: "081234567890",
+                    value: _currentUser!['phone'] ?? "-",
                   ),
                   const Divider(height: 24),
                   _InfoRow(
                     icon: LucideIcons.mapPin,
                     label: "Alamat",
-                    value: "Tembalang, Semarang",
+                    value: _currentUser!['address'] ?? "-",
                   ),
                 ],
               ),
@@ -156,51 +214,13 @@ class ProfilePage extends StatelessWidget {
                   _InfoRow(
                     icon: LucideIcons.userCircle,
                     label: "Nama",
-                    value: "Budi Santoso",
+                    value: _currentUser!['emergencyName'] ?? "-",
                   ),
                   const Divider(height: 20),
                   _InfoRow(
                     icon: LucideIcons.phoneCall,
                     label: "Nomor HP",
-                    value: "081298765432",
-                  ),
-                ],
-              ),
-            ),
-            const Gap(16),
-
-            // Stats
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _StatItem(
-                      icon: LucideIcons.fileText,
-                      value: "12",
-                      label: "Laporan",
-                    ),
-                  ),
-                  Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  Expanded(
-                    child: _StatItem(
-                      icon: LucideIcons.checkCircle,
-                      value: "10",
-                      label: "Selesai",
-                    ),
-                  ),
-                  Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  Expanded(
-                    child: _StatItem(
-                      icon: LucideIcons.clock,
-                      value: "2",
-                      label: "Proses",
-                    ),
+                    value: _currentUser!['emergencyPhone'] ?? "-",
                   ),
                 ],
               ),
@@ -219,7 +239,11 @@ class ProfilePage extends StatelessWidget {
                   _MenuItem(
                     icon: LucideIcons.edit,
                     label: "Edit Profil",
-                    onTap: () => context.push('/edit-profile'),
+                    onTap: () async {
+                      // Reload data when returning from edit profile
+                      await context.push('/edit-profile');
+                      _loadUserData();
+                    },
                   ),
                   _MenuItem(
                     icon: LucideIcons.settings,
@@ -300,33 +324,6 @@ class _InfoRow extends StatelessWidget {
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-
-  const _StatItem({
-    required this.icon,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: AppTheme.primaryColor),
-        const Gap(4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
       ],
     );
   }

@@ -14,11 +14,13 @@ import 'package:mobile/core/widgets/bouncing_button.dart';
 class CreateReportPage extends StatefulWidget {
   final String category;
   final bool isEmergency;
+  final String? categoryId; // New parameter
 
   const CreateReportPage({
     super.key,
     required this.category,
     this.isEmergency = false,
+    this.categoryId,
   });
 
   @override
@@ -198,12 +200,25 @@ class _CreateReportPageState extends State<CreateReportPage> {
       }
 
       // 2. Fetch categories to find matching ID
-      final categories = await reportService.getCategories();
-      final category = categories.firstWhere(
-        (c) => c['name'].toString().toLowerCase() == widget.category.toLowerCase(),
-        orElse: () => categories.firstWhere((c) => c['type'] == (widget.isEmergency ? 'emergency' : 'non-emergency'), orElse: () => {'id': 1}),
-      );
-      final String categoryId = category['id'].toString();
+      String categoryId;
+      if (widget.categoryId != null) {
+        categoryId = widget.categoryId!;
+      } else {
+        // Fallback for backward compatibility
+        final categories = await reportService.getCategories();
+        final category = categories.firstWhere(
+          (c) =>
+              c['name'].toString().toLowerCase() ==
+              widget.category.toLowerCase(),
+          orElse: () => categories.firstWhere(
+            (c) =>
+                c['type'] ==
+                (widget.isEmergency ? 'emergency' : 'non-emergency'),
+            orElse: () => {'id': 1},
+          ),
+        );
+        categoryId = category['id'].toString();
+      }
 
       // 3. Upload images
       final List<String> uploadedUrls = [];
@@ -215,7 +230,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
       }
 
       if (uploadedUrls.isEmpty) {
-        throw Exception('Gagal mengunggah foto. Periksa koneksi internet Anda.');
+        throw Exception(
+          'Gagal mengunggah foto. Periksa koneksi internet Anda.',
+        );
       }
 
       // 4. Create report
@@ -245,9 +262,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }

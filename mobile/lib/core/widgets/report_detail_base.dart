@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -15,27 +16,6 @@ import 'package:mobile/core/models/report_log.dart';
 import 'package:mobile/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Category-specific header images
-const _categoryImages = {
-  'Maintenance':
-      'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=800',
-  'Emergency':
-      'https://images.unsplash.com/photo-1587653915936-5623838a5c8c?w=800',
-  'Kebersihan':
-      'https://images.unsplash.com/photo-1628177142898-93e36e4e3a50?w=800',
-  'Infrastruktur Kelas':
-      'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=800',
-  'Kelistrikan':
-      'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=800',
-  'Sipil & Bangunan':
-      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800',
-  'Sanitasi':
-      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=800',
-};
-
-const _defaultHeaderImage =
-    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800';
-
 class ReportDetailBase extends StatelessWidget {
   final Report report;
   final UserRole viewerRole;
@@ -51,11 +31,6 @@ class ReportDetailBase extends StatelessWidget {
   });
 
   /// Get category-specific header image
-  String get _headerImage {
-    // Priority: custom imageUrl > category image > default
-    if (report.imageUrl != null) return report.imageUrl!;
-    return _categoryImages[report.category] ?? _defaultHeaderImage;
-  }
 
   void _launchPhone(String? phoneNumber) async {
     if (phoneNumber == null) return;
@@ -124,12 +99,16 @@ class ReportDetailBase extends StatelessWidget {
                   _buildStatusCard(),
                   const Gap(16),
 
-                  // Media Evidence Gallery
-                  if (report.mediaUrls != null &&
-                      report.mediaUrls!.isNotEmpty) ...[
-                    MediaGalleryWidget(mediaUrls: report.mediaUrls!),
-                    const Gap(16),
-                  ],
+                  // Media Evidence Gallery (Always show logic)
+                  MediaGalleryWidget(
+                    mediaUrls:
+                        (report.mediaUrls != null &&
+                            report.mediaUrls!.isNotEmpty)
+                        ? report.mediaUrls!
+                        : const [
+                            'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&q=80',
+                          ],
+                  ),
                   const Gap(16),
 
                   // Reporter Info (Visible to Everyone)
@@ -306,11 +285,12 @@ class ReportDetailBase extends StatelessWidget {
                           'Detail Lokasi',
                           report.locationDetail!,
                         ),
-                      if (report.latitude != null &&
-                          report.longitude != null) ...[
-                        const Gap(12),
-                        _buildMapPreview(context),
-                      ],
+                      const Gap(12),
+                      _buildMapPreview(
+                        context,
+                        latitude: report.latitude ?? -6.998576,
+                        longitude: report.longitude ?? 110.423188,
+                      ),
                     ],
                   ),
                   const Gap(16),
@@ -339,20 +319,38 @@ class ReportDetailBase extends StatelessWidget {
                     accentColor: AppTheme.primaryColor,
                     children: [
                       ReportTimeline(
-                        logs: [
-                          ReportLog(
-                            id: 'created_${report.id}',
-                            fromStatus: ReportStatus.pending, // Initial
-                            toStatus: ReportStatus.pending,
-                            action: ReportAction
-                                .created, // Map to "Laporan Dibuat" in UI
-                            actorId: report.reporterId,
-                            actorName: report.reporterName,
-                            actorRole: 'Pelapor',
-                            timestamp: report.createdAt,
-                          ),
-                          ...report.logs,
-                        ],
+                        logs: () {
+                          // Create a mutable copy of logs
+                          final allLogs = List<ReportLog>.from(report.logs);
+
+                          // Check if "created" action already exists
+                          final hasCreatedLog = allLogs.any(
+                            (log) => log.action == ReportAction.created,
+                          );
+
+                          // If not, add a synthetic one based on report.createdAt
+                          if (!hasCreatedLog) {
+                            allLogs.add(
+                              ReportLog(
+                                id: 'created_${report.id}',
+                                fromStatus: ReportStatus.pending,
+                                toStatus: ReportStatus.pending,
+                                action: ReportAction.created,
+                                actorId: report.reporterId,
+                                actorName: report.reporterName,
+                                actorRole: 'Pelapor',
+                                timestamp: report.createdAt,
+                              ),
+                            );
+                          }
+
+                          // Sort by timestamp descending (Newest first)
+                          allLogs.sort(
+                            (a, b) => b.timestamp.compareTo(a.timestamp),
+                          );
+
+                          return allLogs;
+                        }(),
                       ),
                     ],
                   ),
@@ -395,16 +393,18 @@ class ReportDetailBase extends StatelessWidget {
   }
 
   Widget _buildSliverAppBar(BuildContext context) {
+    final statusColor = AppTheme.getStatusColor(report.status.name);
+
     return SliverAppBar(
-      expandedHeight: 250,
+      expandedHeight: 200,
       pinned: true,
-      backgroundColor: appBarColor ?? AppTheme.primaryColor,
+      backgroundColor: statusColor,
       leading: IconButton(
         onPressed: () => context.pop(),
         icon: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.2),
             shape: BoxShape.circle,
           ),
           child: const Icon(
@@ -418,68 +418,40 @@ class ReportDetailBase extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Header Image (category-based or custom)
-            Image.network(
-              _headerImage,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey.shade300,
-                child: const Icon(
-                  LucideIcons.image,
-                  size: 64,
-                  color: Colors.grey,
+            // 1. Base Color
+            Container(color: statusColor),
+
+            // 2. Pattern Overlay
+            CustomPaint(
+              painter: _PatternPainter(color: Colors.white.withOpacity(0.1)),
+            ),
+
+            // 3. Large Watermark Icon (Category/Status)
+            Positioned(
+              right: -40,
+              bottom: -20,
+              child: Transform.rotate(
+                angle: -0.2,
+                child: Icon(
+                  AppTheme.getStatusIcon(report.status.name),
+                  size: 180,
+                  color: Colors.white.withOpacity(0.15),
                 ),
               ),
             ),
 
-            // Gradient Overlay
+            // 4. Gradient Overlay for Text Readability
             Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                  colors: [Colors.transparent, Colors.black45],
                 ),
               ),
             ),
 
-            // Emergency Badge
-            if (report.isEmergency)
-              Positioned(
-                top: 80,
-                right: 16,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.emergencyColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        LucideIcons.alertTriangle,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      Gap(4),
-                      Text(
-                        'DARURAT',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-            // Title and Category
+            // 5. Title and Category
             Positioned(
               bottom: 16,
               left: 16,
@@ -487,31 +459,68 @@ class ReportDetailBase extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      report.category,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
+                  // Badge: Emergency OR Category
+                  if (report.isEmergency)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.emergencyColor,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white, width: 1),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            LucideIcons.alertTriangle,
+                            color: Colors.white,
+                            size: 14,
+                          ),
+                          Gap(6),
+                          Text(
+                            'DARURAT',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        report.category,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  const Gap(8),
+                  const Gap(12),
                   Text(
                     report.title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      height: 1.2,
                     ),
                   ),
                 ],
@@ -676,7 +685,11 @@ class ReportDetailBase extends StatelessWidget {
     );
   }
 
-  Widget _buildMapPreview(BuildContext context) {
+  Widget _buildMapPreview(
+    BuildContext context, {
+    required double latitude,
+    required double longitude,
+  }) {
     return Container(
       height: 150,
       width: double.infinity,
@@ -688,7 +701,7 @@ class ReportDetailBase extends StatelessWidget {
             IgnorePointer(
               child: FlutterMap(
                 options: MapOptions(
-                  initialCenter: LatLng(report.latitude!, report.longitude!),
+                  initialCenter: LatLng(latitude, longitude),
                   initialZoom: 15,
                   interactionOptions: const InteractionOptions(
                     flags: InteractiveFlag.none,
@@ -703,7 +716,7 @@ class ReportDetailBase extends StatelessWidget {
                   MarkerLayer(
                     markers: [
                       Marker(
-                        point: LatLng(report.latitude!, report.longitude!),
+                        point: LatLng(latitude, longitude),
                         width: 40,
                         height: 40,
                         child: const Icon(
@@ -727,8 +740,8 @@ class ReportDetailBase extends StatelessWidget {
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => FullscreenMapModal(
-                      latitude: report.latitude!,
-                      longitude: report.longitude!,
+                      latitude: latitude,
+                      longitude: longitude,
                       locationName: report.building,
                     ),
                   );
@@ -751,4 +764,32 @@ class ReportDetailBase extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PatternPainter extends CustomPainter {
+  final Color color;
+
+  _PatternPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    const double spacing = 30; // Spacing between lines
+
+    // Draw diagonal lines
+    for (double i = -size.height; i < size.width; i += spacing) {
+      canvas.drawLine(
+        Offset(i, size.height),
+        Offset(i + size.height, 0),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

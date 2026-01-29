@@ -29,10 +29,7 @@ class StaffProfilePage extends StatelessWidget {
         title: const Text('Profil'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          onPressed: () => context.pop(),
-          icon: const Icon(LucideIcons.arrowLeft),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -123,12 +120,17 @@ class StaffProfilePage extends StatelessWidget {
               child: Column(
                 children: [
                   _buildActionItem(
-                    LucideIcons.lock,
-                    'Ubah Password',
-                    () => _showChangePasswordDialog(context),
+                    LucideIcons.settings,
+                    'Pengaturan & Keamanan',
+                    () {
+                      // Navigate based on role
+                      context.push('/$role/settings');
+                    },
                   ),
                   const Divider(height: 1),
-                  _buildActionItem(LucideIcons.helpCircle, 'Bantuan', () {}),
+                  _buildActionItem(LucideIcons.helpCircle, 'Bantuan', () {
+                    context.push('/$role/help');
+                  }),
                 ],
               ),
             ),
@@ -192,7 +194,7 @@ class StaffProfilePage extends StatelessWidget {
       case 'supervisor':
         return const Color(0xFF6366F1);
       case 'admin':
-        return const Color(0xFF059669);
+        return AppTheme.adminColor;
       case 'pjGedung':
         return const Color(0xFFF59E0B);
       default:
@@ -228,71 +230,6 @@ class StaffProfilePage extends StatelessWidget {
       default:
         return LucideIcons.user;
     }
-  }
-
-  void _showChangePasswordDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Ubah Password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password Lama',
-                prefixIcon: const Icon(LucideIcons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const Gap(12),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Password Baru',
-                prefixIcon: const Icon(LucideIcons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const Gap(12),
-            TextField(
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Konfirmasi Password',
-                prefixIcon: const Icon(LucideIcons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password berhasil diubah'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Simpan'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showLogoutDialog(BuildContext context) {

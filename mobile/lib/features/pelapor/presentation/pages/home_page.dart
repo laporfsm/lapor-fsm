@@ -5,12 +5,12 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/theme.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/core/utils/icon_helper.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -21,7 +21,7 @@ class HomePage extends ConsumerStatefulWidget {
 
 class _HomePageState extends ConsumerState<HomePage> {
   List<Report> _recentReports = [];
-  List<Map<String, dynamic>> _categories = []; // New
+  List<Map<String, dynamic>> _categories = [];
   bool _isLoading = true;
 
   @override
@@ -32,10 +32,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
-    await Future.wait([
-      _fetchReports(),
-      _fetchCategories(),
-    ]);
+    await Future.wait([_fetchReports(), _fetchCategories()]);
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -44,7 +41,11 @@ class _HomePageState extends ConsumerState<HomePage> {
       final categories = await reportService.getCategories();
       if (mounted) {
         setState(() {
-          _categories = List<Map<String, dynamic>>.from(categories);
+          _categories = List<Map<String, dynamic>>.from(categories)
+              .where(
+                (c) => !c['name'].toString().toLowerCase().contains('darurat'),
+              )
+              .toList();
         });
       }
     } catch (e) {
@@ -54,7 +55,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Future<void> _fetchReports() async {
     if (!mounted) return;
-    
+
     try {
       final reportsData = await reportService.getPublicReports();
       if (mounted) {
@@ -261,9 +262,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                  ),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
                 ),
                 child: const Icon(
                   LucideIcons.bell,
@@ -280,10 +279,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white,
-                        width: 2,
-                      ),
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                     constraints: const BoxConstraints(
                       minWidth: 16,
@@ -331,11 +327,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              Icon(
-                LucideIcons.siren,
-                color: Colors.white,
-                size: 40,
-              ),
+              Icon(LucideIcons.siren, color: Colors.white, size: 40),
               Gap(8),
               Text(
                 "LAPOR",
@@ -361,10 +353,16 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildMenuGrid() {
-    // If categories not loaded yet, use a simple loader or fallback
     if (_categories.isEmpty) {
-        return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator());
     }
+
+    final maxItems = 8;
+    // If categories <= 8, show all. If > 8, show 7 + "Lihat Semua"
+    final shouldLimit = _categories.length > maxItems;
+    final displayCategories = shouldLimit
+        ? _categories.take(maxItems - 1).toList()
+        : _categories;
 
     return GridView.builder(
       shrinkWrap: true,
@@ -375,34 +373,51 @@ class _HomePageState extends ConsumerState<HomePage> {
         crossAxisSpacing: 12,
         mainAxisSpacing: 16,
       ),
-      itemCount: _categories.length,
+      itemCount: shouldLimit ? maxItems : displayCategories.length,
       itemBuilder: (context, index) {
-        final category = _categories[index];
-        final name = category['name'] as String;
-        
-        // Dynamic Icon mapping
-        IconData icon = LucideIcons.helpCircle;
-        Color color = Colors.blueGrey;
-
-        if (name.contains('Kelas') || name.contains('Infrastruktur')) {
-            icon = LucideIcons.building; color = const Color(0xFF1E3A8A);
-        } else if (name.contains('Listrik')) {
-            icon = LucideIcons.zap; color = const Color(0xFFF59E0B);
-        } else if (name.contains('Sipil') || name.contains('Bangunan')) {
-            icon = LucideIcons.hardHat; color = const Color(0xFF6366F1);
-        } else if (name.contains('Air') || name.contains('Sanitasi')) {
-            icon = LucideIcons.droplet; color = const Color(0xFF0EA5E9);
-        } else if (name.contains('Bersih')) {
-            icon = LucideIcons.trash2; color = const Color(0xFF22C55E);
-        } else if (name.contains('Taman')) {
-            icon = LucideIcons.trees; color = const Color(0xFF10B981);
+        // "Lihat Semua" button
+        if (shouldLimit && index == maxItems - 1) {
+          return BouncingButton(
+            onTap: _showAllCategoriesSheet,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    LucideIcons.moreHorizontal,
+                    color: Colors.black54,
+                    size: 20,
+                  ),
+                ),
+                const Gap(6),
+                const Text(
+                  "Lihat Semua",
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          );
         }
+
+        final category = displayCategories[index];
+        final name = category['name'] as String;
+        final iconStr = category['icon'] as String? ?? 'help-circle';
 
         return BouncingButton(
           onTap: () {
             context.push(
               '/create-report',
-              extra: {'category': name, 'isEmergency': false, 'categoryId': category['id'].toString()},
+              extra: {
+                'category': name,
+                'isEmergency': false,
+                'categoryId': category['id'].toString(),
+              },
             );
           },
           child: Column(
@@ -410,15 +425,22 @@ class _HomePageState extends ConsumerState<HomePage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: AppTheme.primaryColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(
+                  IconHelper.getIcon(iconStr),
+                  color: AppTheme.primaryColor,
+                  size: 20,
+                ),
               ),
               const Gap(6),
               Text(
                 name,
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -427,6 +449,97 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  void _showAllCategoriesSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 20),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const Text(
+              "Semua Kategori",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const Gap(20),
+            Expanded(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(20),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  childAspectRatio: 0.8,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 16,
+                ),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final name = category['name'] as String;
+                  final iconStr = category['icon'] as String? ?? 'help-circle';
+
+                  return BouncingButton(
+                    onTap: () {
+                      Navigator.pop(context);
+                      context.push(
+                        '/create-report',
+                        extra: {
+                          'category': name,
+                          'isEmergency': false,
+                          'categoryId': category['id'].toString(),
+                        },
+                      );
+                    },
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            IconHelper.getIcon(iconStr),
+                            color: AppTheme.primaryColor,
+                            size: 20,
+                          ),
+                        ),
+                        const Gap(6),
+                        Text(
+                          name,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

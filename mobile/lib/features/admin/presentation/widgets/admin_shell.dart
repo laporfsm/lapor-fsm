@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/features/admin/services/admin_service.dart';
+import 'package:mobile/theme.dart';
 
 /// Admin Shell - Persistent Bottom Navigation for Admin Pages
-class AdminShell extends StatelessWidget {
+class AdminShell extends StatefulWidget {
   final Widget child;
   final String currentLocation;
 
@@ -13,11 +15,26 @@ class AdminShell extends StatelessWidget {
     required this.currentLocation,
   });
 
+  @override
+  State<AdminShell> createState() => _AdminShellState();
+}
+
+class _AdminShellState extends State<AdminShell> {
+  @override
+  void initState() {
+    super.initState();
+    // Initial fetch
+    adminService.fetchPendingUserCount();
+  }
+
   int _getIndex() {
-    if (currentLocation.startsWith('/admin/verifikasi')) return 1;
-    if (currentLocation.startsWith('/admin/notifikasi')) return 2;
-    if (currentLocation.startsWith('/admin/profil')) return 3;
-    return 0; // Beranda
+    if (widget.currentLocation.startsWith('/admin/users')) return 1;
+    if (widget.currentLocation.startsWith('/admin/verification')) return 1;
+    if (widget.currentLocation.startsWith('/admin/staff')) return 1;
+    if (widget.currentLocation.startsWith('/admin/reports')) return 2;
+    if (widget.currentLocation.startsWith('/admin/logs')) return 3;
+    if (widget.currentLocation.startsWith('/admin/profile')) return 4;
+    return 0; // Dashboard
   }
 
   @override
@@ -25,7 +42,7 @@ class AdminShell extends StatelessWidget {
     final currentIndex = _getIndex();
 
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -39,35 +56,45 @@ class AdminShell extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _NavItem(
                   icon: LucideIcons.layoutDashboard,
-                  label: 'Beranda',
+                  label: 'Dashboard',
                   isSelected: currentIndex == 0,
-                  onTap: () => context.go('/admin'),
+                  onTap: () => context.go('/admin/dashboard'),
+                ),
+                ValueListenableBuilder<int>(
+                  valueListenable: adminService.pendingUserCount,
+                  builder: (context, count, _) {
+                    return _NavItem(
+                      icon: LucideIcons.users,
+                      label: 'Users',
+                      isSelected: currentIndex == 1,
+                      badge: count,
+                      onTap: () => context.go('/admin/users'),
+                    );
+                  },
                 ),
                 _NavItem(
-                  icon: LucideIcons.userCheck,
-                  label: 'Verifikasi',
-                  isSelected: currentIndex == 1,
-                  badge: 3, // Pending count
-                  onTap: () => context.go('/admin/verifikasi'),
-                ),
-                _NavItem(
-                  icon: LucideIcons.bell,
-                  label: 'Notifikasi',
+                  icon: LucideIcons.fileText,
+                  label: 'Laporan',
                   isSelected: currentIndex == 2,
-                  badge: 2, // Unread count
-                  onTap: () => context.go('/admin/notifikasi'),
+                  onTap: () => context.go('/admin/reports'),
+                ),
+                _NavItem(
+                  icon: LucideIcons.history, // or LucideIcons.scrollText
+                  label: 'Log',
+                  isSelected: currentIndex == 3,
+                  onTap: () => context.go('/admin/logs'),
                 ),
                 _NavItem(
                   icon: LucideIcons.user,
                   label: 'Profil',
-                  isSelected: currentIndex == 3,
-                  onTap: () => context.go('/admin/profil'),
+                  isSelected: currentIndex == 4,
+                  onTap: () => context.go('/admin/profile'),
                 ),
               ],
             ),
@@ -95,7 +122,8 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const selectedColor = Color(0xFF059669);
+    // Use the theme color (Purple)
+    const selectedColor = AppTheme.adminColor;
     final unselectedColor = Colors.grey.shade500;
 
     return GestureDetector(
@@ -103,7 +131,7 @@ class _NavItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? selectedColor.withAlpha(26) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -125,7 +153,9 @@ class _NavItem extends StatelessWidget {
                     top: -4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 5, vertical: 2),
+                        horizontal: 5,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(10),
@@ -146,7 +176,7 @@ class _NavItem extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10, // Squeezing font slightly for 5 items
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: isSelected ? selectedColor : unselectedColor,
               ),

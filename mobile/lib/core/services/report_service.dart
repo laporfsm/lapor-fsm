@@ -18,18 +18,21 @@ class ReportService {
     int offset = 0,
   }) async {
     try {
-      final response = await apiService.dio.get('/reports', queryParameters: {
-        if (category != null) 'category': category,
-        if (building != null) 'building': building,
-        if (status != null) 'status': status,
-        if (search != null) 'search': search,
-        if (isEmergency != null) 'isEmergency': isEmergency.toString(),
-        if (period != null) 'period': period,
-        if (startDate != null) 'startDate': startDate,
-        if (endDate != null) 'endDate': endDate,
-        'limit': limit.toString(),
-        'offset': offset.toString(),
-      });
+      final response = await apiService.dio.get(
+        '/reports',
+        queryParameters: {
+          if (category != null) 'category': category,
+          if (building != null) 'building': building,
+          if (status != null) 'status': status,
+          if (search != null) 'search': search,
+          if (isEmergency != null) 'isEmergency': isEmergency.toString(),
+          if (period != null) 'period': period,
+          if (startDate != null) 'startDate': startDate,
+          if (endDate != null) 'endDate': endDate,
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
 
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -42,11 +45,15 @@ class ReportService {
   }
 
   // Get user's own reports
-  Future<List<Map<String, dynamic>>> getMyReports(String userId, {String? role}) async {
+  Future<List<Map<String, dynamic>>> getMyReports(
+    String userId, {
+    String? role,
+  }) async {
     try {
-      final response = await apiService.dio.get('/reports/my/$userId', queryParameters: {
-        if (role != null) 'role': role,
-      });
+      final response = await apiService.dio.get(
+        '/reports/my/$userId',
+        queryParameters: {if (role != null) 'role': role},
+      );
 
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -125,13 +132,10 @@ class ReportService {
   Future<String?> uploadImage(XFile xfile) async {
     try {
       MultipartFile multipartFile;
-      
+
       if (kIsWeb) {
         final bytes = await xfile.readAsBytes();
-        multipartFile = MultipartFile.fromBytes(
-          bytes,
-          filename: xfile.name,
-        );
+        multipartFile = MultipartFile.fromBytes(bytes, filename: xfile.name);
       } else {
         multipartFile = await MultipartFile.fromFile(
           xfile.path,
@@ -139,9 +143,7 @@ class ReportService {
         );
       }
 
-      final formData = FormData.fromMap({
-        'file': multipartFile,
-      });
+      final formData = FormData.fromMap({'file': multipartFile});
 
       final response = await apiService.dio.post('/upload', data: formData);
 
@@ -161,7 +163,9 @@ class ReportService {
       final response = await apiService.dio.get('/reports/categories');
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final allCats = List<Map<String, dynamic>>.from(response.data['data']);
+        // Optional: Filter 'Darurat' if needed globally, but better to filter in UI
+        return allCats;
       }
       return [];
     } catch (e) {
@@ -169,6 +173,55 @@ class ReportService {
       return [];
     }
   }
+
+  // Create Category
+  Future<bool> createCategory(String name, String icon) async {
+    try {
+      final response = await apiService.dio.post(
+        '/categories',
+        data: {'name': name, 'icon': icon},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error creating category: $e');
+      return false;
+    }
+  }
+
+  // Update Category
+  Future<bool> updateCategory(int id, String name, String icon) async {
+    try {
+      final response = await apiService.dio.put(
+        '/categories/$id',
+        data: {'name': name, 'icon': icon},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      print('Error updating category: $e');
+      return false;
+    }
+  }
+
+  // Delete Category
+  Future<Map<String, dynamic>> deleteCategory(int id) async {
+    try {
+      final response = await apiService.dio.delete('/categories/$id');
+      if (response.data['status'] == 'success') {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': response.data['message']};
+      }
+    } catch (e) {
+      print('Error deleting category: $e');
+      // Extract error message if available
+      String msg = 'Gagal menghapus kategori.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
+    }
+  }
+
   // STAFF ENDPOINTS
 
   // Get PJ Gedung Dashboard Stats
@@ -186,9 +239,13 @@ class ReportService {
   }
 
   // Get Supervisor Dashboard Stats
-  Future<Map<String, dynamic>?> getSupervisorDashboardStats(String staffId) async {
+  Future<Map<String, dynamic>?> getSupervisorDashboardStats(
+    String staffId,
+  ) async {
     try {
-      final response = await apiService.dio.get('/supervisor/dashboard/$staffId');
+      final response = await apiService.dio.get(
+        '/supervisor/dashboard/$staffId',
+      );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
       }
@@ -200,9 +257,13 @@ class ReportService {
   }
 
   // Get Technician Dashboard Stats
-  Future<Map<String, dynamic>?> getTechnicianDashboardStats(String staffId) async {
+  Future<Map<String, dynamic>?> getTechnicianDashboardStats(
+    String staffId,
+  ) async {
     try {
-      final response = await apiService.dio.get('/technician/dashboard/$staffId');
+      final response = await apiService.dio.get(
+        '/technician/dashboard/$staffId',
+      );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
       }
@@ -222,11 +283,14 @@ class ReportService {
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
-      final response = await apiService.dio.get('/$prefix/reports', queryParameters: {
-        if (status != null) 'status': status,
-        if (isEmergency != null) 'isEmergency': isEmergency.toString(),
-        if (period != null) 'period': period,
-      });
+      final response = await apiService.dio.get(
+        '/$prefix/reports',
+        queryParameters: {
+          if (status != null) 'status': status,
+          if (isEmergency != null) 'isEmergency': isEmergency.toString(),
+          if (period != null) 'period': period,
+        },
+      );
 
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -240,13 +304,18 @@ class ReportService {
 
   // --- Report Actions ---
 
-  Future<bool> verifyReport(String reportId, String staffId, {String? notes, String? role}) async {
+  Future<bool> verifyReport(
+    String reportId,
+    String staffId, {
+    String? notes,
+    String? role,
+  }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : 'supervisor';
-      final response = await apiService.dio.post('/$prefix/reports/$reportId/verify', data: {
-        'staffId': int.parse(staffId),
-        'notes': notes,
-      });
+      final response = await apiService.dio.post(
+        '/$prefix/reports/$reportId/verify',
+        data: {'staffId': int.parse(staffId), 'notes': notes},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error verifying report: $e');
@@ -254,12 +323,19 @@ class ReportService {
     }
   }
 
-  Future<bool> assignTechnician(String reportId, String supervisorId, String technicianId) async {
+  Future<bool> assignTechnician(
+    String reportId,
+    String supervisorId,
+    String technicianId,
+  ) async {
     try {
-      final response = await apiService.dio.post('/supervisor/reports/$reportId/assign', data: {
-        'supervisorId': int.parse(supervisorId),
-        'technicianId': int.parse(technicianId),
-      });
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/assign',
+        data: {
+          'supervisorId': int.parse(supervisorId),
+          'technicianId': int.parse(technicianId),
+        },
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error assigning technician: $e');
@@ -267,12 +343,16 @@ class ReportService {
     }
   }
 
-  Future<bool> recallReport(String reportId, String staffId, String reason) async {
+  Future<bool> recallReport(
+    String reportId,
+    String staffId,
+    String reason,
+  ) async {
     try {
-      final response = await apiService.dio.post('/supervisor/reports/$reportId/recall', data: {
-        'staffId': int.parse(staffId),
-        'reason': reason,
-      });
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/recall',
+        data: {'staffId': int.parse(staffId), 'reason': reason},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error recalling report: $e');
@@ -280,12 +360,16 @@ class ReportService {
     }
   }
 
-  Future<bool> approveReport(String reportId, String staffId, {String? notes}) async {
+  Future<bool> approveReport(
+    String reportId,
+    String staffId, {
+    String? notes,
+  }) async {
     try {
-      final response = await apiService.dio.post('/supervisor/reports/$reportId/approve', data: {
-        'staffId': int.parse(staffId),
-        'notes': notes,
-      });
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/approve',
+        data: {'staffId': int.parse(staffId), 'notes': notes},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error approving report: $e');
@@ -293,12 +377,16 @@ class ReportService {
     }
   }
 
-  Future<bool> rejectReport(String reportId, String staffId, String reason) async {
+  Future<bool> rejectReport(
+    String reportId,
+    String staffId,
+    String reason,
+  ) async {
     try {
-      final response = await apiService.dio.post('/supervisor/reports/$reportId/reject', data: {
-        'staffId': int.parse(staffId),
-        'reason': reason,
-      });
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/reject',
+        data: {'staffId': int.parse(staffId), 'reason': reason},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error rejecting report: $e');
@@ -323,9 +411,10 @@ class ReportService {
 
   Future<bool> acceptReport(String reportId, String staffId) async {
     try {
-      final response = await apiService.dio.post('/technician/reports/$reportId/accept', data: {
-        'staffId': int.parse(staffId),
-      });
+      final response = await apiService.dio.post(
+        '/technician/reports/$reportId/accept',
+        data: {'staffId': int.parse(staffId)},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error accepting report: $e');
@@ -333,13 +422,21 @@ class ReportService {
     }
   }
 
-  Future<bool> pauseReport(String reportId, String staffId, String reason, {String? photoUrl}) async {
+  Future<bool> pauseReport(
+    String reportId,
+    String staffId,
+    String reason, {
+    String? photoUrl,
+  }) async {
     try {
-      final response = await apiService.dio.post('/technician/reports/$reportId/pause', data: {
-        'staffId': int.parse(staffId),
-        'reason': reason,
-        'photoUrl': photoUrl,
-      });
+      final response = await apiService.dio.post(
+        '/technician/reports/$reportId/pause',
+        data: {
+          'staffId': int.parse(staffId),
+          'reason': reason,
+          'photoUrl': photoUrl,
+        },
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error pausing report: $e');
@@ -349,9 +446,10 @@ class ReportService {
 
   Future<bool> resumeReport(String reportId, String staffId) async {
     try {
-      final response = await apiService.dio.post('/technician/reports/$reportId/resume', data: {
-        'staffId': int.parse(staffId),
-      });
+      final response = await apiService.dio.post(
+        '/technician/reports/$reportId/resume',
+        data: {'staffId': int.parse(staffId)},
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error resuming report: $e');
@@ -359,13 +457,21 @@ class ReportService {
     }
   }
 
-  Future<bool> completeReport(String reportId, String staffId, {String? notes, List<String>? mediaUrls}) async {
+  Future<bool> completeReport(
+    String reportId,
+    String staffId, {
+    String? notes,
+    List<String>? mediaUrls,
+  }) async {
     try {
-      final response = await apiService.dio.post('/technician/reports/$reportId/complete', data: {
-        'staffId': int.parse(staffId),
-        'notes': notes,
-        'mediaUrls': mediaUrls ?? [],
-      });
+      final response = await apiService.dio.post(
+        '/technician/reports/$reportId/complete',
+        data: {
+          'staffId': int.parse(staffId),
+          'notes': notes,
+          'mediaUrls': mediaUrls ?? [],
+        },
+      );
       return response.data['status'] == 'success';
     } catch (e) {
       print('Error completing report: $e');

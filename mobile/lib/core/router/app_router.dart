@@ -51,14 +51,16 @@ import 'package:mobile/features/supervisor/presentation/pages/supervisor_categor
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_activity_log_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/supervisor_building_list_page.dart';
 // Admin imports
-import 'package:mobile/features/admin/presentation/pages/admin_home_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_staff_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_categories_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_users_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_pending_registrations_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_notifications_page.dart';
-import 'package:mobile/features/admin/presentation/pages/admin_profile_page.dart';
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_dashboard_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_users_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_reports_page.dart';
+import 'package:mobile/features/admin/presentation/pages/user_detail_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_settings_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_statistics_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_help_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_report_detail_page.dart';
+import 'package:mobile/features/admin/presentation/pages/admin_activity_log_page.dart';
 // Auth imports
 import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
@@ -180,6 +182,7 @@ final appRouter = GoRouter(
         return CreateReportPage(
           category: extra['category'] ?? 'Umum',
           isEmergency: extra['isEmergency'] ?? false,
+          categoryId: extra['categoryId'],
         );
       },
     ),
@@ -397,43 +400,69 @@ final appRouter = GoRouter(
       },
     ),
     // ===============================================
+    // ===============================================
+    // ADMIN ROUTES
+    // ===============================================
+    // ADMIN SHELL
     ShellRoute(
-      navigatorKey: GlobalKey<NavigatorState>(),
       builder: (context, state, child) {
         return AdminShell(currentLocation: state.uri.path, child: child);
       },
       routes: [
-        // Bottom Nav Tabs
         GoRoute(
-          path: '/admin',
-          builder: (context, state) => const AdminHomePage(),
-        ),
-        GoRoute(
-          path: '/admin/verifikasi',
-          builder: (context, state) => const AdminPendingRegistrationsPage(),
-        ),
-        GoRoute(
-          path: '/admin/notifikasi',
-          builder: (context, state) => const AdminNotificationsPage(),
-        ),
-        GoRoute(
-          path: '/admin/profil',
-          builder: (context, state) => const AdminProfilePage(),
-        ),
-        // Pages accessed from Beranda (with bottom nav visible)
-        GoRoute(
-          path: '/admin/staff',
-          builder: (context, state) => const AdminStaffPage(),
+          path: '/admin/dashboard',
+          builder: (context, state) => const AdminDashboardPage(),
         ),
         GoRoute(
           path: '/admin/users',
-          builder: (context, state) => const AdminUsersPage(),
+          builder: (context, state) {
+            final tab = state.uri.queryParameters['tab'];
+            final action = state.uri.queryParameters['action'];
+            final initialIndex = tab != null ? int.tryParse(tab) ?? 0 : 0;
+            return AdminUsersPage(initialIndex: initialIndex, action: action);
+          },
         ),
         GoRoute(
-          path: '/admin/categories',
-          builder: (context, state) => const AdminCategoriesPage(),
+          path: '/admin/reports',
+          builder: (context, state) => const AdminReportsPage(),
+        ),
+        GoRoute(
+          path: '/admin/logs', // New Log Route
+          builder: (context, state) => const AdminActivityLogPage(),
+        ),
+        GoRoute(
+          path: '/admin/statistics', // New Statistics Route
+          builder: (context, state) => const AdminStatisticsPage(),
+        ),
+        GoRoute(
+          path: '/admin/profile',
+          builder: (context, state) => const StaffProfilePage(role: 'admin'),
         ),
       ],
+    ),
+
+    // Admin Support Pages (Outside Shell)
+    GoRoute(
+      path: '/admin/users/:id',
+      builder: (context, state) {
+        final userId = state.pathParameters['id']!;
+        return UserDetailPage(userId: userId);
+      },
+    ),
+    GoRoute(
+      path: '/admin/settings',
+      builder: (context, state) => const AdminSettingsPage(),
+    ),
+    GoRoute(
+      path: '/admin/help',
+      builder: (context, state) => const AdminHelpPage(),
+    ),
+    GoRoute(
+      path: '/admin/reports/:id',
+      builder: (context, state) {
+        final reportId = state.pathParameters['id']!;
+        return AdminReportDetailPage(reportId: reportId);
+      },
     ),
 
     // Admin pages outside shell (focused views without bottom nav)

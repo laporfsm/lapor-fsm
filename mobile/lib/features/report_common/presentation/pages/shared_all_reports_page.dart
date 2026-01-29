@@ -25,6 +25,7 @@ class SharedAllReportsPage extends StatefulWidget {
   final bool showBackButton;
   final bool showAppBar;
   final bool enableDateFilter; // New parameter to toggle date filter visibility
+  final Widget? floatingActionButton; // New parameter
 
   const SharedAllReportsPage({
     super.key,
@@ -40,6 +41,7 @@ class SharedAllReportsPage extends StatefulWidget {
     this.appBarTitleStyle,
     this.showBackButton = true,
     this.showAppBar = true,
+    this.floatingActionButton,
   });
 
   @override
@@ -84,10 +86,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
-    await Future.wait([
-      _fetchReports(),
-      _fetchCategories(),
-    ]);
+    await Future.wait([_fetchReports(), _fetchCategories()]);
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -96,7 +95,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       final categories = await reportService.getCategories();
       if (mounted) {
         setState(() {
-          _categoryNames = categories.map((c) => c['name'] as String).toList()..sort();
+          _categoryNames = categories.map((c) => c['name'] as String).toList()
+            ..sort();
         });
       }
     } catch (e) {
@@ -108,9 +108,11 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     try {
       final reportsData = await reportService.getPublicReports(
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
-        status: _selectedStatuses.isNotEmpty 
-            ? _selectedStatuses.map((s) => s.name).join(',') 
-            : (widget.allowedStatuses != null ? widget.allowedStatuses!.map((s) => s.name).join(',') : null),
+        status: _selectedStatuses.isNotEmpty
+            ? _selectedStatuses.map((s) => s.name).join(',')
+            : (widget.allowedStatuses != null
+                  ? widget.allowedStatuses!.map((s) => s.name).join(',')
+                  : null),
         category: _selectedCategory,
         building: _selectedBuilding,
         isEmergency: _emergencyOnly,
@@ -231,7 +233,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   onChanged: (value) {
                     setState(() => _searchQuery = value);
                     _fetchReports();
-                  }
+                  },
                 ),
               ),
               if (widget.enableDateFilter) ...[
@@ -304,14 +306,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   ..._selectedStatuses.map(
                     (s) => Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        s.label,
-                        s.color,
-                        () {
-                          setState(() => _selectedStatuses.remove(s));
-                          _fetchReports();
-                        }
-                      ),
+                      child: _buildFilterChip(s.label, s.color, () {
+                        setState(() => _selectedStatuses.remove(s));
+                        _fetchReports();
+                      }),
                     ),
                   ),
                   if (_selectedCategory != null)
@@ -323,7 +321,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         () {
                           setState(() => _selectedCategory = null);
                           _fetchReports();
-                        }
+                        },
                       ),
                     ),
                   if (_selectedBuilding != null)
@@ -335,7 +333,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         () {
                           setState(() => _selectedBuilding = null);
                           _fetchReports();
-                        }
+                        },
                       ),
                     ),
                   if (_emergencyOnly)
@@ -347,7 +345,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         () {
                           setState(() => _emergencyOnly = false);
                           _fetchReports();
-                        }
+                        },
                       ),
                     ),
                   if (_selectedPeriod != null)
@@ -359,7 +357,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         () {
                           setState(() => _selectedPeriod = null);
                           _fetchReports();
-                        }
+                        },
                       ),
                     ),
                   if (_selectedDateRange != null)
@@ -371,7 +369,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         () {
                           setState(() => _selectedDateRange = null);
                           _fetchReports();
-                        }
+                        },
                       ),
                     ),
                   TextButton(
@@ -395,54 +393,57 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
         // Reports List
         Expanded(
-          child: _isLoading 
-            ? const Center(child: CircularProgressIndicator())
-            : RefreshIndicator(
-                onRefresh: _fetchReports,
-                child: _reports.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.searchX,
-                              size: 64,
-                              color: Colors.grey.shade300,
-                            ),
-                            const Gap(16),
-                            Text(
-                              'Tidak ada laporan ditemukan',
-                              style: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 16,
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: _fetchReports,
+                  child: _reports.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.searchX,
+                                size: 64,
+                                color: Colors.grey.shade300,
                               ),
-                            ),
-                          ],
+                              const Gap(16),
+                              Text(
+                                'Tidak ada laporan ditemukan',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _reports.length,
+                          itemBuilder: (context, index) {
+                            final report = _reports[index];
+                            return UniversalReportCard(
+                              id: report.id,
+                              title: report.title,
+                              location: report.building,
+                              locationDetail: report.locationDetail,
+                              category: report.category,
+                              status: report.status,
+                              isEmergency: report.isEmergency,
+                              reporterName: report.reporterName,
+                              handledBy: report.handledBy?.join(', '),
+                              elapsedTime: DateTime.now().difference(
+                                report.createdAt,
+                              ),
+                              showStatus: true,
+                              showTimer: true,
+                              onTap: () =>
+                                  widget.onReportTap(report.id, report.status),
+                            );
+                          },
                         ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _reports.length,
-                        itemBuilder: (context, index) {
-                          final report = _reports[index];
-                          return UniversalReportCard(
-                            id: report.id,
-                            title: report.title,
-                            location: report.building,
-                            locationDetail: report.locationDetail,
-                            category: report.category,
-                            status: report.status,
-                            isEmergency: report.isEmergency,
-                            reporterName: report.reporterName,
-                            handledBy: report.handledBy?.join(', '),
-                            elapsedTime: DateTime.now().difference(report.createdAt),
-                            showStatus: true,
-                            showTimer: true,
-                            onTap: () => widget.onReportTap(report.id, report.status),
-                          );
-                        },
-                      ),
-              ),
+                ),
         ),
       ],
     );
@@ -472,11 +473,13 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
               : null,
         ),
         body: content,
+        floatingActionButton: widget.floatingActionButton,
       );
     } else {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         body: content, // No AppBar
+        floatingActionButton: widget.floatingActionButton,
       );
     }
   }
