@@ -15,6 +15,7 @@ export const users = pgTable('users', {
   emergencyPhone: text('emergency_phone'),
   idCardUrl: text('id_card_url'), // For non-undip users
   isVerified: boolean('is_verified').default(false), // Admin verification
+  isActive: boolean('is_active').default(true), // Admin suspension
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -54,7 +55,7 @@ export const reports = pgTable('reports', {
   longitude: doublePrecision('longitude'),
   mediaUrls: jsonb('media_urls').default([]),
   isEmergency: boolean('is_emergency').default(false),
-  status: text('status').default('pending'), 
+  status: text('status').default('pending'),
   // Mobile Enum: pending, terverifikasi, verifikasi, penanganan, onHold, selesai, approved, ditolak, recalled, archived
 
   // Handling Details
@@ -62,25 +63,25 @@ export const reports = pgTable('reports', {
   assignedAt: timestamp('assigned_at'),
   handlingStartedAt: timestamp('handling_started_at'),
   handlingCompletedAt: timestamp('handling_completed_at'),
-  
+
   // Pause/Hold Logic (Synced with Mobile)
   pausedAt: timestamp('paused_at'),
   totalPausedDurationSeconds: integer('total_paused_duration_seconds').default(0),
   holdReason: text('hold_reason'),
   holdPhoto: text('hold_photo'),
-  
+
   // Technician Result
   handlerNotes: text('handler_notes'),
   handlerMediaUrls: jsonb('handler_media_urls').default([]),
-  
+
   // Verification Details
   verifiedBy: integer('verified_by').references(() => staff.id),
   verifiedAt: timestamp('verified_at'),
-  
+
   // Approval Details
   approvedBy: integer('approved_by').references(() => staff.id),
   approvedAt: timestamp('approved_at'),
-  
+
   // Timestamps
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
@@ -93,12 +94,12 @@ export const reportLogs = pgTable('report_logs', {
   fromStatus: text('from_status'),
   toStatus: text('to_status'),
   action: text('action').notNull(), // created, verified, handling, completed, rejected, approved, recalled, overrideRejection, approveRejection, archived, paused, resumed
-  
+
   // Actor details (Denormalized for timeline performance, as expected by mobile app)
   actorId: text('actor_id').notNull(),
   actorName: text('actor_name').notNull(),
   actorRole: text('actor_role').notNull(),
-  
+
   reason: text('reason'), // Mobile app uses 'reason' instead of 'notes'
   mediaUrls: jsonb('media_urls').default([]),
   timestamp: timestamp('timestamp').defaultNow(),

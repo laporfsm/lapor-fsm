@@ -65,14 +65,20 @@ class _RegisterPageState extends State<RegisterPage> {
   void _validateEmail() {
     if (_emailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email wajib diisi'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Email wajib diisi'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
     if (!_emailController.text.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Format email tidak valid'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Format email tidak valid'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -232,7 +238,10 @@ class _RegisterPageState extends State<RegisterPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registrasi gagal: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Registrasi gagal: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -257,7 +266,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 color: Colors.orange.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(LucideIcons.clock, size: 48, color: Colors.orange),
+              child: const Icon(
+                LucideIcons.clock,
+                size: 48,
+                color: Colors.orange,
+              ),
             ),
             const Gap(20),
             const Text(
@@ -284,7 +297,9 @@ class _RegisterPageState extends State<RegisterPage> {
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('Kembali ke Login'),
               ),
@@ -344,10 +359,24 @@ class _RegisterPageState extends State<RegisterPage> {
     return Row(
       children: [
         _buildStepCircle(0, 'Email'),
-        Expanded(child: Container(height: 2, color: _currentStep >= 1 ? AppTheme.primaryColor : Colors.grey.shade300)),
+        Expanded(
+          child: Container(
+            height: 2,
+            color: _currentStep >= 1
+                ? AppTheme.primaryColor
+                : Colors.grey.shade300,
+          ),
+        ),
         if (_requiresIdCard) ...[
           _buildStepCircle(1, 'ID'),
-          Expanded(child: Container(height: 2, color: _currentStep >= 2 ? AppTheme.primaryColor : Colors.grey.shade300)),
+          Expanded(
+            child: Container(
+              height: 2,
+              color: _currentStep >= 2
+                  ? AppTheme.primaryColor
+                  : Colors.grey.shade300,
+            ),
+          ),
         ],
         _buildStepCircle(_requiresIdCard ? 2 : 1, 'Data'),
       ],
@@ -463,9 +492,14 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Lanjutkan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Lanjutkan',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
           ),
         ),
       ],
@@ -511,7 +545,10 @@ class _RegisterPageState extends State<RegisterPage> {
         const Gap(24),
 
         // ID Card Upload
-        const Text('Kartu Identitas *', style: TextStyle(fontWeight: FontWeight.w600)),
+        const Text(
+          'Kartu Identitas *',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         const Gap(8),
         GestureDetector(
           onTap: _pickIdCard,
@@ -522,7 +559,9 @@ class _RegisterPageState extends State<RegisterPage> {
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _idCardBytes != null ? AppTheme.primaryColor : Colors.grey.shade300,
+                color: _idCardBytes != null
+                    ? AppTheme.primaryColor
+                    : Colors.grey.shade300,
                 width: _idCardBytes != null ? 2 : 1,
               ),
             ),
@@ -552,7 +591,11 @@ class _RegisterPageState extends State<RegisterPage> {
                               color: Colors.red,
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(LucideIcons.x, size: 16, color: Colors.white),
+                            child: const Icon(
+                              LucideIcons.x,
+                              size: 16,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
@@ -561,7 +604,11 @@ class _RegisterPageState extends State<RegisterPage> {
                 : Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(LucideIcons.creditCard, size: 48, color: Colors.grey.shade400),
+                      Icon(
+                        LucideIcons.creditCard,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
                       const Gap(12),
                       Text(
                         'Tap untuk upload kartu identitas',
@@ -571,7 +618,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       const Gap(4),
                       Text(
                         'KTP / KTM / SIM',
-                        style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                        style: TextStyle(
+                          color: Colors.grey.shade400,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -587,9 +637,14 @@ class _RegisterPageState extends State<RegisterPage> {
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Lanjutkan', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            child: const Text(
+              'Lanjutkan',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
           ),
         ),
       ],
@@ -636,12 +691,22 @@ class _RegisterPageState extends State<RegisterPage> {
                 if (_isUndipEmail(_emailController.text))
                   Container(
                     margin: const EdgeInsets.only(left: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.green.shade100,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text('UNDIP', style: TextStyle(color: Colors.green.shade700, fontSize: 9, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'UNDIP',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
               ],
             ),
@@ -649,11 +714,17 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(20),
 
           // Name
-          const Text('Nama Lengkap *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Nama Lengkap *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _nameController,
-            decoration: _inputDecoration('Masukkan nama lengkap', LucideIcons.user),
+            decoration: _inputDecoration(
+              'Masukkan nama lengkap',
+              LucideIcons.user,
+            ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Nama wajib diisi';
               return null;
@@ -662,11 +733,17 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(20),
 
           // NIM/NIP
-          const Text('NIM / NIP *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'NIM / NIP *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _nimNipController,
-            decoration: _inputDecoration('Masukkan NIM atau NIP', LucideIcons.hash),
+            decoration: _inputDecoration(
+              'Masukkan NIM atau NIP',
+              LucideIcons.hash,
+            ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'NIM/NIP wajib diisi';
               return null;
@@ -675,7 +752,10 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(20),
 
           // Phone
-          const Text('Nomor HP *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Nomor HP *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _phoneController,
@@ -694,7 +774,10 @@ class _RegisterPageState extends State<RegisterPage> {
           TextFormField(
             controller: _addressController,
             maxLines: 2,
-            decoration: _inputDecoration('Masukkan alamat domisili', LucideIcons.mapPin),
+            decoration: _inputDecoration(
+              'Masukkan alamat domisili',
+              LucideIcons.mapPin,
+            ),
           ),
           const Gap(24),
 
@@ -708,7 +791,11 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             child: Row(
               children: [
-                Icon(LucideIcons.alertCircle, color: Colors.red.shade700, size: 20),
+                Icon(
+                  LucideIcons.alertCircle,
+                  color: Colors.red.shade700,
+                  size: 20,
+                ),
                 const Gap(8),
                 Expanded(
                   child: Text(
@@ -722,34 +809,50 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(16),
 
           // Emergency Contact Name
-          const Text('Nama Kontak Darurat *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Nama Kontak Darurat *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _emergencyNameController,
-            decoration: _inputDecoration('Nama orang yang bisa dihubungi', LucideIcons.userCircle),
+            decoration: _inputDecoration(
+              'Nama orang yang bisa dihubungi',
+              LucideIcons.userCircle,
+            ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Nama kontak darurat wajib diisi';
+              if (value == null || value.isEmpty)
+                return 'Nama kontak darurat wajib diisi';
               return null;
             },
           ),
           const Gap(20),
 
           // Emergency Contact Phone
-          const Text('Nomor Kontak Darurat *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Nomor Kontak Darurat *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _emergencyPhoneController,
             keyboardType: TextInputType.phone,
             decoration: _inputDecoration('08xxxxxxxxxx', LucideIcons.phoneCall),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Nomor kontak darurat wajib diisi';
+              if (value == null || value.isEmpty)
+                return 'Nomor kontak darurat wajib diisi';
+              if (value == _phoneController.text)
+                return 'Nomor darurat tidak boleh sama dengan nomor HP Anda';
               return null;
             },
           ),
           const Gap(20),
 
           // Password
-          const Text('Password *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Password *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _passwordController,
@@ -758,14 +861,26 @@ class _RegisterPageState extends State<RegisterPage> {
               hintText: 'Minimal 6 karakter',
               prefixIcon: const Icon(LucideIcons.lock),
               suffixIcon: IconButton(
-                icon: Icon(_obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye),
-                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                icon: Icon(
+                  _obscurePassword ? LucideIcons.eyeOff : LucideIcons.eye,
+                ),
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
               ),
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.primaryColor)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primaryColor),
+              ),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) return 'Password wajib diisi';
@@ -776,7 +891,10 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(20),
 
           // Confirm Password
-          const Text('Konfirmasi Password *', style: TextStyle(fontWeight: FontWeight.w600)),
+          const Text(
+            'Konfirmasi Password *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           const Gap(8),
           TextFormField(
             controller: _confirmPasswordController,
@@ -785,18 +903,35 @@ class _RegisterPageState extends State<RegisterPage> {
               hintText: 'Ulangi password',
               prefixIcon: const Icon(LucideIcons.lock),
               suffixIcon: IconButton(
-                icon: Icon(_obscureConfirmPassword ? LucideIcons.eyeOff : LucideIcons.eye),
-                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                icon: Icon(
+                  _obscureConfirmPassword
+                      ? LucideIcons.eyeOff
+                      : LucideIcons.eye,
+                ),
+                onPressed: () => setState(
+                  () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                ),
               ),
               filled: true,
               fillColor: Colors.white,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.primaryColor)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade200),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primaryColor),
+              ),
             ),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Konfirmasi password wajib diisi';
-              if (value != _passwordController.text) return 'Password tidak cocok';
+              if (value == null || value.isEmpty)
+                return 'Konfirmasi password wajib diisi';
+              if (value != _passwordController.text)
+                return 'Password tidak cocok';
               return null;
             },
           ),
@@ -810,16 +945,27 @@ class _RegisterPageState extends State<RegisterPage> {
                 backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 disabledBackgroundColor: Colors.grey.shade300,
               ),
               child: _isLoading
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
                     )
-                  : const Text('Daftar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                  : const Text(
+                      'Daftar',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
           const Gap(32),
@@ -834,9 +980,18 @@ class _RegisterPageState extends State<RegisterPage> {
       prefixIcon: Icon(icon),
       filled: true,
       fillColor: Colors.white,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade200)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppTheme.primaryColor)),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppTheme.primaryColor),
+      ),
     );
   }
 }

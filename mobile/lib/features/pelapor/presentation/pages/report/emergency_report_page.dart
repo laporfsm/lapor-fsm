@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 /// Simplified Emergency Report Page for faster reporting.
 /// Minimal required fields: Photo + Location (auto-detected).
@@ -163,17 +164,72 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
 
     setState(() => _isSubmitting = true);
 
-    // Simulate API call
-    debugPrint("Submitting Emergency Report:");
-    debugPrint("Building: $_selectedBuilding");
-    debugPrint("Detail Lokasi: ${_locationDetailController.text}");
+    try {
+      // 1. Upload Images
+      List<String> mediaUrls = [];
+      for (var image in _selectedImages) {
+        final url = await reportService.uploadImage(image);
+        if (url != null) mediaUrls.add(url);
+      }
 
-    await Future.delayed(const Duration(seconds: 1));
+      // 2. Get 'Darurat' Category ID (Dynamic)
+      String? emergencyCategoryId;
+      try {
+        final categories = await reportService.getCategories();
+        final emergencyCat = categories.firstWhere(
+          (c) => c['name'].toString().toLowerCase().contains('darurat'),
+          orElse: () => categories.firstWhere(
+            (c) => c['name'].toString().toLowerCase().contains('lainnya'),
+            orElse: () => {'id': '1'}, // Fallback to ID 1 if mostly nothing
+          ),
+        );
+        emergencyCategoryId = emergencyCat['id'].toString();
+      } catch (e) {
+        debugPrint('Error finding emergency category: $e');
+      }
 
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-      // Navigate to success, timer will start in report detail
-      context.go('/report-success');
+      // 3. Submit Report
+      final result = await reportService.createReport(
+        userId: '1', // TODO: Get from Auth Provider
+        title: "Laporan Darurat",
+        description: "Laporan Darurat: ${_locationDetailController.text}",
+        building: _selectedBuilding ?? "Lokasi Darurat",
+        locationDetail: _locationDetailController.text,
+        latitude: _latitude,
+        longitude: _longitude,
+        mediaUrls: mediaUrls,
+        isEmergency: true,
+        categoryId: emergencyCategoryId, // Auto-assign 'Darurat' category
+      );
+
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+
+        if (result != null) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Laporan Darurat Berhasil Dikirim!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            context.pop(); // Close page
+          }
+        } else {
+          throw Exception('Gagal membuat laporan (API returned null)');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error submitting emergency report: $e');
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim laporan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

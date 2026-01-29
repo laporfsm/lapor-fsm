@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart'; // for supervisorColor
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/utils/icon_helper.dart';
+import 'package:mobile/features/supervisor/presentation/pages/supervisor_shell_page.dart';
 
 class SupervisorCategoriesPage extends StatefulWidget {
   const SupervisorCategoriesPage({super.key});
@@ -14,17 +15,29 @@ class SupervisorCategoriesPage extends StatefulWidget {
 
 class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
   final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _categories = [];
+  bool _isLoading = true;
 
-  // Mock data shared with Admin
-  final List<Map<String, dynamic>> _categories = [
-    {'id': 1, 'name': 'Kelistrikan', 'icon': '⚡', 'reportsCount': 23},
-    {'id': 2, 'name': 'Sanitasi / Air', 'icon': '🚿', 'reportsCount': 18},
-    {'id': 3, 'name': 'Sipil & Bangunan', 'icon': '🏗️', 'reportsCount': 45},
-    {'id': 4, 'name': 'Fasilitas Umum', 'icon': '🪑', 'reportsCount': 32},
-    {'id': 5, 'name': 'Kebersihan', 'icon': '🧹', 'reportsCount': 27},
-    {'id': 6, 'name': 'Keamanan', 'icon': '🔒', 'reportsCount': 11},
-    {'id': 7, 'name': 'Taman & Lingkungan', 'icon': '🌳', 'reportsCount': 8},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    setState(() => _isLoading = true);
+    final data = await reportService.getCategories();
+    if (mounted) {
+      setState(() {
+        _categories = data
+            .where(
+              (c) => !c['name'].toString().toLowerCase().contains('darurat'),
+            )
+            .toList();
+        _isLoading = false;
+      });
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredCategories {
     if (_searchController.text.isEmpty) return _categories;
@@ -47,7 +60,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
       appBar: AppBar(
         backgroundColor: supervisorColor,
         elevation: 0,
-        leading: null, // Root tab, no back button
+        leading: null,
         title: const Text(
           'Kelola Kategori',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -97,7 +110,9 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
 
           // List
           Expanded(
-            child: _filteredCategories.isEmpty
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredCategories.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
@@ -156,7 +171,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(10),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -176,13 +191,14 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: supervisorColor.withAlpha(26),
+                    color: supervisorColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: Text(
-                      category['icon'] ?? '📌',
-                      style: const TextStyle(fontSize: 24),
+                    child: Icon(
+                      IconHelper.getIcon(category['icon'] ?? 'help-circle'),
+                      color: supervisorColor,
+                      size: 24,
                     ),
                   ),
                 ),
@@ -201,23 +217,6 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                         ),
                       ),
                       const Gap(4),
-                      Row(
-                        children: [
-                          Icon(
-                            LucideIcons.fileText,
-                            size: 12,
-                            color: Colors.grey.shade400,
-                          ),
-                          const Gap(4),
-                          Text(
-                            '${category['reportsCount']} laporan',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
@@ -232,13 +231,17 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                       onTap: () => _showCategorySheet(category),
                       tooltip: 'Edit',
                     ),
-                    const Gap(4),
-                    _ActionButton(
-                      icon: LucideIcons.trash2,
-                      color: const Color(0xFFEF4444),
-                      onTap: () => _confirmDelete(category),
-                      tooltip: 'Hapus',
-                    ),
+                    // Protect "Lainnya" from deletion
+                    if (category['name'].toString().toLowerCase() !=
+                        'lainnya') ...[
+                      const Gap(4),
+                      _ActionButton(
+                        icon: LucideIcons.trash2,
+                        color: const Color(0xFFEF4444),
+                        onTap: () => _confirmDelete(category),
+                        tooltip: 'Hapus',
+                      ),
+                    ],
                   ],
                 ),
               ],
@@ -252,224 +255,369 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
   void _showCategorySheet(Map<String, dynamic>? category) {
     final isEditing = category != null;
     final nameController = TextEditingController(text: category?['name'] ?? '');
-    final iconController = TextEditingController(text: category?['icon'] ?? '');
+    String selectedIcon = category?['icon'] ?? 'help-circle';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: supervisorColor.withAlpha(26),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isEditing ? LucideIcons.pencil : LucideIcons.plus,
-                      color: supervisorColor,
-                      size: 20,
-                    ),
-                  ),
-                  const Gap(12),
-                  Text(
-                    isEditing ? 'Edit Kategori' : 'Tambah Kategori',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
               ),
-              const Gap(24),
-
-              // Icon Field
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 80,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Icon',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: supervisorColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const Gap(6),
-                        TextField(
-                          controller: iconController,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 24),
-                          decoration: InputDecoration(
-                            hintText: '📌',
-                            hintStyle: TextStyle(
-                              fontSize: 24,
-                              color: Colors.grey.shade300,
-                            ),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 8,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
-                            ),
-                          ),
+                        child: Icon(
+                          isEditing ? LucideIcons.pencil : LucideIcons.plus,
+                          color: supervisorColor,
+                          size: 20,
                         ),
-                      ],
+                      ),
+                      const Gap(12),
+                      Text(
+                        isEditing ? 'Edit Kategori' : 'Tambah Kategori',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(24),
+
+                  // Name Field
+                  const Text(
+                    'Nama Kategori (Maks 20 Karakter)',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
+                  const Gap(6),
+                  TextField(
+                    controller: nameController,
+                    maxLength: 20,
+                    decoration: InputDecoration(
+                      hintText: 'Contoh: Kelistrikan',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
                     ),
                   ),
-                  const Gap(12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Nama Kategori',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
+
+                  const Gap(16),
+
+                  // Icon Picker
+                  const Text(
+                    'Pilih Icon',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
+                  const Gap(10),
+                  SizedBox(
+                    height: 150,
+                    child: GridView.builder(
+                      itemCount: IconHelper.availableIcons.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 6,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
                           ),
-                        ),
-                        const Gap(6),
-                        TextField(
-                          controller: nameController,
-                          decoration: InputDecoration(
-                            hintText: 'Contoh: Kelistrikan',
-                            hintStyle: TextStyle(color: Colors.grey.shade400),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                              horizontal: 14,
+                      itemBuilder: (ctx, index) {
+                        final iconName = IconHelper.availableIcons[index];
+                        final isSelected = iconName == selectedIcon;
+                        return GestureDetector(
+                          onTap: () {
+                            setSheetState(() {
+                              selectedIcon = iconName;
+                            });
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? supervisorColor
+                                  : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: isSelected
+                                  ? Border.all(color: supervisorColor, width: 2)
+                                  : null,
                             ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: Colors.grey.shade200,
-                              ),
+                            child: Icon(
+                              IconHelper.getIcon(iconName),
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.grey.shade600,
+                              size: 20,
                             ),
                           ),
-                        ),
-                      ],
+                        );
+                      },
                     ),
+                  ),
+
+                  const Gap(24),
+
+                  // Actions
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const Gap(12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            if (nameController.text.trim().isEmpty) return;
+
+                            // Close sheet first
+                            Navigator.pop(context);
+
+                            // Show loading
+                            if (!mounted) return;
+                            setState(() => _isLoading = true);
+
+                            bool success;
+                            if (isEditing) {
+                              success = await reportService.updateCategory(
+                                category['id'] is String
+                                    ? int.parse(category['id'])
+                                    : category['id'],
+                                nameController.text.trim(),
+                                selectedIcon,
+                              );
+                            } else {
+                              success = await reportService.createCategory(
+                                nameController.text.trim(),
+                                selectedIcon,
+                              );
+                            }
+
+                            if (mounted) {
+                              if (success) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      isEditing
+                                          ? 'Kategori berhasil diupdate'
+                                          : 'Kategori berhasil dibuat',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                                _fetchCategories();
+                              } else {
+                                setState(() => _isLoading = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Gagal menyimpan kategori'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: supervisorColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(isEditing ? 'Simpan' : 'Tambah'),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const Gap(24),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
-              // Actions
+  void _confirmDelete(Map<String, dynamic> category) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Hapus Kategori?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const Gap(12),
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    fontFamily: 'PlusJakartaSans', // Ensure font matches app
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: 'Apakah Anda yakin ingin menghapus kategori ',
+                    ),
+                    TextSpan(
+                      text: '"${category['name']}"',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: '?\nTindakan ini tidak dapat dibatalkan.',
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(24),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        side: BorderSide(color: Colors.grey.shade300),
                       ),
-                      child: const Text('Batal'),
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(color: Colors.grey.shade700),
+                      ),
                     ),
                   ),
                   const Gap(12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.trim().isEmpty) return;
-                        Navigator.pop(context);
-                        setState(() {
-                          if (isEditing) {
-                            category['name'] = nameController.text.trim();
-                            category['icon'] =
-                                iconController.text.trim().isEmpty
-                                ? '📌'
-                                : iconController.text.trim();
-                          } else {
-                            _categories.add({
-                              'id': DateTime.now().millisecondsSinceEpoch,
-                              'name': nameController.text.trim(),
-                              'icon': iconController.text.trim().isEmpty
-                                  ? '📌'
-                                  : iconController.text.trim(),
-                              'reportsCount': 0,
-                            });
+                      onPressed: () async {
+                        Navigator.pop(context); // Close dialog
+                        setState(
+                          () => _isLoading = true,
+                        ); // Show loading overlay
+
+                        // Add small delay to prevent flickering if API is too fast
+                        await Future.delayed(const Duration(milliseconds: 300));
+
+                        try {
+                          final result = await reportService.deleteCategory(
+                            category['id'] is String
+                                ? int.parse(category['id'])
+                                : category['id'],
+                          );
+
+                          if (mounted) {
+                            if (result['success']) {
+                              // Optimistic update: Remove from list immediately
+                              setState(() {
+                                _categories.removeWhere(
+                                  (c) => c['id'] == category['id'],
+                                );
+                                _isLoading = false;
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Kategori berhasil dihapus'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              // Fetch again just to be sure
+                              _fetchCategories();
+                            } else {
+                              setState(() => _isLoading = false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ??
+                                        'Gagal menghapus kategori',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
-                        });
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() => _isLoading = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: supervisorColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: const Color(0xFFEF4444),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: Text(isEditing ? 'Simpan' : 'Tambah'),
+                      child: const Text(
+                        'Hapus',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _confirmDelete(Map<String, dynamic> category) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Column(
-          children: [
-            const Text(
-              'Hapus Kategori?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Gap(16),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                setState(() => _categories.remove(category));
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Hapus', style: TextStyle(color: Colors.white)),
-            ),
-          ],
         ),
       ),
     );

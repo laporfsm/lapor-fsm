@@ -11,7 +11,7 @@ class AppTheme {
   static const Color supervisorColor = Color(
     0xFF3730A3,
   ); // Indigo 800 (Supervisor Theme)
-  static const Color adminColor = Color(0xFF059669); // Emerald (Admin Theme)
+  static const Color adminColor = Color(0xFF9333EA); // Purple (Admin Theme)
   static const Color backgroundColor = Color(0xFFF3F4F6); // Light Gray
 
   // Standard border radius for cards

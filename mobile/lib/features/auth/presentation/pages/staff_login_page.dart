@@ -51,7 +51,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
         else if (role == 'pj_gedung')
           redirectPath = '/pj-gedung';
         else if (role == 'admin')
-          redirectPath = '/admin';
+          redirectPath = '/admin/dashboard';
 
         context.go(redirectPath);
       } else if (mounted) {

@@ -6,7 +6,9 @@ import 'package:mobile/features/notification/presentation/widgets/notification_b
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class NotificationFab extends StatelessWidget {
-  const NotificationFab({super.key});
+  final Color? backgroundColor;
+
+  const NotificationFab({super.key, this.backgroundColor});
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +26,15 @@ class NotificationFab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.primaryColor,
+          color: backgroundColor ?? AppTheme.primaryColor,
           borderRadius: BorderRadius.circular(
             16,
           ), // Slightly more square than circle for modern feel
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
+              color: (backgroundColor ?? AppTheme.primaryColor).withOpacity(
+                0.3,
+              ),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),

@@ -57,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
         else if (role == 'pj_gedung')
           redirectPath = '/pj-gedung';
         else if (role == 'admin')
-          redirectPath = '/admin';
+          redirectPath = '/admin/dashboard';
 
         if (role == 'pelapor' && result['needsPhone'] == true) {
           context.go('/complete-profile');
