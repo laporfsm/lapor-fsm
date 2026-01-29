@@ -9,36 +9,87 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'dart:async';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
-class SupervisorDashboardPage extends StatelessWidget {
+class SupervisorDashboardPage extends StatefulWidget {
   const SupervisorDashboardPage({super.key});
 
-  // TODO: [BACKEND] Replace with API call to fetch stats
-  Map<String, dynamic> get _stats => {
-    'pending': 5,
-    'verifikasi': 2,
-    'penanganan': 3,
-    'selesai': 45,
-    'emergency': 2, // Laporan darurat yang perlu perhatian
-    'todayReports': 8,
-    'weekReports': 32,
-    'monthReports': 45,
+  @override
+  State<SupervisorDashboardPage> createState() => _SupervisorDashboardPageState();
+}
+
+class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
+  bool _isLoading = true;
+  Timer? _refreshTimer;
+
+  Map<String, int> _dashboardStats = {
+    'pending': 0,
+    'verifikasi': 0,
+    'penanganan': 0,
+    'selesai': 0,
+    'emergency': 0,
+    'todayReports': 0,
+    'weekReports': 0,
+    'monthReports': 0,
   };
 
-  // TODO: [BACKEND] Replace with API call to fetch pending reviews
-  List<Map<String, dynamic>> get _pendingReview => [
-    {
-      'id': 'sup-1',
-      'title': 'AC Mati di Lab Komputer',
-      'teknisi': 'Budi Teknisi',
-      'location': 'Gedung A',
-      'locationDetail': 'Ruang Server',
-      'completedAt': DateTime.now().subtract(const Duration(minutes: 30)),
-      'duration': '45 menit',
-    },
-  ];
+  List<Report> _readyToProcessReports = [];
+  List<Report> _pendingReviewReports = [];
+  List<Map<String, dynamic>> _activityLogs = [];
+
+  Map<String, dynamic> get _stats => _dashboardStats;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) _loadData(silent: true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadData({bool silent = false}) async {
+    if (!silent) setState(() => _isLoading = true);
+    
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        
+        // Fetch stats and lists
+        final results = await Future.wait([
+          reportService.getSupervisorDashboardStats(staffId),
+          reportService.getStaffReports(role: 'supervisor', status: 'pending,terverifikasi'),
+          reportService.getStaffReports(role: 'supervisor', status: 'selesai'),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            if (results[0] != null) {
+              _dashboardStats = Map<String, int>.from(results[0] as Map);
+            }
+            _readyToProcessReports = (results[1] as List).map((json) => Report.fromJson(json)).toList();
+            _pendingReviewReports = (results[2] as List).map((json) => Report.fromJson(json)).toList();
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading Supervisor dashboard data: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,69 +222,73 @@ class SupervisorDashboardPage extends StatelessWidget {
             ),
           ];
         },
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildEmergencyAlert(context),
-              const Gap(16),
-              _buildStatsSection(context),
-              const Gap(24),
-              // Section: Siap Diproses (Ready for Assignment)
-              // Includes: Verified Building Reports & Non-Building Reports
-              _buildSectionHeader(
-                context,
-                'Siap Diproses',
-                'Lihat Semua',
-                () => context.push(
-                  Uri(
-                    path: '/supervisor/reports/filter',
-                    queryParameters: {
-                      'status': 'pending',
-                    }, // Simplified for now
-                  ).toString(),
-                ),
-                count:
-                    (_stats['pending'] as int) + (_stats['verifikasi'] as int),
-              ),
-              const Gap(12),
-              _buildReadyToProcessList(context),
-              const Gap(24),
+        body: _isLoading 
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildEmergencyAlert(context),
+                    const Gap(16),
+                    _buildStatsSection(context),
+                    const Gap(24),
+                    // Section: Siap Diproses (Ready for Assignment)
+                    // Includes: Verified Building Reports & Non-Building Reports
+                    _buildSectionHeader(
+                      context,
+                      'Siap Diproses',
+                      'Lihat Semua',
+                      () => context.push(
+                        Uri(
+                          path: '/supervisor/reports/filter',
+                          queryParameters: {
+                            'status': 'pending,terverifikasi',
+                          },
+                        ).toString(),
+                      ),
+                      count: _readyToProcessReports.length,
+                    ),
+                    const Gap(12),
+                    _buildReadyToProcessList(context),
+                    const Gap(24),
 
-              // Section: Menunggu Approval (Completed by Technician)
-              _buildSectionHeader(
-                context,
-                'Menunggu Approval',
-                'Lihat Semua',
-                () => context.push(
-                  Uri(
-                    path: '/supervisor/reports/filter',
-                    queryParameters: {
-                      'status': 'selesai', // Status finished/completed
-                    },
-                  ).toString(),
-                ),
-                count: _pendingReview.length,
-              ),
-              const Gap(12),
-              _buildApprovalList(context),
-              const Gap(24),
+                    // Section: Menunggu Approval (Completed by Technician)
+                    _buildSectionHeader(
+                      context,
+                      'Menunggu Approval',
+                      'Lihat Semua',
+                      () => context.push(
+                        Uri(
+                          path: '/supervisor/reports/filter',
+                          queryParameters: {
+                            'status': 'selesai',
+                          },
+                        ).toString(),
+                      ),
+                      count: _pendingReviewReports.length,
+                    ),
+                    const Gap(12),
+                    _buildApprovalList(context),
+                    const Gap(24),
 
-              _buildSectionHeader(
-                context,
-                "Aktivitas & Log",
-                "Lihat Semua",
-                () {
-                  context.push('/supervisor/activity-log');
-                },
+                    _buildSectionHeader(
+                      context,
+                      "Aktivitas & Log",
+                      "Lihat Semua",
+                      () {
+                        context.push('/supervisor/activity-log');
+                      },
+                    ),
+                    const Gap(12),
+                    _buildActivityLogStub(context),
+                    const Gap(24),
+                  ],
+                ),
               ),
-              const Gap(12),
-              _buildActivityLogStub(context),
-              const Gap(24),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -590,7 +645,7 @@ class SupervisorDashboardPage extends StatelessWidget {
   }
 
   Widget _buildApprovalList(BuildContext context) {
-    if (_pendingReview.isEmpty) {
+    if (_pendingReviewReports.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -619,24 +674,23 @@ class SupervisorDashboardPage extends StatelessWidget {
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _pendingReview.length,
+      itemCount: _pendingReviewReports.length,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
-        final r = _pendingReview[index];
+        final r = _pendingReviewReports[index];
         return UniversalReportCard(
-          id: r['id'].toString(),
-          title: r['title'] as String,
-          location: r['location'] as String,
-          locationDetail: r['locationDetail'] as String?,
-          category: 'Kelistrikan', // Mock category
-          status: ReportStatus.selesai,
-          handledBy: r['teknisi'] as String,
-          handlingTime: const Duration(minutes: 45), // Mock handling time
+          id: r.id,
+          title: r.title,
+          location: r.building,
+          locationDetail: r.locationDetail,
+          category: r.category,
+          status: r.status,
+          handledBy: r.handledBy?.join(', '),
           showStatus: true,
           showTimer: false,
           onTap: () => context.push(
-            '/supervisor/review/${r['id']}',
-            extra: {'status': ReportStatus.selesai},
+            '/supervisor/review/${r.id}',
+            extra: {'status': r.status},
           ),
         );
       },
@@ -645,39 +699,51 @@ class SupervisorDashboardPage extends StatelessWidget {
 
   // MOCK: Ready to Process (Verified by PJ or Direct Non-Building)
   Widget _buildReadyToProcessList(BuildContext context) {
-    // Mock data combining Terverifikasi & Non-Gedung Pending
-    final List<Map<String, dynamic>> readyReports = [
-      {
-        'id': 'sup-2',
-        'title': 'Kebocoran Pipa Toilet',
-        'location': 'Gedung C',
-        'locationDetail': 'Toilet Pria',
-        'category': 'Sanitasi',
-        'status': ReportStatus.terverifikasi,
-        'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
-        'source': 'PJ Gedung (Verified)',
-      },
-    ];
+    if (_readyToProcessReports.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                LucideIcons.checkCircle2,
+                size: 48,
+                color: Colors.grey.shade300,
+              ),
+              const Gap(8),
+              Text(
+                'Tidak ada laporan siap diproses',
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: readyReports.length,
+      itemCount: _readyToProcessReports.length,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
-        final r = readyReports[index];
+        final r = _readyToProcessReports[index];
         return UniversalReportCard(
-          id: r['id'] as String,
-          title: r['title'] as String,
-          location: r['location'] as String,
-          locationDetail: r['locationDetail'] as String?,
-          category: r['category'] as String,
-          status: r['status'] as ReportStatus,
-          elapsedTime: DateTime.now().difference(r['createdAt'] as DateTime),
+          id: r.id,
+          title: r.title,
+          location: r.building,
+          locationDetail: r.locationDetail,
+          category: r.category,
+          status: r.status,
+          elapsedTime: DateTime.now().difference(r.createdAt),
           showStatus: true,
           onTap: () => context.push(
-            '/supervisor/review/${r['id']}',
-            extra: {'status': r['status']},
+            '/supervisor/review/${r.id}',
+            extra: {'status': r.status},
           ),
         );
       },

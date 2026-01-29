@@ -5,6 +5,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/theme.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
+// Redundant dart:io removed
 
 class TeknisiCompleteReportPage extends StatefulWidget {
   final String reportId;
@@ -160,64 +163,80 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
     });
 
     try {
-      // TODO: Upload image and call API to complete report
-      await Future.delayed(const Duration(seconds: 2)); // Simulate API call
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        
+        // 1. Upload Image
+        String? imageUrl;
+        if (_proofImage != null) {
+          imageUrl = await reportService.uploadImage(_proofImage!);
+        }
 
-      if (mounted) {
-        // Show success dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    LucideIcons.checkCircle2,
-                    color: Colors.green,
-                    size: 48,
-                  ),
-                ),
-                const Gap(16),
-                const Text(
-                  'Penanganan Selesai!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const Gap(8),
-                Text(
-                  'Laporan telah ditandai selesai dan menunggu review dari Supervisor.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade600),
-                ),
-                const Gap(24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.go('/teknisi');
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text('Kembali ke Dashboard'),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // 2. Complete Report
+        final success = await reportService.completeReport(
+          widget.reportId, 
+          staffId,
+          notes: _notesController.text,
+          mediaUrls: imageUrl != null ? [imageUrl] : [],
         );
+
+        if (success && mounted) {
+          // Show success dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      LucideIcons.checkCircle2,
+                      color: Colors.green,
+                      size: 48,
+                    ),
+                  ),
+                  const Gap(16),
+                  const Text(
+                    'Penanganan Selesai!',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Laporan telah ditandai selesai dan menunggu review dari Supervisor.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                  const Gap(24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        context.go('/teknisi');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Kembali ke Dashboard'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {

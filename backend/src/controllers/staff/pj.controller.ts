@@ -44,10 +44,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
     // Get reports for PJ Gedung (focused on their building if filter provided)
     .get('/reports', async ({ query }) => {
-        const { status, building } = query;
+        const { status, building, isEmergency } = query;
         let conditions = [];
         if (status) conditions.push(eq(reports.status, status));
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 

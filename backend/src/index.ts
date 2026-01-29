@@ -9,6 +9,7 @@ import { technicianController } from "./controllers/technician/technician.contro
 import { supervisorController } from "./controllers/supervisor/supervisor.controller";
 import { pjController } from "./controllers/staff/pj.controller";
 import { adminController } from "./controllers/admin/admin.controller";
+import { notificationController } from "./controllers/notification.controller";
 
 const app = new Elysia()
   .use(cors()) // Allow request from Mobile/Web
@@ -22,6 +23,7 @@ const app = new Elysia()
   .use(supervisorController)
   .use(pjController)
   .use(adminController)
+  .use(notificationController)
   .listen(3000);
 
 console.log(

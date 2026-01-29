@@ -8,6 +8,8 @@ import 'package:mobile/core/models/report_log.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
 import 'package:mobile/core/enums/user_role.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/data/mock_report_data.dart';
 
 class SupervisorReviewPage extends StatefulWidget {
@@ -21,8 +23,9 @@ class SupervisorReviewPage extends StatefulWidget {
 }
 
 class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
-  late Report _report;
+  Report? _report;
   bool _isLoading = true;
+  bool _isProcessing = false;
 
   @override
   void initState() {
@@ -30,17 +33,18 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     _loadReport();
   }
 
-  void _loadReport() {
-    // Simulate API call
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
+  Future<void> _loadReport() async {
+    try {
+      final data = await reportService.getReportDetail(widget.reportId);
+      if (data != null && mounted) {
         setState(() {
-          // Use MockReportData instead of hardcoded report
-          _report = MockReportData.getReportOrDefault(widget.reportId);
+          _report = Report.fromJson(data);
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -49,8 +53,12 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    if (_report == null) {
+      return const Scaffold(body: Center(child: Text('Laporan tidak ditemukan')));
+    }
+
     return ReportDetailBase(
-      report: _report,
+      report: _report!,
       viewerRole: UserRole.supervisor,
       appBarColor: AppTheme.supervisorColor,
       actionButtons: _buildActionButtons(),
@@ -58,7 +66,10 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
   }
 
   List<Widget> _buildActionButtons() {
-    switch (_report.status) {
+    final r = _report;
+    if (r == null) return [];
+
+    switch (r.status) {
       case ReportStatus.pending:
         // Menunggu Verifikasi
         return [
@@ -156,58 +167,70 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     ReportStatus newStatus,
     ReportAction action, {
     String? notes,
-    List<String>? handledBy,
-  }) {
-    setState(() {
-      final newLog = ReportLog(
-        id: 'log_${DateTime.now().millisecondsSinceEpoch}',
-        fromStatus: _report.status,
-        toStatus: newStatus,
-        action: action,
-        actorId: 'spv1',
-        actorName: 'Supervisor',
-        actorRole: 'Supervisor',
-        timestamp: DateTime.now(),
-        reason: notes,
-      );
+    String? technicianId,
+  }) async {
+    if (_report == null) return;
+    setState(() => _isProcessing = true);
 
-      _report = _report.copyWith(
-        status: newStatus,
-        handledBy: handledBy,
-        logs: [newLog, ..._report.logs],
-        supervisorName: 'Supervisor',
-        verifiedAt:
-            (newStatus == ReportStatus.terverifikasi ||
-                newStatus == ReportStatus.verifikasi)
-            ? DateTime.now()
-            : null,
-      );
-    });
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        bool success = false;
 
-    String message = 'Status laporan berhasil diperbarui';
-    if (newStatus == ReportStatus.approved) message = 'Laporan disetujui';
-    if (newStatus == ReportStatus.ditolak) message = 'Laporan ditolak';
+        switch (action) {
+          case ReportAction.verified:
+            success = await reportService.verifyReport(_report!.id, staffId);
+            break;
+          case ReportAction.handling:
+            if (technicianId != null) {
+              success = await reportService.assignTechnician(_report!.id, staffId, technicianId);
+            }
+            break;
+          case ReportAction.recalled:
+            success = await reportService.recallReport(_report!.id, staffId, notes ?? '');
+            break;
+          case ReportAction.approved:
+            success = await reportService.approveReport(_report!.id, staffId, notes: notes);
+            break;
+          case ReportAction.rejected:
+            success = await reportService.rejectReport(_report!.id, staffId, notes ?? 'Ditolak oleh Supervisor');
+            break;
+          default:
+            break;
+        }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green),
-    );
-
-    context.pop();
+        if (success && mounted) {
+          await _loadReport();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Status laporan berhasil diperbarui'), backgroundColor: Colors.green),
+          );
+          if (newStatus == ReportStatus.ditolak || newStatus == ReportStatus.approved) {
+              context.pop();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating report status: $e');
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 
   void _showAssignTechnicianDialog() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _AssignTechnicianSheet(
-        onAssign: (technicians) {
+        onAssign: (technicianId) {
+          Navigator.pop(context);
           _updateReportStatus(
             ReportStatus.diproses,
             ReportAction.handling,
-            notes: 'Ditugaskan ke ${technicians.join(", ")}',
-            handledBy: technicians,
+            technicianId: technicianId,
           );
         },
       ),
@@ -261,7 +284,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
 }
 
 class _AssignTechnicianSheet extends StatefulWidget {
-  final Function(List<String>) onAssign;
+  final Function(String) onAssign;
 
   const _AssignTechnicianSheet({required this.onAssign});
 
@@ -270,35 +293,29 @@ class _AssignTechnicianSheet extends StatefulWidget {
 }
 
 class _AssignTechnicianSheetState extends State<_AssignTechnicianSheet> {
-  final List<String> _selectedTechnicians = [];
+  String? _selectedTechnicianId;
+  List<dynamic> _technicians = [];
+  bool _isLoading = true;
 
-  // Mock data with status
-  final List<Map<String, dynamic>> _technicians = [
-    {
-      'name': 'Budi Teknisi',
-      'role': 'Kelistrikan',
-      'lastActivity': 'Menangani AC Lab (5m lalu)',
-      'isAvailable': false,
-    },
-    {
-      'name': 'Andi Teknisi',
-      'role': 'Sipil',
-      'lastActivity': 'Selesai Pipa Toilet (30m lalu)',
-      'isAvailable': true,
-    },
-    {
-      'name': 'Citra Teknisi',
-      'role': 'K3',
-      'lastActivity': 'Inspeksi Rutin (1j lalu)',
-      'isAvailable': true,
-    },
-    {
-      'name': 'Eko Teknisi',
-      'role': 'Umum',
-      'lastActivity': 'Istirahat',
-      'isAvailable': true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchTechnicians();
+  }
+
+  Future<void> _fetchTechnicians() async {
+    try {
+      final techs = await reportService.getTechnicians();
+      if (mounted) {
+        setState(() {
+          _technicians = techs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -312,156 +329,80 @@ class _AssignTechnicianSheetState extends State<_AssignTechnicianSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Tugaskan Teknisi',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              if (_selectedTechnicians.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.supervisorColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${_selectedTechnicians.length} Dipilih',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-            ],
+          const Text(
+            'Tugaskan Teknisi',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const Gap(16),
           Expanded(
-            child: ListView.separated(
-              itemCount: _technicians.length,
-              separatorBuilder: (context, index) => const Gap(12),
-              itemBuilder: (context, index) {
-                final tech = _technicians[index];
-                final isSelected = _selectedTechnicians.contains(tech['name']);
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : _technicians.isEmpty
+                ? const Center(child: Text('Tidak ada teknisi tersedia'))
+                : ListView.separated(
+                    itemCount: _technicians.length,
+                    separatorBuilder: (context, index) => const Gap(12),
+                    itemBuilder: (context, index) {
+                      final tech = _technicians[index];
+                      final techId = tech['id'].toString();
+                      final isSelected = _selectedTechnicianId == techId;
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      if (isSelected) {
-                        _selectedTechnicians.remove(tech['name']);
-                      } else {
-                        _selectedTechnicians.add(tech['name']);
-                      }
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? AppTheme.supervisorColor.withOpacity(0.05)
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected
-                            ? AppTheme.supervisorColor
-                            : Colors.grey.shade200,
-                        width: isSelected ? 2 : 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        // Avatar
-                        CircleAvatar(
-                          backgroundColor: AppTheme.supervisorColor.withOpacity(
-                            0.1,
-                          ),
-                          child: Text(
-                            (tech['name'] as String)[0],
-                            style: TextStyle(
-                              color: AppTheme.supervisorColor,
-                              fontWeight: FontWeight.bold,
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTechnicianId = techId;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppTheme.supervisorColor.withOpacity(0.05)
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppTheme.supervisorColor
+                                  : Colors.grey.shade200,
+                              width: isSelected ? 2 : 1,
                             ),
                           ),
-                        ),
-                        const Gap(12),
-                        // Info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          child: Row(
                             children: [
-                              Text(
-                                tech['name'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                              CircleAvatar(
+                                backgroundColor: AppTheme.supervisorColor.withOpacity(0.1),
+                                child: Text(
+                                  tech['name'][0],
+                                  style: TextStyle(color: AppTheme.supervisorColor, fontWeight: FontWeight.bold),
                                 ),
                               ),
-                              Text(
-                                tech['role'],
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const Gap(4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                              const Gap(12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
-                                      LucideIcons.activity,
-                                      size: 10,
-                                      color: Colors.grey,
-                                    ),
-                                    const Gap(4),
-                                    Text(
-                                      tech['lastActivity'],
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey,
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
+                                    Text(tech['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                    Text(tech['specialization'] ?? 'Umum', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
                                   ],
                                 ),
                               ),
+                              if (isSelected)
+                                const Icon(LucideIcons.checkCircle2, color: AppTheme.supervisorColor)
+                              else
+                                Icon(LucideIcons.circle, color: Colors.grey.shade300),
                             ],
                           ),
                         ),
-                        // Checkbox (custom for visuals)
-                        if (isSelected)
-                          const Icon(
-                            LucideIcons.checkCircle2,
-                            color: AppTheme.supervisorColor,
-                          )
-                        else
-                          Icon(LucideIcons.circle, color: Colors.grey.shade300),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const Gap(24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _selectedTechnicians.isNotEmpty
-                  ? () => widget.onAssign(_selectedTechnicians)
+              onPressed: _selectedTechnicianId != null
+                  ? () => widget.onAssign(_selectedTechnicianId!)
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.supervisorColor,

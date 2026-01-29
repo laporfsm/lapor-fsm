@@ -19,6 +19,7 @@ class UniversalReportCard extends StatelessWidget {
   final Duration? handlingTime; // Waktu pengerjaan (for completed reports)
   final Duration? holdTime; // Waktu hold (optional)
   final String? handledBy;
+  final String? reporterName; // New field
   final VoidCallback? onTap;
   final Widget? actionButton;
   final bool showStatus;
@@ -38,6 +39,7 @@ class UniversalReportCard extends StatelessWidget {
     this.handlingTime,
     this.holdTime,
     this.handledBy,
+    this.reporterName,
     this.onTap,
     this.actionButton,
     this.showStatus = false,
@@ -58,43 +60,30 @@ class UniversalReportCard extends StatelessWidget {
 
   Color get _timerColor {
     if (elapsedTime == null) return Colors.grey;
-    // User requested less alarming colors for elapsed time
-    if (elapsedTime!.inHours >= 24) return Colors.orange; // Very long
-    return AppTheme.primaryColor; // Standard blue for active tracking
+    if (elapsedTime!.inHours >= 24) return Colors.orange;
+    return AppTheme.primaryColor;
   }
 
   IconData _getStatusIcon(ReportStatus status) {
     switch (status) {
-      case ReportStatus.pending:
-        return LucideIcons.clock;
+      case ReportStatus.pending: return LucideIcons.clock;
       case ReportStatus.terverifikasi:
-      case ReportStatus.verifikasi:
-        return LucideIcons.checkCircle;
-      case ReportStatus.diproses:
-        return LucideIcons.userCheck;
-      case ReportStatus.penanganan:
-        return LucideIcons.wrench;
-      case ReportStatus.onHold:
-        return LucideIcons.pauseCircle;
-      case ReportStatus.selesai:
-        return LucideIcons.checkSquare;
-      case ReportStatus.approved:
-        return LucideIcons.badgeCheck;
-      case ReportStatus.ditolak:
-        return LucideIcons.xCircle;
-      case ReportStatus.recalled:
-        return LucideIcons.rotateCcw;
-      case ReportStatus.archived:
-        return LucideIcons.archive;
+      case ReportStatus.verifikasi: return LucideIcons.checkCircle;
+      case ReportStatus.diproses: return LucideIcons.userCheck;
+      case ReportStatus.penanganan: return LucideIcons.wrench;
+      case ReportStatus.onHold: return LucideIcons.pauseCircle;
+      case ReportStatus.selesai: return LucideIcons.checkSquare;
+      case ReportStatus.approved: return LucideIcons.badgeCheck;
+      case ReportStatus.ditolak: return LucideIcons.xCircle;
+      case ReportStatus.recalled: return LucideIcons.rotateCcw;
+      case ReportStatus.archived: return LucideIcons.archive;
     }
   }
 
   String _formatCompact(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes % 60;
-    if (hours > 0) {
-      return '${hours}j ${minutes}m';
-    }
+    if (hours > 0) return '${hours}j ${minutes}m';
     return '${minutes}m';
   }
 
@@ -110,14 +99,12 @@ class UniversalReportCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: isEmergency
               ? Border.all(color: AppTheme.emergencyColor, width: 2)
-              : Border.all(color: Colors.grey.shade100), // Subtle border
+              : Border.all(color: Colors.grey.shade100),
           boxShadow: [
             BoxShadow(
               color: isEmergency
-                  ? AppTheme.emergencyColor.withValues(alpha: 0.2)
-                  : Colors.black.withValues(
-                      alpha: 0.08,
-                    ), // Increased visibility
+                  ? AppTheme.emergencyColor.withOpacity(0.2)
+                  : Colors.black.withOpacity(0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -126,7 +113,6 @@ class UniversalReportCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Emergency Banner
             if (isEmergency)
               Container(
                 width: double.infinity,
@@ -138,11 +124,7 @@ class UniversalReportCard extends StatelessWidget {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      LucideIcons.alertTriangle,
-                      color: Colors.white,
-                      size: 14,
-                    ),
+                    Icon(LucideIcons.alertTriangle, color: Colors.white, size: 14),
                     Gap(6),
                     Text(
                       'DARURAT',
@@ -161,31 +143,20 @@ class UniversalReportCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header Row: Status Badge + Timer
                   Row(
                     children: [
-                      // Status Badge with Icon (Accessibility)
                       if (showStatus && status != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: status!.color.withValues(alpha: 0.1),
+                            color: status!.color.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: status!.color.withValues(alpha: 0.2),
-                            ),
+                            border: Border.all(color: status!.color.withOpacity(0.2)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                _getStatusIcon(status!),
-                                size: 10,
-                                color: status!.color,
-                              ),
+                              Icon(_getStatusIcon(status!), size: 10, color: status!.color),
                               const Gap(4),
                               Text(
                                 status!.label.toUpperCase(),
@@ -202,26 +173,17 @@ class UniversalReportCard extends StatelessWidget {
                       ] else
                         const Spacer(),
 
-                      // Timer OR Handling/Hold Times
                       if (handlingTime != null) ...[
-                        // Handling Time
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.green.withValues(alpha: 0.1),
+                            color: Colors.green.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
-                                LucideIcons.timer,
-                                size: 12,
-                                color: Colors.green,
-                              ),
+                              const Icon(LucideIcons.timer, size: 12, color: Colors.green),
                               const Gap(4),
                               Text(
                                 _formatCompact(handlingTime!),
@@ -234,57 +196,17 @@ class UniversalReportCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Hold Time
-                        if (holdTime != null && holdTime!.inSeconds > 0) ...[
-                          const Gap(6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  LucideIcons.pauseCircle,
-                                  size: 12,
-                                  color: Colors.orange,
-                                ),
-                                const Gap(4),
-                                Text(
-                                  _formatCompact(holdTime!),
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ] else if (showTimer && elapsedTime != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _timerColor.withValues(alpha: 0.1),
+                            color: _timerColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
-                                LucideIcons.timer,
-                                size: 12,
-                                color: _timerColor,
-                              ),
+                              Icon(LucideIcons.timer, size: 12, color: _timerColor),
                               const Gap(4),
                               Text(
                                 _formatDuration(elapsedTime!),
@@ -301,8 +223,6 @@ class UniversalReportCard extends StatelessWidget {
                   ),
 
                   const Gap(12),
-
-                  // Title
                   Text(
                     title,
                     style: TextStyle(
@@ -312,21 +232,14 @@ class UniversalReportCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-
                   const Gap(12),
 
-                  // Location & Category
                   Row(
                     children: [
-                      // Location (Reverted to Left)
                       Expanded(
                         child: Row(
                           children: [
-                            Icon(
-                              LucideIcons.mapPin,
-                              size: 13,
-                              color: Colors.grey.shade500,
-                            ),
+                            Icon(LucideIcons.mapPin, size: 13, color: Colors.grey.shade500),
                             const Gap(4),
                             Expanded(
                               child: Column(
@@ -341,8 +254,7 @@ class UniversalReportCard extends StatelessWidget {
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
-                                  if (locationDetail != null &&
-                                      locationDetail!.isNotEmpty)
+                                  if (locationDetail != null && locationDetail!.isNotEmpty)
                                     Text(
                                       locationDetail!,
                                       style: TextStyle(
@@ -358,26 +270,16 @@ class UniversalReportCard extends StatelessWidget {
                           ],
                         ),
                       ),
-
                       const Gap(12),
-
-                      // Category (Reverted to Right, but kept styled)
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: Colors.blue.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              LucideIcons.tag,
-                              size: 12,
-                              color: Colors.blue.shade700,
-                            ),
+                            Icon(LucideIcons.tag, size: 12, color: Colors.blue.shade700),
                             const Gap(4),
                             Text(
                               category,
@@ -393,33 +295,50 @@ class UniversalReportCard extends StatelessWidget {
                     ],
                   ),
 
-                  // Handled By
-                  if (handledBy != null && !compact) ...[
-                    const Gap(12),
-                    Row(
-                      children: [
-                        Icon(
-                          LucideIcons.wrench,
-                          size: 13,
-                          color: AppTheme.secondaryColor,
-                        ),
-                        const Gap(4),
-                        Expanded(
-                          child: Text(
-                            'Ditangani: $handledBy',
-                            style: TextStyle(
-                              color: AppTheme.secondaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
+                  // Info Pelapor & Handler
+                  if (!compact) ...[
+                    if (reporterName != null || handledBy != null) const Divider(height: 24),
+                    
+                    if (reporterName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            const Icon(LucideIcons.user, size: 13, color: Colors.blueGrey),
+                            const Gap(4),
+                            Expanded(
+                              child: Text(
+                                'Pelapor: $reporterName',
+                                style: const TextStyle(
+                                  color: Colors.blueGrey,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+
+                    if (handledBy != null)
+                      Row(
+                        children: [
+                          Icon(LucideIcons.wrench, size: 13, color: AppTheme.secondaryColor),
+                          const Gap(4),
+                          Expanded(
+                            child: Text(
+                              'Ditangani: $handledBy',
+                              style: TextStyle(
+                                color: AppTheme.secondaryColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
 
-                  // Action Button
                   if (actionButton != null) ...[
                     const Gap(12),
                     SizedBox(width: double.infinity, child: actionButton),

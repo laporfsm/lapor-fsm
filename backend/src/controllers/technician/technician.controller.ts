@@ -3,8 +3,63 @@ import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
+import { gte, count } from 'drizzle-orm';
 
 export const technicianController = new Elysia({ prefix: '/technician' })
+    // Dashboard statistics for technician
+    .get('/dashboard/:staffId', async ({ params }) => {
+        const staffId = parseInt(params.staffId);
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        const statusCounts = await db
+            .select({
+                status: reports.status,
+                count: count(),
+            })
+            .from(reports)
+            .where(eq(reports.assignedTo, staffId))
+            .groupBy(reports.status);
+
+        const countsMap = statusCounts.reduce((acc, curr) => {
+            acc[curr.status || 'unknown'] = curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Waiting for technician to accept
+        const diprosesCount = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(eq(reports.status, 'diproses'));
+
+        // Time based counts
+        const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfDay)));
+        const weekReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfWeek)));
+        const monthReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfMonth)));
+
+        // Emergency pending
+        const emergencyCount = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(and(eq(reports.isEmergency, true), eq(reports.status, 'diproses')));
+
+        return {
+            status: 'success',
+            data: {
+                diproses: diprosesCount[0]?.count || 0,
+                penanganan: countsMap['penanganan'] || 0,
+                onHold: countsMap['onHold'] || 0,
+                selesai: (countsMap['selesai'] || 0) + (countsMap['approved'] || 0),
+                todayReports: todayReports[0]?.count || 0,
+                weekReports: weekReports[0]?.count || 0,
+                monthReports: monthReports[0]?.count || 0,
+                emergency: emergencyCount[0]?.count || 0,
+            },
+        };
+    })
+
     // Get all reports for technician (new tasks and active tasks)
     .get('/reports/:staffId', async ({ params }) => {
         const staffId = parseInt(params.staffId);

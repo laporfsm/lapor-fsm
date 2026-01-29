@@ -7,6 +7,8 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
 /// PJ Gedung theme color
@@ -23,89 +25,20 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
   bool _isLoading = true;
   Timer? _refreshTimer;
 
-  // Mock Stats
-  Map<String, int> get _stats => {
-    'todayReports': 5,
-    'weekReports': 18,
-    'monthReports': 42,
-    'pending': 3,
-    'verified': 12,
-    'rejected': 2,
+  Map<String, int> _dashboardStats = {
+    'todayReports': 0,
+    'weekReports': 0,
+    'monthReports': 0,
+    'pending': 0,
+    'verified': 0,
+    'rejected': 0,
   };
 
-  // Mock Pending Reports (NON-emergency - these need PJ verification)
-  List<Report> get _pendingReports => [
-    Report(
-      id: 'pj-1',
-      title: 'AC Bocor di Ruang Sidang',
-      description: 'Air menetes cukup deras.',
-      category: 'Fasilitas Umum',
-      building: 'Gedung A',
-      locationDetail: 'Lt 2, Lorong Utama',
-      status: ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-      reporterId: 'r1',
-      reporterName: 'Budi Mahasiswa',
-      isEmergency: false,
-    ),
-    Report(
-      id: 'pj-2',
-      title: 'Lampu Koridor Kedip-kedip',
-      description: 'Sangat mengganggu.',
-      category: 'Kelistrikan',
-      building: 'Gedung A',
-      locationDetail: 'Lt 1, Dekat Tangga',
-      status: ReportStatus.pending,
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      reporterId: 'r2',
-      reporterName: 'Siti Staff',
-      isEmergency: false,
-    ),
-  ];
+  List<Report> _pendingReports = [];
+  List<Report> _emergencyReports = [];
+  List<Report> _verifiedReports = [];
 
-  // Mock Emergency Reports (view-only - handled directly by Supervisor)
-  List<Report> get _emergencyReports => [
-    Report(
-      id: 'pj-e1',
-      title: 'Kran Air Patah - Air Muncrat',
-      description: 'Air muncrat terus menerus, perlu ditangani segera.',
-      category: 'Sanitasi',
-      building: 'Gedung A, Toilet Pria',
-      status: ReportStatus.penanganan, // Already being handled by Supervisor
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      reporterId: 'r3',
-      reporterName: 'Ahmad Dosen',
-      isEmergency: true,
-    ),
-  ];
-
-  // Mock Verified Reports
-  List<Report> get _verifiedReports => [
-    Report(
-      id: 'pj-v1',
-      title: 'Proyektor Buram',
-      description: 'Lensa kotor.',
-      category: 'Fasilitas Kelas',
-      building: 'Gedung A, R. 204',
-      status: ReportStatus.terverifikasi,
-      createdAt: DateTime.now().subtract(const Duration(hours: 5)),
-      reporterId: 'r4',
-      reporterName: 'Dosen A',
-      isEmergency: false,
-    ),
-    Report(
-      id: 'pj-v2',
-      title: 'Pintu Lift Macet',
-      description: 'Kadang tidak terbuka.',
-      category: 'Sipil',
-      building: 'Gedung A, Lt Dasar',
-      status: ReportStatus.terverifikasi,
-      createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-      reporterId: 'r5',
-      reporterName: 'Satpam',
-      isEmergency: false,
-    ),
-  ];
+  Map<String, int> get _stats => _dashboardStats;
 
   @override
   void initState() {
@@ -124,8 +57,35 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
 
   Future<void> _loadData({bool silent = false}) async {
     if (!silent) setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) setState(() => _isLoading = false);
+    
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = user['id'];
+        
+        final results = await Future.wait([
+          reportService.getPJDashboardStats(staffId),
+          reportService.getStaffReports(role: 'pj', status: 'pending'),
+          reportService.getStaffReports(role: 'pj', isEmergency: true),
+          reportService.getStaffReports(role: 'pj', status: 'terverifikasi'),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            if (results[0] != null) {
+              _dashboardStats = Map<String, int>.from(results[0] as Map);
+            }
+            _pendingReports = (results[1] as List).map((json) => Report.fromJson(json)).toList();
+            _emergencyReports = (results[2] as List).map((json) => Report.fromJson(json)).toList();
+            _verifiedReports = (results[3] as List).map((json) => Report.fromJson(json)).toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading PJ dashboard data: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override

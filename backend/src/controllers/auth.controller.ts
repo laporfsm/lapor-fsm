@@ -87,6 +87,7 @@ export const authController = new Elysia({ prefix: '/auth' })
               address: body.address,
               emergencyName: body.emergencyName,
               emergencyPhone: body.emergencyPhone,
+              idCardUrl: body.idCardUrl,
               isVerified: isUndip, // Auto-verify if UNDIP email
           }).returning();
 
@@ -117,6 +118,7 @@ export const authController = new Elysia({ prefix: '/auth' })
           address: t.Optional(t.String()),
           emergencyName: t.Optional(t.String()),
           emergencyPhone: t.Optional(t.String()),
+          idCardUrl: t.Optional(t.String()),
       })
   })
 
@@ -168,12 +170,23 @@ export const authController = new Elysia({ prefix: '/auth' })
     }),
   })
 
-  // Register Phone Number (Update Profile)
-  .post('/register-phone', async ({ body }) => {
+  // Update Profile (Pelapor)
+  .patch('/profile/:id', async ({ params, body }) => {
+    const userId = parseInt(params.id);
+    const updateData: any = {};
+    
+    if (body.name) updateData.name = body.name;
+    if (body.phone) updateData.phone = body.phone;
+    if (body.department) updateData.department = body.department;
+    if (body.nimNip) updateData.nimNip = body.nimNip;
+    if (body.address) updateData.address = body.address;
+    if (body.emergencyName) updateData.emergencyName = body.emergencyName;
+    if (body.emergencyPhone) updateData.emergencyPhone = body.emergencyPhone;
+
     const updated = await db
       .update(users)
-      .set({ phone: body.phone, department: body.department })
-      .where(eq(users.id, Number(body.userId)))
+      .set(updateData)
+      .where(eq(users.id, userId))
       .returning();
 
     if (updated.length === 0) {
@@ -191,9 +204,13 @@ export const authController = new Elysia({ prefix: '/auth' })
     };
   }, {
     body: t.Object({
-      userId: t.String(),
-      phone: t.String(),
+      name: t.Optional(t.String()),
+      phone: t.Optional(t.String()),
       department: t.Optional(t.String()),
+      nimNip: t.Optional(t.String()),
+      address: t.Optional(t.String()),
+      emergencyName: t.Optional(t.String()),
+      emergencyPhone: t.Optional(t.String()),
     }),
   })
 
