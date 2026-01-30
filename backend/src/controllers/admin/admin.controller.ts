@@ -2,6 +2,8 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { staff, users, categories, reports, reportLogs } from '../../db/schema';
 import { eq, desc, count, sql, and, not } from 'drizzle-orm';
+import { NotificationService } from '../../services/notification.service';
+import { mapToMobileUser, mapToMobileReport } from '../../utils/mapper';
 
 export const adminController = new Elysia({ prefix: '/admin' })
     // ==========================================
@@ -26,7 +28,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         return {
             status: 'success',
-            data: staffList.map(s => ({ ...s, id: s.id.toString() })),
+            data: staffList.map(s => mapToMobileUser(s)),
         };
     })
 
@@ -222,7 +224,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         return {
             status: 'success',
-            data: userList.map(u => ({ ...u, id: u.id.toString(), password: '' })),
+            data: userList.map(u => mapToMobileUser(u)),
         };
     })
 
@@ -236,7 +238,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         return {
             status: 'success',
-            data: pendingList.map(u => ({ ...u, id: u.id.toString(), password: '' })),
+            data: pendingList.map(u => mapToMobileUser(u)),
         };
     })
 
@@ -250,10 +252,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
 
+        // Notify User
+        await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin. Anda sekarang dapat mengirim laporan.');
+
         return {
             status: 'success',
             message: 'User berhasil diverifikasi',
-            data: { ...updated[0], id: updated[0].id.toString(), password: '' }
+            data: mapToMobileUser(updated[0])
         };
     })
 
@@ -271,7 +276,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
         return {
             status: 'success',
             message: `User berhasil ${action}`,
-            data: { ...updated[0], id: updated[0].id.toString(), password: '' }
+            data: mapToMobileUser(updated[0])
         };
     }, {
         body: t.Object({
@@ -290,8 +295,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
         return {
             status: 'success',
             data: {
-                user: { ...user[0], id: user[0].id.toString(), password: '' },
-                reports: userReports.map(r => ({ ...r, id: r.id.toString() })),
+                user: mapToMobileUser(user[0]),
+                reports: userReports.map(r => mapToMobileReport(r)),
             }
         };
     })
@@ -319,16 +324,21 @@ export const adminController = new Elysia({ prefix: '/admin' })
             fromStatus: existingReport[0].status,
             toStatus: 'selesai',
             action: 'force_close',
-            actorId: 'admin', // Ideally current admin ID
+            actorId: 'admin',
             actorName: 'Admin System',
             actorRole: 'admin',
             reason: body.reason,
         });
 
+        // Notify User
+        if (updatedReport[0].userId) {
+            await NotificationService.notifyUser(updatedReport[0].userId, 'Laporan Ditutup Admin', `Laporan Anda telah diselesaikan oleh Admin: ${body.reason}`);
+        }
+
         return {
             status: 'success',
             message: 'Laporan berhasil ditutup paksa',
-            data: { ...updatedReport[0], id: updatedReport[0].id.toString() }
+            data: mapToMobileReport(updatedReport[0])
         };
     }, {
         body: t.Object({

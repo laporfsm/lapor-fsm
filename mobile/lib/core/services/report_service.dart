@@ -96,6 +96,7 @@ class ReportService {
     bool isEmergency = false,
     String? notes,
     String? locationDetail,
+    String? status,
   }) async {
     try {
       final requestBody = {
@@ -112,6 +113,7 @@ class ReportService {
         'isEmergency': isEmergency,
         'notes': notes,
         'locationDetail': locationDetail,
+        'status': status,
       };
 
       // Remove null values to avoid backend validation errors (422)

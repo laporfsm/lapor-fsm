@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
 import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:mobile/core/theme.dart';
@@ -140,9 +142,28 @@ class NotificationPage extends ConsumerWidget {
       ),
       onDismissed: (_) => _deleteNotification(ref, item.id),
       child: GestureDetector(
-        onTap: () {
+        onTap: () async {
           if (!item.isRead) {
             _markAsRead(ref, item.id);
+          }
+
+          if (item.reportId != null && context.mounted) {
+            final user = await authService.getCurrentUser();
+            final role = user?['role'];
+
+            if (!context.mounted) return;
+
+            if (role == 'pelapor' || role == 'user') {
+              context.push('/report-detail/${item.reportId}');
+            } else if (role == 'teknisi') {
+              context.push('/teknisi/report/${item.reportId}');
+            } else if (role == 'supervisor') {
+              context.push('/supervisor/review/${item.reportId}');
+            } else if (role == 'pj_gedung') {
+              context.push('/pj-gedung/report/${item.reportId}');
+            } else if (role == 'admin') {
+              context.push('/admin/reports/${item.reportId}');
+            }
           }
         },
         child: Container(

@@ -69,6 +69,7 @@ import 'package:mobile/features/admin/presentation/pages/management/admin_activi
 import 'package:mobile/features/admin/presentation/pages/profile/admin_profile_page.dart';
 
 // Auth & Common imports
+import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
@@ -76,7 +77,48 @@ import 'package:mobile/features/notification/presentation/pages/notification_pag
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouter = GoRouter(
-  initialLocation: '/login', // Start with login for demo
+  initialLocation: '/',
+  redirect: (context, state) async {
+    final bool loggedIn = await authService.isLoggedIn();
+    final String location = state.uri.path;
+
+    // List of auth-related paths that should be accessible when NOT logged in
+    final bool isAuthPath = location == '/login' ||
+        location == '/register' ||
+        location == '/forgot-password' ||
+        location == '/complete-profile';
+
+    if (!loggedIn) {
+      // If not logged in and not on an auth path, go to login
+      return isAuthPath ? null : '/login';
+    }
+
+    // If logged in and on an auth path, redirect to appropriate home
+    if (isAuthPath) {
+      final user = await authService.getCurrentUser();
+      final role = user?['role'];
+
+      if (role == 'teknisi') return '/teknisi';
+      if (role == 'supervisor') return '/supervisor';
+      if (role == 'pj_gedung') return '/pj-gedung';
+      if (role == 'admin') return '/admin/dashboard';
+      return '/'; // Default for pelapor
+    }
+
+    // Special case for root path when logged in
+    if (location == '/') {
+      final user = await authService.getCurrentUser();
+      final role = user?['role'];
+      
+      if (role == 'teknisi') return '/teknisi';
+      if (role == 'supervisor') return '/supervisor';
+      if (role == 'pj_gedung') return '/pj-gedung';
+      if (role == 'admin') return '/admin/dashboard';
+      // role == 'pelapor' stays at '/'
+    }
+
+    return null;
+  },
   routes: [
     // Auth - Unified Login & Register
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),

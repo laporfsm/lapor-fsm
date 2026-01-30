@@ -4,27 +4,58 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
-class TeknisiProfilePage extends StatelessWidget {
+class TeknisiProfilePage extends StatefulWidget {
   const TeknisiProfilePage({super.key});
 
-  Map<String, dynamic> get _profile => {
-    'name': 'Budi Teknisi',
-    'nip': '198501152010011001',
-    'email': 'budi.teknisi@undip.ac.id',
-    'phone': '08123456789',
-    'department': 'Unit Pemeliharaan',
-    'specialization': 'Kelistrikan & AC',
-  };
+  @override
+  State<TeknisiProfilePage> createState() => _TeknisiProfilePageState();
+}
+
+class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
+  Map<String, dynamic>? _profile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      setState(() {
+        _profile = user;
+        _isLoading = false;
+      });
+    }
+  }
 
   Map<String, int> get _stats => {
-    'handled': 25,
-    'completed': 23,
-    'inProgress': 2,
+    'handled': 0, // In real app, these should also come from API
+    'completed': 0,
+    'inProgress': 0,
   };
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_profile == null) {
+      return Scaffold(
+        body: Center(
+          child: ElevatedButton(
+            onPressed: () => context.go('/login'),
+            child: const Text('Silakan Login'),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -61,7 +92,7 @@ class TeknisiProfilePage extends StatelessWidget {
                   ),
                   const Gap(16),
                   Text(
-                    _profile['name'],
+                    _profile!['name'] ?? "Unknown",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -69,7 +100,7 @@ class TeknisiProfilePage extends StatelessWidget {
                   ),
                   const Gap(4),
                   Text(
-                    _profile['nip'],
+                    _profile!['nimNip'] ?? "-",
                     style: const TextStyle(color: Colors.grey),
                   ),
                   const Gap(8),
@@ -119,25 +150,25 @@ class TeknisiProfilePage extends StatelessWidget {
                         ProfileInfoRow(
                           icon: LucideIcons.mail,
                           label: "Email",
-                          value: _profile['email'],
+                          value: _profile!['email'] ?? "-",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.phone,
                           label: "Telepon",
-                          value: _profile['phone'],
+                          value: _profile!['phone'] ?? "-",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.building,
                           label: "Departemen",
-                          value: _profile['department'],
+                          value: _profile!['department'] ?? "Unit Pemeliharaan",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.wrench,
                           label: "Spesialisasi",
-                          value: _profile['specialization'],
+                          value: _profile!['specialization'] ?? "-",
                         ),
                       ],
                     ),
@@ -193,7 +224,10 @@ class TeknisiProfilePage extends StatelessWidget {
                   ProfileMenuItem(
                     icon: LucideIcons.user,
                     label: "Edit Profil",
-                    onTap: () => context.push('/teknisi/edit-profile'),
+                    onTap: () async {
+                      await context.push('/teknisi/edit-profile');
+                      _loadUserData();
+                    },
                     color: AppTheme.secondaryColor,
                   ),
                   ProfileMenuItem(

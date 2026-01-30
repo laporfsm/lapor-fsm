@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -5,72 +6,31 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelIdDefault = 'lapor_fsm_default';
-  static const String _channelNameDefault = 'General Notifications';
-  static const String _channelDescDefault = 'Notifications for general updates';
-
-  static const String _channelIdEmergency = 'lapor_fsm_emergency';
-  static const String _channelNameEmergency = 'Emergency Alerts';
-  static const String _channelDescEmergency =
-      'High priority alerts for emergency reports';
-
   static Future<void> init() async {
+    if (kIsWeb) return;
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // iOS settings (minimal for now)
-    const DarwinInitializationSettings initializationSettingsDarwin =
+    const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-          requestSoundPermission: true,
-          requestBadgePermission: true,
-          requestAlertPermission: true,
-        );
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-        );
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (details) {
-        // Handle notification tap
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle notification tap if needed
+        debugPrint('Notification tapped: ${response.payload}');
       },
     );
-
-    // Create Channels (Android)
-    final AndroidNotificationChannel defaultChannel =
-        AndroidNotificationChannel(
-          _channelIdDefault,
-          _channelNameDefault,
-          description: _channelDescDefault,
-          importance: Importance.max, // High to show popup
-          playSound: true,
-        );
-
-    final AndroidNotificationChannel emergencyChannel =
-        AndroidNotificationChannel(
-          _channelIdEmergency,
-          _channelNameEmergency,
-          description: _channelDescEmergency,
-          importance: Importance.max,
-          playSound: true,
-          sound: const RawResourceAndroidNotificationSound(
-            'emergency_alert',
-          ), // Custom Sound
-          enableVibration: true,
-        );
-
-    final platform = _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-
-    if (platform != null) {
-      await platform.createNotificationChannel(defaultChannel);
-      await platform.createNotificationChannel(emergencyChannel);
-    }
   }
 
   static Future<void> showNotification({
@@ -80,34 +40,33 @@ class NotificationService {
     bool isEmergency = false,
     String? payload,
   }) async {
-    final AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          isEmergency ? _channelIdEmergency : _channelIdDefault,
-          isEmergency ? _channelNameEmergency : _channelNameDefault,
-          channelDescription: isEmergency
-              ? _channelDescEmergency
-              : _channelDescDefault,
-          importance: Importance.max,
-          priority: Priority.high,
-          ticker: 'ticker',
-          playSound: true,
-          sound: isEmergency
-              ? const RawResourceAndroidNotificationSound('emergency_alert')
-              : null,
-          color: isEmergency
-              ? const Color(0xFFEF4444)
-              : null, // Red for emergency
-        );
+    debugPrint('NotificationService: showNotification ($title: $message)');
+    
+    if (kIsWeb) return;
 
-    final NotificationDetails platformDetails = NotificationDetails(
+    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'lapor_fsm_channel',
+      'Lapor FSM Notifications',
+      channelDescription: 'Notifications for report status updates',
+      importance: isEmergency ? Importance.max : Importance.defaultImportance,
+      priority: isEmergency ? Priority.high : Priority.defaultPriority,
+      color: isEmergency ? const Color(0xFFFF0000) : const Color(0xFF0055A5),
+    );
+
+    final NotificationDetails notificationDetails = NotificationDetails(
       android: androidDetails,
+      iOS: const DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      ),
     );
 
     await _notificationsPlugin.show(
       id,
       title,
       message,
-      platformDetails,
+      notificationDetails,
       payload: payload,
     );
   }

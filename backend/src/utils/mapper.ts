@@ -25,3 +25,26 @@ export const mapToMobileReport = (report: any, logs: any[] = []) => {
     }))
   };
 };
+
+export const mapToMobileUser = (user: any) => {
+  if (!user) return null;
+  return {
+    ...user,
+    id: user.id.toString(),
+    password: '', // Safety check
+    createdAt: user.createdAt instanceof Date ? user.createdAt.toISOString() : user.createdAt,
+    updatedAt: user.updatedAt instanceof Date ? user.updatedAt.toISOString() : user.updatedAt,
+  };
+};
+
+export const mapToMobileNotification = (notif: any) => {
+  if (!notif) return null;
+  return {
+    ...notif,
+    id: notif.id.toString(),
+    userId: notif.userId?.toString(),
+    staffId: notif.staffId?.toString(),
+    reportId: notif.reportId?.toString(),
+    createdAt: notif.createdAt instanceof Date ? notif.createdAt.toISOString() : notif.createdAt,
+  };
+};

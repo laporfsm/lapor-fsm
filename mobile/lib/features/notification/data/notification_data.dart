@@ -9,6 +9,7 @@ class NotificationItem {
   final String message;
   final DateTime time;
   final bool isRead;
+  final String? reportId;
   final String type; // 'info', 'warning', 'success', 'emergency'
 
   const NotificationItem({
@@ -18,6 +19,7 @@ class NotificationItem {
     required this.time,
     required this.isRead,
     required this.type,
+    this.reportId,
   });
   factory NotificationItem.fromJson(Map<String, dynamic> json) {
     return NotificationItem(
@@ -29,6 +31,7 @@ class NotificationItem {
           : DateTime.now(),
       isRead: json['isRead'] ?? false,
       type: json['type'] ?? 'info',
+      reportId: json['reportId']?.toString(),
     );
   }
 }

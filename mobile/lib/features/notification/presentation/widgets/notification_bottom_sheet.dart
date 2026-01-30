@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
 import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 
@@ -75,10 +77,31 @@ class NotificationBottomSheet extends ConsumerWidget {
                       final item = notifications[index];
                       // Use InkWell to allow tapping to mark as read
                       return InkWell(
-                        onTap: () {
+                        onTap: () async {
                           ref
                               .read(notificationProvider.notifier)
                               .markAsRead(item.id);
+
+                          if (item.reportId != null && context.mounted) {
+                            Navigator.pop(context); // Close bottom sheet
+
+                            final user = await authService.getCurrentUser();
+                            final role = user?['role'];
+
+                            if (!context.mounted) return;
+
+                            if (role == 'pelapor' || role == 'user') {
+                              context.push('/report-detail/${item.reportId}');
+                            } else if (role == 'teknisi') {
+                              context.push('/teknisi/report/${item.reportId}');
+                            } else if (role == 'supervisor') {
+                              context.push('/supervisor/review/${item.reportId}');
+                            } else if (role == 'pj_gedung') {
+                              context.push('/pj-gedung/report/${item.reportId}');
+                            } else if (role == 'admin') {
+                              context.push('/admin/reports/${item.reportId}');
+                            }
+                          }
                         },
                         borderRadius: BorderRadius.circular(12),
                         child: _buildModalNotificationItem(item),

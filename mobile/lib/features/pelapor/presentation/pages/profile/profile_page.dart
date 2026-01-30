@@ -40,7 +40,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     if (_currentUser == null) {
-      // Should not happen if guarded by auth, but just in case
       return Scaffold(
         body: Center(
           child: ElevatedButton(
@@ -166,6 +165,18 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(height: 24),
                   _InfoRow(
+                    icon: LucideIcons.building,
+                    label: "Fakultas",
+                    value: _currentUser!['faculty'] ?? "-",
+                  ),
+                  const Divider(height: 24),
+                  _InfoRow(
+                    icon: LucideIcons.school,
+                    label: "Departemen / Prodi",
+                    value: _currentUser!['department'] ?? "-",
+                  ),
+                  const Divider(height: 24),
+                  _InfoRow(
                     icon: LucideIcons.phone,
                     label: "Nomor HP",
                     value: _currentUser!['phone'] ?? "-",
@@ -240,7 +251,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: LucideIcons.edit,
                     label: "Edit Profil",
                     onTap: () async {
-                      // Reload data when returning from edit profile
                       await context.push('/edit-profile');
                       _loadUserData();
                     },

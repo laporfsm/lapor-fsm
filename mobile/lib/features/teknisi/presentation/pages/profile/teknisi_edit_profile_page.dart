@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class TeknisiEditProfilePage extends StatefulWidget {
   const TeknisiEditProfilePage({super.key});
@@ -15,30 +16,66 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers - Editable fields only
-  final _phoneController = TextEditingController(text: '08123456789');
-  final _addressController = TextEditingController(
-    text: 'Kampus Undip Tembalang, Semarang',
-  );
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
 
+  Map<String, dynamic>? _currentUser;
   bool _isLoading = false;
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentProfile();
+  }
+
+  Future<void> _loadCurrentProfile() async {
+    final user = await authService.getCurrentUser();
+    if (user != null) {
+      setState(() {
+        _currentUser = user;
+        _phoneController.text = user['phone'] ?? '';
+        _addressController.text = user['address'] ?? '';
+        _isInitialLoading = false;
+      });
+    } else {
+      setState(() => _isInitialLoading = false);
+    }
+  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_currentUser == null) return;
 
     setState(() => _isLoading = true);
 
-    // TODO: [BACKEND] Call API to update profile
-    await Future.delayed(const Duration(seconds: 1));
+    final result = await authService.updateProfile(
+      id: _currentUser!['id'],
+      role: _currentUser!['role'] ?? 'teknisi',
+      phone: _phoneController.text,
+      address: _addressController.text,
+      // Specialization is usually set by Admin, but we can allow it if needed
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.pop();
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Gagal memperbarui profil'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -51,6 +88,30 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitialLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_currentUser == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Data profil tidak ditemukan'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Login Kembali'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -130,31 +191,31 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
                     // TODO: [BACKEND] Get from logged in user
                     _ReadOnlyField(
                       label: 'Nama Lengkap',
-                      value: 'Budi Teknisi',
+                      value: _currentUser!['name'] ?? '-',
                       icon: LucideIcons.user,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'Email',
-                      value: 'budi.teknisi@undip.ac.id',
+                      value: _currentUser!['email'] ?? '-',
                       icon: LucideIcons.mail,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'NIP',
-                      value: '198501152010011001',
+                      value: _currentUser!['nimNip'] ?? '-',
                       icon: LucideIcons.hash,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'Departemen',
-                      value: 'Unit Pemeliharaan',
+                      value: _currentUser!['department'] ?? 'Unit Pemeliharaan',
                       icon: LucideIcons.building,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'Spesialisasi',
-                      value: 'Kelistrikan & AC',
+                      value: _currentUser!['specialization'] ?? '-',
                       icon: LucideIcons.wrench,
                     ),
                   ],
