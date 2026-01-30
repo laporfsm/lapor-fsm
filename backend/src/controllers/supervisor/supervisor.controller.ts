@@ -56,7 +56,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 pending: countsMap['pending'] || 0,
                 verifikasi: (countsMap['terverifikasi'] || 0) + (countsMap['verifikasi'] || 0),
                 penanganan: (countsMap['diproses'] || 0) + (countsMap['penanganan'] || 0),
-                selesai: (countsMap['selesai'] || 0) + (countsMap['approved'] || 0),
+                selesai: countsMap['selesai'] || 0,
+                approved: countsMap['approved'] || 0,
+                recalled: countsMap['recalled'] || 0,
                 emergency: emergencyCount[0]?.count || 0,
                 todayReports: todayReports[0]?.count || 0,
                 weekReports: weekReports[0]?.count || 0,
@@ -69,12 +71,25 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
         const { status, building, isEmergency, page = '1', limit = '20' } = query;
+        console.log('[DEBUG] Supervisor /reports endpoint - status query:', status);
         const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
         const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
-        if (status && status !== 'all') conditions.push(eq(reports.status, status));
+        
+        // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
+        if (status && status !== 'all') {
+            const statusList = status.split(',').map(s => s.trim());
+            if (statusList.length > 1) {
+                console.log('[DEBUG] Multiple statuses found:', statusList);
+                conditions.push(or(...statusList.map(s => eq(reports.status, s))));
+            } else {
+                console.log('[DEBUG] Single status:', statusList[0]);
+                conditions.push(eq(reports.status, statusList[0]));
+            }
+        }
+        
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
@@ -110,6 +125,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .limit(limitNum)
             .offset(offset);
 
+        console.log('[DEBUG] Query result count:', result.length, 'for status:', status);
+        if (result.length > 0) {
+            console.log('[DEBUG] First result sample:', JSON.stringify(result[0], null, 2));
+        }
+        
         return {
             status: 'success',
             data: result.map(r => mapToMobileReport(r)),

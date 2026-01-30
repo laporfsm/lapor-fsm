@@ -31,6 +31,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     'penanganan': 0,
     'onHold': 0,
     'selesai': 0,
+    'recalled': 0,
     'todayReports': 0,
     'weekReports': 0,
     'monthReports': 0,
@@ -39,6 +40,8 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
 
   List<Report> _readyReports = [];
   List<Report> _activeReports = [];
+
+  int? _currentStaffId; // Added this line
 
   Map<String, int> get _stats => _dashboardStats;
 
@@ -63,15 +66,32 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        final staffIdStr = user['id'].toString();
+        final staffId = int.tryParse(staffIdStr) ?? 0;
+
+        if (mounted) {
+          setState(() => _currentStaffId = staffId);
+        }
 
         // Fetch stats and lists
         final results = await Future.wait([
-          reportService.getTechnicianDashboardStats(staffId),
-          reportService.getStaffReports(role: 'technician', status: 'diproses'),
+          reportService.getTechnicianDashboardStats(staffIdStr),
+          // Siap Dimulai: Personal Diproses + Personal Recalled
+          reportService.getStaffReports(
+            role: 'technician',
+            status: 'diproses',
+            assignedTo: staffId,
+          ),
+          reportService.getStaffReports(
+            role: 'technician',
+            status: 'recalled',
+            assignedTo: staffId,
+          ),
+          // Sedang Dikerjakan: Personal Penanganan
           reportService.getStaffReports(
             role: 'technician',
             status: 'penanganan',
+            assignedTo: staffId,
           ),
         ]);
 
@@ -80,12 +100,24 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
             if (results[0] != null) {
               _dashboardStats = Map<String, int>.from(results[0] as Map);
             }
-            _readyReports = (results[1] as List)
+
+            final diproses = (results[1] as List)
                 .map((json) => Report.fromJson(json))
                 .toList();
-            _activeReports = (results[2] as List)
+            final recalled = (results[2] as List)
                 .map((json) => Report.fromJson(json))
                 .toList();
+
+            // Merge and sort by date descending
+            _readyReports = [...recalled, ...diproses]
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+            _activeReports =
+                (results[3] as List)
+                    .map((json) => Report.fromJson(json))
+                    .toList()
+                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
             _isLoading = false;
           });
         }
@@ -110,7 +142,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: AppTheme.secondaryColor,
+              backgroundColor: AppTheme.teknisiColor,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
@@ -121,7 +153,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Container(color: AppTheme.secondaryColor);
+                        return Container(color: AppTheme.teknisiColor);
                       },
                     ),
                     // Gradient Overlay
@@ -131,8 +163,8 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            AppTheme.secondaryColor.withValues(alpha: 0.85),
-                            AppTheme.secondaryColor.withValues(alpha: 0.95),
+                            AppTheme.teknisiColor.withValues(alpha: 0.85),
+                            AppTheme.teknisiColor.withValues(alpha: 0.95),
                           ],
                         ),
                       ),
@@ -193,7 +225,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: _loadData,
+                onRefresh: () => _loadData(), // Changed to explicit call
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -201,10 +233,6 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                     children: [
                       // Emergency Alert
                       _buildEmergencyAlert(context),
-
-                      // Quick Actions
-                      const Gap(16),
-                      _buildQuickActions(context),
 
                       // Period Stats
                       const Gap(16),
@@ -215,7 +243,11 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                         onTap: (period) => context.push(
                           Uri(
                             path: '/teknisi/all-reports',
-                            queryParameters: {'period': period},
+                            queryParameters: {
+                              'period': period,
+                              if (_currentStaffId != null)
+                                'assignedTo': _currentStaffId.toString(),
+                            },
                           ).toString(),
                         ),
                       ),
@@ -227,41 +259,30 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                         penangananCount: _stats['penanganan'] ?? 0,
                         onHoldCount: _stats['onHold'] ?? 0,
                         selesaiCount: _stats['selesai'] ?? 0,
+                        recalledCount: _stats['recalled'] ?? 0,
                         onTap: (status) => context.push(
                           Uri(
                             path: '/teknisi/all-reports',
-                            queryParameters: {'status': status},
+                            queryParameters: {
+                              'status': status,
+                              if (_currentStaffId != null)
+                                'assignedTo': _currentStaffId.toString(),
+                            },
                           ).toString(),
                         ),
                       ),
 
+                      // Quick Actions (Semua Laporan)
+                      const Gap(16),
+                      _buildQuickActions(context),
+
                       // Ready to Start Section
                       const Gap(24),
-                      _buildSectionHeader(
-                        context,
-                        'Siap Dimulai',
-                        'Lihat Semua',
-                        () => context.push(
-                          '/teknisi/all-reports?status=diproses',
-                        ),
-                        count: _stats['diproses'],
-                      ),
-                      const Gap(12),
-                      _buildReadyReportsList(context),
+                      _buildReadyToStartSection(context),
 
                       // Active Reports Section
                       const Gap(24),
-                      _buildSectionHeader(
-                        context,
-                        'Sedang Dikerjakan',
-                        'Lihat Semua',
-                        () => context.push(
-                          '/teknisi/all-reports?status=penanganan',
-                        ),
-                        count: _stats['penanganan'],
-                      ),
-                      const Gap(12),
-                      _buildActiveReportsList(context),
+                      _buildActiveWorkSection(context),
 
                       const Gap(32),
                     ],
@@ -340,66 +361,34 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: BouncingButton(
-            onTap: () => context.push('/teknisi/all-reports'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.layoutList, color: AppTheme.primaryColor),
-                  const Gap(8),
-                  const Text(
-                    'Semua Laporan',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.primaryColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return BouncingButton(
+      // Clear filters for "Semua Laporan" to show public feed
+      onTap: () => context.push('/teknisi/all-reports'),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppTheme.teknisiColor.withValues(alpha: 0.3),
           ),
         ),
-        const Gap(12),
-        Expanded(
-          child: BouncingButton(
-            onTap: () => context.push('/teknisi/search'),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(LucideIcons.search, color: Colors.grey.shade600),
-                  const Gap(8),
-                  Text(
-                    'Cari Laporan',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(LucideIcons.layoutList, color: AppTheme.teknisiColor),
+            const Gap(8),
+            const Text(
+              'Semua Laporan',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.teknisiColor,
               ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -424,7 +413,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor,
+                  color: AppTheme.teknisiColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -444,52 +433,109 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     );
   }
 
-  Widget _buildReadyReportsList(BuildContext context) {
-    if (_readyReports.isEmpty) {
-      return _buildEmptyState('Tidak ada laporan menunggu');
-    }
+  Widget _buildReadyToStartSection(BuildContext context) {
+    // Count is sum of Diproses (Global) + Recalled (Personal)
+    final count =
+        (_dashboardStats['diproses'] ?? 0) + (_dashboardStats['recalled'] ?? 0);
 
     return Column(
-      children: _readyReports.map((report) {
-        return UniversalReportCard(
-          id: report.id,
-          title: report.title,
-          location: report.building,
-          locationDetail: report.locationDetail,
-          category: report.category,
-          status: report.status,
-          isEmergency: report.isEmergency,
-          elapsedTime: DateTime.now().difference(report.createdAt),
-          showStatus: true,
-          showTimer: true,
-          compact: true,
-          onTap: () => context.push('/teknisi/report/${report.id}'),
-        );
-      }).toList(),
+      children: [
+        _buildSectionHeader(
+          context,
+          'Siap Dimulai',
+          'Lihat Semua',
+          () => context.push(
+            Uri(
+              path: '/teknisi/all-reports',
+              queryParameters: {
+                'status': 'diproses,recalled',
+                if (_currentStaffId != null)
+                  'assignedTo': _currentStaffId.toString(),
+              },
+            ).toString(),
+          ),
+          count: count,
+        ),
+        const Gap(12),
+        if (_readyReports.isEmpty)
+          _buildEmptyState('Belum ada laporan yang perlu ditangani')
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _readyReports.length > 3 ? 3 : _readyReports.length,
+            separatorBuilder: (context, index) => const Gap(12),
+            itemBuilder: (context, index) {
+              final report = _readyReports[index];
+              return UniversalReportCard(
+                id: report.id,
+                title: report.title,
+                location: report.building,
+                locationDetail: report.locationDetail,
+                category: report.category,
+                status: report.status,
+                isEmergency: report.isEmergency,
+                elapsedTime: DateTime.now().difference(report.createdAt),
+                reporterName: report.reporterName,
+                handledBy: report.handledBy?.join(', '),
+                showStatus: true,
+                showTimer: true,
+                compact: false, // Set to false to show extra info
+                onTap: () => context.push('/teknisi/report/${report.id}'),
+              );
+            },
+          ),
+      ],
     );
   }
 
-  Widget _buildActiveReportsList(BuildContext context) {
-    if (_activeReports.isEmpty) {
-      return _buildEmptyState('Tidak ada laporan aktif');
-    }
+  Widget _buildActiveWorkSection(BuildContext context) {
+    final count = _dashboardStats['penanganan'] ?? 0;
 
     return Column(
-      children: _activeReports.map((report) {
-        return UniversalReportCard(
-          id: report.id,
-          title: report.title,
-          location: report.building,
-          locationDetail: report.locationDetail,
-          category: report.category,
-          status: report.status,
-          elapsedTime: DateTime.now().difference(report.createdAt),
-          showStatus: true,
-          showTimer: true,
-          compact: true,
-          onTap: () => context.push('/teknisi/report/${report.id}'),
-        );
-      }).toList(),
+      children: [
+        _buildSectionHeader(context, 'Sedang Dikerjakan', 'Lihat Semua', () {
+          context.push(
+            Uri(
+              path: '/teknisi/all-reports',
+              queryParameters: {
+                'status': 'penanganan',
+                if (_currentStaffId != null)
+                  'assignedTo': _currentStaffId.toString(),
+              },
+            ).toString(),
+          );
+        }, count: count),
+        const Gap(12),
+        if (_activeReports.isEmpty)
+          _buildEmptyState('Tidak ada laporan yang sedang dikerjakan')
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _activeReports.length > 3 ? 3 : _activeReports.length,
+            separatorBuilder: (context, index) => const Gap(12),
+            itemBuilder: (context, index) {
+              final report = _activeReports[index];
+              return UniversalReportCard(
+                id: report.id,
+                title: report.title,
+                location: report.building,
+                locationDetail: report.locationDetail,
+                category: report.category,
+                status: report.status,
+                elapsedTime: DateTime.now().difference(report.createdAt),
+                reporterName: report.reporterName,
+                handledBy: report.handledBy?.join(', '),
+                showStatus: true,
+                showTimer: true,
+                compact: false, // Set to false to show extra info
+                onTap: () =>
+                    context.push('/teknisi/report/${report.id}?from=dashboard'),
+              );
+            },
+          ),
+      ],
     );
   }
 

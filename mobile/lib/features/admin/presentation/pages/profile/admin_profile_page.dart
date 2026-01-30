@@ -7,8 +7,32 @@ import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
 
 /// Admin Profile Page
-class AdminProfilePage extends StatelessWidget {
+class AdminProfilePage extends StatefulWidget {
   const AdminProfilePage({super.key});
+
+  @override
+  State<AdminProfilePage> createState() => _AdminProfilePageState();
+}
+
+class _AdminProfilePageState extends State<AdminProfilePage> {
+  Map<String, dynamic>? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +43,9 @@ class AdminProfilePage extends StatelessWidget {
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
         child: Column(
           children: [
             // Header Profile
@@ -44,14 +70,14 @@ class AdminProfilePage extends StatelessWidget {
                     ),
                   ),
                   const Gap(16),
-                  const Text(
-                    'Admin FSM',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  Text(
+                    _user?['name'] ?? 'Admin FSM',
+                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const Gap(4),
-                  const Text(
-                    'admin@laporfsm.com',
-                    style: TextStyle(color: Colors.grey),
+                  Text(
+                    _user?['email'] ?? 'admin@laporfsm.com',
+                    style: const TextStyle(color: Colors.grey),
                   ),
                   const Gap(8),
                   Container(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/core/widgets/stat_grid_card.dart';
 
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
@@ -32,6 +33,8 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
     'verifikasi': 0,
     'penanganan': 0,
     'selesai': 0,
+    'approved': 0,
+    'recalled': 0,
     'emergency': 0,
     'todayReports': 0,
     'weekReports': 0,
@@ -63,8 +66,10 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
 
     try {
       final user = await authService.getCurrentUser();
+      debugPrint('[DASHBOARD] User: $user');
       if (user != null) {
         final staffId = user['id'];
+        debugPrint('[DASHBOARD] StaffId: $staffId');
 
         // Fetch stats and lists
         final results = await Future.wait([
@@ -76,23 +81,66 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
           reportService.getStaffReports(role: 'supervisor', status: 'selesai'),
         ]);
 
+        debugPrint('[DASHBOARD] Results received:');
+        debugPrint('[DASHBOARD] Stats: ${results[0]}');
+        debugPrint(
+          '[DASHBOARD] Ready reports raw count: ${(results[1] as List).length}',
+        );
+        debugPrint('[DASHBOARD] Ready reports raw data: ${results[1]}');
+        debugPrint(
+          '[DASHBOARD] Review reports raw count: ${(results[2] as List).length}',
+        );
+        debugPrint('[DASHBOARD] Review reports raw data: ${results[2]}');
+
         if (mounted) {
           setState(() {
             if (results[0] != null) {
               _dashboardStats = Map<String, int>.from(results[0] as Map);
             }
-            _readyToProcessReports = (results[1] as List)
-                .map((json) => Report.fromJson(json))
-                .toList();
-            _pendingReviewReports = (results[2] as List)
-                .map((json) => Report.fromJson(json))
-                .toList();
+
+            List<Report> readyReports = [];
+            try {
+              readyReports = (results[1] as List).map((json) {
+                debugPrint('[DASHBOARD] Converting ready report: $json');
+                return Report.fromJson(json as Map<String, dynamic>);
+              }).toList();
+              debugPrint(
+                '[DASHBOARD] Successfully converted ${readyReports.length} ready reports',
+              );
+            } catch (e, stackTrace) {
+              debugPrint('[DASHBOARD] Error converting ready reports: $e');
+              debugPrint('[DASHBOARD] Stack trace: $stackTrace');
+            }
+
+            List<Report> reviewReports = [];
+            try {
+              reviewReports = (results[2] as List).map((json) {
+                debugPrint('[DASHBOARD] Converting review report: $json');
+                return Report.fromJson(json as Map<String, dynamic>);
+              }).toList();
+              debugPrint(
+                '[DASHBOARD] Successfully converted ${reviewReports.length} review reports',
+              );
+            } catch (e, stackTrace) {
+              debugPrint('[DASHBOARD] Error converting review reports: $e');
+              debugPrint('[DASHBOARD] Stack trace: $stackTrace');
+            }
+
+            _readyToProcessReports = readyReports;
+            _pendingReviewReports = reviewReports;
+
+            debugPrint(
+              '[DASHBOARD] Final counts - Ready to process: ${_readyToProcessReports.length}, Pending review: ${_pendingReviewReports.length}',
+            );
             _isLoading = false;
           });
         }
+      } else {
+        debugPrint('[DASHBOARD] User is null!');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('Error loading Supervisor dashboard data: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -376,37 +424,20 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
   Widget _buildStatsSection(BuildContext context) {
     return Column(
       children: [
-        Row(
-          children: [
-            _buildStatCard(
-              context,
-              'Hari Ini',
-              _stats['todayReports'].toString(),
-              LucideIcons.calendar,
-              Colors.blue,
-              'today',
-            ),
-            const Gap(12),
-            _buildStatCard(
-              context,
-              'Minggu Ini',
-              _stats['weekReports'].toString(),
-              LucideIcons.calendarDays,
-              Colors.green,
-              'week',
-            ),
-            const Gap(12),
-            _buildStatCard(
-              context,
-              'Bulan Ini',
-              _stats['monthReports'].toString(),
-              LucideIcons.calendarRange,
-              Colors.orange,
-              'month',
-            ),
-          ],
+        // Period Stats (Hari Ini, Minggu Ini, Bulan Ini)
+        PeriodStatsRow(
+          todayCount: _stats['todayReports'] ?? 0,
+          weekCount: _stats['weekReports'] ?? 0,
+          monthCount: _stats['monthReports'] ?? 0,
+          onTap: (period) => context.push(
+            Uri(
+              path: '/supervisor/reports/filter',
+              queryParameters: {'period': period},
+            ).toString(),
+          ),
         ),
         const Gap(12),
+
         // Clickable Stats Header
         BouncingButton(
           onTap: () => context.push('/supervisor/statistics'),
@@ -457,6 +488,8 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
           ),
         ),
         const Gap(12),
+
+        // Status Stats (Grid Layout)
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -478,38 +511,57 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const Gap(12),
+
+              // Row 1: Pending, Verifikasi, Penanganan
               Row(
                 children: [
-                  _buildStatusBadge(
-                    context,
-                    'Pending',
-                    _stats['pending'],
-                    Colors.grey,
-                    'pending',
+                  StatusBadgeCard(
+                    label: 'Pending',
+                    count: _stats['pending'] ?? 0,
+                    color: Colors.grey,
+                    onTap: () => _navigateToStatus(context, 'pending'),
                   ),
                   const Gap(8),
-                  _buildStatusBadge(
-                    context,
-                    'Verifikasi',
-                    _stats['verifikasi'],
-                    Colors.blue,
-                    'verifikasi',
+                  StatusBadgeCard(
+                    label: 'Verifikasi',
+                    count: _stats['verifikasi'] ?? 0,
+                    color: Colors.blue,
+                    onTap: () => _navigateToStatus(context, 'terverifikasi'),
                   ),
                   const Gap(8),
-                  _buildStatusBadge(
-                    context,
-                    'Penanganan',
-                    _stats['penanganan'],
-                    Colors.orange,
-                    'penanganan',
+                  StatusBadgeCard(
+                    label: 'Penanganan',
+                    count: _stats['penanganan'] ?? 0,
+                    color: Colors.orange,
+                    onTap: () =>
+                        _navigateToStatus(context, 'diproses,penanganan'),
+                  ),
+                ],
+              ),
+              const Gap(8),
+
+              // Row 2: Selesai, Approved, Recalled
+              Row(
+                children: [
+                  StatusBadgeCard(
+                    label: 'Selesai',
+                    count: _stats['selesai'] ?? 0,
+                    color: Colors.teal,
+                    onTap: () => _navigateToStatus(context, 'selesai'),
                   ),
                   const Gap(8),
-                  _buildStatusBadge(
-                    context,
-                    'Selesai',
-                    _stats['selesai'],
-                    Colors.green,
-                    'selesai',
+                  StatusBadgeCard(
+                    label: 'Approved',
+                    count: _stats['approved'] ?? 0,
+                    color: Colors.green,
+                    onTap: () => _navigateToStatus(context, 'approved'),
+                  ),
+                  const Gap(8),
+                  StatusBadgeCard(
+                    label: 'Recalled',
+                    count: _stats['recalled'] ?? 0,
+                    color: Colors.amber,
+                    onTap: () => _navigateToStatus(context, 'recalled'),
                   ),
                 ],
               ),
@@ -520,96 +572,12 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
     );
   }
 
-  Widget _buildStatCard(
-    BuildContext context,
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-    String filter,
-  ) {
-    return Expanded(
-      child: BouncingButton(
-        onTap: () => context.push(
-          Uri(
-            path: '/supervisor/reports/filter',
-            queryParameters: {'period': filter},
-          ).toString(),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: color, size: 24),
-              const Gap(8),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-              const Gap(4),
-              Text(
-                label,
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(
-    BuildContext context,
-    String label,
-    int count,
-    Color color,
-    String status,
-  ) {
-    return Expanded(
-      child: BouncingButton(
-        onTap: () => context.push(
-          Uri(
-            path: '/supervisor/reports/filter',
-            queryParameters: {'status': status},
-          ).toString(),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                  fontSize: 16,
-                ),
-              ),
-              Text(label, style: TextStyle(fontSize: 10, color: color)),
-            ],
-          ),
-        ),
-      ),
+  void _navigateToStatus(BuildContext context, String status) {
+    context.push(
+      Uri(
+        path: '/supervisor/reports/filter',
+        queryParameters: {'status': status},
+      ).toString(),
     );
   }
 
@@ -681,13 +649,16 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
       );
     }
 
+    // Show max 3 reports in dashboard preview
+    final displayReports = _pendingReviewReports.take(3).toList();
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _pendingReviewReports.length,
+      itemCount: displayReports.length,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
-        final r = _pendingReviewReports[index];
+        final r = displayReports[index];
         return UniversalReportCard(
           id: r.id,
           title: r.title,
@@ -735,13 +706,16 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
       );
     }
 
+    // Show max 3 reports in dashboard preview
+    final displayReports = _readyToProcessReports.take(3).toList();
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _readyToProcessReports.length,
+      itemCount: displayReports.length,
       separatorBuilder: (context, index) => const Gap(12),
       itemBuilder: (context, index) {
-        final r = _readyToProcessReports[index];
+        final r = displayReports[index];
         return UniversalReportCard(
           id: r.id,
           title: r.title,

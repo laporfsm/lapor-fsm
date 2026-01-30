@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
-import { eq, desc, and, or, sql, isNull } from 'drizzle-orm';
+import { eq, desc, and, or, sql, isNull, gte, count } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
-import { gte, count } from 'drizzle-orm';
 import { NotificationService } from '../../services/notification.service';
 
 export const technicianController = new Elysia({ prefix: '/technician' })
@@ -29,11 +29,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return acc;
         }, {} as Record<string, number>);
 
-        // Waiting for technician to accept
+        // Waiting for technician to accept (Personal)
         const diprosesCount = await db
             .select({ count: count() })
             .from(reports)
-            .where(eq(reports.status, 'diproses'));
+            .where(and(eq(reports.assignedTo, staffId), eq(reports.status, 'diproses')));
 
         // Time based counts
         const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfDay)));
@@ -46,6 +46,12 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .from(reports)
             .where(and(eq(reports.isEmergency, true), eq(reports.status, 'diproses')));
 
+        // Recalled reports (supervisor asked for revision)
+        const recalledCount = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(and(eq(reports.assignedTo, staffId), eq(reports.status, 'recalled')));
+
         return {
             status: 'success',
             data: {
@@ -53,6 +59,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 penanganan: countsMap['penanganan'] || 0,
                 onHold: countsMap['onHold'] || 0,
                 selesai: (countsMap['selesai'] || 0) + (countsMap['approved'] || 0),
+                recalled: recalledCount[0]?.count || 0,
                 todayReports: todayReports[0]?.count || 0,
                 weekReports: weekReports[0]?.count || 0,
                 monthReports: monthReports[0]?.count || 0,
@@ -61,7 +68,71 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         };
     })
 
-    // Get all reports for technician (new tasks and active tasks)
+    // Get reports for technician with query parameters (consistent with other roles)
+    .get('/reports', async ({ query }) => {
+        const { status, isEmergency } = query;
+
+        let conditions = [];
+        conditions.push(isNull(reports.parentId));
+
+        // Filter by status
+        if (status && status !== 'all') {
+            const statusList = status.split(',').map(s => s.trim());
+            if (statusList.length > 1) {
+                conditions.push(or(...statusList.map(s => eq(reports.status, s))));
+            } else {
+                conditions.push(eq(reports.status, statusList[0]));
+            }
+        }
+
+        // For 'diproses' status, show all (any technician can pick up)
+        // For other statuses, only show what's assigned to them (handled in frontend)
+
+        if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
+
+        // Filter by assignedTo
+        if (query.assignedTo && !isNaN(parseInt(query.assignedTo))) {
+            conditions.push(eq(reports.assignedTo, parseInt(query.assignedTo)));
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+        const reporterStaff = alias(staff, 'reporter_staff');
+
+        const reportsList = await db
+            .select({
+                id: reports.id,
+                title: reports.title,
+                description: reports.description,
+                building: reports.building,
+                locationDetail: reports.locationDetail,
+                latitude: reports.latitude,
+                longitude: reports.longitude,
+                mediaUrls: reports.mediaUrls,
+                isEmergency: reports.isEmergency,
+                status: reports.status,
+                createdAt: reports.createdAt,
+                userId: reports.userId,
+                staffId: reports.staffId,
+                assignedTo: reports.assignedTo,
+                // Detailed Info logic similar to report controller
+                reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
+                reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
+                categoryName: categories.name,
+            })
+            .from(reports)
+            .leftJoin(users, eq(reports.userId, users.id))
+            .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .where(whereClause)
+            .orderBy(desc(reports.isEmergency), desc(reports.createdAt));
+
+        return {
+            status: 'success',
+            data: reportsList.map(r => mapToMobileReport(r)),
+        };
+    })
+
+    // Get all reports for technician (new tasks and active tasks) - legacy endpoint with staffId
     .get('/reports/:staffId', async ({ params }) => {
         const staffId = parseInt(params.staffId);
 
@@ -111,13 +182,19 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         };
     })
 
-    // Accept task (Start Penanganan)
+    // Accept task (Start Penanganan) - from diproses or recalled
     .post('/reports/:id/accept', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
 
         const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
         if (foundStaff.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
+
+        // Get current report to check status
+        const currentReport = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (currentReport.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        const fromStatus = currentReport[0].status || 'diproses';
 
         const updated = await db
             .update(reports)
@@ -129,7 +206,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .where(eq(reports.id, reportId))
             .returning();
 
-        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+        if (updated.length === 0) return { status: 'error', message: 'Gagal mengupdate laporan' };
+
+        const actionReason = fromStatus === 'recalled'
+            ? 'Melanjutkan penanganan setelah recall'
+            : 'Mulai penanganan laporan';
 
         await db.insert(reportLogs).values({
             reportId,
@@ -137,9 +218,9 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             actorName: foundStaff[0].name,
             actorRole: foundStaff[0].role,
             action: 'handling',
-            fromStatus: 'diproses',
+            fromStatus: fromStatus,
             toStatus: 'penanganan',
-            reason: 'Mulai penanganan laporan',
+            reason: actionReason,
         });
 
         // Notify User

@@ -90,10 +90,38 @@ class MediaGalleryWidget extends StatelessWidget {
             Image.network(
               mediaUrls[index],
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: Colors.grey.shade200,
-                child: Icon(LucideIcons.imageOff, color: Colors.grey.shade400),
-              ),
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey.shade100,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) {
+                debugPrint('Error loading image: $mediaUrls[$index] - $error');
+                return Container(
+                  color: Colors.grey.shade200,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(LucideIcons.imageOff,
+                          color: Colors.grey.shade400, size: 24),
+                      const SizedBox(height: 4),
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Text(
+                          'Gagal muat',
+                          style: TextStyle(
+                              color: Colors.grey.shade500, fontSize: 10),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
             // Overlay for extra count
             if (extraCount != null)

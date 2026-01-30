@@ -32,14 +32,18 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
   Future<void> _loadCurrentProfile() async {
     final user = await authService.getCurrentUser();
     if (user != null) {
-      setState(() {
-        _currentUser = user;
-        _phoneController.text = user['phone'] ?? '';
-        _addressController.text = user['address'] ?? '';
-        _isInitialLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _phoneController.text = user['phone'] ?? '';
+          _addressController.text = user['address'] ?? '';
+          _isInitialLoading = false;
+        });
+      }
     } else {
-      setState(() => _isInitialLoading = false);
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
     }
   }
 
@@ -50,7 +54,7 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
     setState(() => _isLoading = true);
 
     final result = await authService.updateProfile(
-      id: _currentUser!['id'],
+      id: _currentUser!['id'].toString(),
       role: _currentUser!['role'] ?? 'teknisi',
       phone: _phoneController.text,
       address: _addressController.text,
@@ -90,6 +94,7 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
       return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -188,7 +193,6 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
                       ],
                     ),
                     const Gap(16),
-                    // TODO: [BACKEND] Get from logged in user
                     _ReadOnlyField(
                       label: 'Nama Lengkap',
                       value: _currentUser!['name'] ?? '-',

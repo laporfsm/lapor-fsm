@@ -42,15 +42,25 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_profile == null) {
       return Scaffold(
         body: Center(
-          child: ElevatedButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Silakan Login'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Silakan Login Kembali'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Login'),
+              ),
+            ],
           ),
         ),
       );

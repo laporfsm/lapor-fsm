@@ -54,14 +54,16 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     .get('/reports', async ({ query }) => {
         const { status, building, isEmergency, startDate, endDate, search } = query;
         let conditions = [];
+        // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
         if (status) {
-            const statusList = (status as string).split(',');
+            const statusList = (status as string).split(',').map(s => s.trim());
             if (statusList.length > 1) {
                 conditions.push(inArray(reports.status, statusList as any));
             } else {
-                conditions.push(eq(reports.status, status as string));
+                conditions.push(eq(reports.status, statusList[0]));
             }
         }
+
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
         if (search) conditions.push(or(
@@ -69,7 +71,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             sql`${reports.building} ILIKE ${'%' + search + '%'}`,
             sql`${categories.name} ILIKE ${'%' + search + '%'}`
         ));
-        
+
         if (startDate) conditions.push(gte(reports.createdAt, new Date(startDate as string)));
         if (endDate) {
             const end = new Date(endDate as string);
@@ -108,7 +110,16 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     .post('/reports/:id/verify', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+
+        if (!staffId || isNaN(staffId)) {
+            return { status: 'error', message: 'Staff ID tidak valid' };
+        }
+
         const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+
+        if (foundStaff.length === 0) {
+            return { status: 'error', message: 'Staff tidak ditemukan' };
+        }
 
         const updated = await db
             .update(reports)
@@ -147,6 +158,49 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
 
+    // Reject report (pending -> ditolak)
+    .post('/reports/:id/reject', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        if (!staffId || isNaN(staffId)) {
+            return { status: 'error', message: 'Staff ID tidak valid' };
+        }
+
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+
+        if (foundStaff.length === 0) {
+            return { status: 'error', message: 'Staff tidak ditemukan' };
+        }
+
+        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'ditolak',
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "PJ Gedung",
+            actorRole: foundStaff[0]?.role || "pj_gedung",
+            action: 'rejected',
+            fromStatus: 'pending',
+            toStatus: 'ditolak',
+            reason: body.reason,
+        });
+
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
+    }, {
+        body: t.Object({ staffId: t.Number(), reason: t.String() })
+    })
+
     // Get statistics for PJ Gedung
     .get('/statistics', async ({ query }) => {
         const { building } = query;
@@ -157,10 +211,10 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             name: categories.name,
             count: count()
         })
-        .from(reports)
-        .leftJoin(categories, eq(reports.categoryId, categories.id))
-        .where(whereClause)
-        .groupBy(categories.name);
+            .from(reports)
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .where(whereClause)
+            .groupBy(categories.name);
 
         // 2. Weekly Trend (last 7 days)
         const sevenDaysAgo = new Date();
@@ -169,10 +223,10 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             date: sql`DATE(${reports.createdAt})`,
             count: count()
         })
-        .from(reports)
-        .where(and(whereClause, gte(reports.createdAt, sevenDaysAgo)))
-        .groupBy(sql`DATE(${reports.createdAt})`)
-        .orderBy(sql`DATE(${reports.createdAt})`);
+            .from(reports)
+            .where(and(whereClause, gte(reports.createdAt, sevenDaysAgo)))
+            .groupBy(sql`DATE(${reports.createdAt})`)
+            .orderBy(sql`DATE(${reports.createdAt})`);
 
         // 3. Comparison (This Month vs Last Month)
         const startOfThisMonth = new Date();
@@ -221,7 +275,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             sql`${reports.building} ILIKE ${'%' + search + '%'}`,
             sql`${categories.name} ILIKE ${'%' + search + '%'}`
         ));
-        
+
         if (startDate) conditions.push(gte(reports.createdAt, new Date(startDate as string)));
         if (endDate) {
             const end = new Date(endDate as string);
@@ -252,9 +306,9 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Generate PDF
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
         const chunks: Buffer[] = [];
-        
-        doc.on('data', (chunk) => chunks.push(chunk));
-        
+
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
         // Header
         doc.fontSize(20).text('LAPORAN RIWAYAT VERIFIKASI', { align: 'center' });
         doc.fontSize(12).text('Lapor FSM - Sistem Informasi Pelayanan Fasilitas', { align: 'center' });
@@ -266,9 +320,9 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         doc.fontSize(10).font('Helvetica');
         doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}`);
         doc.text(`Filter Gedung: ${building || 'Semua'}`);
-        
-        const friendlyStatus = status ? 
-            (status as string).split(',').map(s => statusLabels[s] || s).join(', ') : 
+
+        const friendlyStatus = status ?
+            (status as string).split(',').map(s => statusLabels[s] || s).join(', ') :
             'Semua';
         doc.text(`Filter Status: ${friendlyStatus}`);
 
@@ -282,7 +336,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Table Header Styling
         const tableTop = doc.y;
         doc.rect(40, tableTop - 5, 515, 20).fill('#059669'); // Emerald background
-        
+
         doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(8);
         doc.text('No', 40, tableTop);
         doc.text('Tanggal', 60, tableTop);
@@ -293,7 +347,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         doc.text('Pelapor', 385, tableTop);
         doc.text('Status', 455, tableTop);
         doc.text('Darurat', 515, tableTop);
-        
+
         doc.fillColor('#000000').font('Helvetica'); // Reset
         doc.moveDown(1.5);
 
@@ -316,13 +370,13 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 doc.fillColor('#000000').font('Helvetica');
                 doc.moveDown(1.5);
             }
-            
+
             const currentY = doc.y;
             const formattedDate = new Date(r.createdAt!).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' });
-            
+
             // Draw horizontal line
             doc.moveTo(40, currentY - 5).lineTo(555, currentY - 5).strokeColor('#E2E8F0').lineWidth(0.5).stroke();
-            
+
             doc.fontSize(7).fillColor('#1E293B');
             doc.text((i + 1).toString(), 40, currentY, { width: 15 });
             doc.text(formattedDate, 60, currentY, { width: 40 });
@@ -331,14 +385,14 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             doc.text(r.building || '-', 255, currentY, { width: 55, height: 12, ellipsis: true });
             doc.text(r.locationDetail || '-', 315, currentY, { width: 65, height: 12, ellipsis: true });
             doc.text(r.reporterName || '-', 385, currentY, { width: 65, height: 12, ellipsis: true });
-            
+
             const sLabel = statusLabels[r.status!] || r.status;
             doc.text(sLabel || '-', 455, currentY, { width: 55 });
             doc.text(r.isEmergency ? 'YA' : 'TIDAK', 515, currentY, { width: 40 });
-            
+
             doc.moveDown(1.5);
         });
-        
+
         doc.end();
 
         // Wait for PDF to finish
@@ -351,4 +405,5 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         set.headers['Content-Disposition'] = `attachment; filename=Laporan_Riwayat_Verifikasi_${timestamp}.pdf`;
 
         return pdfBuffer;
+
     });

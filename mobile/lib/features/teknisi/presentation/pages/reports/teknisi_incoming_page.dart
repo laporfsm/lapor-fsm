@@ -95,8 +95,8 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
         automaticallyImplyLeading: false,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.primaryColor,
-          labelColor: AppTheme.primaryColor,
+          indicatorColor: AppTheme.teknisiColor,
+          labelColor: AppTheme.teknisiColor,
           unselectedLabelColor: Colors.grey,
           tabs: [
             Tab(
@@ -145,7 +145,7 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor,
+                        color: AppTheme.teknisiColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -224,24 +224,6 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
               await context.push('/teknisi/report/${report.id}');
               _fetchData();
             },
-            actionButton: ElevatedButton.icon(
-              onPressed: () async {
-                await context.push('/teknisi/report/${report.id}');
-                _fetchData();
-              },
-              icon: const Icon(LucideIcons.play, size: 18),
-              label: const Text('Mulai Penanganan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isEmergencyTab
-                    ? AppTheme.emergencyColor
-                    : AppTheme.primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
           );
         },
       ),

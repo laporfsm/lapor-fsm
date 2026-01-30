@@ -37,8 +37,9 @@ class Report {
   final String? pjGedungName;
   final DateTime? verifiedAt;
 
-  // Handler info (teknisi)
+  // Handling Details
   final List<String>? handledBy;
+  final String? assignedTo; // ID of assigned technician
   final DateTime? assignedAt; // When assigned to technician
   final DateTime? handlingStartedAt; // When technician starts work
   final DateTime? completedAt; // When technician marks as complete
@@ -81,6 +82,7 @@ class Report {
     this.pjGedungName,
     this.verifiedAt,
     this.handledBy,
+    this.assignedTo,
     this.assignedAt,
     this.handlingStartedAt,
     this.completedAt,
@@ -158,6 +160,7 @@ class Report {
     String? pjGedungName,
     DateTime? verifiedAt,
     List<String>? handledBy,
+    String? assignedTo,
     DateTime? assignedAt,
     DateTime? handlingStartedAt,
     DateTime? completedAt,
@@ -193,6 +196,7 @@ class Report {
       pjGedungName: pjGedungName ?? this.pjGedungName,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       handledBy: handledBy ?? this.handledBy,
+      assignedTo: assignedTo ?? this.assignedTo,
       assignedAt: assignedAt ?? this.assignedAt,
       handlingStartedAt: handlingStartedAt ?? this.handlingStartedAt,
       completedAt: completedAt ?? this.completedAt,
@@ -240,6 +244,16 @@ class Report {
       handledBy: json['handledBy'] != null
           ? List<String>.from(json['handledBy'] as List)
           : null,
+      assignedTo: json['assignedTo']?.toString(),
+      assignedAt: json['assignedAt'] != null
+          ? DateTime.parse(json['assignedAt'] as String)
+          : null,
+      handlingStartedAt: json['handlingStartedAt'] != null
+          ? DateTime.parse(json['handlingStartedAt'] as String)
+          : null,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
       supervisorId: json['supervisorId']?.toString(),
       supervisorName: json['supervisorName'] as String?,
       pausedAt: json['pausedAt'] != null
@@ -281,6 +295,10 @@ class Report {
       'pjGedungName': pjGedungName,
       'verifiedAt': verifiedAt?.toIso8601String(),
       'handledBy': handledBy,
+      'assignedTo': assignedTo,
+      'assignedAt': assignedAt?.toIso8601String(),
+      'handlingStartedAt': handlingStartedAt?.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
       'supervisorId': supervisorId,
       'supervisorName': supervisorName,
       'pausedAt': pausedAt?.toIso8601String(),

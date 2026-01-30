@@ -13,7 +13,12 @@ import { notificationController } from "./controllers/notification.controller";
 import { categoryController } from "./controllers/admin/category.controller";
 
 const app = new Elysia()
-  .use(cors()) // Allow request from Mobile/Web
+  .use(cors({
+    origin: true, // Allow all origins (for development)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })) // Allow request from Mobile/Web
   .use(staticPlugin({ assets: 'uploads', prefix: '/uploads' })) // Serve uploaded files
   .get("/", () => "Lapor FSM API is Running! 🦊")
   .use(authController)

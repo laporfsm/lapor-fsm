@@ -67,11 +67,40 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
                           ),
                         );
                       },
-                      errorBuilder: (_, __, ___) => const Icon(
-                        LucideIcons.imageOff,
-                        color: Colors.white54,
-                        size: 64,
-                      ),
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint(
+                            'Error loading media viewer image: ${widget.mediaUrls[index]} - $error');
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              LucideIcons.imageOff,
+                              color: Colors.white54,
+                              size: 64,
+                            ),
+                            const Gap(16),
+                            Text(
+                              'Gagal memuat media',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(color: Colors.white54),
+                            ),
+                            const Gap(8),
+                            Text(
+                              widget.mediaUrls[index],
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: Colors.white30,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 );

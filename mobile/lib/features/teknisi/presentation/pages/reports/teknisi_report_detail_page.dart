@@ -22,6 +22,20 @@ class TeknisiReportDetailPage extends StatefulWidget {
 
 class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
   bool _isProcessing = false;
+  String? _currentStaffId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      setState(() => _currentStaffId = user?['id']?.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +52,11 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     Report report,
     Future<void> Function() refresh,
   ) {
+    // SECURITY: Only assigned technician can take actions
+    if (_currentStaffId == null || report.assignedTo != _currentStaffId) {
+      return []; // Read-only view
+    }
+
     // Status: diproses - Teknisi bisa mulai penanganan
     if (report.status == ReportStatus.diproses) {
       return [
@@ -117,6 +136,31 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           ),
         ),
       ];
+    } else if (report.status == ReportStatus.recalled) {
+      // Status: recalled - Supervisor minta revisi, teknisi bisa mulai kembali
+      return [
+        ElevatedButton.icon(
+          onPressed: _isProcessing
+              ? null
+              : () => _startHandling(context, report, refresh),
+          icon: _isProcessing
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(LucideIcons.rotateCcw),
+          label: Text(_isProcessing ? 'Memproses...' : 'Mulai Kembali'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.orange,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+      ];
     }
     return [];
   }
@@ -130,10 +174,10 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        final staffId = int.parse(user['id'].toString());
         await reportService.acceptTask(report.id, staffId);
         await refresh();
-        if (!mounted) return;
+        if (!mounted || !context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Penanganan dimulai'),
@@ -143,6 +187,14 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
       }
     } catch (e) {
       debugPrint('Error accepting report: $e');
+      if (mounted && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memulai penanganan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -190,7 +242,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                 try {
                   final user = await authService.getCurrentUser();
                   if (user != null) {
-                    final staffId = user['id'];
+                    final staffId = int.parse(user['id'].toString());
                     await reportService.pauseTask(report.id, staffId, reason);
                     await refresh();
                     if (!messenger.mounted) return;
@@ -228,10 +280,10 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        final staffId = int.parse(user['id'].toString());
         await reportService.resumeTask(report.id, staffId);
         await refresh();
-        if (!mounted) return;
+        if (!mounted || !context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Pengerjaan dilanjutkan'),
