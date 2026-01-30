@@ -438,9 +438,12 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
                 const Gap(12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.go('/login');
+                    onPressed: () async {
+                      await authService.logout();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        context.go('/login');
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,

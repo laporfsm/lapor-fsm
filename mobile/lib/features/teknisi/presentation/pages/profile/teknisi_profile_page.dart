@@ -280,9 +280,12 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              context.pop();
-              context.go('/login');
+            onPressed: () async {
+              await authService.logout();
+              if (context.mounted) {
+                context.pop();
+                context.go('/login');
+              }
             },
             child: const Text('Keluar', style: TextStyle(color: Colors.red)),
           ),

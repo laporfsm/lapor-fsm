@@ -9,8 +9,10 @@
   "dependencies": {
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/static": "^1.4.7",
+    "@types/pdfkit": "^0.17.4",
     "drizzle-orm": "^0.45.1",
     "elysia": "latest",
+    "pdfkit": "^0.17.2",
     "postgres": "^3.4.8"
   },
   "devDependencies": {

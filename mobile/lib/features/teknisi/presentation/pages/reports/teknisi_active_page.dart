@@ -165,7 +165,6 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                       await context.push('/teknisi/report/${report.id}');
                       _fetchData();
                     },
-                    actionButton: _buildActionButton(report),
                   );
                 },
               ),
@@ -196,44 +195,5 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
         ],
       ),
     );
-  }
-
-  Widget _buildActionButton(Report report) {
-    if (report.status == ReportStatus.penanganan) {
-      return ElevatedButton.icon(
-        onPressed: () async {
-          await context.push('/teknisi/report/${report.id}/complete');
-          _fetchData();
-        },
-        icon: const Icon(LucideIcons.checkCircle2, size: 18),
-        label: const Text('Selesaikan'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF22C55E),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    } else if (report.status == ReportStatus.onHold) {
-      return ElevatedButton.icon(
-        onPressed: () async {
-          await context.push('/teknisi/report/${report.id}');
-          _fetchData();
-        },
-        icon: const Icon(LucideIcons.playCircle, size: 18),
-        label: const Text('Lanjutkan'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-    return const SizedBox.shrink();
   }
 }

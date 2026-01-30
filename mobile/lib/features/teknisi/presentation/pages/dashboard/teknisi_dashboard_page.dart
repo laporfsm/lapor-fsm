@@ -142,7 +142,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: AppTheme.secondaryColor,
+              backgroundColor: AppTheme.teknisiColor,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
@@ -153,7 +153,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                       'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
-                        return Container(color: AppTheme.secondaryColor);
+                        return Container(color: AppTheme.teknisiColor);
                       },
                     ),
                     // Gradient Overlay
@@ -163,8 +163,8 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            AppTheme.secondaryColor.withValues(alpha: 0.85),
-                            AppTheme.secondaryColor.withValues(alpha: 0.95),
+                            AppTheme.teknisiColor.withValues(alpha: 0.85),
+                            AppTheme.teknisiColor.withValues(alpha: 0.95),
                           ],
                         ),
                       ),
@@ -371,19 +371,19 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+            color: AppTheme.teknisiColor.withValues(alpha: 0.3),
           ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.layoutList, color: AppTheme.primaryColor),
+            Icon(LucideIcons.layoutList, color: AppTheme.teknisiColor),
             const Gap(8),
             const Text(
               'Semua Laporan',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
+                color: AppTheme.teknisiColor,
               ),
             ),
           ],
@@ -413,7 +413,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppTheme.secondaryColor,
+                  color: AppTheme.teknisiColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
