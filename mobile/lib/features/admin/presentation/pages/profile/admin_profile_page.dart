@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// Admin Profile Page
 class AdminProfilePage extends StatelessWidget {
@@ -411,9 +412,12 @@ class AdminProfilePage extends StatelessWidget {
                 const Gap(12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      context.go('/login');
+                    onPressed: () async {
+                      await authService.logout();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        context.go('/login');
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,

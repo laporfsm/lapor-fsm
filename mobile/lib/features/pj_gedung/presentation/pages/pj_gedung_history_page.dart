@@ -6,6 +6,9 @@ import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/features/admin/services/export_service.dart';
 import 'package:intl/intl.dart';
 
 const Color _pjGedungColor = Color(0xFF059669); // Emerald green
@@ -55,76 +58,58 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
 
   Future<void> _fetchReports() async {
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
 
-    // MOCK DATA
-    _allReports = [
-      Report(
-        id: 'mock-pj-1',
-        title: 'AC Bocor di Ruang Sidang',
-        description: 'Air menetes cukup deras, membasahi karpet.',
-        category: 'Fasilitas Umum',
-        building: 'Gedung A, Lt 2',
-        status: ReportStatus.pending,
-        createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
-        reporterId: 'r1',
-        reporterName: 'Budi Mahasiswa',
-        isEmergency: false,
-      ),
-      Report(
-        id: 'mock-pj-2',
-        title: 'Lampu Koridor Kedip-kedip',
-        description: 'Sangat mengganggu saat lewat.',
-        category: 'Kelistrikan',
-        building: 'Gedung B, Lt 1',
-        status: ReportStatus.pending,
-        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-        reporterId: 'r2',
-        reporterName: 'Siti Staff',
-        isEmergency: false,
-      ),
-      Report(
-        id: 'mock-pj-3',
-        title: 'Kran Air Patah',
-        description: 'Air muncrat terus menerus.',
-        category: 'Sanitasi',
-        building: 'Gedung C, Toilet Pria',
-        status: ReportStatus.pending,
-        createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-        reporterId: 'r3',
-        reporterName: 'Ahmad Dosen',
-        isEmergency: false,
-      ),
-      Report(
-        id: 'mock-pj-v1',
-        title: 'Proyektor Buram',
-        description: 'Lensa kotor atau rusak.',
-        category: 'Fasilitas Kelas',
-        building: 'Gedung A, R. 204',
-        status: ReportStatus.terverifikasi,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        reporterId: 'r4',
-        reporterName: 'Dosen A',
-        isEmergency: false,
-      ),
-      Report(
-        id: 'mock-pj-v2',
-        title: 'Pintu Lift Macet',
-        description: 'Kadang tidak mau terbuka.',
-        category: 'Sipil',
-        building: 'Gedung B, Lt Dasar',
-        status: ReportStatus.terverifikasi,
-        createdAt: DateTime.now().subtract(const Duration(days: 5)),
-        reporterId: 'r5',
-        reporterName: 'Satpam',
-        isEmergency: false,
-      ),
-    ];
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final building = user['department'];
+
+        // Prepare date filters
+        String? startDate;
+        String? endDate;
+
+        if (_customDateRange != null) {
+          startDate = _customDateRange!.start.toIso8601String();
+          endDate = _customDateRange!.end.toIso8601String();
+        } else if (_periodFilter != null) {
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          switch (_periodFilter) {
+            case 'today':
+              startDate = today.toIso8601String();
+              break;
+            case 'week':
+              startDate =
+                  today.subtract(const Duration(days: 7)).toIso8601String();
+              break;
+            case 'month':
+              startDate =
+                  DateTime(now.year, now.month - 1, now.day).toIso8601String();
+              break;
+          }
+        }
+
+        final reportsData = await reportService.getStaffReports(
+          role: 'pj',
+          building: building,
+          status: _activeFilter == 'all'
+              ? 'pending,terverifikasi,ditolak'
+              : _activeFilter,
+          search: _searchQuery.isNotEmpty ? _searchQuery : null,
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        _allReports = reportsData.map((json) => Report.fromJson(json)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching historical reports: $e');
+    }
 
     if (mounted) {
       setState(() {
         _isLoading = false;
-        _applyFilters();
+        _applyFilters(); // Still apply local for search if not handled by server, but we passed it.
       });
     }
   }
@@ -135,10 +120,12 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     // Filter by status
     if (_activeFilter == 'pending') {
       result = result.where((r) => r.status == ReportStatus.pending).toList();
-    } else if (_activeFilter == 'verified') {
+    } else if (_activeFilter == 'terverifikasi') {
       result = result
           .where((r) => r.status == ReportStatus.terverifikasi)
           .toList();
+    } else if (_activeFilter == 'ditolak') {
+      result = result.where((r) => r.status == ReportStatus.ditolak).toList();
     }
 
     // Filter by search query
@@ -380,7 +367,9 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                         child: _buildActiveFilterChip(
                           _activeFilter == 'pending'
                               ? 'Perlu Verifikasi'
-                              : 'Terverifikasi',
+                              : (_activeFilter == 'terverifikasi'
+                                  ? 'Terverifikasi'
+                                  : 'Ditolak'),
                           () {
                             setState(() {
                               _activeFilter = 'all';
@@ -401,48 +390,58 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
 
           // Reports List
           Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredReports.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          LucideIcons.inbox,
-                          size: 48,
-                          color: Colors.grey.shade300,
+            child: RefreshIndicator(
+              onRefresh: _fetchReports,
+              color: _pjGedungColor,
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _filteredReports.isEmpty
+                      ? ListView(
+                          children: [
+                            SizedBox(
+                              height: MediaQuery.of(context).size.height * 0.6,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    LucideIcons.inbox,
+                                    size: 48,
+                                    color: Colors.grey.shade300,
+                                  ),
+                                  const Gap(16),
+                                  Text(
+                                    'Tidak ada laporan ditemukan',
+                                    style:
+                                        TextStyle(color: Colors.grey.shade500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: _filteredReports.length,
+                          separatorBuilder: (c, i) => const Gap(16),
+                          itemBuilder: (context, index) {
+                            final report = _filteredReports[index];
+                            return UniversalReportCard(
+                              id: report.id,
+                              title: report.title,
+                              location: report.building,
+                              category: report.category,
+                              status: report.status,
+                              isEmergency: report.isEmergency,
+                              elapsedTime: DateTime.now().difference(
+                                report.createdAt,
+                              ),
+                              showStatus: true,
+                              showTimer: true,
+                              onTap: () => _navigateToDetail(report),
+                            );
+                          },
                         ),
-                        const Gap(16),
-                        Text(
-                          'Tidak ada laporan ditemukan',
-                          style: TextStyle(color: Colors.grey.shade500),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredReports.length,
-                    separatorBuilder: (c, i) => const Gap(16),
-                    itemBuilder: (context, index) {
-                      final report = _filteredReports[index];
-                      return UniversalReportCard(
-                        id: report.id,
-                        title: report.title,
-                        location: report.building,
-                        category: report.category,
-                        status: report.status,
-                        isEmergency: report.isEmergency,
-                        elapsedTime: DateTime.now().difference(
-                          report.createdAt,
-                        ),
-                        showStatus: true,
-                        showTimer: true,
-                        onTap: () => _navigateToDetail(report),
-                      );
-                    },
-                  ),
+            ),
           ),
         ],
       ),
@@ -625,7 +624,12 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                     ),
                     _buildStatusChip(
                       'Terverifikasi',
-                      'verified',
+                      'terverifikasi',
+                      setModalState,
+                    ),
+                    _buildStatusChip(
+                      'Ditolak',
+                      'ditolak',
                       setModalState,
                     ),
                   ],
@@ -720,7 +724,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
               ),
               const Gap(8),
               Text(
-                'Unduh data riwayat verifikasi laporan.',
+                'Unduh ${_filteredReports.length} data riwayat verifikasi laporan saat ini.',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const Gap(24),
@@ -732,8 +736,11 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                 title: const Text('Export ke Excel (.xlsx)'),
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh Excel... (Mock)')),
+                  ExportService.exportData(
+                    context,
+                    'Riwayat Verifikasi',
+                    'verification_history',
+                    data: _filteredReports.map((r) => r.toJson()).toList(),
                   );
                 },
                 shape: RoundedRectangleBorder(
@@ -747,8 +754,25 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                 title: const Text('Export ke PDF (.pdf)'),
                 onTap: () {
                   Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh PDF... (Mock)')),
+
+                  // Extract dates if available
+                  String? startDate;
+                  String? endDate;
+                  if (_customDateRange != null) {
+                    startDate = _customDateRange!.start.toIso8601String();
+                    endDate = _customDateRange!.end.toIso8601String();
+                  }
+
+                  ExportService.exportPdf(
+                    context: context,
+                    title: 'Riwayat Verifikasi',
+                    status: _activeFilter == 'all'
+                        ? 'pending,terverifikasi,ditolak'
+                        : _activeFilter,
+                    building: null, // Let server use its own auth or pass explicitly if filtered
+                    startDate: startDate,
+                    endDate: endDate,
+                    search: _searchQuery.isNotEmpty ? _searchQuery : null,
                   );
                 },
                 shape: RoundedRectangleBorder(

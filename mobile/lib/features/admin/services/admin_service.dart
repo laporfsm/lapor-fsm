@@ -165,44 +165,35 @@ class AdminService {
 
   // Get Statistics Data
   Future<Map<String, dynamic>> getStatistics() async {
-    // Simulator delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final response = await apiService.dio.get('/admin/statistics');
+      if (response.data['status'] == 'success') {
+        return response.data['data'];
+      }
+      return {};
+    } catch (e) {
+      return {};
+    }
+  }
 
-    // Mock Data - In real app, this would come from API
-    return {
-      'userGrowth': [
-        {'date': '1 Jan', 'value': 10},
-        {'date': '7 Jan', 'value': 15},
-        {'date': '14 Jan', 'value': 25},
-        {'date': '21 Jan', 'value': 40},
-        {'date': '28 Jan', 'value': 55},
-        {'date': '30 Jan', 'value': 58},
-      ],
-      'activeUsers': 142,
-      'totalLogin': 1204,
-      'appUsage': [
-        {'day': 'S', 'value': 20},
-        {'day': 'S', 'value': 35},
-        {'day': 'R', 'value': 18},
-        {'day': 'K', 'value': 45},
-        {'day': 'J', 'value': 28},
-        {'day': 'S', 'value': 40},
-        {'day': 'M', 'value': 50},
-      ],
-      'userDistribution': {
-        'Pelapor': 65,
-        'Teknisi': 20,
-        'Supervisor': 10,
-        'Admin': 5,
-      },
-      'reportVolume': [
-        {'dept': 'HRD', 'in': 15, 'out': 12},
-        {'dept': 'IT', 'in': 25, 'out': 22},
-        {'dept': 'GA', 'in': 30, 'out': 28},
-        {'dept': 'FIN', 'in': 40, 'out': 38},
-        {'dept': 'MKT', 'in': 35, 'out': 32},
-      ],
-    };
+  // Get System Logs
+  Future<List<Map<String, dynamic>>> getLogs() async {
+    try {
+      final response = await apiService.dio.get('/admin/logs');
+      if (response.data['status'] == 'success') {
+        final List data = response.data['data'];
+        return data.map((l) {
+          // Convert ISO string to DateTime
+          if (l['time'] is String) {
+            l['time'] = DateTime.parse(l['time']);
+          }
+          return Map<String, dynamic>.from(l);
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
   }
 }
 

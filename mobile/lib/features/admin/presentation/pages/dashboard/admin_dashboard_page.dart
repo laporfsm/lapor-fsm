@@ -6,6 +6,7 @@ import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/features/admin/services/admin_service.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
@@ -17,6 +18,7 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>> _recentReports = [];
+  List<Map<String, dynamic>> _systemLogs = [];
   bool _isLoading = true;
   String _userName = 'Admin';
 
@@ -27,7 +29,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Future<void> _loadData() async {
-    await Future.wait([_loadStats(), _loadUserProfile()]);
+    await Future.wait([_loadStats(), _loadUserProfile(), _loadLogs()]);
+  }
+
+  Future<void> _loadLogs() async {
+    final logs = await adminService.getLogs();
+    if (mounted) {
+      setState(() {
+        _systemLogs = logs;
+      });
+    }
   }
 
   Future<void> _loadUserProfile() async {
@@ -367,15 +378,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildMockBar(context, 'Sen', 0.4, 0.3),
-                                  _buildMockBar(context, 'Sel', 0.6, 0.5),
-                                  _buildMockBar(context, 'Rab', 0.8, 0.7),
-                                  _buildMockBar(context, 'Kam', 0.5, 0.4),
-                                  _buildMockBar(context, 'Jum', 0.7, 0.6),
-                                  _buildMockBar(context, 'Sab', 0.3, 0.2),
-                                  _buildMockBar(context, 'Min', 0.2, 0.2),
-                                ],
+                                children: (_stats?['weeklyTrend'] as List? ?? [])
+                                    .map((t) => _buildMockBar(
+                                          context,
+                                          t['day'] ?? '',
+                                          (t['value'] as int) / 10.0, // Scale for demo/UI
+                                          (t['value'] as int) * 0.8 / 10.0,
+                                        ))
+                                    .toList(),
                               ),
                             ),
                             const Gap(10),
@@ -471,36 +481,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: 3, // Display 3 mock logs
+                        itemCount: _systemLogs.length > 3 ? 3 : _systemLogs.length,
                         separatorBuilder: (_, __) => const Gap(12),
                         itemBuilder: (context, index) {
-                          // Mock Data for Dashboard display
-                          final logs = [
-                            {
-                              'text': 'User "Budi Santoso" mendaftar',
-                              'time': '2 menit lalu',
-                              'icon': LucideIcons.userPlus,
-                              'color': Colors.green,
-                            },
-                            {
-                              'text': 'Laporan #123 diselesaikan',
-                              'time': '15 menit lalu',
-                              'icon': LucideIcons.checkCircle,
-                              'color': Colors.blue,
-                            },
-                            {
-                              'text': 'Server backup otomatis',
-                              'time': '1 jam lalu',
-                              'icon': LucideIcons.database,
-                              'color': Colors.purple,
-                            },
-                          ];
-                          final log = logs[index];
+                          final log = _systemLogs[index];
+                          IconData icon = LucideIcons.activity;
+                          Color color = Colors.grey;
+
+                          if (log['action']?.toString().toLowerCase().contains('created') == true) {
+                            icon = LucideIcons.filePlus;
+                            color = Colors.blue;
+                          } else if (log['action']?.toString().toLowerCase().contains('verify') == true) {
+                            icon = LucideIcons.userCheck;
+                            color = Colors.green;
+                          }
+
                           return _ActivityItem(
-                            text: log['text'] as String,
-                            time: log['time'] as String,
-                            icon: log['icon'] as IconData,
-                            color: log['color'] as Color,
+                            text: '${log['user']}: ${log['action']}',
+                            time: _formatTimeAgo(log['time']),
+                            icon: icon,
+                            color: color,
                           );
                         },
                       ),
@@ -512,6 +512,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               ),
             ),
     );
+  }
+
+  String _formatTimeAgo(dynamic time) {
+    if (time == null) return '-';
+    final DateTime dateTime = time is DateTime ? time : DateTime.parse(time.toString());
+    final diff = DateTime.now().difference(dateTime);
+
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m lalu';
+    if (diff.inHours < 24) return '${diff.inHours}j lalu';
+    return '${diff.inDays}h lalu';
   }
 
   Widget _buildEmergencyAlert(BuildContext context) {

@@ -293,9 +293,12 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              context.pop(); // Close dialog
-              context.go('/login');
+            onPressed: () async {
+              await authService.logout();
+              if (context.mounted) {
+                context.pop(); // Close dialog
+                context.go('/login');
+              }
             },
             child: const Text('Keluar', style: TextStyle(color: Colors.red)),
           ),
