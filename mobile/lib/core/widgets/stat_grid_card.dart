@@ -232,7 +232,7 @@ class StatusStatsRow extends StatelessWidget {
             ],
           ),
           const Gap(16),
-          // Grid 2x2 for primary statuses
+          // Row of 4 items
           Row(
             children: [
               _StatusBox(
@@ -248,15 +248,11 @@ class StatusStatsRow extends StatelessWidget {
                 statusKey: 'penanganan',
                 onTap: () => onTap?.call('penanganan'),
               ),
-            ],
-          ),
-          const Gap(8),
-          Row(
-            children: [
+              const Gap(8),
               _StatusBox(
                 label: 'On Hold',
                 count: onHoldCount,
-                statusKey: 'onhold',
+                statusKey: 'onHold',
                 onTap: () => onTap?.call('onHold'),
               ),
               const Gap(8),
@@ -269,16 +265,14 @@ class StatusStatsRow extends StatelessWidget {
             ],
           ),
           // Full width Recalled
-          if (recalledCount > 0) ...[
-            const Gap(8),
-            _StatusBox(
-              label: 'Recalled oleh Supervisor',
-              count: recalledCount,
-              statusKey: 'recalled',
-              isFullWidth: true,
-              onTap: () => onTap?.call('recalled'),
-            ),
-          ],
+          const Gap(8),
+          _StatusBox(
+            label: 'Recalled oleh Supervisor',
+            count: recalledCount,
+            statusKey: 'recalled',
+            isFullWidth: true,
+            onTap: () => onTap?.call('recalled'),
+          ),
         ],
       ),
     );
@@ -306,7 +300,10 @@ class _StatusBox extends StatelessWidget {
     final content = BouncingButton(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: isFullWidth ? 16 : 4,
+        ),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(10),
@@ -326,17 +323,19 @@ class _StatusBox extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: color,
-                        fontSize: 20,
+                        fontSize: 18,
                       ),
                     ),
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 9,
                         color: color.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

@@ -196,4 +196,6 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
       ),
     );
   }
+
+  // _buildActionButton removed
 }
