@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import 'api_service.dart';
+import '../../features/report_common/domain/entities/report.dart';
 
 class ReportService {
   // Get all public reports
@@ -280,6 +281,9 @@ class ReportService {
     String? status,
     bool? isEmergency,
     String? period,
+    String? search,
+    String? category,
+    String? building,
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
@@ -289,6 +293,9 @@ class ReportService {
           if (status != null) 'status': status,
           if (isEmergency != null) 'isEmergency': isEmergency.toString(),
           if (period != null) 'period': period,
+          if (search != null) 'search': search,
+          if (category != null) 'category': category,
+          if (building != null) 'building': building,
         },
       );
 
@@ -299,98 +306,6 @@ class ReportService {
     } catch (e) {
       debugPrint('Error fetching staff reports ($role): $e');
       return [];
-    }
-  }
-
-  // --- Report Actions ---
-
-  Future<bool> verifyReport(
-    String reportId,
-    String staffId, {
-    String? notes,
-    String? role,
-  }) async {
-    try {
-      final prefix = role == 'pj' ? 'pj-gedung' : 'supervisor';
-      final response = await apiService.dio.post(
-        '/$prefix/reports/$reportId/verify',
-        data: {'staffId': int.parse(staffId), 'notes': notes},
-      );
-      return response.data['status'] == 'success';
-    } catch (e) {
-      debugPrint('Error verifying report: $e');
-      return false;
-    }
-  }
-
-  Future<bool> assignTechnician(
-    String reportId,
-    String supervisorId,
-    String technicianId,
-  ) async {
-    try {
-      final response = await apiService.dio.post(
-        '/supervisor/reports/$reportId/assign',
-        data: {
-          'supervisorId': int.parse(supervisorId),
-          'technicianId': int.parse(technicianId),
-        },
-      );
-      return response.data['status'] == 'success';
-    } catch (e) {
-      debugPrint('Error assigning technician: $e');
-      return false;
-    }
-  }
-
-  Future<bool> recallReport(
-    String reportId,
-    String staffId,
-    String reason,
-  ) async {
-    try {
-      final response = await apiService.dio.post(
-        '/supervisor/reports/$reportId/recall',
-        data: {'staffId': int.parse(staffId), 'reason': reason},
-      );
-      return response.data['status'] == 'success';
-    } catch (e) {
-      debugPrint('Error recalling report: $e');
-      return false;
-    }
-  }
-
-  Future<bool> approveReport(
-    String reportId,
-    String staffId, {
-    String? notes,
-  }) async {
-    try {
-      final response = await apiService.dio.post(
-        '/supervisor/reports/$reportId/approve',
-        data: {'staffId': int.parse(staffId), 'notes': notes},
-      );
-      return response.data['status'] == 'success';
-    } catch (e) {
-      debugPrint('Error approving report: $e');
-      return false;
-    }
-  }
-
-  Future<bool> rejectReport(
-    String reportId,
-    String staffId,
-    String reason,
-  ) async {
-    try {
-      final response = await apiService.dio.post(
-        '/supervisor/reports/$reportId/reject',
-        data: {'staffId': int.parse(staffId), 'reason': reason},
-      );
-      return response.data['status'] == 'success';
-    } catch (e) {
-      debugPrint('Error rejecting report: $e');
-      return false;
     }
   }
 
@@ -407,24 +322,158 @@ class ReportService {
     }
   }
 
-  // --- Technician Actions ---
+  // ===========================================================================
+  // LIFECYCLE MANAGEMENT (PJ & Supervisor)
+  // ===========================================================================
 
-  Future<bool> acceptReport(String reportId, String staffId) async {
+  /// Verify a report (PJ Gedung / Supervisor)
+  Future<Report> verifyReport(
+    String reportId,
+    int staffId, {
+    String? notes,
+  }) async {
     try {
       final response = await apiService.dio.post(
-        '/technician/reports/$reportId/accept',
-        data: {'staffId': int.parse(staffId)},
+        '/pj-gedung/reports/$reportId/verify',
+        data: {'staffId': staffId, if (notes != null) 'notes': notes},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
     } catch (e) {
-      debugPrint('Error accepting report: $e');
-      return false;
+      throw Exception('Gagal memverifikasi laporan: $e');
     }
   }
 
-  Future<bool> pauseReport(
+  /// Assign report to technician (Supervisor)
+  Future<Report> assignTechnician(
     String reportId,
-    String staffId,
+    int supervisorId,
+    int technicianId,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/assign',
+        data: {'supervisorId': supervisorId, 'technicianId': technicianId},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menugaskan teknisi: $e');
+    }
+  }
+
+  /// Reject a report (Supervisor / PJ)
+  Future<Report> rejectReport(
+    String reportId,
+    int staffId,
+    String reason,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/reject',
+        data: {'staffId': staffId, 'reason': reason},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menolak laporan: $e');
+    }
+  }
+
+  /// Group multiple reports (Supervisor)
+  Future<Report> groupReports(
+    List<String> reportIds,
+    int staffId, {
+    String? notes,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/group',
+        data: {
+          'reportIds': reportIds.map((id) => int.parse(id)).toList(),
+          'staffId': staffId,
+          if (notes != null) 'notes': notes,
+        },
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menggabungkan laporan: $e');
+    }
+  }
+
+  /// Recall a report (Supervisor)
+  Future<Report> recallReport(
+    String reportId,
+    int staffId,
+    String reason,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/recall',
+        data: {'staffId': staffId, 'reason': reason},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal recall laporan: $e');
+    }
+  }
+
+  /// Approve result (Supervisor)
+  Future<Report> approveResult(
+    String reportId,
+    int staffId, {
+    String? notes,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/approve',
+        data: {'staffId': staffId, if (notes != null) 'notes': notes},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menyetujui hasil: $e');
+    }
+  }
+
+  // ===========================================================================
+  // TECHNICIAN ACTIONS
+  // ===========================================================================
+
+  /// Accept task (Teknisi)
+  Future<Report> acceptTask(String reportId, int staffId) async {
+    try {
+      final response = await apiService.dio.post(
+        '/technician/reports/$reportId/accept',
+        data: {'staffId': staffId},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menerima tugas: $e');
+    }
+  }
+
+  /// Pause task (Teknisi)
+  Future<Report> pauseTask(
+    String reportId,
+    int staffId,
     String reason, {
     String? photoUrl,
   }) async {
@@ -432,50 +481,54 @@ class ReportService {
       final response = await apiService.dio.post(
         '/technician/reports/$reportId/pause',
         data: {
-          'staffId': int.parse(staffId),
+          'staffId': staffId,
           'reason': reason,
-          'photoUrl': photoUrl,
+          if (photoUrl != null) 'photoUrl': photoUrl,
         },
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
     } catch (e) {
-      debugPrint('Error pausing report: $e');
-      return false;
+      throw Exception('Gagal menunda tugas: $e');
     }
   }
 
-  Future<bool> resumeReport(String reportId, String staffId) async {
+  /// Resume task (Teknisi)
+  Future<Report> resumeTask(String reportId, int staffId) async {
     try {
       final response = await apiService.dio.post(
         '/technician/reports/$reportId/resume',
-        data: {'staffId': int.parse(staffId)},
+        data: {'staffId': staffId},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
     } catch (e) {
-      debugPrint('Error resuming report: $e');
-      return false;
+      throw Exception('Gagal melanjutkan tugas: $e');
     }
   }
 
-  Future<bool> completeReport(
+  /// Complete task (Teknisi)
+  Future<Report> completeTask(
     String reportId,
-    String staffId, {
-    String? notes,
-    List<String>? mediaUrls,
-  }) async {
+    int staffId,
+    String notes,
+    List<String> mediaUrls,
+  ) async {
     try {
       final response = await apiService.dio.post(
         '/technician/reports/$reportId/complete',
-        data: {
-          'staffId': int.parse(staffId),
-          'notes': notes,
-          'mediaUrls': mediaUrls ?? [],
-        },
+        data: {'staffId': staffId, 'notes': notes, 'mediaUrls': mediaUrls},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
     } catch (e) {
-      debugPrint('Error completing report: $e');
-      return false;
+      throw Exception('Gagal menyelesaikan tugas: $e');
     }
   }
 }

@@ -1,8 +1,9 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
-import { eq, desc, and, or, sql, count, gte, lte } from 'drizzle-orm';
+import { eq, desc, and, or, sql, count, gte, lte, isNull } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
+import { NotificationService } from '../../services/notification.service';
 
 export const supervisorController = new Elysia({ prefix: '/supervisor' })
     // Dashboard statistics
@@ -77,6 +78,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
+        // Hide child reports from main list
+        conditions.push(isNull(reports.parentId));
+
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
         const result = await db
@@ -142,6 +146,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             reason: body.notes || 'Laporan telah diverifikasi',
         });
 
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`);
+        }
+
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
@@ -176,6 +185,14 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             toStatus: 'diproses',
             reason: `Laporan ditugaskan ke teknisi`,
         });
+
+        // Notify Technician
+        await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`);
+
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`);
+        }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
@@ -213,6 +230,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             reason: body.reason,
         });
 
+        // Notify Technician (if assigned)
+        if (current[0].assignedTo) {
+            await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`);
+        }
+
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), reason: t.String() })
@@ -245,6 +267,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             toStatus: 'approved',
             reason: body.notes || 'Penanganan disetujui',
         });
+
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`);
+        }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
@@ -280,15 +307,90 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             reason: body.reason,
         });
 
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning');
+        }
+
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), reason: t.String() })
     })
 
+    // Group Reports (Combine multiple reports into one Parent)
+    .post('/reports/group', async ({ body }) => {
+        const { reportIds, staffId, notes } = body;
+
+        if (!reportIds || reportIds.length < 2) {
+            return { status: 'error', message: 'Minimal 2 laporan untuk penggabungan.' };
+        }
+
+        // Get all reports to be grouped
+        const targets = await db
+            .select()
+            .from(reports)
+            .where(sql`${reports.id} IN ${reportIds}`)
+            .orderBy(reports.createdAt);
+
+        if (targets.length !== reportIds.length) {
+            return { status: 'error', message: 'Beberapa laporan tidak ditemukan.' };
+        }
+
+        // Designate the oldest (first) as Master/Parent
+        const parent = targets[0];
+        const children = targets.slice(1);
+        const childIds = children.map(c => c.id);
+
+        // Update Children: Set parentId to parent.id
+        await db
+            .update(reports)
+            .set({
+                parentId: parent.id,
+                updatedAt: new Date(),
+            })
+            .where(sql`${reports.id} IN ${childIds}`);
+
+        // Log for Parent
+        await db.insert(reportLogs).values({
+            reportId: parent.id,
+            actorId: staffId.toString(),
+            actorName: "Supervisor", // Ideally fetch name
+            actorRole: "supervisor",
+            action: 'grouped',
+            toStatus: parent.status || 'pending',
+            reason: notes || `Digabungkan dengan ${children.length} laporan lain.`,
+        });
+
+        // Log for Children
+        for (const child of children) {
+            await db.insert(reportLogs).values({
+                reportId: child.id,
+                actorId: staffId.toString(),
+                actorName: "Supervisor",
+                actorRole: "supervisor",
+                action: 'grouped_child',
+                toStatus: child.status || 'pending',
+                reason: `Digabungkan ke laporan #${parent.id}`,
+            });
+        }
+
+        return {
+            status: 'success',
+            data: mapToMobileReport(parent),
+            message: `Berhasil menggabungkan ${reportIds.length} laporan.`
+        };
+    }, {
+        body: t.Object({
+            reportIds: t.Array(t.Number()),
+            staffId: t.Number(),
+            notes: t.Optional(t.String()),
+        })
+    })
+
     // Export Reports to CSV
     .get('/reports/export', async ({ query }) => {
         const { status, building } = query;
-        
+
         let conditions = [];
         if (status && status !== 'all') conditions.push(eq(reports.status, status));
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
@@ -310,7 +412,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         // Create CSV
         const header = "ID,Title,Status,Building,CreatedAt\n";
-        const rows = result.map(r => 
+        const rows = result.map(r =>
             `${r.id},"${r.title.replace(/"/g, '""')}","${r.status}","${r.building}","${r.createdAt?.toISOString()}"`
         ).join("\n");
 

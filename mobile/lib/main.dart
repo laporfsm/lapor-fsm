@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/router/app_router.dart'; // Add Router Import
 import 'package:mobile/core/theme.dart';
 
-void main() {
+import 'package:mobile/core/services/notification_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.init();
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -12,7 +16,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router( // Change to .router
+    return MaterialApp.router(
+      // Change to .router
       title: 'Lapor FSM!',
       theme: AppTheme.lightTheme,
       routerConfig: appRouter, // Use the router

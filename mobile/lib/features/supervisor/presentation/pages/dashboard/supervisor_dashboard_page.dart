@@ -101,7 +101,9 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      floatingActionButton: const NotificationFab(),
+      floatingActionButton: const NotificationFab(
+        backgroundColor: AppTheme.supervisorColor,
+      ),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [

@@ -131,17 +131,15 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        final success = await reportService.acceptReport(report.id, staffId);
-        if (success) {
-          await refresh();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Penanganan dimulai'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        await reportService.acceptTask(report.id, staffId);
+        await refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Penanganan dimulai'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error accepting report: $e');
@@ -193,20 +191,15 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                   final user = await authService.getCurrentUser();
                   if (user != null) {
                     final staffId = user['id'];
-                    final success = await reportService.pauseReport(
-                      report.id,
-                      staffId,
-                      reason,
+                    await reportService.pauseTask(report.id, staffId, reason);
+                    await refresh();
+                    if (!messenger.mounted) return;
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Pengerjaan ditunda (Pause)'),
+                        backgroundColor: Colors.orange,
+                      ),
                     );
-                    if (success) {
-                      await refresh();
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Pengerjaan ditunda (Pause)'),
-                          backgroundColor: Colors.orange,
-                        ),
-                      );
-                    }
                   }
                 } catch (e) {
                   debugPrint('Error pausing report: $e');
@@ -236,17 +229,15 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        final success = await reportService.resumeReport(report.id, staffId);
-        if (success) {
-          await refresh();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pengerjaan dilanjutkan'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
+        await reportService.resumeTask(report.id, staffId);
+        await refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pengerjaan dilanjutkan'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
       debugPrint('Error resuming report: $e');

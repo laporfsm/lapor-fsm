@@ -105,13 +105,12 @@ class SupervisorReportsContainerPage extends StatelessWidget {
                 ReportStatus.ditolak,
               ],
               allowedStatuses: const [
-                // Only show Approved & Ditolak in filter
                 ReportStatus.approved,
                 ReportStatus.ditolak,
-                // Removed Arsip as requested
               ],
               showBackButton: false,
               appBarColor: supervisorColor, // Pass supervisor theme
+              role: 'supervisor',
             ),
           ],
         ),

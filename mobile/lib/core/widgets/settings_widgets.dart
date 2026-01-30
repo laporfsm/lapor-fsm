@@ -128,7 +128,7 @@ class SettingsSwitchTile extends StatelessWidget {
           : null,
       value: value,
       onChanged: onChanged,
-      activeColor: activeColor,
+      activeTrackColor: activeColor,
     );
   }
 }

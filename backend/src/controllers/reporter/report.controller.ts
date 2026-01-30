@@ -4,79 +4,80 @@ import { reports, categories, reportLogs, users, staff } from '../../db/schema';
 import { eq, desc, and, or, sql, gte, lte, ilike } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
+import { NotificationService } from '../../services/notification.service';
 
 export const reportController = new Elysia({ prefix: '/reports' })
   // Get All Reports (Public Feed with database filtering)
   .get('/', async ({ query }) => {
-    const { 
-        categoryId, 
-        category, 
-        building, 
-        status, 
-        search, 
-        isEmergency,
-        period,
-        startDate,
-        endDate,
-        limit = '50', 
-        offset = '0' 
+    const {
+      categoryId,
+      category,
+      building,
+      status,
+      search,
+      isEmergency,
+      period,
+      startDate,
+      endDate,
+      limit = '50',
+      offset = '0'
     } = query;
     const limitNum = parseInt(limit);
     const offsetNum = parseInt(offset);
-    
+
     let conditions = [];
-    
+
     if (categoryId) conditions.push(eq(reports.categoryId, parseInt(categoryId)));
     if (category) conditions.push(eq(categories.name, category));
     if (building) conditions.push(eq(reports.building, building));
-    
+
     // Status Filter (Support comma-separated or single)
     if (status) {
-        const statuses = status.split(',');
-        if (statuses.length > 1) {
-            conditions.push(or(...statuses.map(s => eq(reports.status, s))));
-        } else {
-            conditions.push(eq(reports.status, status));
-        }
+      const statuses = status.split(',');
+      if (statuses.length > 1) {
+        conditions.push(or(...statuses.map(s => eq(reports.status, s))));
+      } else {
+        conditions.push(eq(reports.status, status));
+      }
     }
 
     // Search filter - more robust using built-in ilike helper if available or better sql template
     if (search && search.trim().length > 0) {
-        const searchTerms = search.trim().split(/\s+/);
-        searchTerms.forEach(term => {
-            const pattern = `%${term}%`;
-            conditions.push(or(
-                ilike(reports.title, pattern),
-                ilike(reports.description, pattern)
-            ));
-        });
+      const searchTerms = search.trim().split(/\s+/);
+      searchTerms.forEach(term => {
+        const pattern = `%${term}%`;
+        conditions.push(or(
+          ilike(reports.title, pattern),
+          ilike(reports.description, pattern)
+        ));
+      });
     }
 
     // Emergency filter
     if (isEmergency === 'true') {
-        conditions.push(eq(reports.isEmergency, true));
+      conditions.push(eq(reports.isEmergency, true));
     }
 
     // Date/Period Filter
     if (startDate && endDate) {
-        conditions.push(and(
-            gte(reports.createdAt, new Date(startDate)),
-            lte(reports.createdAt, new Date(endDate))
-        ));
+      conditions.push(and(
+        gte(reports.createdAt, new Date(startDate)),
+        lte(reports.createdAt, new Date(endDate))
+      ));
     } else if (period) {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        if (period === 'today') {
-            conditions.push(gte(reports.createdAt, today));
-        } else if (period === 'week') {
-            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            conditions.push(gte(reports.createdAt, weekAgo));
-        } else if (period === 'month') {
-            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-            conditions.push(gte(reports.createdAt, monthStart));
-        }
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      if (period === 'today') {
+        conditions.push(gte(reports.createdAt, today));
+      } else if (period === 'week') {
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        conditions.push(gte(reports.createdAt, weekAgo));
+      } else if (period === 'month') {
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        conditions.push(gte(reports.createdAt, monthStart));
+      }
     }
-    
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const reporterStaff = alias(staff, 'reporter_staff');
@@ -141,19 +142,19 @@ export const reportController = new Elysia({ prefix: '/reports' })
       offset: t.Optional(t.String()),
     }),
   })
-  
+
   // Get User's Own Reports (History)
   .get('/my/:id', async ({ params, query }) => {
     const id = parseInt(params.id);
     const { role = 'user' } = query;
     console.log(`Fetching history for ID: ${id}, Role: ${role}`);
-    
+
     let condition;
     if (role === 'user' || role === 'pelapor') {
-        condition = eq(reports.userId, id);
+      condition = eq(reports.userId, id);
     } else {
-        // For staff (teknisi, supervisor, pj_gedung), filter by reports.staffId
-        condition = eq(reports.staffId, id);
+      // For staff (teknisi, supervisor, pj_gedung), filter by reports.staffId
+      condition = eq(reports.staffId, id);
     }
 
     const reporterStaff = alias(staff, 'reporter_staff');
@@ -195,7 +196,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
       .where(condition)
       .orderBy(desc(reports.createdAt));
-    
+
     console.log(`Found ${result.length} reports for history.`);
 
     return {
@@ -204,7 +205,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
     };
   }, {
     query: t.Object({
-        role: t.Optional(t.String()),
+      role: t.Optional(t.String()),
     })
   })
 
@@ -308,32 +309,50 @@ export const reportController = new Elysia({ prefix: '/reports' })
       reason: body.notes || 'Laporan baru dibuat',
     });
 
+    // --- NOTIFICATION TRIGGER ---
+    try {
+      if (body.isEmergency) {
+        await NotificationService.broadcastEmergency(
+          'LAPORAN DARURAT!',
+          `Ada laporan darurat di ${body.building}: ${body.title}`
+        );
+      } else {
+        // Notify Supervisors & PJ Gedung (General Info)
+        await NotificationService.notifyRole('supervisor', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`);
+        // TODO: Ideally filter PJ by building
+        await NotificationService.notifyRole('pj_gedung', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`);
+      }
+    } catch (e) {
+      console.error('Notification Trigger Failed:', e);
+    }
+    // ----------------------------
+
     // Fetch the full report with joins for the response
     const reporterStaff = alias(staff, 'reporter_staff');
     const fullReport = await db
-        .select({
-            id: reports.id,
-            title: reports.title,
-            description: reports.description,
-            building: reports.building,
-            locationDetail: reports.locationDetail,
-            latitude: reports.latitude,
-            longitude: reports.longitude,
-            mediaUrls: reports.mediaUrls,
-            isEmergency: reports.isEmergency,
-            status: reports.status,
-            createdAt: reports.createdAt,
-            userId: reports.userId,
-            staffId: reports.staffId,
-            reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
-            categoryName: categories.name,
-        })
-        .from(reports)
-        .leftJoin(users, eq(reports.userId, users.id))
-        .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
-        .leftJoin(categories, eq(reports.categoryId, categories.id))
-        .where(eq(reports.id, newReport[0].id))
-        .limit(1);
+      .select({
+        id: reports.id,
+        title: reports.title,
+        description: reports.description,
+        building: reports.building,
+        locationDetail: reports.locationDetail,
+        latitude: reports.latitude,
+        longitude: reports.longitude,
+        mediaUrls: reports.mediaUrls,
+        isEmergency: reports.isEmergency,
+        status: reports.status,
+        createdAt: reports.createdAt,
+        userId: reports.userId,
+        staffId: reports.staffId,
+        reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
+        categoryName: categories.name,
+      })
+      .from(reports)
+      .leftJoin(users, eq(reports.userId, users.id))
+      .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
+      .leftJoin(categories, eq(reports.categoryId, categories.id))
+      .where(eq(reports.id, newReport[0].id))
+      .limit(1);
 
     return {
       status: 'created',

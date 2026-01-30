@@ -98,7 +98,9 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      floatingActionButton: const NotificationFab(),
+      floatingActionButton: const NotificationFab(
+        backgroundColor: AppTheme.pjGedungColor,
+      ),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [

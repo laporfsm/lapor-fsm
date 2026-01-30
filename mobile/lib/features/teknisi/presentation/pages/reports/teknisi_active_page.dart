@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/data/mock_report_data.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/theme.dart';
 
 /// Active reports page showing penanganan and onHold reports
 class TeknisiActivePage extends StatefulWidget {
@@ -17,29 +18,69 @@ class TeknisiActivePage extends StatefulWidget {
 }
 
 class _TeknisiActivePageState extends State<TeknisiActivePage> {
-  // TODO: [BACKEND] Replace with API call
-  List<Report> get _activeReports =>
-      MockReportData.allReports
-          .where(
-            (r) =>
-                r.status == ReportStatus.penanganan ||
-                r.status == ReportStatus.onHold,
-          )
-          .toList()
-        // Sort: penanganan first, then onHold
-        ..sort((a, b) {
-          if (a.status == ReportStatus.penanganan &&
-              b.status == ReportStatus.onHold) {
-            return -1;
-          } else if (a.status == ReportStatus.onHold &&
-              b.status == ReportStatus.penanganan) {
-            return 1;
-          }
-          return b.createdAt.compareTo(a.createdAt);
-        });
+  bool _isLoading = true;
+  List<Report> _activeReports = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final results = await Future.wait([
+          reportService.getStaffReports(
+            role: 'technician',
+            status: 'penanganan',
+          ),
+          reportService.getStaffReports(role: 'technician', status: 'onHold'),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            final processing = results[0]
+                .map((json) => Report.fromJson(json))
+                .toList();
+            final onHold = results[1]
+                .map((json) => Report.fromJson(json))
+                .toList();
+
+            _activeReports = [...processing, ...onHold];
+
+            // Sort: penanganan first, then onHold. Same status sorted by date.
+            _activeReports.sort((a, b) {
+              if (a.status == ReportStatus.penanganan &&
+                  b.status == ReportStatus.onHold) {
+                return -1;
+              } else if (a.status == ReportStatus.onHold &&
+                  b.status == ReportStatus.penanganan) {
+                return 1;
+              }
+              return b.createdAt.compareTo(a.createdAt);
+            });
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching active reports: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final penangananCount = _activeReports
         .where((r) => r.status == ReportStatus.penanganan)
         .length;
@@ -101,9 +142,7 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: () async {
-                setState(() {});
-              },
+              onRefresh: _fetchData,
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: _activeReports.length,
@@ -122,7 +161,10 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                     elapsedTime: elapsed,
                     showStatus: true,
                     showTimer: true,
-                    onTap: () => context.push('/teknisi/report/${report.id}'),
+                    onTap: () async {
+                      await context.push('/teknisi/report/${report.id}');
+                      _fetchData();
+                    },
                     actionButton: _buildActionButton(report),
                   );
                 },
@@ -159,7 +201,10 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
   Widget _buildActionButton(Report report) {
     if (report.status == ReportStatus.penanganan) {
       return ElevatedButton.icon(
-        onPressed: () => context.push('/teknisi/report/${report.id}/complete'),
+        onPressed: () async {
+          await context.push('/teknisi/report/${report.id}/complete');
+          _fetchData();
+        },
         icon: const Icon(LucideIcons.checkCircle2, size: 18),
         label: const Text('Selesaikan'),
         style: ElevatedButton.styleFrom(
@@ -173,7 +218,10 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
       );
     } else if (report.status == ReportStatus.onHold) {
       return ElevatedButton.icon(
-        onPressed: () => context.push('/teknisi/report/${report.id}'),
+        onPressed: () async {
+          await context.push('/teknisi/report/${report.id}');
+          _fetchData();
+        },
         icon: const Icon(LucideIcons.playCircle, size: 18),
         label: const Text('Lanjutkan'),
         style: ElevatedButton.styleFrom(

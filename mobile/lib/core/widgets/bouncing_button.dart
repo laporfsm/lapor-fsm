@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class BouncingButton extends StatefulWidget {
   final Widget child;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final double scaleFactor;
   final Duration duration;
   final HitTestBehavior behavior;
@@ -11,6 +12,7 @@ class BouncingButton extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
+    this.onLongPress,
     this.scaleFactor = 0.95,
     this.duration = const Duration(milliseconds: 150),
     this.behavior = HitTestBehavior.opaque,
@@ -48,7 +50,7 @@ class _BouncingButtonState extends State<BouncingButton>
   }
 
   void _onTapDown(TapDownDetails details) {
-    if (widget.onTap != null) {
+    if (widget.onTap != null || widget.onLongPress != null) {
       _controller.forward();
     }
   }
@@ -61,7 +63,7 @@ class _BouncingButtonState extends State<BouncingButton>
   }
 
   void _onTapCancel() {
-    if (widget.onTap != null) {
+    if (widget.onTap != null || widget.onLongPress != null) {
       _controller.reverse();
     }
   }
@@ -73,6 +75,12 @@ class _BouncingButtonState extends State<BouncingButton>
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
+      onLongPress: widget.onLongPress != null
+          ? () {
+              _controller.reverse();
+              widget.onLongPress!();
+            }
+          : null,
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {

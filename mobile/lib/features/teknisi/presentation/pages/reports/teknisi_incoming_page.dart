@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/data/mock_report_data.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/theme.dart';
 
 /// Incoming reports page with tabs for Darurat and Umum
 class TeknisiIncomingPage extends StatefulWidget {
@@ -20,10 +20,15 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
+  bool _isLoading = true;
+  List<Report> _emergencyReports = [];
+  List<Report> _regularReports = [];
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchData();
   }
 
   @override
@@ -32,17 +37,53 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
     super.dispose();
   }
 
-  // TODO: [BACKEND] Replace with API call
-  List<Report> get _emergencyReports => MockReportData.allReports
-      .where((r) => r.status == ReportStatus.diproses && r.isEmergency)
-      .toList();
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final results = await Future.wait([
+          // Fetch Emergency Dispatched
+          reportService.getStaffReports(
+            role: 'technician',
+            status: 'diproses',
+            isEmergency: true,
+          ),
+          // Fetch Regular Dispatched
+          reportService.getStaffReports(
+            role: 'technician',
+            status: 'diproses',
+            isEmergency: false,
+          ),
+        ]);
 
-  List<Report> get _regularReports => MockReportData.allReports
-      .where((r) => r.status == ReportStatus.diproses && !r.isEmergency)
-      .toList();
+        if (mounted) {
+          setState(() {
+            _emergencyReports = results[0]
+                .map((json) => Report.fromJson(json))
+                .toList();
+            _regularReports = results[1]
+                .map((json) => Report.fromJson(json))
+                .toList();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching incoming reports: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final emergencyCount = _emergencyReports.length;
     final regularCount = _regularReports.length;
 
@@ -160,10 +201,7 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        // TODO: [BACKEND] Refresh data
-        setState(() {});
-      },
+      onRefresh: _fetchData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: reports.length,
@@ -182,9 +220,15 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
             elapsedTime: elapsed,
             showStatus: true,
             showTimer: true,
-            onTap: () => context.push('/teknisi/report/${report.id}'),
+            onTap: () async {
+              await context.push('/teknisi/report/${report.id}');
+              _fetchData();
+            },
             actionButton: ElevatedButton.icon(
-              onPressed: () => context.push('/teknisi/report/${report.id}'),
+              onPressed: () async {
+                await context.push('/teknisi/report/${report.id}');
+                _fetchData();
+              },
               icon: const Icon(LucideIcons.play, size: 18),
               label: const Text('Mulai Penanganan'),
               style: ElevatedButton.styleFrom(

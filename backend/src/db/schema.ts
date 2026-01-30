@@ -44,6 +44,7 @@ export const categories = pgTable('categories', {
 // Reports table
 export const reports = pgTable('reports', {
   id: serial('id').primaryKey(),
+  parentId: integer('parent_id'), // Self-reference for grouped reports
   userId: integer('user_id').references(() => users.id),
   staffId: integer('staff_id').references(() => staff.id),
   categoryId: integer('category_id').references(() => categories.id),

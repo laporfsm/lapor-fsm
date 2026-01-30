@@ -166,7 +166,7 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        
+
         // 1. Upload Image
         String? imageUrl;
         if (_proofImage != null) {
@@ -174,14 +174,15 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
         }
 
         // 2. Complete Report
-        final success = await reportService.completeReport(
-          widget.reportId, 
+        // 2. Complete Report
+        await reportService.completeTask(
+          widget.reportId,
           staffId,
-          notes: _notesController.text,
-          mediaUrls: imageUrl != null ? [imageUrl] : [],
+          _notesController.text,
+          imageUrl != null ? [imageUrl] : [],
         );
 
-        if (success && mounted) {
+        if (mounted) {
           // Show success dialog
           showDialog(
             context: context,
@@ -405,7 +406,9 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.1,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
