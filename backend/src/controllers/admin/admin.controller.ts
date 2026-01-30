@@ -286,7 +286,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
         // 3. Report Volume by Category (Top 5)
         const reportVolume = await db.select({
             categoryName: categories.name,
-            total: count()
+            total: count(),
+            done: sql`COUNT(CASE WHEN ${reports.status} = 'selesai' THEN 1 END)`
         })
         .from(reports)
         .leftJoin(categories, eq(reports.categoryId, categories.id))
@@ -336,7 +337,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 reportVolume: reportVolume.map(rv => ({
                     dept: rv.categoryName || 'Lainnya',
                     in: Number(rv.total),
-                    out: Math.floor(Number(rv.total) * 0.75)
+                    out: Number(rv.done)
                 })),
                 appUsage: fullTrafficTrend
             }
@@ -369,6 +370,83 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 type: l.reportId ? 'Laporan' : 'User'
             }))
         };
+    })
+
+    // Export Logs PDF
+    .get('/logs/export/pdf', async ({ set }) => {
+        const logs = await db
+            .select()
+            .from(reportLogs)
+            .where(inArray(reportLogs.action, ['register', 'verify_email', 'verified', 'suspended', 'activated']))
+            .orderBy(desc(reportLogs.timestamp));
+
+        const doc = new PDFDocument({ margin: 40 });
+        const chunks: Buffer[] = [];
+        doc.on('data', chunks.push.bind(chunks));
+
+        doc.fontSize(18).text('LOG SISTEM - KATEGORI USER', { align: 'center' });
+        doc.fontSize(10).text(`Dicetak pada: ${new Date().toLocaleString()}`, { align: 'center' });
+        doc.moveDown();
+
+        // Table headers
+        let y = doc.y;
+        doc.fontSize(10).font('Helvetica-Bold');
+        doc.text('Waktu', 40, y);
+        doc.text('User', 140, y);
+        doc.text('Aksi', 240, y);
+        doc.text('Detail', 340, y);
+        doc.moveDown();
+        doc.font('Helvetica').fontSize(9);
+
+        logs.forEach(l => {
+            if (doc.y > 700) doc.addPage();
+            y = doc.y;
+            doc.text(new Date(l.timestamp!).toLocaleString(), 40, y, { width: 90 });
+            doc.text(l.actorName || '-', 140, y, { width: 90 });
+            doc.text(l.action, 240, y, { width: 90 });
+            doc.text(l.reason || '-', 340, y, { width: 220 });
+            doc.moveDown();
+        });
+
+        doc.end();
+        const buffer = await new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+        
+        set.headers['Content-Type'] = 'application/pdf';
+        set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.pdf';
+        return buffer;
+    })
+
+    // Export Logs Excel
+    .get('/logs/export/excel', async ({ set }) => {
+        const logs = await db
+            .select()
+            .from(reportLogs)
+            .where(inArray(reportLogs.action, ['register', 'verify_email', 'verified', 'suspended', 'activated']))
+            .orderBy(desc(reportLogs.timestamp));
+
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('System Logs');
+
+        worksheet.columns = [
+            { header: 'Waktu', key: 'time', width: 25 },
+            { header: 'User', key: 'user', width: 20 },
+            { header: 'Aksi', key: 'action', width: 15 },
+            { header: 'Detail', key: 'details', width: 50 },
+        ];
+
+        logs.forEach(l => {
+            worksheet.addRow({
+                time: l.timestamp,
+                user: l.actorName,
+                action: l.action,
+                details: l.reason
+            });
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
+        set.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+        set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.xlsx';
+        return buffer;
     })
 
     // ==========================================
