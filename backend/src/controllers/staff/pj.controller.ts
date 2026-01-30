@@ -35,12 +35,19 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     })
     // Dashboard statistics for PJ Gedung
     .get('/dashboard', async ({ userManagedBuilding }) => {
+        if (!userManagedBuilding) {
+            return {
+                status: 'error',
+                message: 'Akses ditolak: Anda belum ditugaskan ke gedung manapun.'
+            };
+        }
+
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        let whereClause = userManagedBuilding ? sql`${reports.building} ILIKE ${userManagedBuilding}` : undefined;
+        let whereClause = sql`${reports.building} ILIKE ${userManagedBuilding}`;
 
         const todayReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfDay), whereClause));
         const weekReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfWeek), whereClause));
@@ -236,7 +243,10 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         const { building } = query;
         
         let buildingFilter = userManagedBuilding || building;
-        let whereClause = buildingFilter ? sql`${reports.building} ILIKE ${buildingFilter}` : undefined;
+        if (!buildingFilter) {
+            return { status: 'error', message: 'Membuhkan filter gedung' };
+        }
+        let whereClause = sql`${reports.building} ILIKE ${buildingFilter}`;
 
         // 1. Issue Categories
         const categoryStats = await db.select({
@@ -373,7 +383,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Metadata
         doc.fontSize(10).font('Helvetica');
         doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}`);
-        doc.text(`Filter Gedung: ${userManagedBuilding || building || 'Semua'}`);
+        doc.text(`Gedung Utama (Tanggung Jawab): ${userManagedBuilding || 'Semua'}`);
 
         const friendlyStatus = status ?
             (status as string).split(',').map(s => statusLabels[s] || s).join(', ') :
