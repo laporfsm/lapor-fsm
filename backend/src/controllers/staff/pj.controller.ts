@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
+import { NotificationService } from '../../services/notification.service';
 
 export const pjController = new Elysia({ prefix: '/pj-gedung' })
     // Dashboard statistics for PJ Gedung
@@ -125,6 +126,14 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             toStatus: 'terverifikasi',
             reason: body.notes || 'Laporan telah diverifikasi oleh PJ Gedung',
         });
+
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Gedung.`);
+        }
+
+        // Notify Supervisor
+        await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].building} telah diverifikasi oleh PJ Gedung.`);
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {

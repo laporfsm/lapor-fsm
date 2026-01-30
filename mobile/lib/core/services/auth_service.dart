@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'api_service.dart';
+import 'package:mobile/core/services/api_service.dart';
+
+// Singleton instance
+final authService = AuthService();
 
 class AuthService {
   static const String _userIdKey = 'user_id';
@@ -10,6 +13,7 @@ class AuthService {
   static const String _userRoleKey = 'user_role';
   static const String _userNimNipKey = 'user_nim_nip';
   static const String _userDepartmentKey = 'user_department';
+  static const String _userFacultyKey = 'user_faculty';
   static const String _userAddressKey = 'user_address';
   static const String _userEmergencyNameKey = 'user_emergency_name';
   static const String _userEmergencyPhoneKey = 'user_emergency_phone';
@@ -53,6 +57,7 @@ class AuthService {
     required String phone,
     required String nimNip,
     String? department,
+    String? faculty,
     String? address,
     String? emergencyName,
     String? emergencyPhone,
@@ -67,6 +72,7 @@ class AuthService {
           'phone': phone,
           'nimNip': nimNip,
           'department': department,
+          'faculty': faculty,
           'address': address,
           'emergencyName': emergencyName,
           'emergencyPhone': emergencyPhone,
@@ -142,6 +148,9 @@ class AuthService {
     if (user['department'] != null) {
       await prefs.setString(_userDepartmentKey, user['department']);
     }
+    if (user['faculty'] != null) {
+      await prefs.setString(_userFacultyKey, user['faculty']);
+    }
     if (user['address'] != null) {
       await prefs.setString(_userAddressKey, user['address']);
     }
@@ -173,6 +182,7 @@ class AuthService {
       'role': prefs.getString(_userRoleKey),
       'nimNip': prefs.getString(_userNimNipKey),
       'department': prefs.getString(_userDepartmentKey),
+      'faculty': prefs.getString(_userFacultyKey),
       'address': prefs.getString(_userAddressKey),
       'emergencyName': prefs.getString(_userEmergencyNameKey),
       'emergencyPhone': prefs.getString(_userEmergencyPhoneKey),
@@ -180,27 +190,87 @@ class AuthService {
     };
   }
 
-  // Register phone number / Update Profile
+  // Update Profile (Pelapor or Staff)
+  Future<Map<String, dynamic>> updateProfile({
+    required String id,
+    required String role,
+    String? name,
+    String? phone,
+    String? department,
+    String? faculty,
+    String? nimNip,
+    String? address,
+    String? emergencyName,
+    String? emergencyPhone,
+  }) async {
+    try {
+      final String endpoint =
+          role == 'pelapor' ? '/auth/profile/$id' : '/auth/staff-profile/$id';
+
+      final response = await apiService.dio.patch(
+        endpoint,
+        data: {
+          if (name != null) 'name': name,
+          if (phone != null) 'phone': phone,
+          if (department != null) 'department': department,
+          if (faculty != null) 'faculty': faculty,
+          if (nimNip != null) 'nimNip': nimNip,
+          if (address != null) 'address': address,
+          if (emergencyName != null) 'emergencyName': emergencyName,
+          if (emergencyPhone != null) 'emergencyPhone': emergencyPhone,
+        },
+      );
+
+      if (response.data['status'] == 'success') {
+        final updatedUser = response.data['data'];
+        await _updateLocalUserData(updatedUser);
+        return {'success': true, 'data': updatedUser};
+      }
+
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal memperbarui profil',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Method to update local storage only for specific fields
+  Future<void> _updateLocalUserData(Map<String, dynamic> user) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (user['name'] != null) await prefs.setString(_userNameKey, user['name']);
+    if (user['phone'] != null) {
+      await prefs.setString(_userPhoneKey, user['phone']);
+    }
+    if (user['nimNip'] != null) {
+      await prefs.setString(_userNimNipKey, user['nimNip']);
+    }
+    if (user['department'] != null) {
+      await prefs.setString(_userDepartmentKey, user['department']);
+    }
+    if (user['faculty'] != null) {
+      await prefs.setString(_userFacultyKey, user['faculty']);
+    }
+    if (user['address'] != null) {
+      await prefs.setString(_userAddressKey, user['address']);
+    }
+    if (user['emergencyName'] != null) {
+      await prefs.setString(_userEmergencyNameKey, user['emergencyName']);
+    }
+    if (user['emergencyPhone'] != null) {
+      await prefs.setString(_userEmergencyPhoneKey, user['emergencyPhone']);
+    }
+  }
+
+  // Register phone number / Update Profile (Legacy)
   Future<bool> registerPhone({
     required String userId,
     required String phone,
     String? department,
   }) async {
-    try {
-      final response = await apiService.dio.post(
-        '/auth/register-phone',
-        data: {'userId': userId, 'phone': phone, 'department': department},
-      );
-
-      if (response.data['status'] == 'success') {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString(_userPhoneKey, phone);
-        return true;
-      }
-      return false;
-    } catch (e) {
-      return false;
-    }
+    return false; // Stub for legacy
   }
 
   // Check if logged in
@@ -216,6 +286,3 @@ class AuthService {
     apiService.clearAuthToken();
   }
 }
-
-// Singleton instance
-final authService = AuthService();

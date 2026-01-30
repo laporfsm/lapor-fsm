@@ -111,6 +111,7 @@ export const notifications = pgTable('notifications', {
   id: serial('id').primaryKey(),
   userId: integer('user_id').references(() => users.id),
   staffId: integer('staff_id').references(() => staff.id),
+  reportId: integer('report_id').references(() => reports.id),
   title: text('title').notNull(),
   message: text('message').notNull(),
   type: text('type').notNull().default('info'), // 'info', 'success', 'warning', 'emergency'

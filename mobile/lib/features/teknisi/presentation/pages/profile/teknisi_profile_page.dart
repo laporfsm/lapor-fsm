@@ -14,43 +14,58 @@ class TeknisiProfilePage extends StatefulWidget {
 }
 
 class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
-  Map<String, dynamic>? _user;
+  Map<String, dynamic>? _profile;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProfile();
+    _loadUserData();
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadUserData() async {
     final user = await authService.getCurrentUser();
     if (mounted) {
       setState(() {
-        _user = user;
+        _profile = user;
         _isLoading = false;
       });
     }
   }
 
-  // Fallback data if API fails or empty
-  Map<String, dynamic> get _profile => {
-    'name': _user?['name'] ?? 'Teknisi',
-    'nip': _user?['nimNip'] ?? '-',
-    'email': _user?['email'] ?? '-',
-    'phone': _user?['phone'] ?? '-',
-    'department': _user?['department'] ?? 'Unit Pemeliharaan',
-    'specialization': 'Umum', // TODO: Add specialization to backend/auth
-  };
-
   Map<String, int> get _stats => {
-    'handled': 0, // TODO: Fetch real stats
+    'handled': 0, // In real app, these should also come from API
     'completed': 0,
     'inProgress': 0,
   };
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_profile == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Silakan Login Kembali'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Login'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -58,9 +73,7 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator()) 
-          : SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           children: [
             // Header Profile
@@ -89,7 +102,7 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
                   ),
                   const Gap(16),
                   Text(
-                    _profile['name'],
+                    _profile!['name'] ?? "Unknown",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -97,7 +110,7 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
                   ),
                   const Gap(4),
                   Text(
-                    _profile['nip'],
+                    _profile!['nimNip'] ?? "-",
                     style: const TextStyle(color: Colors.grey),
                   ),
                   const Gap(8),
@@ -147,25 +160,25 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
                         ProfileInfoRow(
                           icon: LucideIcons.mail,
                           label: "Email",
-                          value: _profile['email'],
+                          value: _profile!['email'] ?? "-",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.phone,
                           label: "Telepon",
-                          value: _profile['phone'],
+                          value: _profile!['phone'] ?? "-",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.building,
                           label: "Departemen",
-                          value: _profile['department'],
+                          value: _profile!['department'] ?? "Unit Pemeliharaan",
                         ),
                         const Divider(height: 24),
                         ProfileInfoRow(
                           icon: LucideIcons.wrench,
                           label: "Spesialisasi",
-                          value: _profile['specialization'],
+                          value: _profile!['specialization'] ?? "-",
                         ),
                       ],
                     ),
@@ -221,7 +234,10 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
                   ProfileMenuItem(
                     icon: LucideIcons.user,
                     label: "Edit Profil",
-                    onTap: () => context.push('/teknisi/edit-profile'),
+                    onTap: () async {
+                      await context.push('/teknisi/edit-profile');
+                      _loadUserData();
+                    },
                     color: AppTheme.secondaryColor,
                   ),
                   ProfileMenuItem(

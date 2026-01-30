@@ -275,9 +275,22 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       'Gedung D',
       'Gedung E',
       'Gedung F',
-      'Lab Terpadu',
+      'Gedung G',
+      'Gedung H',
+      'Gedung I',
+      'Gedung J',
+      'Gedung K',
+      'Gedung L',
+      'Gedung Acintya Prasada',
+      'Laboratorium',
       'Perpustakaan',
       'Dekanat',
+      'Masjid',
+      'Kantin',
+      'Parkiran Motor',
+      'Parkiran Mobil',
+      'Taman Rumah Kita',
+      'Lainnya',
     ];
   }
 
@@ -746,7 +759,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               _selectedBuilding = null;
                               _emergencyOnly = false;
                               _selectedPeriod = null;
+                              _selectedDateRange = null;
                             });
+                            setState(() {});
+                            _fetchReports();
                           },
                           child: const Text('Reset'),
                         ),
@@ -913,6 +929,28 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       }).toList(),
                     ),
                     const Gap(20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _fetchReports();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.appBarColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Terapkan Filter',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                    const Gap(12),
                   ],
                 ),
               );

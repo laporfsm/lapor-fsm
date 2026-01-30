@@ -168,7 +168,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`);
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
         }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -207,11 +207,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         });
 
         // Notify Technician
-        await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`);
+        await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`);
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
         }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -252,7 +252,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         // Notify Technician (if assigned)
         if (current[0].assignedTo) {
-            await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`);
+            await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`, 'warning', reportId);
         }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -290,7 +290,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`);
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`, 'success', reportId);
         }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -329,7 +329,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning');
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning', reportId);
         }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };

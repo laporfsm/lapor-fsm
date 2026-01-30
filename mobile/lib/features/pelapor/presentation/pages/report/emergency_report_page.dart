@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 
 /// Simplified Emergency Report Page for faster reporting.
@@ -23,7 +24,8 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   final List<XFile> _selectedImages = [];
   final List<Uint8List> _selectedImagesBytes = []; // For web compatibility
   String? _selectedBuilding;
-  final _locationDetailController = TextEditingController(); // New Controller
+  final _locationDetailController = TextEditingController();
+  final _titleController = TextEditingController(text: "Laporan Darurat"); // New Title Controller
   double? _latitude;
   double? _longitude;
   bool _isSubmitting = false;
@@ -188,11 +190,15 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         debugPrint('Error finding emergency category: $e');
       }
 
+      // 0. Get current user
+      final userAccount = await authService.getCurrentUser();
+      final currentUserId = userAccount?['id'];
+
       // 3. Submit Report
       final result = await reportService.createReport(
-        userId: '1', // TODO: Get from Auth Provider
-        title: "Laporan Darurat",
-        description: "Laporan Darurat: ${_locationDetailController.text}",
+        userId: currentUserId,
+        title: _titleController.text,
+        description: "LAPORAN DARURAT: ${_locationDetailController.text}",
         building: _selectedBuilding ?? "Lokasi Darurat",
         locationDetail: _locationDetailController.text,
         latitude: _latitude,
@@ -200,6 +206,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         mediaUrls: mediaUrls,
         isEmergency: true,
         categoryId: emergencyCategoryId, // Auto-assign 'Darurat' category
+        status: 'diproses',
       );
 
       if (mounted) {
@@ -291,6 +298,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                       ),
                       const Gap(8),
                       TextFormField(
+                        controller: _titleController,
                         decoration: InputDecoration(
                           hintText: "Contoh: Kebakaran di Lab Kimia",
                           border: OutlineInputBorder(

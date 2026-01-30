@@ -287,7 +287,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       longitude: body.longitude,
       mediaUrls: finalMediaUrls,
       isEmergency: body.isEmergency || false,
-      status: 'pending',
+      status: body.status || 'pending',
     }).returning();
 
     // Get actor info for logs
@@ -317,13 +317,14 @@ export const reportController = new Elysia({ prefix: '/reports' })
       if (body.isEmergency) {
         await NotificationService.broadcastEmergency(
           'LAPORAN DARURAT!',
-          `Ada laporan darurat di ${body.building}: ${body.title}`
+          `Ada laporan darurat di ${body.building}: ${body.title}`,
+          newReport[0].id
         );
       } else {
         // Notify Supervisors & PJ Gedung (General Info)
-        await NotificationService.notifyRole('supervisor', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`);
+        await NotificationService.notifyRole('supervisor', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`, 'info', newReport[0].id);
         // TODO: Ideally filter PJ by building
-        await NotificationService.notifyRole('pj_gedung', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`);
+        await NotificationService.notifyRole('pj_gedung', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`, 'info', newReport[0].id);
       }
     } catch (e) {
       console.error('Notification Trigger Failed:', e);
@@ -377,6 +378,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       imageUrl: t.Optional(t.String()),
       notes: t.Optional(t.String()),
       isEmergency: t.Optional(t.Boolean()),
+      status: t.Optional(t.String()),
     }),
   })
 
