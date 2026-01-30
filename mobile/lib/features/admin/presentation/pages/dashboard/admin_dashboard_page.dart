@@ -310,8 +310,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment
-                            .spaceAround, // Changed to spaceAround for 3 items
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _QuickActionButton(
                             label: 'Verifikasi',
@@ -321,18 +320,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               '/admin/users?tab=1',
                             ), // Tab 1: Verifikasi
                           ),
-                          _QuickActionButton(
-                            label: 'Broadcast',
-                            icon: LucideIcons.megaphone,
-                            color: Colors.red,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Broadcast Info...'),
-                                ),
-                              );
-                            },
-                          ),
+                          const Gap(40),
                           _QuickActionButton(
                             label: 'Staff',
                             icon: LucideIcons.userPlus,
@@ -374,19 +362,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             const Gap(20),
                             Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: (_stats?['weeklyTrend'] as List? ?? [])
-                                    .map((t) => _buildMockBar(
+                                // Calculate max value for normalized scaling
+                                final maxVal = (_stats?['weeklyTrend'] as List? ?? [])
+                                    .fold(1, (max, t) => (t['value'] as int) > max ? t['value'] as int : max);
+                                
+                                return Row(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: (_stats?['weeklyTrend'] as List? ?? [])
+                                      .map((t) {
+                                        final val = (t['value'] as int).toDouble();
+                                        return _buildStatBar(
                                           context,
                                           t['day'] ?? '',
-                                          (t['value'] as int) / 10.0, // Scale for demo/UI
-                                          (t['value'] as int) * 0.8 / 10.0,
-                                        ))
-                                    .toList(),
-                              ),
+                                          val / maxVal,
+                                          (val * 0.8) / maxVal, // Simulated "completed" ratio
+                                        );
+                                      })
+                                      .toList(),
+                                );
                             ),
                             const Gap(10),
                             Row(
@@ -757,12 +752,15 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-Widget _buildMockBar(
+Widget _buildStatBar(
   BuildContext context,
   String label,
   double pct1,
   double pct2,
 ) {
+  // Ensure bars are visible even with 0 or very small counts
+  final h1 = (100 * pct1).clamp(2.0, 100.0);
+  final h2 = (100 * pct2).clamp(2.0, 100.0);
   return Column(
     mainAxisAlignment: MainAxisAlignment.end,
     children: [
@@ -771,7 +769,7 @@ Widget _buildMockBar(
         children: [
           Container(
             width: 8,
-            height: 100 * pct1,
+            height: h1,
             decoration: BoxDecoration(
               color: AppTheme.adminColor,
               borderRadius: BorderRadius.circular(4),
@@ -780,7 +778,7 @@ Widget _buildMockBar(
           const Gap(4),
           Container(
             width: 8,
-            height: 100 * pct2,
+            height: h2,
             decoration: BoxDecoration(
               color: Colors.green,
               borderRadius: BorderRadius.circular(4),

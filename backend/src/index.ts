@@ -13,6 +13,22 @@ import { notificationController } from "./controllers/notification.controller";
 import { categoryController } from "./controllers/admin/category.controller";
 
 const app = new Elysia()
+  .onError(({ code, error, set }) => {
+    console.error(`[API ERROR] ${code}:`, error);
+    
+    if (code === 'VALIDATION') {
+      set.status = 400;
+      return { status: 'error', message: 'Validasi input gagal', details: error.all };
+    }
+    
+    if (code === 'NOT_FOUND') {
+      set.status = 404;
+      return { status: 'error', message: 'Endpoint tidak ditemukan' };
+    }
+
+    set.status = 500;
+    return { status: 'error', message: 'Terjadi kesalahan sistem internal' };
+  })
   .use(cors({
     origin: true, // Allow all origins (for development)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

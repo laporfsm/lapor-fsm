@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db';
-import { users, staff } from '../db/schema';
+import { users, staff, reportLogs } from '../db/schema';
 import { eq, or } from 'drizzle-orm';
 import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
@@ -14,45 +14,45 @@ export const authController = new Elysia({ prefix: '/auth' })
   )
   // User Login (Pelapor)
   .post('/login', async ({ body, jwt, set }) => {
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, body.email))
-      .limit(1);
-
-    if (user.length === 0) {
+    const foundUser = await db.select().from(users).where(eq(users.email, body.email)).limit(1);
+    if (foundUser.length === 0) {
       set.status = 401;
       return { status: 'error', message: 'Email atau password salah' };
     }
 
-    const isPasswordCorrect = await Bun.password.verify(body.password, user[0].password);
-
-    if (!isPasswordCorrect) {
+    const isMatch = await Bun.password.verify(body.password, foundUser[0].password);
+    if (!isMatch) {
       set.status = 401;
       return { status: 'error', message: 'Email atau password salah' };
     }
 
-    if (!user[0].isActive) {
+    if (!foundUser[0].isActive) {
       set.status = 403;
-      return { status: 'error', message: 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.' };
+      return { status: 'error', message: 'Akun Anda dinonaktifkan. Silakan hubungi admin.' };
     }
 
-    if (!user[0].isVerified && !body.email.endsWith('@undip.ac.id') && !body.email.endsWith('.undip.ac.id')) {
+    if (!foundUser[0].isEmailVerified) {
       set.status = 403;
-      return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi admin' };
+      return { status: 'error', message: 'Email belum diverifikasi. Silakan verifikasi email Anda terlebih dahulu.' };
     }
 
+    if (!foundUser[0].isVerified) {
+      set.status = 403;
+      return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
+    }
+
+    // Sign JWT
     const token = await jwt.sign({
-      id: user[0].id,
+      id: foundUser[0].id,
       role: 'pelapor',
-      email: user[0].email
+      email: foundUser[0].email
     });
 
     return {
       status: 'success',
       message: 'Login berhasil',
       data: {
-        user: mapToMobileUser(user[0]),
+        user: mapToMobileUser(foundUser[0]),
         token,
         role: 'pelapor'
       },
@@ -79,10 +79,11 @@ export const authController = new Elysia({ prefix: '/auth' })
         return { status: 'error', message: 'Nomor kontak darurat tidak boleh sama dengan nomor HP Anda' };
       }
 
-      const isUndip = body.email.toLowerCase().endsWith('@undip.ac.id') ||
-        body.email.toLowerCase().endsWith('.undip.ac.id');
-
       const hashedPassword = await Bun.password.hash(body.password);
+      const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
       const newUser = await db.insert(users).values({
         name: body.name,
@@ -96,15 +97,30 @@ export const authController = new Elysia({ prefix: '/auth' })
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
         idCardUrl: body.idCardUrl,
-        isVerified: isUndip, // Auto-verify if UNDIP email
+        isVerified: false, // Always false now, requires admin approval
+        isEmailVerified: false,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: expiresAt,
       }).returning();
+
+      // Log registration
+      await db.insert(reportLogs).values({
+        action: 'register',
+        actorId: newUser[0].id.toString(),
+        actorName: newUser[0].name,
+        actorRole: 'user',
+        reason: 'User mendaftar ke sistem',
+      });
+
+      console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
 
       return {
         status: 'success',
-        message: isUndip ? 'Registrasi berhasil' : 'Registrasi berhasil, menunggu verifikasi admin',
+        message: 'Registrasi berhasil. Silakan cek email Anda untuk kode verifikasi.',
         data: {
           user: mapToMobileUser(newUser[0]),
-          needsApproval: !isUndip
+          needsEmailVerification: true,
+          needsAdminApproval: true
         }
       };
     } catch (error: any) {
@@ -124,6 +140,54 @@ export const authController = new Elysia({ prefix: '/auth' })
       emergencyName: t.Optional(t.String()),
       emergencyPhone: t.Optional(t.String()),
       idCardUrl: t.Optional(t.String()),
+    })
+  })
+
+  // Verify Email
+  .post('/verify-email', async ({ body, set }) => {
+    const { email, token } = body;
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (user.length === 0) {
+      set.status = 404;
+      return { status: 'error', message: 'User tidak ditemukan' };
+    }
+
+    if (user[0].isEmailVerified) {
+      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+    }
+
+    if (user[0].emailVerificationToken !== token) {
+      set.status = 400;
+      return { status: 'error', message: 'Kode verifikasi tidak valid' };
+    }
+
+    if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
+      set.status = 400;
+      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan registrasi ulang atau minta kode baru.' };
+    }
+
+    await db.update(users)
+      .set({ isEmailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
+      .where(eq(users.id, user[0].id));
+
+    // Log email verification
+    await db.insert(reportLogs).values({
+      action: 'verify_email',
+      actorId: user[0].id.toString(),
+      actorName: user[0].name,
+      actorRole: 'user',
+      reason: 'User memverifikasi email',
+    });
+
+    return {
+      status: 'success',
+      message: 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
+    };
+  }, {
+    body: t.Object({
+      email: t.String(),
+      token: t.String(),
     })
   })
 
@@ -150,7 +214,8 @@ export const authController = new Elysia({ prefix: '/auth' })
     const token = await jwt.sign({
       id: foundStaff[0].id,
       role: foundStaff[0].role,
-      email: foundStaff[0].email
+      email: foundStaff[0].email,
+      managedBuilding: foundStaff[0].managedBuilding,
     });
 
     return {
