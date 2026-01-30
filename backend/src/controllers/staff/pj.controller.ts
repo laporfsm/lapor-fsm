@@ -4,6 +4,7 @@ import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte, inArray } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { jwt } from '@elysiajs/jwt';
 import PDFDocument from 'pdfkit';
 
 const statusLabels: Record<string, string> = {
@@ -13,16 +14,37 @@ const statusLabels: Record<string, string> = {
 };
 
 export const pjController = new Elysia({ prefix: '/pj-gedung' })
+    .use(
+        jwt({
+            name: 'jwt',
+            secret: process.env.JWT_SECRET || 'lapor-fsm-secret-key-change-in-production'
+        })
+    )
+    .derive(async ({ jwt, headers }) => {
+        const auth = headers['authorization'];
+        if (auth?.startsWith('Bearer ')) {
+            const token = auth.slice(7);
+            const payload = await jwt.verify(token);
+            if (payload) {
+                return {
+                    userManagedBuilding: payload.managedBuilding as string | undefined
+                };
+            }
+        }
+        return { userManagedBuilding: undefined };
+    })
     // Dashboard statistics for PJ Gedung
-    .get('/dashboard', async () => {
+    .get('/dashboard', async ({ userManagedBuilding }) => {
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const todayReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfDay));
-        const weekReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfWeek));
-        const monthReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfMonth));
+        let whereClause = userManagedBuilding ? sql`${reports.building} ILIKE ${userManagedBuilding}` : undefined;
+
+        const todayReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfDay), whereClause));
+        const weekReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfWeek), whereClause));
+        const monthReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfMonth), whereClause));
 
         const statusCounts = await db
             .select({
@@ -30,6 +52,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 count: count(),
             })
             .from(reports)
+            .where(whereClause)
             .groupBy(reports.status);
 
         const countsMap = statusCounts.reduce((acc, curr) => {
@@ -51,9 +74,16 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     })
 
     // Get reports for PJ Gedung (focused on their building if filter provided)
-    .get('/reports', async ({ query }) => {
+    .get('/reports', async ({ query, userManagedBuilding }) => {
         const { status, building, isEmergency, startDate, endDate, search } = query;
         let conditions = [];
+
+        // Enforce building filtering from JWT if available
+        if (userManagedBuilding) {
+            conditions.push(sql`${reports.building} ILIKE ${userManagedBuilding}`);
+        } else if (building) {
+            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        }
         // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
         if (status) {
             const statusList = (status as string).split(',').map(s => s.trim());
@@ -202,9 +232,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     })
 
     // Get statistics for PJ Gedung
-    .get('/statistics', async ({ query }) => {
+    .get('/statistics', async ({ query, userManagedBuilding }) => {
         const { building } = query;
-        let whereClause = building ? sql`${reports.building} ILIKE ${'%' + building + '%'}` : undefined;
+        
+        let buildingFilter = userManagedBuilding || building;
+        let whereClause = buildingFilter ? sql`${reports.building} ILIKE ${buildingFilter}` : undefined;
 
         // 1. Issue Categories
         const categoryStats = await db.select({
@@ -239,6 +271,24 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         const thisMonthCount = await db.select({ count: count() }).from(reports).where(and(whereClause, gte(reports.createdAt, startOfThisMonth)));
         const lastMonthCount = await db.select({ count: count() }).from(reports).where(and(whereClause, and(gte(reports.createdAt, startOfLastMonth), lte(reports.createdAt, startOfThisMonth))));
 
+        // Create a map of existing weekly trend data
+        const trendMap = weeklyTrend.reduce((acc, curr) => {
+            acc[new Date(curr.date as string).toDateString()] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Ensure last 7 days are present
+        const fullWeeklyTrend = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toDateString();
+            fullWeeklyTrend.push({
+                day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                value: trendMap[dateStr] || 0
+            });
+        }
+
         return {
             status: 'success',
             data: {
@@ -246,10 +296,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                     label: c.name || 'Lainnya',
                     count: Number(c.count)
                 })),
-                weeklyTrend: weeklyTrend.map(t => ({
-                    day: new Date(t.date as string).toLocaleDateString('id-ID', { weekday: 'short' }),
-                    value: Number(t.count)
-                })),
+                weeklyTrend: fullWeeklyTrend,
                 thisMonth: Number(thisMonthCount[0].count),
                 lastMonth: Number(lastMonthCount[0].count),
             }
@@ -257,9 +304,16 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     })
 
     // Export PDF
-    .get('/reports/export/pdf', async ({ query, set }) => {
+    .get('/reports/export/pdf', async ({ query, set, userManagedBuilding }) => {
         const { status, building, isEmergency, startDate, endDate, search } = query;
         let conditions = [];
+
+        // Enforce building filtering from JWT if available
+        if (userManagedBuilding) {
+            conditions.push(sql`${reports.building} ILIKE ${userManagedBuilding}`);
+        } else if (building) {
+            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        }
         if (status) {
             const statusList = (status as string).split(',');
             if (statusList.length > 1) {
@@ -319,7 +373,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Metadata
         doc.fontSize(10).font('Helvetica');
         doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}`);
-        doc.text(`Filter Gedung: ${building || 'Semua'}`);
+        doc.text(`Filter Gedung: ${userManagedBuilding || building || 'Semua'}`);
 
         const friendlyStatus = status ?
             (status as string).split(',').map(s => statusLabels[s] || s).join(', ') :

@@ -1,9 +1,11 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { staff, users, categories, reports, reportLogs } from '../../db/schema';
-import { eq, desc, count, sql, and, not, gte } from 'drizzle-orm';
+import { eq, desc, count, sql, and, or, not, gte } from 'drizzle-orm';
 import { NotificationService } from '../../services/notification.service';
 import { mapToMobileUser, mapToMobileReport } from '../../utils/mapper';
+import PDFDocument from 'pdfkit';
+import ExcelJS from 'exceljs';
 
 export const adminController = new Elysia({ prefix: '/admin' })
     // ==========================================
@@ -21,6 +23,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 role: staff.role,
                 specialization: staff.specialization,
                 isActive: staff.isActive,
+                managedBuilding: staff.managedBuilding,
                 createdAt: staff.createdAt,
             })
             .from(staff)
@@ -53,6 +56,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             password: hashedPassword,
             role: body.role,
             specialization: body.specialization,
+            managedBuilding: body.managedBuilding,
             isActive: true,
         }).returning();
 
@@ -74,6 +78,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             password: t.String(),
             role: t.String(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
             specialization: t.Optional(t.String()),
+            managedBuilding: t.Optional(t.String()),
         }),
     })
 
@@ -130,6 +135,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             specialization: t.Optional(t.String()),
             isActive: t.Optional(t.Boolean()),
             password: t.Optional(t.String()),
+            managedBuilding: t.Optional(t.String()),
         }),
     })
 
@@ -197,10 +203,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
             avgHandlingMinutes = Math.round(totalMinutes / validReports.length);
         }
 
-        // 3. Weekly Report Trend
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const weeklyTrend = await db.select({
+
+        // 3. Weekly Report Trend (7-day continuity fix)
+        const weeklyTrendData = await db.select({
             date: sql`DATE(${reports.createdAt})`,
             count: count()
         })
@@ -208,6 +215,22 @@ export const adminController = new Elysia({ prefix: '/admin' })
         .where(gte(reports.createdAt, sevenDaysAgo))
         .groupBy(sql`DATE(${reports.createdAt})`)
         .orderBy(sql`DATE(${reports.createdAt})`);
+
+        const trendMap = weeklyTrendData.reduce((acc, curr) => {
+            acc[new Date(curr.date as string).toDateString()] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        const fullWeeklyTrend = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toDateString();
+            fullWeeklyTrend.push({
+                day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                value: trendMap[dateStr] || 0
+            });
+        }
 
         return {
             status: 'success',
@@ -219,10 +242,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     acc[curr.status || 'unknown'] = curr.count;
                     return acc;
                 }, {} as Record<string, number>),
-                weeklyTrend: weeklyTrend.map(t => ({
-                    day: new Date(t.date as string).toLocaleDateString('id-ID', { weekday: 'short' }),
-                    value: Number(t.count)
-                })),
+                weeklyTrend: fullWeeklyTrend,
             },
         };
     })
@@ -286,19 +306,23 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     in: Number(rv.total),
                     out: Math.floor(Number(rv.total) * 0.8) // Simulated "done" count for now
                 })),
-                appUsage: [ // Placeholder usage traffic
-                    { day: 'S', value: 20 }, { day: 'S', value: 35 }, { day: 'R', value: 18 },
-                    { day: 'K', value: 45 }, { day: 'J', value: 28 }, { day: 'S', value: 40 }, { day: 'M', value: 50 }
-                ]
+                appUsage: [] // Removed mock app usage
             }
         };
     })
 
-    // Fetch System Logs
+    // Fetch System Logs (Filtered to User actions)
     .get('/logs', async () => {
         const logs = await db
             .select()
             .from(reportLogs)
+            .where(or(
+                eq(reportLogs.action, 'register'),
+                eq(reportLogs.action, 'verify_email'),
+                eq(reportLogs.action, 'verified'),
+                eq(reportLogs.action, 'suspended'),
+                eq(reportLogs.action, 'activated')
+            ))
             .orderBy(desc(reportLogs.timestamp))
             .limit(50);
 

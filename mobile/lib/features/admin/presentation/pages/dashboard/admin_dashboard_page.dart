@@ -310,8 +310,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment
-                            .spaceAround, // Changed to spaceAround for 3 items
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           _QuickActionButton(
                             label: 'Verifikasi',
@@ -321,18 +320,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               '/admin/users?tab=1',
                             ), // Tab 1: Verifikasi
                           ),
-                          _QuickActionButton(
-                            label: 'Broadcast',
-                            icon: LucideIcons.megaphone,
-                            color: Colors.red,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Broadcast Info...'),
-                                ),
-                              );
-                            },
-                          ),
+                          const Gap(40),
                           _QuickActionButton(
                             label: 'Staff',
                             icon: LucideIcons.userPlus,

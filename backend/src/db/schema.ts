@@ -15,6 +15,8 @@ export const users = pgTable('users', {
   emergencyPhone: text('emergency_phone'),
   idCardUrl: text('id_card_url'), // For non-undip users
   isVerified: boolean('is_verified').default(false), // Admin verification
+  isEmailVerified: boolean('is_email_verified').default(false),
+  emailVerificationToken: text('email_verification_token'),
   isActive: boolean('is_active').default(true), // Admin suspension
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -29,6 +31,7 @@ export const staff = pgTable('staff', {
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
   isActive: boolean('is_active').default(true),
+  managedBuilding: text('managed_building'), // Specific for PJ Gedung
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -91,7 +94,7 @@ export const reports = pgTable('reports', {
 // Report logs for tracking status changes
 export const reportLogs = pgTable('report_logs', {
   id: serial('id').primaryKey(),
-  reportId: integer('report_id').references(() => reports.id).notNull(),
+  reportId: integer('report_id').references(() => reports.id), // Nullable for system/user logs
   fromStatus: text('from_status'),
   toStatus: text('to_status'),
   action: text('action').notNull(), // created, verified, handling, completed, rejected, approved, recalled, overrideRejection, approveRejection, archived, paused, resumed
