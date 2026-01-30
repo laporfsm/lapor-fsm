@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/admin/services/export_service.dart';
+import 'package:mobile/features/admin/services/admin_service.dart';
 import 'package:intl/intl.dart';
 
 class AdminActivityLogPage extends StatefulWidget {
@@ -15,66 +16,27 @@ class AdminActivityLogPage extends StatefulWidget {
 class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  String _selectedFilter = 'Semua'; // Semua, Login, Laporan, User
-
-  // Mock Data
-  final List<Map<String, dynamic>> _allLogs = [
-    {
-      'id': '1',
-      'action': 'Login',
-      'user': 'Admin FSM',
-      'details': 'Berhasil login ke sistem',
-      'time': DateTime.now().subtract(const Duration(minutes: 5)),
-      'type': 'Login',
-    },
-    {
-      'id': '2',
-      'action': 'Verifikasi User',
-      'user': 'Admin FSM',
-      'details': 'Memverifikasi user Budi Santoso (Mahasiswa)',
-      'time': DateTime.now().subtract(const Duration(minutes: 30)),
-      'type': 'User',
-    },
-    {
-      'id': '3',
-      'action': 'Laporan Masuk',
-      'user': 'Siti Aminah',
-      'details': 'Membuat laporan baru: "AC Bocor di R. 101"',
-      'time': DateTime.now().subtract(const Duration(hours: 1)),
-      'type': 'Laporan',
-    },
-    {
-      'id': '4',
-      'action': 'Update Laporan',
-      'user': 'Teknisi Joko',
-      'details': 'Mengubah status laporan #123 menjadi "Sedang Dikerjakan"',
-      'time': DateTime.now().subtract(const Duration(hours: 2)),
-      'type': 'Laporan',
-    },
-    {
-      'id': '5',
-      'action': 'Registrasi',
-      'user': 'Dewi Lestari',
-      'details': 'Mendaftar sebagai Dosen',
-      'time': DateTime.now().subtract(const Duration(hours: 3)),
-      'type': 'User',
-    },
-    {
-      'id': '6',
-      'action': 'Login',
-      'user': 'Supervisor A',
-      'details': 'Berhasil login ke sistem',
-      'time': DateTime.now().subtract(const Duration(hours: 4)),
-      'type': 'Login',
-    },
-  ];
-
+  List<Map<String, dynamic>> _allLogs = [];
   List<Map<String, dynamic>> _filteredLogs = [];
+  bool _isLoading = true;
+  String _selectedFilter = 'Semua'; // Semua, Login, Laporan, User
 
   @override
   void initState() {
     super.initState();
-    _filteredLogs = List.from(_allLogs);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    final logs = await adminService.getLogs();
+    if (mounted) {
+      setState(() {
+        _allLogs = logs;
+        _isLoading = false;
+        _filterLogs();
+      });
+    }
   }
 
   void _filterLogs() {
@@ -178,15 +140,19 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
 
           // Log List
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredLogs.length,
-              separatorBuilder: (c, i) => const Gap(12),
-              itemBuilder: (context, index) {
-                final log = _filteredLogs[index];
-                return _buildLogItem(log);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredLogs.isEmpty
+                    ? const Center(child: Text('Tidak ada log ditemukan'))
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredLogs.length,
+                        separatorBuilder: (c, i) => const Gap(12),
+                        itemBuilder: (context, index) {
+                          final log = _filteredLogs[index];
+                          return _buildLogItem(log);
+                        },
+                      ),
           ),
         ],
       ),

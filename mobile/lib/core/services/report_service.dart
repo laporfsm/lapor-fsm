@@ -241,6 +241,23 @@ class ReportService {
     }
   }
 
+  // Get PJ Gedung Statistics
+  Future<Map<String, dynamic>?> getPJStatistics({String? buildingName}) async {
+    try {
+      final response = await apiService.dio.get(
+        '/pj-gedung/statistics',
+        queryParameters: {if (buildingName != null) 'building': buildingName},
+      );
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching PJ statistics: $e');
+      return null;
+    }
+  }
+
   // Get Supervisor Dashboard Stats
   Future<Map<String, dynamic>?> getSupervisorDashboardStats(
     String staffId,
@@ -286,6 +303,8 @@ class ReportService {
     String? search,
     String? category,
     String? building,
+    String? startDate,
+    String? endDate,
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
@@ -298,6 +317,8 @@ class ReportService {
           if (search != null) 'search': search,
           if (category != null) 'category': category,
           if (building != null) 'building': building,
+          if (startDate != null) 'startDate': startDate,
+          if (endDate != null) 'endDate': endDate,
         },
       );
 

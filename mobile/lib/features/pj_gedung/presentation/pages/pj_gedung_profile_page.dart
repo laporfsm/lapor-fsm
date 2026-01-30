@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class PJGedungProfilePage extends StatelessWidget {
   const PJGedungProfilePage({super.key});
@@ -179,9 +180,12 @@ class PJGedungProfilePage extends StatelessWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              context.pop();
-              context.go('/login');
+            onPressed: () async {
+              await authService.logout();
+              if (context.mounted) {
+                context.pop();
+                context.go('/login');
+              }
             },
             child: const Text('Keluar', style: TextStyle(color: Colors.red)),
           ),
