@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/data/mock_report_data.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/theme.dart';
 
 /// History page showing completed reports with filters
 class TeknisiHistoryPage extends StatefulWidget {
@@ -19,17 +19,59 @@ class TeknisiHistoryPage extends StatefulWidget {
 class _TeknisiHistoryPageState extends State<TeknisiHistoryPage> {
   String? _selectedCategory;
   DateTimeRange? _selectedDateRange;
+  bool _isLoading = true;
+  List<Report> _completedReports = [];
+  List<String> _categories = [];
 
-  // TODO: [BACKEND] Replace with API call
-  List<Report> get _completedReports {
-    var reports = MockReportData.allReports
-        .where(
-          (r) =>
-              r.status == ReportStatus.approved ||
-              r.status == ReportStatus.selesai ||
-              r.status == ReportStatus.archived,
-        )
-        .toList();
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        // Fetch Selesai & Approved reports
+        final results = await Future.wait([
+          reportService.getStaffReports(role: 'technician', status: 'selesai'),
+          reportService.getStaffReports(role: 'technician', status: 'approved'),
+        ]);
+
+        if (mounted) {
+          setState(() {
+            final selesai = results[0]
+                .map((json) => Report.fromJson(json))
+                .toList();
+            final approved = results[1]
+                .map((json) => Report.fromJson(json))
+                .toList();
+
+            _completedReports = [...selesai, ...approved];
+
+            // Sort by most recent first
+            _completedReports.sort(
+              (a, b) => b.createdAt.compareTo(a.createdAt),
+            );
+
+            // Extract categories for filter
+            _categories =
+                _completedReports.map((r) => r.category).toSet().toList()
+                  ..sort();
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching history reports: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  List<Report> get _filteredReports {
+    var reports = List<Report>.from(_completedReports);
 
     // Apply category filter
     if (_selectedCategory != null) {
@@ -45,19 +87,20 @@ class _TeknisiHistoryPageState extends State<TeknisiHistoryPage> {
             );
       }).toList();
     }
-
-    // Sort by most recent first
-    reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return reports;
-  }
-
-  List<String> get _categories {
-    final cats = MockReportData.allReports.map((r) => r.category).toSet();
-    return cats.toList()..sort();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final displayReports = _filteredReports;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -110,7 +153,7 @@ class _TeknisiHistoryPageState extends State<TeknisiHistoryPage> {
 
           // Reports List
           Expanded(
-            child: _completedReports.isEmpty
+            child: displayReports.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -132,14 +175,12 @@ class _TeknisiHistoryPageState extends State<TeknisiHistoryPage> {
                     ),
                   )
                 : RefreshIndicator(
-                    onRefresh: () async {
-                      setState(() {});
-                    },
+                    onRefresh: _fetchData,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: _completedReports.length,
+                      itemCount: displayReports.length,
                       itemBuilder: (context, index) {
-                        final report = _completedReports[index];
+                        final report = displayReports[index];
 
                         // Calculate handling time (completed - started - paused)
                         Duration? handlingTime;

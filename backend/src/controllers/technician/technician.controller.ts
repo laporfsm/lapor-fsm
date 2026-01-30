@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
-import { eq, desc, and, or, sql } from 'drizzle-orm';
+import { eq, desc, and, or, sql, isNull } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
 import { gte, count } from 'drizzle-orm';
 
@@ -87,14 +87,17 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
             .where(
-                or(
-                    eq(reports.status, 'diproses'), // Waiting for tech to accept
-                    and(
-                        eq(reports.assignedTo, staffId),
-                        or(
-                            eq(reports.status, 'penanganan'),
-                            eq(reports.status, 'onHold'),
-                            eq(reports.status, 'recalled')
+                and(
+                    isNull(reports.parentId),
+                    or(
+                        eq(reports.status, 'diproses'), // Waiting for tech to accept
+                        and(
+                            eq(reports.assignedTo, staffId),
+                            or(
+                                eq(reports.status, 'penanganan'),
+                                eq(reports.status, 'onHold'),
+                                eq(reports.status, 'recalled')
+                            )
                         )
                     )
                 )

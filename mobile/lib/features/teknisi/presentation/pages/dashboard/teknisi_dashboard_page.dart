@@ -100,7 +100,9 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      floatingActionButton: const NotificationFab(),
+      floatingActionButton: const NotificationFab(
+        backgroundColor: AppTheme.teknisiColor,
+      ),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [

@@ -51,7 +51,14 @@ async function seed() {
             { name: 'Bambang Teknisi', email: 'bambang@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Sanitasi' },
             { name: 'Dodi Teknisi', email: 'dodi@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Umum' },
             { name: 'Siti PJ Gedung A', email: 'siti@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Budi PJ Gedung B', email: 'budi_pj@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Citra PJ Gedung C', email: 'citra@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Deni PJ Gedung D', email: 'deni@laporfsm.com', password: pass, role: 'pj_gedung' },
             { name: 'Eko PJ Gedung E', email: 'eko@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Feri PJ Gedung F', email: 'feri@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Gita PJ Lab Terpadu', email: 'gita@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Hadi PJ Perpustakaan', email: 'hadi@laporfsm.com', password: pass, role: 'pj_gedung' },
+            { name: 'Indra PJ Dekanat', email: 'indra@laporfsm.com', password: pass, role: 'pj_gedung' },
         ]).returning();
 
         const tAgus = createdStaff.find(s => s.email === 'teknisi@laporfsm.com')!;
@@ -182,6 +189,44 @@ async function seed() {
             }
         ]);
 
+        // 4.1. Seed Reports for Grouping Testing (AC Bocor - Gedung E)
+        console.log('📦 Seeding grouping candidate reports...');
+        await db.insert(reports).values([
+            {
+                userId: createdUsers[0].id,
+                categoryId: catListrik.id,
+                title: 'AC Bocor di E102',
+                description: 'AC meneteskan air cukup deras, mengganggu kuliah.',
+                building: 'Gedung E',
+                locationDetail: 'Ruang E102',
+                status: 'pending',
+                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
+                createdAt: new Date(Date.now() - 3600000), // 1 hour ago
+            },
+            {
+                userId: createdUsers[1].id,
+                categoryId: catListrik.id,
+                title: 'AC Bocor di E103',
+                description: 'AC bocor membasahi lantai.',
+                building: 'Gedung E',
+                locationDetail: 'Ruang E103',
+                status: 'pending', // Pending so Supervisor can group them
+                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
+                createdAt: new Date(Date.now() - 3500000), // ~58 mins ago
+            },
+            {
+                userId: createdUsers[0].id,
+                categoryId: catListrik.id,
+                title: 'AC Bocor di E104',
+                description: 'Tetesan air AC merusak plafon.',
+                building: 'Gedung E',
+                locationDetail: 'Ruang E104',
+                status: 'pending',
+                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
+                createdAt: new Date(Date.now() - 3400000), // ~56 mins ago
+            },
+        ]);
+
         // 5. Seed Logs (Make timeline rich)
         console.log('📜 Seeding audit logs for all reports...');
         const allReports = await db.select().from(reports);
@@ -254,7 +299,9 @@ async function seed() {
         console.log(' - Admin: admin@laporfsm.com');
         console.log(' - Supervisor: supervisor@laporfsm.com');
         console.log(' - Teknisi: teknisi@laporfsm.com (Agus)');
-        console.log(' - PJ Gedung: siti@laporfsm.com');
+        console.log(' - PJ Gedung: siti@laporfsm.com (Gedung A)');
+        console.log(' - PJ Gedung: eko@laporfsm.com (Gedung E)');
+        console.log(' - ... sisa akun PJ: budi_pj (B), citra (C), deni (D), feri (F), gita (Lab), hadi (Perpus), indra (Dekanat) @laporfsm.com');
     } catch (err) {
         console.error('❌ SEED ERROR:', err);
         throw err;

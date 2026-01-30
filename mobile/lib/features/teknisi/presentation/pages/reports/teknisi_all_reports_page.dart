@@ -49,6 +49,7 @@ class TeknisiAllReportsPage extends StatelessWidget {
         context.push('/teknisi/report/$reportId');
       },
       showBackButton: true,
+      role: 'technician',
     );
   }
 }

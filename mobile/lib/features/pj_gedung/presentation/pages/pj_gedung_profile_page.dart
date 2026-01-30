@@ -40,16 +40,16 @@ class PJGedungProfilePage extends StatelessWidget {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       border: Border.all(
-                        color: AppTheme.primaryColor,
+                        color: AppTheme.pjGedungColor,
                         width: 3,
                       ),
                     ),
                     child: const Icon(
                       LucideIcons.user,
                       size: 48,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.pjGedungColor,
                     ),
                   ),
                   const Gap(16),
@@ -72,7 +72,7 @@ class PJGedungProfilePage extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -81,13 +81,13 @@ class PJGedungProfilePage extends StatelessWidget {
                         Icon(
                           LucideIcons.building,
                           size: 14,
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.pjGedungColor,
                         ),
                         Gap(4),
                         Text(
                           "PJ Gedung",
                           style: TextStyle(
-                            color: AppTheme.primaryColor,
+                            color: AppTheme.pjGedungColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -143,11 +143,13 @@ class PJGedungProfilePage extends StatelessWidget {
                     icon: LucideIcons.settings,
                     label: "Pengaturan",
                     onTap: () => context.push('/pj-gedung/settings'),
+                    color: AppTheme.pjGedungColor,
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.helpCircle,
                     label: "Bantuan",
                     onTap: () => context.push('/pj-gedung/help'),
+                    color: AppTheme.pjGedungColor,
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.logOut,

@@ -56,6 +56,9 @@ class Report {
   // Timeline logs
   final List<ReportLog> logs;
 
+  // Grouping info
+  final String? parentId;
+
   const Report({
     required this.id,
     required this.title,
@@ -88,6 +91,7 @@ class Report {
     this.holdReason,
     this.holdPhoto,
     this.logs = const [],
+    this.parentId,
   });
 
   /// Get elapsed time since creation (accounting for pauses)
@@ -126,6 +130,11 @@ class Report {
   /// Get the latest log entry
   ReportLog? get latestLog => logs.isNotEmpty ? logs.first : null;
 
+  /// Check if this report is a parent of a group
+  // Logic: Only if we fetch children count or explicitly flag it.
+  // For now, rely on UI logic or backend flag. Backend didn't return isParent flag, but it return parentId for children.
+  bool get isChild => parentId != null;
+
   /// Create a copy with updated fields
   Report copyWith({
     String? id,
@@ -160,6 +169,7 @@ class Report {
     String? holdPhoto,
     List<ReportLog>? logs,
     bool clearPausedAt = false,
+    String? parentId,
   }) {
     return Report(
       id: id ?? this.id,
@@ -194,6 +204,7 @@ class Report {
       holdReason: holdReason ?? this.holdReason,
       holdPhoto: holdPhoto ?? this.holdPhoto,
       logs: logs ?? this.logs,
+      parentId: parentId ?? this.parentId,
     );
   }
 
@@ -243,6 +254,7 @@ class Report {
               ?.map((e) => ReportLog.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
+      parentId: json['parentId']?.toString(),
     );
   }
 
@@ -276,6 +288,7 @@ class Report {
       'holdReason': holdReason,
       'holdPhoto': holdPhoto,
       'logs': logs.map((e) => e.toJson()).toList(),
+      'parentId': parentId,
     };
   }
 }

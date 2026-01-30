@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 
 /// Admin Profile Page
@@ -11,70 +12,72 @@ class AdminProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF059669),
-        elevation: 0,
+        title: const Text('Profil Saya'),
+        backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Profil',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Profile Card (Header)
+            // Header Profile
             Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              color: Colors.white,
+              child: Column(
                 children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF059669),
-                      borderRadius: BorderRadius.circular(16),
+                      shape: BoxShape.circle,
+                      color: AppTheme.adminColor.withValues(alpha: 0.1),
+                      border: Border.all(color: AppTheme.adminColor, width: 3),
                     ),
-                    child: const Center(
-                      child: Text(
-                        'A',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+                    child: const Icon(
+                      LucideIcons.userCog,
+                      size: 48,
+                      color: AppTheme.adminColor,
                     ),
                   ),
                   const Gap(16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  const Text(
+                    'Admin FSM',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const Gap(4),
+                  const Text(
+                    'admin@laporfsm.com',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const Gap(8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.adminColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          'Admin FSM',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Icon(
+                          LucideIcons.shieldAlert,
+                          size: 14,
+                          color: AppTheme.adminColor,
                         ),
                         Gap(4),
                         Text(
-                          'admin@undip.ac.id',
-                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                          "Administrator",
+                          style: TextStyle(
+                            color: AppTheme.adminColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -82,51 +85,60 @@ class AdminProfilePage extends StatelessWidget {
                 ],
               ),
             ),
-            const Gap(20),
+            const Gap(16),
 
             // Menu Sections
-            ProfileSection(
-              title: 'Pengaturan',
-              children: [
-                ProfileMenuItem(
-                  icon: LucideIcons.lock,
-                  label: 'Ubah Password',
-                  onTap: () => _showChangePasswordSheet(context),
-                  color: const Color(0xFF059669),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: 'Pengaturan',
+                children: [
+                  ProfileMenuItem(
+                    icon: LucideIcons.lock,
+                    label: 'Ubah Password',
+                    onTap: () => _showChangePasswordSheet(context),
+                    color: AppTheme.adminColor,
+                  ),
+                ],
+              ),
             ),
             const Gap(16),
 
-            ProfileSection(
-              title: 'Informasi',
-              children: [
-                ProfileMenuItem(
-                  icon: LucideIcons.helpCircle,
-                  label: 'Bantuan',
-                  onTap: () => _showHelpSheet(context),
-                  color: const Color(0xFF059669),
-                ),
-                ProfileMenuItem(
-                  icon: LucideIcons.info,
-                  label: 'Tentang Aplikasi',
-                  onTap: () => _showAboutSheet(context),
-                  color: const Color(0xFF059669),
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: 'Informasi',
+                children: [
+                  ProfileMenuItem(
+                    icon: LucideIcons.helpCircle,
+                    label: 'Bantuan',
+                    onTap: () => _showHelpSheet(context),
+                    color: AppTheme.adminColor,
+                  ),
+                  ProfileMenuItem(
+                    icon: LucideIcons.info,
+                    label: 'Tentang Aplikasi',
+                    onTap: () => _showAboutSheet(context),
+                    color: AppTheme.adminColor,
+                  ),
+                ],
+              ),
             ),
             const Gap(16),
 
             // Logout
-            ProfileSection(
-              children: [
-                ProfileMenuItem(
-                  icon: LucideIcons.logOut,
-                  label: 'Keluar',
-                  onTap: () => _showLogoutDialog(context),
-                  isDestructive: true,
-                ),
-              ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                children: [
+                  ProfileMenuItem(
+                    icon: LucideIcons.logOut,
+                    label: 'Keluar',
+                    onTap: () => _showLogoutDialog(context),
+                    isDestructive: true,
+                  ),
+                ],
+              ),
             ),
 
             const Gap(100),
@@ -195,7 +207,7 @@ class AdminProfilePage extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
+                        backgroundColor: AppTheme.adminColor,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         elevation: 0,
@@ -262,7 +274,7 @@ class AdminProfilePage extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF059669),
+                    backgroundColor: AppTheme.adminColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     elevation: 0,
@@ -298,7 +310,7 @@ class AdminProfilePage extends StatelessWidget {
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFF059669),
+                color: AppTheme.adminColor,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
@@ -328,7 +340,7 @@ class AdminProfilePage extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF059669),
+                  backgroundColor: AppTheme.adminColor,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   elevation: 0,
@@ -473,7 +485,7 @@ class _PasswordFieldState extends State<_PasswordField> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF059669)),
+              borderSide: const BorderSide(color: AppTheme.adminColor),
             ),
           ),
         ),
@@ -506,10 +518,10 @@ class _HelpItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF059669).withValues(alpha: 0.1),
+              color: AppTheme.adminColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: const Color(0xFF059669), size: 18),
+            child: Icon(icon, color: AppTheme.adminColor, size: 18),
           ),
           const Gap(12),
           Expanded(

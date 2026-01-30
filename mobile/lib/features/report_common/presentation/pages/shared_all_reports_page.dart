@@ -26,6 +26,8 @@ class SharedAllReportsPage extends StatefulWidget {
   final bool showAppBar;
   final bool enableDateFilter; // New parameter to toggle date filter visibility
   final Widget? floatingActionButton; // New parameter
+  final String?
+  role; // New parameter to determine if we should fetch staff reports
 
   const SharedAllReportsPage({
     super.key,
@@ -42,6 +44,7 @@ class SharedAllReportsPage extends StatefulWidget {
     this.showBackButton = true,
     this.showAppBar = true,
     this.floatingActionButton,
+    this.role,
   });
 
   @override
@@ -64,6 +67,102 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   DateTimeRange? _selectedDateRange; // Custom date range
 
   List<String> _categoryNames = [];
+
+  bool _isSelectionMode = false;
+  Set<String> _selectedReportIds = {};
+
+  void _toggleSelectionMode(String reportId) {
+    if (widget.role != 'supervisor') return;
+    setState(() {
+      _isSelectionMode = true;
+      _selectedReportIds.add(reportId);
+    });
+  }
+
+  void _toggleSelection(String reportId) {
+    setState(() {
+      if (_selectedReportIds.contains(reportId)) {
+        _selectedReportIds.remove(reportId);
+        if (_selectedReportIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedReportIds.add(reportId);
+      }
+    });
+  }
+
+  void _exitSelectionMode() {
+    setState(() {
+      _isSelectionMode = false;
+      _selectedReportIds.clear();
+    });
+  }
+
+  Future<void> _groupSelectedReports() async {
+    if (_selectedReportIds.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pilih minimal 2 laporan untuk digabungkan'),
+        ),
+      );
+      return;
+    }
+
+    final notesController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Gabungkan Laporan'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Anda akan menggabungkan ${_selectedReportIds.length} laporan menjadi satu group.',
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              decoration: const InputDecoration(
+                labelText: 'Catatan Penggabungan (Opsional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Gabungkan'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      try {
+        await reportService.groupReports(
+          _selectedReportIds.toList(),
+          1, // TODO: Get actual Staff ID (from Auth Provider/Storage)
+          notes: notesController.text,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Laporan berhasil digabungkan')),
+        );
+        _exitSelectionMode();
+        _fetchReports();
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -106,26 +205,45 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   Future<void> _fetchReports() async {
     try {
-      final reportsData = await reportService.getPublicReports(
-        search: _searchQuery.isNotEmpty ? _searchQuery : null,
-        status: _selectedStatuses.isNotEmpty
-            ? _selectedStatuses.map((s) => s.name).join(',')
-            : widget.allowedStatuses?.map((s) => s.name).join(','),
-        category: _selectedCategory,
-        building: _selectedBuilding,
-        isEmergency: _emergencyOnly,
-        period: _selectedPeriod,
-        startDate: _selectedDateRange?.start.toIso8601String(),
-        endDate: _selectedDateRange?.end.toIso8601String(),
-      );
+      List<Map<String, dynamic>> reportsData;
 
-      debugPrint('Fetched ${reportsData.length} reports from API');
+      if (widget.role != null) {
+        // Fetch Staff-specific reports
+        reportsData = await reportService.getStaffReports(
+          role: widget.role!,
+          status: _selectedStatuses.isNotEmpty
+              ? _selectedStatuses.map((s) => s.name).join(',')
+              : widget.allowedStatuses?.map((s) => s.name).join(','),
+          isEmergency: _emergencyOnly,
+          period: _selectedPeriod,
+          search: _searchQuery.isNotEmpty ? _searchQuery : null,
+          category: _selectedCategory,
+          building: _selectedBuilding,
+        );
+      } else {
+        // Fetch Public reports
+        reportsData = await reportService.getPublicReports(
+          search: _searchQuery.isNotEmpty ? _searchQuery : null,
+          status: _selectedStatuses.isNotEmpty
+              ? _selectedStatuses.map((s) => s.name).join(',')
+              : widget.allowedStatuses?.map((s) => s.name).join(','),
+          category: _selectedCategory,
+          building: _selectedBuilding,
+          isEmergency: _emergencyOnly,
+          period: _selectedPeriod,
+          startDate: _selectedDateRange?.start.toIso8601String(),
+          endDate: _selectedDateRange?.end.toIso8601String(),
+        );
+      }
+
+      debugPrint(
+        'Fetched ${reportsData.length} reports from API (Role: ${widget.role})',
+      );
 
       if (mounted) {
         setState(() {
           _reports = reportsData.map((json) {
             final r = Report.fromJson(json);
-            debugPrint('Mapping Report ID: ${r.id}, Title: ${r.title}');
             return r;
           }).toList();
         });
@@ -421,6 +539,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                           itemCount: _reports.length,
                           itemBuilder: (context, index) {
                             final report = _reports[index];
+                            // ...
                             return UniversalReportCard(
                               id: report.id,
                               title: report.title,
@@ -436,13 +555,63 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               ),
                               showStatus: true,
                               showTimer: true,
-                              onTap: () =>
-                                  widget.onReportTap(report.id, report.status),
+                              selectionMode: _isSelectionMode,
+                              isSelected: _selectedReportIds.contains(
+                                report.id,
+                              ),
+                              onLongPress: () =>
+                                  _toggleSelectionMode(report.id),
+                              onTap: () {
+                                if (_isSelectionMode) {
+                                  _toggleSelection(report.id);
+                                } else {
+                                  widget.onReportTap(report.id, report.status);
+                                }
+                              },
                             );
                           },
                         ),
                 ),
         ),
+        if (_isSelectionMode)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                TextButton(
+                  onPressed: _exitSelectionMode,
+                  child: const Text('Batal'),
+                ),
+                const Spacer(),
+                Text(
+                  '${_selectedReportIds.length} terpilih',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const Gap(16),
+                ElevatedButton.icon(
+                  onPressed: _selectedReportIds.length >= 2
+                      ? _groupSelectedReports
+                      : null,
+                  icon: const Icon(LucideIcons.combine, size: 16),
+                  label: const Text('Gabungkan'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.appBarColor,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
 

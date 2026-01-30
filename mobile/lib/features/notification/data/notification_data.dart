@@ -19,6 +19,18 @@ class NotificationItem {
     required this.isRead,
     required this.type,
   });
+  factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    return NotificationItem(
+      id: json['id'].toString(),
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      time: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+      isRead: json['isRead'] ?? false,
+      type: json['type'] ?? 'info',
+    );
+  }
 }
 
 class NotificationData {

@@ -47,6 +47,7 @@ class PJGedungReportsPage extends StatelessWidget {
         context.push('/pj-gedung/report/$reportId');
       },
       showBackButton: true,
+      role: 'pj',
     );
   }
 }

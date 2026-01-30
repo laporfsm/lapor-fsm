@@ -216,37 +216,32 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        bool success = false;
 
         switch (action) {
           case ReportAction.verified:
-            success = await reportService.verifyReport(_report!.id, staffId);
+            await reportService.verifyReport(_report!.id, staffId);
             break;
           case ReportAction.handling:
             if (technicianId != null) {
-              success = await reportService.assignTechnician(
+              await reportService.assignTechnician(
                 _report!.id,
                 staffId,
-                technicianId,
+                int.parse(technicianId),
               );
             }
             break;
           case ReportAction.recalled:
-            success = await reportService.recallReport(
-              _report!.id,
-              staffId,
-              notes ?? '',
-            );
+            await reportService.recallReport(_report!.id, staffId, notes ?? '');
             break;
           case ReportAction.approved:
-            success = await reportService.approveReport(
+            await reportService.approveResult(
               _report!.id,
               staffId,
               notes: notes,
             );
             break;
           case ReportAction.rejected:
-            success = await reportService.rejectReport(
+            await reportService.rejectReport(
               _report!.id,
               staffId,
               notes ?? 'Ditolak oleh Supervisor',
@@ -256,24 +251,30 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
             break;
         }
 
-        if (success) {
-          if (!mounted) return;
-          await _loadReport();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Status laporan berhasil diperbarui'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          if (newStatus == ReportStatus.ditolak ||
-              newStatus == ReportStatus.approved) {
-            context.pop();
-          }
+        if (!mounted) return;
+        await _loadReport();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Status laporan berhasil diperbarui'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        if (newStatus == ReportStatus.ditolak ||
+            newStatus == ReportStatus.approved) {
+          context.pop();
         }
       }
     } catch (e) {
       debugPrint('Error updating report status: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui status: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

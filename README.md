@@ -210,6 +210,9 @@ Sistem membedakan alur verifikasi berdasarkan tingkat urgensi laporan (Darurat v
 #### 🟢 Alur Non-Darurat
 Laporan melewati verifikasi wilayah oleh PJ Gedung sebelum diteruskan ke Supervisor.
 
+> **Catatan:** Untuk laporan **Non-Gedung** (Area Umum, Taman, Parkiran), alur **tidak melalui** PJ Gedung (bypass). Verifikasi dilakukan langsung oleh **Supervisor**.
+
+
 ```text
 [Pelapor membuat laporan : PENDING]
               │

@@ -98,35 +98,28 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
       final user = await authService.getCurrentUser();
       if (user != null) {
         final staffId = user['id'];
-        bool success = false;
 
         if (approve) {
-          success = await reportService.verifyReport(
-            report.id,
-            staffId,
-            role: 'pj',
-          );
+          await reportService.verifyReport(report.id, staffId);
         } else {
-          success = await reportService.rejectReport(
+          await reportService.rejectReport(
             report.id,
             staffId,
             'Ditolak oleh PJ Gedung',
           );
         }
 
-        if (success) {
-          await refresh();
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                approve ? 'Laporan berhasil diverifikasi.' : 'Laporan ditolak.',
-              ),
-              backgroundColor: approve ? Colors.green : Colors.red,
+        await refresh();
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              approve ? 'Laporan berhasil diverifikasi.' : 'Laporan ditolak.',
             ),
-          );
-          if (!approve) context.pop();
-        }
+            backgroundColor: approve ? Colors.green : Colors.red,
+          ),
+        );
+        if (!approve) context.pop();
       }
     } catch (e) {
       debugPrint('Error processing verification: $e');
