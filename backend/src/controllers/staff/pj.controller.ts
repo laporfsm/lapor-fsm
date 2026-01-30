@@ -307,7 +307,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         const doc = new PDFDocument({ margin: 40, size: 'A4' });
         const chunks: Buffer[] = [];
 
-        doc.on('data', (chunk) => chunks.push(chunk));
+        doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
         // Header
         doc.fontSize(20).text('LAPORAN RIWAYAT VERIFIKASI', { align: 'center' });
