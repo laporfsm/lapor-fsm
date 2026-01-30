@@ -82,6 +82,9 @@ export const authController = new Elysia({ prefix: '/auth' })
       const hashedPassword = await Bun.password.hash(body.password);
       const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
       const newUser = await db.insert(users).values({
         name: body.name,
         email: body.email,
@@ -97,6 +100,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         isVerified: false, // Always false now, requires admin approval
         isEmailVerified: false,
         emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: expiresAt,
       }).returning();
 
       // Log registration
@@ -149,13 +153,22 @@ export const authController = new Elysia({ prefix: '/auth' })
       return { status: 'error', message: 'User tidak ditemukan' };
     }
 
+    if (user[0].isEmailVerified) {
+      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+    }
+
     if (user[0].emailVerificationToken !== token) {
       set.status = 400;
       return { status: 'error', message: 'Kode verifikasi tidak valid' };
     }
 
+    if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
+      set.status = 400;
+      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan registrasi ulang atau minta kode baru.' };
+    }
+
     await db.update(users)
-      .set({ isEmailVerified: true, emailVerificationToken: null })
+      .set({ isEmailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
       .where(eq(users.id, user[0].id));
 
     // Log email verification

@@ -17,6 +17,7 @@ export const users = pgTable('users', {
   isVerified: boolean('is_verified').default(false), // Admin verification
   isEmailVerified: boolean('is_email_verified').default(false),
   emailVerificationToken: text('email_verification_token'),
+  emailVerificationExpiresAt: timestamp('email_verification_expires_at'),
   isActive: boolean('is_active').default(true), // Admin suspension
   createdAt: timestamp('created_at').defaultNow(),
 });

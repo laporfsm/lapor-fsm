@@ -334,7 +334,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 user: l.actorName,
                 details: l.reason || `Status changed from ${l.fromStatus} to ${l.toStatus}`,
                 time: l.timestamp,
-                type: l.action === 'created' ? 'Laporan' : (l.actorRole === 'admin' ? 'User' : 'Laporan')
+                type: l.reportId ? 'Laporan' : 'User'
             }))
         };
     })
@@ -383,6 +383,15 @@ export const adminController = new Elysia({ prefix: '/admin' })
         // Notify User
         await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin. Anda sekarang dapat mengirim laporan.');
 
+        // Log admin verification
+        await db.insert(reportLogs).values({
+            action: 'verified',
+            actorId: 'admin',
+            actorName: 'Admin System',
+            actorRole: 'admin',
+            reason: `Admin memverifikasi user: ${updated[0].name}`,
+        });
+
         return {
             status: 'success',
             message: 'User berhasil diverifikasi',
@@ -401,6 +410,17 @@ export const adminController = new Elysia({ prefix: '/admin' })
         if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
 
         const action = body.isActive ? 'diaktifkan' : 'dinonaktifkan';
+        const logAction = body.isActive ? 'activated' : 'suspended';
+
+        // Log admin action
+        await db.insert(reportLogs).values({
+            action: logAction,
+            actorId: 'admin',
+            actorName: 'Admin System',
+            actorRole: 'admin',
+            reason: `Admin ${action} user: ${updated[0].name}`,
+        });
+
         return {
             status: 'success',
             message: `User berhasil ${action}`,

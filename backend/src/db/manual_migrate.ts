@@ -21,6 +21,10 @@ async function migrate() {
             console.log('Adding "email_verification_token" to users...');
             await sql`ALTER TABLE users ADD COLUMN email_verification_token TEXT;`;
         }
+        if (!userColumnNames.includes('email_verification_expires_at')) {
+            console.log('Adding "email_verification_expires_at" to users...');
+            await sql`ALTER TABLE users ADD COLUMN email_verification_expires_at TIMESTAMP;`;
+        }
 
         console.log('--- Migrating "report_logs" table ---');
         await sql`ALTER TABLE report_logs ALTER COLUMN report_id DROP NOT NULL;`;
