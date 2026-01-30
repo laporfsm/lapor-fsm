@@ -55,15 +55,15 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         return {
             status: 'success',
             data: {
-                diproses: diprosesCount[0]?.count || 0,
-                penanganan: countsMap['penanganan'] || 0,
-                onHold: countsMap['onHold'] || 0,
-                selesai: (countsMap['selesai'] || 0) + (countsMap['approved'] || 0),
-                recalled: recalledCount[0]?.count || 0,
-                todayReports: todayReports[0]?.count || 0,
-                weekReports: weekReports[0]?.count || 0,
-                monthReports: monthReports[0]?.count || 0,
-                emergency: emergencyCount[0]?.count || 0,
+                diproses: Number(diprosesCount[0]?.count || 0),
+                penanganan: Number(countsMap['penanganan'] || 0),
+                onHold: Number(countsMap['onHold'] || 0),
+                selesai: Number(countsMap['selesai'] || 0) + Number(countsMap['approved'] || 0),
+                recalled: Number(recalledCount[0]?.count || 0),
+                todayReports: Number(todayReports[0]?.count || 0),
+                weekReports: Number(weekReports[0]?.count || 0),
+                monthReports: Number(monthReports[0]?.count || 0),
+                emergency: Number(emergencyCount[0]?.count || 0),
             },
         };
     })

@@ -145,7 +145,8 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppTheme.teknisiColor,
+                        color:
+                            AppTheme.teknisiColor, // Changed from primaryColor
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
