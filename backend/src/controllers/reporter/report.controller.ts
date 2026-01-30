@@ -112,6 +112,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
         holdPhoto: reports.holdPhoto,
+        assignedTo: reports.assignedTo,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
@@ -188,6 +189,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
         holdPhoto: reports.holdPhoto,
+        assignedTo: reports.assignedTo,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
@@ -240,6 +242,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         categoryName: categories.name,
         handlerName: handlerStaff.name,
         supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        assignedTo: reports.assignedTo,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))

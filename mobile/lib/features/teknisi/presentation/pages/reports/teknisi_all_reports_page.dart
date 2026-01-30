@@ -9,12 +9,14 @@ class TeknisiAllReportsPage extends StatelessWidget {
   final String? initialStatus;
   final String? initialPeriod;
   final bool initialEmergency;
+  final int? assignedTo; // Added parameter
 
   const TeknisiAllReportsPage({
     super.key,
     this.initialStatus,
     this.initialPeriod,
     this.initialEmergency = false,
+    this.assignedTo,
   });
 
   @override
@@ -45,6 +47,7 @@ class TeknisiAllReportsPage extends StatelessWidget {
       initialStatuses: initialStatuses,
       initialPeriod: initialPeriod,
       initialEmergency: initialEmergency,
+      assignedTo: assignedTo, // Pass assignedTo
       onReportTap: (reportId, status) {
         context.push('/teknisi/report/$reportId');
       },

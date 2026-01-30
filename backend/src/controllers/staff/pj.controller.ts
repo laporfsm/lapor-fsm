@@ -46,7 +46,17 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     .get('/reports', async ({ query }) => {
         const { status, building, isEmergency } = query;
         let conditions = [];
-        if (status) conditions.push(eq(reports.status, status));
+        
+        // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
+        if (status) {
+            const statusList = status.split(',').map(s => s.trim());
+            if (statusList.length > 1) {
+                conditions.push(or(...statusList.map(s => eq(reports.status, s))));
+            } else {
+                conditions.push(eq(reports.status, statusList[0]));
+            }
+        }
+        
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
@@ -81,7 +91,16 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     .post('/reports/:id/verify', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
+        
+        if (!staffId || isNaN(staffId)) {
+            return { status: 'error', message: 'Staff ID tidak valid' };
+        }
+        
         const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+        
+        if (foundStaff.length === 0) {
+            return { status: 'error', message: 'Staff tidak ditemukan' };
+        }
 
         const updated = await db
             .update(reports)
@@ -110,4 +129,47 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
+    })
+
+    // Reject report (pending -> ditolak)
+    .post('/reports/:id/reject', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+        
+        if (!staffId || isNaN(staffId)) {
+            return { status: 'error', message: 'Staff ID tidak valid' };
+        }
+        
+        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+        
+        if (foundStaff.length === 0) {
+            return { status: 'error', message: 'Staff tidak ditemukan' };
+        }
+
+        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        const updated = await db
+            .update(reports)
+            .set({
+                status: 'ditolak',
+                updatedAt: new Date(),
+            })
+            .where(eq(reports.id, reportId))
+            .returning();
+
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "PJ Gedung",
+            actorRole: foundStaff[0]?.role || "pj_gedung",
+            action: 'rejected',
+            fromStatus: 'pending',
+            toStatus: 'ditolak',
+            reason: body.reason,
+        });
+
+        return { status: 'success', data: mapToMobileReport(updated[0]) };
+    }, {
+        body: t.Object({ staffId: t.Number(), reason: t.String() })
     });

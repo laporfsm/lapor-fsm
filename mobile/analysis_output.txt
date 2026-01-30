@@ -1,0 +1,18 @@
+Analyzing mobile...                                             
+
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\features\notification\presentation\providers\notification_provider.dart:7:8 - unused_import
+   info - Don't invoke 'print' in production code - lib\features\notification\presentation\providers\notification_provider.dart:107:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\notification\presentation\providers\notification_provider.dart:134:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\notification\presentation\providers\notification_provider.dart:165:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\features\notification\presentation\providers\notification_provider.dart:177:7 - avoid_print
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\pj_gedung\presentation\pages\pj_gedung_report_detail_page.dart:115:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\pj_gedung\presentation\pages\pj_gedung_report_detail_page.dart:123:23 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\pj_gedung\presentation\pages\pj_gedung_report_detail_page.dart:128:28 - use_build_context_synchronously
+   info - The private field _selectedReportIds could be 'final' - lib\features\report_common\presentation\pages\shared_all_reports_page.dart:74:15 - prefer_final_fields
+   info - Don't use 'BuildContext's across async gaps - lib\features\report_common\presentation\pages\shared_all_reports_page.dart:156:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\features\report_common\presentation\pages\shared_all_reports_page.dart:163:11 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\teknisi\presentation\pages\reports\teknisi_report_detail_page.dart:181:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\teknisi\presentation\pages\reports\teknisi_report_detail_page.dart:191:30 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\features\teknisi\presentation\pages\reports\teknisi_report_detail_page.dart:287:30 - use_build_context_synchronously
+
+14 issues found. (ran in 1.6s)

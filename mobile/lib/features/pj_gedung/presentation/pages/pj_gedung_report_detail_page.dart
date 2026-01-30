@@ -97,12 +97,13 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        // Convert staffId to int (user['id'] is stored as String in SharedPreferences)
+        final staffId = int.parse(user['id'].toString());
 
         if (approve) {
           await reportService.verifyReport(report.id, staffId);
         } else {
-          await reportService.rejectReport(
+          await reportService.rejectReportPJGedung(
             report.id,
             staffId,
             'Ditolak oleh PJ Gedung',
@@ -123,6 +124,16 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
       }
     } catch (e) {
       debugPrint('Error processing verification: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Gagal ${approve ? 'memverifikasi' : 'menolak'} laporan: ${e.toString().replaceAll('Exception: ', '')}',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }

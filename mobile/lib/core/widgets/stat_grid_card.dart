@@ -179,12 +179,13 @@ class PeriodStatsRow extends StatelessWidget {
 }
 
 /// Status stats row for dashboard.
-/// Shows Diproses, Penanganan, OnHold, Selesai in a row.
+/// Shows Diproses, Penanganan, OnHold, Recalled, Selesai in a row.
 class StatusStatsRow extends StatelessWidget {
   final int diprosesCount;
   final int penangananCount;
   final int onHoldCount;
   final int selesaiCount;
+  final int recalledCount;
   final Function(String status)? onTap;
 
   const StatusStatsRow({
@@ -193,6 +194,7 @@ class StatusStatsRow extends StatelessWidget {
     required this.penangananCount,
     required this.onHoldCount,
     required this.selesaiCount,
+    this.recalledCount = 0,
     this.onTap,
   });
 
@@ -219,6 +221,7 @@ class StatusStatsRow extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const Gap(12),
+          const Gap(12),
           Row(
             children: [
               StatusBadgeCard(
@@ -227,26 +230,33 @@ class StatusStatsRow extends StatelessWidget {
                 color: Colors.amber.shade700,
                 onTap: () => onTap?.call('diproses'),
               ),
-              const Gap(8),
+              const Gap(4),
               StatusBadgeCard(
-                label: 'Aktif',
+                label: 'Penanganan',
                 count: penangananCount,
                 color: Colors.blue,
                 onTap: () => onTap?.call('penanganan'),
               ),
-              const Gap(8),
+              const Gap(4),
               StatusBadgeCard(
-                label: 'Hold',
+                label: 'On Hold',
                 count: onHoldCount,
                 color: Colors.orange,
                 onTap: () => onTap?.call('onHold'),
               ),
-              const Gap(8),
+              const Gap(4),
               StatusBadgeCard(
                 label: 'Selesai',
                 count: selesaiCount,
                 color: Colors.green,
                 onTap: () => onTap?.call('selesai'),
+              ),
+              const Gap(4),
+              StatusBadgeCard(
+                label: 'Recalled',
+                count: recalledCount,
+                color: Colors.red.shade400,
+                onTap: () => onTap?.call('recalled'),
               ),
             ],
           ),

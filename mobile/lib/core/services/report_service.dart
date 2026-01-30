@@ -284,6 +284,7 @@ class ReportService {
     String? search,
     String? category,
     String? building,
+    int? assignedTo,
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
@@ -296,8 +297,19 @@ class ReportService {
           if (search != null) 'search': search,
           if (category != null) 'category': category,
           if (building != null) 'building': building,
+          if (assignedTo != null) 'assignedTo': assignedTo.toString(),
         },
       );
+
+      debugPrint(
+        '[REPORT_SERVICE] Response status: ${response.data['status']}, data count: ${(response.data['data'] as List?)?.length ?? 0}',
+      );
+      if (response.data['data'] != null &&
+          (response.data['data'] as List).isNotEmpty) {
+        debugPrint(
+          '[REPORT_SERVICE] First item: ${(response.data['data'] as List)[0]}',
+        );
+      }
 
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
@@ -366,7 +378,7 @@ class ReportService {
     }
   }
 
-  /// Reject a report (Supervisor / PJ)
+  /// Reject a report (Supervisor)
   Future<Report> rejectReport(
     String reportId,
     int staffId,
@@ -375,6 +387,26 @@ class ReportService {
     try {
       final response = await apiService.dio.post(
         '/supervisor/reports/$reportId/reject',
+        data: {'staffId': staffId, 'reason': reason},
+      );
+      if (response.data['status'] == 'success') {
+        return Report.fromJson(response.data['data']);
+      }
+      throw Exception(response.data['message']);
+    } catch (e) {
+      throw Exception('Gagal menolak laporan: $e');
+    }
+  }
+
+  /// Reject a report (PJ Gedung)
+  Future<Report> rejectReportPJGedung(
+    String reportId,
+    int staffId,
+    String reason,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/pj-gedung/reports/$reportId/reject',
         data: {'staffId': staffId, 'reason': reason},
       );
       if (response.data['status'] == 'success') {

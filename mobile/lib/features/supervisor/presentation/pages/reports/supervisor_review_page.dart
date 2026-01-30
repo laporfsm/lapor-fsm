@@ -215,7 +215,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        final staffId = int.parse(user['id'].toString());
 
         switch (action) {
           case ReportAction.verified:

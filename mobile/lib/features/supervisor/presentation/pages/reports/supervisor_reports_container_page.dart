@@ -92,6 +92,7 @@ class SupervisorReportsContainerPage extends StatelessWidget {
               ],
               showBackButton: false, // It's a tab
               appBarColor: supervisorColor, // Pass supervisor theme
+              role: 'supervisor', // Added: use supervisor endpoint for proper data fetching
             ),
 
             // Tab 2: Riwayat

@@ -5,6 +5,7 @@ import { join } from 'path';
 
 // Ensure uploads directory exists
 const UPLOAD_DIR = './uploads';
+const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 
 export const uploadController = new Elysia({ prefix: '/upload' })
   // Upload Image
@@ -22,8 +23,8 @@ export const uploadController = new Elysia({ prefix: '/upload' })
       const buffer = await body.file.arrayBuffer();
       await writeFile(filepath, Buffer.from(buffer));
 
-      // Return URL (in production, would be CDN URL)
-      const url = `/uploads/${filename}`;
+      // Return FULL URL (not relative path)
+      const url = `${API_BASE_URL}/uploads/${filename}`;
 
       return {
         status: 'success',

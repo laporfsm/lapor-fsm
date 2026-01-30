@@ -28,6 +28,7 @@ class SharedAllReportsPage extends StatefulWidget {
   final Widget? floatingActionButton; // New parameter
   final String?
   role; // New parameter to determine if we should fetch staff reports
+  final int? assignedTo; // Added parameter for filtering by technician
 
   const SharedAllReportsPage({
     super.key,
@@ -45,6 +46,7 @@ class SharedAllReportsPage extends StatefulWidget {
     this.showAppBar = true,
     this.floatingActionButton,
     this.role,
+    this.assignedTo,
   });
 
   @override
@@ -151,12 +153,14 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           1, // TODO: Get actual Staff ID (from Auth Provider/Storage)
           notes: notesController.text,
         );
+        if (!mounted || !context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Laporan berhasil digabungkan')),
         );
         _exitSelectionMode();
         _fetchReports();
       } catch (e) {
+        if (!mounted || !context.mounted) return;
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Gagal: $e')));
@@ -219,6 +223,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           category: _selectedCategory,
           building: _selectedBuilding,
+          assignedTo: widget.assignedTo,
         );
       } else {
         // Fetch Public reports

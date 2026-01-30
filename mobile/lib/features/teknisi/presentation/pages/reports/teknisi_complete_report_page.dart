@@ -165,7 +165,7 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final staffId = user['id'];
+        final staffId = int.parse(user['id'].toString());
 
         // 1. Upload Image
         String? imageUrl;

@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class TeknisiEditProfilePage extends StatefulWidget {
   const TeknisiEditProfilePage({super.key});
@@ -15,30 +16,63 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers - Editable fields only
-  final _phoneController = TextEditingController(text: '08123456789');
-  final _addressController = TextEditingController(
-    text: 'Kampus Undip Tembalang, Semarang',
-  );
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
 
   bool _isLoading = false;
+  bool _isInitializing = true;
+  String? _userId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      if (user != null) {
+        _userId = user['id'];
+        _phoneController.text = user['phone'] ?? '';
+        _addressController.text = user['address'] ?? '';
+      }
+      setState(() => _isInitializing = false);
+    }
+  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_userId == null) return;
 
     setState(() => _isLoading = true);
 
-    // TODO: [BACKEND] Call API to update profile
-    await Future.delayed(const Duration(seconds: 1));
+    // TODO: [BACKEND] Support address update. Currently reusing registerPhone for phone update.
+    final success = await authService.registerPhone(
+      userId: _userId!, 
+      phone: _phoneController.text
+    );
+    
+    // Note: We might need a proper updateProfile endpoint in backend for address
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.pop();
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal memperbarui profil'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -51,6 +85,13 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(

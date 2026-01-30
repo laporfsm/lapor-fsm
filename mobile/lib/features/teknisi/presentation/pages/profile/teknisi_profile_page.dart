@@ -4,23 +4,49 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
-class TeknisiProfilePage extends StatelessWidget {
+class TeknisiProfilePage extends StatefulWidget {
   const TeknisiProfilePage({super.key});
 
+  @override
+  State<TeknisiProfilePage> createState() => _TeknisiProfilePageState();
+}
+
+class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
+  Map<String, dynamic>? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await authService.getCurrentUser();
+    if (mounted) {
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Fallback data if API fails or empty
   Map<String, dynamic> get _profile => {
-    'name': 'Budi Teknisi',
-    'nip': '198501152010011001',
-    'email': 'budi.teknisi@undip.ac.id',
-    'phone': '08123456789',
-    'department': 'Unit Pemeliharaan',
-    'specialization': 'Kelistrikan & AC',
+    'name': _user?['name'] ?? 'Teknisi',
+    'nip': _user?['nimNip'] ?? '-',
+    'email': _user?['email'] ?? '-',
+    'phone': _user?['phone'] ?? '-',
+    'department': _user?['department'] ?? 'Unit Pemeliharaan',
+    'specialization': 'Umum', // TODO: Add specialization to backend/auth
   };
 
   Map<String, int> get _stats => {
-    'handled': 25,
-    'completed': 23,
-    'inProgress': 2,
+    'handled': 0, // TODO: Fetch real stats
+    'completed': 0,
+    'inProgress': 0,
   };
 
   @override
@@ -32,7 +58,9 @@ class TeknisiProfilePage extends StatelessWidget {
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator()) 
+          : SingleChildScrollView(
         child: Column(
           children: [
             // Header Profile

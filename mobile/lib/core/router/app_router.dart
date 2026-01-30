@@ -275,10 +275,12 @@ final appRouter = GoRouter(
         final status = state.uri.queryParameters['status'];
         final period = state.uri.queryParameters['period'];
         final emergency = state.uri.queryParameters['emergency'] == 'true';
+        final assignedTo = state.uri.queryParameters['assignedTo'];
         return TeknisiAllReportsPage(
           initialStatus: status,
           initialPeriod: period,
           initialEmergency: emergency,
+          assignedTo: assignedTo != null ? int.tryParse(assignedTo) : null,
         );
       },
     ),
