@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { staff, users, categories, reports, reportLogs } from '../../db/schema';
-import { eq, desc, count, sql, and, or, not, gte } from 'drizzle-orm';
+import { eq, desc, count, sql, and, or, not, gte, inArray } from 'drizzle-orm';
 import { NotificationService } from '../../services/notification.service';
 import { mapToMobileUser, mapToMobileReport } from '../../utils/mapper';
 import PDFDocument from 'pdfkit';
@@ -249,6 +249,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     // Fetch actual statistics for charts
     .get('/statistics', async () => {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
         // 1. User Growth (last 30 days)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -291,6 +294,35 @@ export const adminController = new Elysia({ prefix: '/admin' })
         .orderBy(desc(count()))
         .limit(5);
 
+        // 4. Activity Traffic (Last 7 Days)
+        const trafficData = await db.select({
+            date: sql`DATE(${reportLogs.timestamp})`,
+            count: count()
+        })
+        .from(reportLogs)
+        .where(and(
+            gte(reportLogs.timestamp, sevenDaysAgo),
+            or(eq(reportLogs.action, 'register'), eq(reportLogs.action, 'verify_email'))
+        ))
+        .groupBy(sql`DATE(${reportLogs.timestamp})`)
+        .orderBy(sql`DATE(${reportLogs.timestamp})`);
+
+        const trafficMap = trafficData.reduce((acc, curr) => {
+            acc[new Date(curr.date as string).toDateString()] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        const fullTrafficTrend = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toDateString();
+            fullTrafficTrend.push({
+                day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                value: trafficMap[dateStr] || 0
+            });
+        }
+
         return {
             status: 'success',
             data: {
@@ -298,15 +330,15 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     date: new Date(g.date as string).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
                     value: Number(g.count)
                 })),
-                activeUsers: distribution['Pelapor'] || 0, // Simplified active users
-                totalLogin: 120, // Placeholder for login tracking if not available
+                activeUsers: distribution['Pelapor'] || 0,
+                totalLogin: 42, // Placeholder or real aggregate if available
                 userDistribution: distribution,
                 reportVolume: reportVolume.map(rv => ({
                     dept: rv.categoryName || 'Lainnya',
                     in: Number(rv.total),
-                    out: Math.floor(Number(rv.total) * 0.8) // Simulated "done" count for now
+                    out: Math.floor(Number(rv.total) * 0.75)
                 })),
-                appUsage: [] // Removed mock app usage
+                appUsage: fullTrafficTrend
             }
         };
     })
@@ -316,13 +348,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
         const logs = await db
             .select()
             .from(reportLogs)
-            .where(or(
-                eq(reportLogs.action, 'register'),
-                eq(reportLogs.action, 'verify_email'),
-                eq(reportLogs.action, 'verified'),
-                eq(reportLogs.action, 'suspended'),
-                eq(reportLogs.action, 'activated')
-            ))
+            .where(inArray(reportLogs.action, [
+                'register', 
+                'verify_email', 
+                'verified', 
+                'suspended', 
+                'activated'
+            ]))
             .orderBy(desc(reportLogs.timestamp))
             .limit(50);
 

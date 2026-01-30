@@ -4,6 +4,7 @@ import { users, staff, reportLogs } from '../db/schema';
 import { eq, or } from 'drizzle-orm';
 import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
+import { NotificationService } from '../services/notification.service';
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -112,6 +113,9 @@ export const authController = new Elysia({ prefix: '/auth' })
         reason: 'User mendaftar ke sistem',
       });
 
+      // Notify Admins
+      await NotificationService.notifyRole('admin', 'Request Registrasi Baru', `User baru ${newUser[0].name} telah mendaftar dan menunggu verifikasi email.`);
+
       console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
 
       return {
@@ -179,6 +183,9 @@ export const authController = new Elysia({ prefix: '/auth' })
       actorRole: 'user',
       reason: 'User memverifikasi email',
     });
+
+    // Notify Admins for Approval
+    await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} telah memverifikasi email dan menunggu persetujuan admin.`);
 
     return {
       status: 'success',
