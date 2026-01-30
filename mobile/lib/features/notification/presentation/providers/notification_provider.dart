@@ -4,24 +4,30 @@ import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mobile/core/providers/auth_provider.dart';
 
 /// State class for Notifications
 class NotificationState {
   final List<NotificationItem> items;
   final int unreadCount;
+  final bool isLoading;
 
-  const NotificationState({required this.items, required this.unreadCount});
+  const NotificationState({
+    required this.items, 
+    required this.unreadCount,
+    this.isLoading = false,
+  });
 
   factory NotificationState.initial() {
-    return const NotificationState(items: [], unreadCount: 0);
+    return const NotificationState(items: [], unreadCount: 0, isLoading: false);
   }
 
-  NotificationState copyWith({List<NotificationItem>? items}) {
+  NotificationState copyWith({List<NotificationItem>? items, bool? isLoading}) {
     final newItems = items ?? this.items;
     return NotificationState(
       items: newItems,
       unreadCount: newItems.where((n) => !n.isRead).length,
+      isLoading: isLoading ?? this.isLoading,
     );
   }
 }
@@ -34,17 +40,30 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   @override
   NotificationState build() {
+    // Watch current user to react to login/logout
+    final userAsync = ref.watch(currentUserProvider);
+    
     ref.onDispose(() {
       _timer?.cancel();
     });
 
-    // Start polling after a short delay to ensure auth is ready
-    Future.delayed(const Duration(seconds: 2), () => _startPolling());
+    userAsync.whenData((user) {
+      if (user != null) {
+        _startPolling();
+      } else {
+        _timer?.cancel();
+        _timer = null;
+        _lastMaxId = -1;
+        _isFirstLoad = true;
+      }
+    });
 
     return NotificationState.initial();
   }
 
   void _startPolling() {
+    if (_timer != null) return; // Already polling
+    
     _fetchNotifications(); // Immediate fetch
     _timer = Timer.periodic(
       const Duration(seconds: 15),
@@ -55,10 +74,16 @@ class NotificationNotifier extends Notifier<NotificationState> {
   Future<void> _fetchNotifications() async {
     try {
       final user = await authService.getCurrentUser();
-      if (user == null) return; // Not logged in
+      if (user == null) {
+        if (state.items.isNotEmpty) state = NotificationState.initial();
+        return;
+      }
 
       final userId = user['id'];
       final role = user['role'];
+      
+      // Determine correct notification type based on role
+      // In current system: pelapor=user, and others (teknisi, supervisor, pj_gedung, admin)=staff
       final type = (role == 'pelapor' || role == 'user') ? 'user' : 'staff';
 
       final response = await apiService.dio.get('/notifications/$type/$userId');
@@ -72,24 +97,29 @@ class NotificationNotifier extends Notifier<NotificationState> {
         // Calculate max ID
         int currentMaxId = 0;
         if (fetchedItems.isNotEmpty) {
-          // Assumes ID is numeric incrementing
           currentMaxId = fetchedItems
               .map((e) => int.tryParse(e.id) ?? 0)
               .reduce((a, b) => a > b ? a : b);
         }
 
-        // Check for new items to alert
+        // Check for new items to alert (Only if there's a new max ID)
         if (!_isFirstLoad && currentMaxId > _lastMaxId) {
           final newItems = fetchedItems.where(
             (e) => (int.tryParse(e.id) ?? 0) > _lastMaxId,
-          );
-          for (final item in newItems) {
-            // Trigger Local Notification (Alert)
+          ).toList();
+          
+          // Show the most recent one as local notification if many came at once
+          if (newItems.isNotEmpty) {
+            // Sort by time just in case
+            newItems.sort((a, b) => b.time.compareTo(a.time));
+            final latest = newItems.first;
+            
             await NotificationService.showNotification(
-              id: int.tryParse(item.id) ?? 0,
-              title: item.title,
-              message: item.message,
-              isEmergency: item.type == 'emergency',
+              id: int.tryParse(latest.id) ?? 0,
+              title: latest.title,
+              message: latest.message,
+              isEmergency: latest.type == 'emergency',
+              payload: latest.reportId,
             );
           }
         }
@@ -99,9 +129,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         }
 
         _lastMaxId = currentMaxId;
-
-        // Update state
-        state = state.copyWith(items: fetchedItems);
+        state = state.copyWith(items: fetchedItems, isLoading: false);
       }
     } catch (e) {
       print('Notification Poll Error: $e');
@@ -118,19 +146,18 @@ class NotificationNotifier extends Notifier<NotificationState> {
           title: item.title,
           message: item.message,
           time: item.time,
-          isRead: true, // Mark read
+          isRead: true, 
           type: item.type,
+          reportId: item.reportId,
         );
       }
       return item;
     }).toList();
     state = state.copyWith(items: newItems);
 
-    // API Call
     try {
       await apiService.dio.patch('/notifications/$id/read');
     } catch (e) {
-      // Revert if failed? For now just log
       print('Failed to mark read API: $e');
     }
   }
@@ -145,6 +172,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         time: item.time,
         isRead: true,
         type: item.type,
+        reportId: item.reportId,
       );
     }).toList();
     state = state.copyWith(items: newItems);
@@ -178,15 +206,34 @@ class NotificationNotifier extends Notifier<NotificationState> {
     }
   }
 
-  /// Delete ALL notifications (Clear list visually)
-  void deleteAll() {
+  /// Delete ALL notifications
+  Future<void> deleteAll() async {
+    final user = await authService.getCurrentUser();
+    if (user == null) return;
+
+    final userId = user['id'];
+    final role = user['role'];
+    final type = (role == 'pelapor' || role == 'user') ? 'user' : 'staff';
+
+    // Optimistic update
     state = state.copyWith(items: []);
-    // Note: API doesn't have delete all endpoint yet, so this is local only or requires iterative delete
+
+    try {
+      // Assuming there's a delete-all endpoint or we loop. 
+      // For now, let's assume we need to implement it in backend or just clear local if not available.
+      // The backend doesn't have a delete-all yet, so let's just clear local for now 
+      // or implement it in backend.
+      // I'll add a placeholder call.
+      await apiService.dio.delete('/notifications/all/$type/$userId');
+    } catch (e) {
+      print('Failed to delete all API: $e');
+    }
   }
 
-  /// Add a new notification (Manual)
-  void add(NotificationItem item) {
-    state = state.copyWith(items: [item, ...state.items]);
+  /// Refresh manual
+  Future<void> refresh() async {
+    state = state.copyWith(isLoading: true);
+    await _fetchNotifications();
   }
 }
 

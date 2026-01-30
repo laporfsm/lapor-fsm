@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -15,30 +16,77 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers - Editable fields only
-  final _phoneController = TextEditingController(text: '081234567890');
-  final _addressController = TextEditingController(text: 'Tembalang, Semarang');
-  final _emergencyNameController = TextEditingController(text: 'Budi Santoso');
-  final _emergencyPhoneController = TextEditingController(text: '081298765432');
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _departmentController = TextEditingController();
+  final _facultyController = TextEditingController();
+  final _emergencyNameController = TextEditingController();
+  final _emergencyPhoneController = TextEditingController();
 
+  Map<String, dynamic>? _currentUser;
   bool _isLoading = false;
+  bool _isInitialLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentProfile();
+  }
+
+  Future<void> _loadCurrentProfile() async {
+    final user = await authService.getCurrentUser();
+    if (user != null) {
+      setState(() {
+        _currentUser = user;
+        _phoneController.text = user['phone'] ?? '';
+        _addressController.text = user['address'] ?? '';
+        _departmentController.text = user['department'] ?? '';
+        _facultyController.text = user['faculty'] ?? '';
+        _emergencyNameController.text = user['emergencyName'] ?? '';
+        _emergencyPhoneController.text = user['emergencyPhone'] ?? '';
+        _isInitialLoading = false;
+      });
+    } else {
+      setState(() => _isInitialLoading = false);
+    }
+  }
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_currentUser == null) return;
 
     setState(() => _isLoading = true);
 
-    // Simulate save
-    await Future.delayed(const Duration(seconds: 1));
+    final result = await authService.updateProfile(
+      id: _currentUser!['id'],
+      role: _currentUser!['role'] ?? 'pelapor',
+      phone: _phoneController.text,
+      address: _addressController.text,
+      department: _departmentController.text,
+      faculty: _facultyController.text,
+      emergencyName: _emergencyNameController.text,
+      emergencyPhone: _emergencyPhoneController.text,
+    );
 
     if (mounted) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Profil berhasil diperbarui!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      context.pop();
+
+      if (result['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil berhasil diperbarui!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Gagal memperbarui profil'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -46,6 +94,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _phoneController.dispose();
     _addressController.dispose();
+    _departmentController.dispose();
+    _facultyController.dispose();
     _emergencyNameController.dispose();
     _emergencyPhoneController.dispose();
     super.dispose();
@@ -53,6 +103,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitialLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_currentUser == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Data profil tidak ditemukan'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Login Kembali'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -131,19 +205,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const Gap(16),
                     _ReadOnlyField(
                       label: 'Nama Lengkap',
-                      value: 'Sulhan Fuadi',
+                      value: _currentUser!['name'] ?? '-',
                       icon: LucideIcons.user,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'Email',
-                      value: 'sulhan.fuadi@students.undip.ac.id',
+                      value: _currentUser!['email'] ?? '-',
                       icon: LucideIcons.mail,
                     ),
                     const Gap(12),
                     _ReadOnlyField(
                       label: 'NIM/NIP',
-                      value: '24060123130115',
+                      value: _currentUser!['nimNip'] ?? '-',
                       icon: LucideIcons.hash,
                     ),
                   ],
@@ -190,6 +264,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   labelText: 'Alamat',
                   hintText: 'Alamat domisili',
                   prefixIcon: Icon(LucideIcons.mapPin),
+                ),
+              ),
+              // Department
+              const Gap(16),
+              TextFormField(
+                controller: _departmentController,
+                decoration: const InputDecoration(
+                  labelText: 'Departemen / Prodi',
+                  hintText: 'Program Studi Anda',
+                  prefixIcon: Icon(LucideIcons.school),
+                ),
+              ),
+              const Gap(16),
+
+              // Faculty
+              TextFormField(
+                controller: _facultyController,
+                decoration: const InputDecoration(
+                  labelText: 'Fakultas',
+                  hintText: 'Fakultas Anda',
+                  prefixIcon: Icon(LucideIcons.building),
                 ),
               ),
               const Gap(24),

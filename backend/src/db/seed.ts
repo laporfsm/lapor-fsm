@@ -1,5 +1,5 @@
 import { db } from './index';
-import { staff, categories, users, reports, reportLogs } from './schema';
+import { staff, categories, users, reports, reportLogs, notifications } from './schema';
 
 async function seed() {
     console.log('🚀 Starting EXTENDED database seeding for Testing...');
@@ -7,6 +7,7 @@ async function seed() {
 
         // Clean start
         console.log('🧹 Cleaning existing data...');
+        await db.delete(notifications);
         await db.delete(reportLogs);
         await db.delete(reports);
         await db.delete(users);

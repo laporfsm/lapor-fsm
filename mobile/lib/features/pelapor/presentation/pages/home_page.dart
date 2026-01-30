@@ -61,7 +61,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       if (mounted) {
         setState(() {
           _recentReports = reportsData
-              .take(5)
+              .take(3)
               .map((json) => Report.fromJson(json))
               .toList();
         });

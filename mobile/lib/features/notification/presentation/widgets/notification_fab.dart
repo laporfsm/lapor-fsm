@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/notification/data/notification_data.dart';
+import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
-class NotificationFab extends StatelessWidget {
+class NotificationFab extends ConsumerWidget {
   final Color? backgroundColor;
 
   const NotificationFab({super.key, this.backgroundColor});
 
   @override
-  Widget build(BuildContext context) {
-    final unreadCount = NotificationData.unreadCount;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final unreadCount = ref.watch(notificationProvider).unreadCount;
 
     return BouncingButton(
       onTap: () {

@@ -4,6 +4,7 @@ import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, isNull } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
 import { gte, count } from 'drizzle-orm';
+import { NotificationService } from '../../services/notification.service';
 
 export const technicianController = new Elysia({ prefix: '/technician' })
     // Dashboard statistics for technician
@@ -141,6 +142,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: 'Mulai penanganan laporan',
         });
 
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Sedang Dikerjakan', `Teknisi ${foundStaff[0].name} sedang mengerjakan laporan Anda.`, 'info', reportId);
+        }
+
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number() }),
@@ -178,6 +184,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: body.reason,
             mediaUrls: body.photoUrl ? [body.photoUrl] : [],
         });
+
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditunda', `Pengerjaan laporan "${updated[0].title}" ditunda sementara: ${body.reason}`, 'warning', reportId);
+        }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
@@ -221,6 +232,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: 'Pengerjaan dilanjutkan',
         });
 
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Pengerjaan Dilanjutkan', `Teknisi melanjutkan pengerjaan laporan Anda: ${updated[0].title}`, 'info', reportId);
+        }
+
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number() }),
@@ -258,6 +274,14 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: body.notes,
             mediaUrls: body.mediaUrls || [],
         });
+
+        // Notify Supervisor
+        await NotificationService.notifyRole('supervisor', 'Pengerjaan Selesai', `Teknisi ${foundStaff[0]?.name || ''} telah menyelesaikan laporan: ${updated[0].title}`, 'info', reportId);
+
+        // Notify User
+        if (updated[0].userId) {
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Menunggu Persetujuan', `Laporan Anda telah diselesaikan oleh teknisi dan sedang menunggu persetujuan supervisor.`, 'info', reportId);
+        }
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {

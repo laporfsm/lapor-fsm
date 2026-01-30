@@ -3,6 +3,7 @@ import { db } from '../db';
 import { users, staff } from '../db/schema';
 import { eq, or } from 'drizzle-orm';
 import { jwt } from '@elysiajs/jwt';
+import { mapToMobileUser } from '../utils/mapper';
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -51,11 +52,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       message: 'Login berhasil',
       data: {
-        user: {
-          ...user[0],
-          id: user[0].id.toString(),
-          password: '', // Don't send password back
-        },
+        user: mapToMobileUser(user[0]),
         token,
         role: 'pelapor'
       },
@@ -94,6 +91,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         phone: body.phone,
         nimNip: body.nimNip,
         department: body.department,
+        faculty: body.faculty,
         address: body.address,
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
@@ -105,11 +103,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         status: 'success',
         message: isUndip ? 'Registrasi berhasil' : 'Registrasi berhasil, menunggu verifikasi admin',
         data: {
-          user: {
-            ...newUser[0],
-            id: newUser[0].id.toString(),
-            password: '',
-          },
+          user: mapToMobileUser(newUser[0]),
           needsApproval: !isUndip
         }
       };
@@ -125,6 +119,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       phone: t.String(),
       nimNip: t.String(),
       department: t.Optional(t.String()),
+      faculty: t.Optional(t.String()),
       address: t.Optional(t.String()),
       emergencyName: t.Optional(t.String()),
       emergencyPhone: t.Optional(t.String()),
@@ -162,13 +157,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       message: 'Staff login berhasil',
       data: {
-        user: {
-          id: foundStaff[0].id.toString(),
-          name: foundStaff[0].name,
-          email: foundStaff[0].email,
-          role: foundStaff[0].role,
-          phone: foundStaff[0].phone
-        },
+        user: mapToMobileUser(foundStaff[0]),
         token,
         role: foundStaff[0].role
       },
@@ -188,6 +177,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     if (body.name) updateData.name = body.name;
     if (body.phone) updateData.phone = body.phone;
     if (body.department) updateData.department = body.department;
+    if (body.faculty) updateData.faculty = body.faculty;
     if (body.nimNip) updateData.nimNip = body.nimNip;
     if (body.address) updateData.address = body.address;
     if (body.emergencyName) updateData.emergencyName = body.emergencyName;
@@ -206,21 +196,50 @@ export const authController = new Elysia({ prefix: '/auth' })
     return {
       status: 'success',
       message: 'Profil berhasil diperbarui',
-      data: {
-        ...updated[0],
-        id: updated[0].id.toString(),
-        password: '',
-      },
+      data: mapToMobileUser(updated[0]),
     };
   }, {
     body: t.Object({
       name: t.Optional(t.String()),
       phone: t.Optional(t.String()),
       department: t.Optional(t.String()),
+      faculty: t.Optional(t.String()),
       nimNip: t.Optional(t.String()),
       address: t.Optional(t.String()),
       emergencyName: t.Optional(t.String()),
       emergencyPhone: t.Optional(t.String()),
+    }),
+  })
+
+  // Update Profile (Staff)
+  .patch('/staff-profile/:id', async ({ params, body }) => {
+    const staffId = parseInt(params.id);
+    const updateData: any = {};
+
+    if (body.phone) updateData.phone = body.phone;
+    if (body.specialization) updateData.specialization = body.specialization;
+    if (body.name) updateData.name = body.name;
+
+    const updated = await db
+      .update(staff)
+      .set(updateData)
+      .where(eq(staff.id, staffId))
+      .returning();
+
+    if (updated.length === 0) {
+      return { status: 'error', message: 'Staff not found' };
+    }
+
+    return {
+      status: 'success',
+      message: 'Profil staff berhasil diperbarui',
+      data: mapToMobileUser(updated[0]),
+    };
+  }, {
+    body: t.Object({
+      name: t.Optional(t.String()),
+      phone: t.Optional(t.String()),
+      specialization: t.Optional(t.String()),
     }),
   })
 
@@ -244,4 +263,45 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       data: payload
     };
+  })
+
+  // Change Password (Common for both User and Staff)
+  .post('/change-password', async ({ body, set }) => {
+    const { id, role, oldPassword, newPassword } = body;
+    const targetTable = role === 'pelapor' ? users : staff;
+
+    const accounts = await db
+      .select()
+      .from(targetTable)
+      .where(eq(targetTable.id, id))
+      .limit(1);
+
+    if (accounts.length === 0) {
+      set.status = 404;
+      return { status: 'error', message: 'Akun tidak ditemukan' };
+    }
+
+    const isMatch = await Bun.password.verify(oldPassword, accounts[0].password);
+    if (!isMatch) {
+      set.status = 400;
+      return { status: 'error', message: 'Password lama salah' };
+    }
+
+    const newHashedPassword = await Bun.password.hash(newPassword);
+    await db
+      .update(targetTable)
+      .set({ password: newHashedPassword })
+      .where(eq(targetTable.id, id));
+
+    return {
+      status: 'success',
+      message: 'Password berhasil diubah'
+    };
+  }, {
+    body: t.Object({
+      id: t.Number(),
+      role: t.Enum({ pelapor: 'pelapor', teknisi: 'teknisi', supervisor: 'supervisor', admin: 'admin', pj_gedung: 'pj_gedung' }),
+      oldPassword: t.String(),
+      newPassword: t.String(),
+    })
   });

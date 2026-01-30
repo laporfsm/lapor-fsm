@@ -2,33 +2,32 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db';
 import { notifications } from '../db/schema';
 import { eq, desc, and, or } from 'drizzle-orm';
+import { mapToMobileNotification } from '../utils/mapper';
 
 export const notificationController = new Elysia({ prefix: '/notifications' })
     // Get notifications for a user OR staff
-    .get('/:type/:id', async ({ params }) => {
+    .get('/:type/:id', async ({ params, set }) => {
         const { type, id } = params;
         const targetId = parseInt(id);
 
-        let query = db.select().from(notifications);
-        
-        if (type === 'user') {
-            // @ts-ignore
-            query = query.where(eq(notifications.userId, targetId));
-        } else {
-            // @ts-ignore
-            query = query.where(eq(notifications.staffId, targetId));
+        if (isNaN(targetId)) {
+            set.status = 400;
+            return { status: 'error', message: 'Invalid ID format' };
         }
 
-        const result = await query.orderBy(desc(notifications.createdAt));
+        const whereClause = type === 'user' 
+            ? eq(notifications.userId, targetId)
+            : eq(notifications.staffId, targetId);
+
+        const result = await db
+            .select()
+            .from(notifications)
+            .where(whereClause)
+            .orderBy(desc(notifications.createdAt));
 
         return {
             status: 'success',
-            data: result.map(n => ({
-                ...n,
-                id: n.id.toString(),
-                userId: n.userId?.toString(),
-                staffId: n.staffId?.toString(),
-            })),
+            data: result.map(n => mapToMobileNotification(n)),
         };
     })
 
@@ -44,10 +43,7 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
 
         return { 
             status: 'success', 
-            data: {
-                ...updated[0],
-                id: updated[0].id.toString()
-            }
+            data: mapToMobileNotification(updated[0])
         };
     })
 
@@ -71,6 +67,20 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
             type: t.Enum({ user: 'user', staff: 'staff' }),
             id: t.String(),
         })
+    })
+    
+    // Delete all for user/staff
+    .delete('/all/:type/:id', async ({ params }) => {
+        const { type, id } = params;
+        const targetId = parseInt(id);
+
+        const whereClause = type === 'user' 
+            ? eq(notifications.userId, targetId)
+            : eq(notifications.staffId, targetId);
+
+        await db.delete(notifications).where(whereClause);
+
+        return { status: 'success', message: 'All notifications deleted' };
     })
 
     // Delete notification
