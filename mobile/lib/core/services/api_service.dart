@@ -32,10 +32,20 @@ class ApiService {
       ),
     );
 
-    // Add interceptor for logging
-    _dio.interceptors.add(
-      LogInterceptor(requestBody: true, responseBody: true),
-    );
+    // Logging is currently DISABLED for security/cleanliness preference.
+    // Uncomment the block below to enable logs in Debug mode only.
+    /*
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          requestBody: true,
+          responseBody: true,
+          requestHeader: false, // Hide headers (Auth tokens)
+          responseHeader: false,
+        ),
+      );
+    }
+    */
   }
 
   Dio get dio => _dio;

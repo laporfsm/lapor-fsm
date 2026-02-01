@@ -154,7 +154,8 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     // Find max for percentage calculation
     int maxCount = 0;
     for (var cat in categoriesData) {
-      if ((cat['count'] as int) > maxCount) maxCount = cat['count'] as int;
+      final count = (cat['count'] as num).toInt();
+      if (count > maxCount) maxCount = count;
     }
 
     final List<Color> colors = [Colors.blue, Colors.orange, Colors.red, Colors.green, Colors.purple, Colors.indigo];
@@ -162,7 +163,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     return Column(
       children: List.generate(categoriesData.length, (index) {
         final cat = categoriesData[index];
-        final count = cat['count'] as int;
+        final count = (cat['count'] as num).toInt();
         return StatsBarChartItem(
           label: cat['label'] ?? 'Lainnya',
           percentage: maxCount > 0 ? count / maxCount : 0,
@@ -187,16 +188,18 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     // Find max for height calculation
     int maxVal = 0;
     for (var t in trendData) {
-      if ((t['value'] as int) > maxVal) maxVal = t['value'] as int;
+      final val = (t['value'] as num).toInt();
+      if (val > maxVal) maxVal = val;
     }
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: trendData.map((t) {
+        final val = (t['value'] as num).toInt();
         return StatsTrendBar(
           label: t['day'] ?? '',
-          heightFactor: maxVal > 0 ? (t['value'] as int) / maxVal : 0.1,
+          heightFactor: maxVal > 0 ? val / maxVal : 0.1,
           activeColor: AppTheme.pjGedungColor,
         );
       }).toList(),
@@ -205,8 +208,16 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
 
   Widget _buildComparison() {
     final thisMonth = _stats?['thisMonth'] ?? 0;
+    final monthlyProgress = _stats?['monthlyProgress'] as List? ?? [0, 0, 0, 0];
+    int maxProg = 0;
+    for (var val in monthlyProgress) {
+      final v = (val as num).toInt();
+      if (v > maxProg) maxProg = v;
+    }
+
     final lastMonth = _stats?['lastMonth'] ?? 0;
-    final isUp = thisMonth > lastMonth;
+    final isUp = (thisMonth as num) > (lastMonth as num);
+
 
     return Column(
       children: [
@@ -239,10 +250,18 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSimpleBar(0.4, 'Minggu 1'),
-              _buildSimpleBar(0.6, 'Minggu 2'),
-              _buildSimpleBar(0.5, 'Minggu 3'),
-              _buildSimpleBar(0.8, 'Hingga Hari Ini'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[0] as num).toInt() / maxProg : 0.05,
+                  'Minggu 1'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[1] as num).toInt() / maxProg : 0.05,
+                  'Minggu 2'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[2] as num).toInt() / maxProg : 0.05,
+                  'Minggu 3'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[3] as num).toInt() / maxProg : 0.05,
+                  'Minggu 4+'),
             ],
           ),
         ),

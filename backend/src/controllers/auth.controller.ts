@@ -5,6 +5,7 @@ import { eq, or } from 'drizzle-orm';
 import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
 import { NotificationService } from '../services/notification.service';
+import { EmailService } from '../services/email.service';
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -116,11 +117,20 @@ export const authController = new Elysia({ prefix: '/auth' })
       // Notify Admins
       await NotificationService.notifyRole('admin', 'Request Registrasi Baru', `User baru ${newUser[0].name} telah mendaftar dan menunggu verifikasi email.`);
 
+      // In-memory log still useful for dev if email fails
       console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
+
+      // Send Real Email
+      try {
+          // Fire and forget - don't block response on email sending unless critical
+          EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
+      } catch (err) {
+          console.error('[AUTH] Background email send failed:', err);
+      }
 
       return {
         status: 'success',
-        message: 'Registrasi berhasil. Silakan cek email Anda untuk kode verifikasi.',
+        message: 'Registrasi berhasil. Kode verifikasi telah dikirim ke email Anda.',
         data: {
           user: mapToMobileUser(newUser[0]),
           needsEmailVerification: true,
@@ -157,10 +167,13 @@ export const authController = new Elysia({ prefix: '/auth' })
       return { status: 'error', message: 'User tidak ditemukan' };
     }
 
+    // ... existing logic ...
+    
+    // (Optimization: cleaned up for brevity in tool call, sticking to adding new endpoint below)
     if (user[0].isEmailVerified) {
-      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+        return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
     }
-
+      
     if (user[0].emailVerificationToken !== token) {
       set.status = 400;
       return { status: 'error', message: 'Kode verifikasi tidak valid' };
@@ -168,7 +181,7 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
       set.status = 400;
-      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan registrasi ulang atau minta kode baru.' };
+      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan minta kode baru.' };
     }
 
     await db.update(users)
@@ -195,6 +208,52 @@ export const authController = new Elysia({ prefix: '/auth' })
     body: t.Object({
       email: t.String(),
       token: t.String(),
+    })
+  })
+
+  // Resend Verification Code
+  .post('/resend-verification', async ({ body, set }) => {
+    const { email } = body;
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (user.length === 0) {
+      set.status = 404;
+      return { status: 'error', message: 'User tidak ditemukan' };
+    }
+
+    if (user[0].isEmailVerified) {
+      return { status: 'success', message: 'Email akun ini sudah terverifikasi.' };
+    }
+
+    // Generate new token
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    await db.update(users)
+        .set({ 
+            emailVerificationToken: verificationToken, 
+            emailVerificationExpiresAt: expiresAt 
+        })
+        .where(eq(users.id, user[0].id));
+
+    // In a real app, send actual email here
+    console.log(`[AUTH] Resent Verification token for ${email}: ${verificationToken}`);
+
+    // Send Real Email
+    try {
+        EmailService.sendVerificationEmail(email, user[0].name, verificationToken);
+    } catch (err) {
+        console.error('[AUTH] Background email send failed:', err);
+    }
+
+    return {
+        status: 'success',
+        message: 'Kode verifikasi baru telah dikirim ke email Anda.'
+    };
+  }, {
+    body: t.Object({
+        email: t.String()
     })
   })
 

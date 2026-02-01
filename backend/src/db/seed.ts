@@ -1,315 +1,243 @@
 import { db } from './index';
 import { staff, categories, users, reports, reportLogs, notifications } from './schema';
 
-async function seed() {
-    console.log('🚀 Starting EXTENDED database seeding for Testing...');
-    try {
+// Helper to get random item from array
+function rnd(arr: any[]) {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
 
-        // Clean start
-        console.log('🧹 Cleaning existing data...');
+// Helper to get random date in past X days
+function rndDate(daysAgoStart: number, daysAgoEnd: number) {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - daysAgoStart);
+    end.setDate(end.getDate() - daysAgoEnd);
+    return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+}
+
+async function seed() {
+    console.log('🚀 Starting COMPREHENSIVE Database Seeding...');
+    
+    // Hash placeholder
+    let pass = "password123_placeholder";
+    try {
+        pass = await Bun.password.hash('password123');
+    } catch (e) {
+        console.error('⚠️ Password hash failed, using raw string (dev only).');
+    }
+
+    // 1. Clean Data
+    try {
+        console.log('Step 1: Cleaning data...');
         await db.delete(notifications);
         await db.delete(reportLogs);
         await db.delete(reports);
         await db.delete(users);
         await db.delete(staff);
         await db.delete(categories);
+        console.log('✅ Data cleaned.');
+    } catch (e) {
+        console.error('❌ Failed to clean data (retrying might fix):', e);
+        process.exit(1);
+    }
 
-        // 1. Seed Categories
-        console.log('📂 Seeding categories...');
-        const cats = await db.insert(categories).values([
-            { name: 'Kelistrikan', type: 'non-emergency', icon: 'zap', description: 'Masalah instalasi listrik, lampu, AC, dan stop kontak.' },
-            { name: 'Sanitasi', type: 'non-emergency', icon: 'droplet', description: 'Masalah saluran air, kran, toilet, dan kebocoran pipa.' },
-            { name: 'Infrastruktur', type: 'non-emergency', icon: 'building', description: 'Gedung, atap, plafon, pintu, jendela.' },
-            { name: 'Kebersihan', type: 'non-emergency', icon: 'trash', description: 'Sampah menumpuk atau ruangan kotor.' },
-            { name: 'Fasilitas Umum', type: 'non-emergency', icon: 'box', description: 'Meja, kursi, proyektor, papan tulis.' },
-            { name: 'Internet/IT', type: 'non-emergency', icon: 'wifi', description: 'Masalah WiFi, LAN, atau proyektor IT.' },
-            { name: 'Lainnya', type: 'non-emergency', icon: 'help-circle', description: 'Laporan kategori lain.' },
-            { name: 'Darurat', type: 'emergency', icon: 'alert-triangle', description: 'Kategori khusus laporan darurat.' },
+    // 2. Categories
+    let cats: any[] = [];
+    try {
+        console.log('Step 2: Seeding categories...');
+        cats = await db.insert(categories).values([
+            { name: 'Kelistrikan', type: 'non-emergency', icon: 'zap', description: 'Masalah instalasi listrik.' },
+            { name: 'Sanitasi', type: 'non-emergency', icon: 'droplet', description: 'Masalah air dan pipa.' },
+            { name: 'Infrastruktur', type: 'non-emergency', icon: 'building', description: 'Bangunan dan ruang.' },
+            { name: 'Kebersihan', type: 'non-emergency', icon: 'trash', description: 'Sampah dan kotoran.' },
+            { name: 'Fasilitas Umum', type: 'non-emergency', icon: 'box', description: 'Fasilitas publik.' },
+            { name: 'Internet/IT', type: 'non-emergency', icon: 'wifi', description: 'Jaringan dan IT.' },
+            { name: 'Lainnya', type: 'non-emergency', icon: 'help-circle', description: 'Lain-lain.' },
+            { name: 'Darurat', type: 'emergency', icon: 'alert-triangle', description: 'Darurat.' },
         ]).returning();
+        console.log(`✅ ${cats.length} categories seeded.`);
+    } catch (e) {
+        console.error('❌ Failed categories:', e);
+        process.exit(1);
+    }
 
-        const catListrik = cats.find(c => c.name === 'Kelistrikan')!;
-        const catSanitasi = cats.find(c => c.name === 'Sanitasi')!;
-        const catInfra = cats.find(c => c.name === 'Infrastruktur')!;
-        const catBersih = cats.find(c => c.name === 'Kebersihan')!;
-        const catIT = cats.find(c => c.name === 'Internet/IT')!;
+    // 3. Users
+    const createdUsers: any[] = [];
+    try {
+        console.log('Step 3: Seeding users...');
+        const userData = [
+            { name: 'Andi Mhs', email: 'andi@student.undip.ac.id', dept: 'Informatika' },
+            { name: 'Siska Mhs', email: 'siska@student.undip.ac.id', dept: 'Biologi' },
+            { name: 'Budi Dosen', email: 'budi@lecturer.undip.ac.id', dept: 'Fisika' },
+        ];
 
-        // 2. Seed Users (Pelapor)
-        console.log('👤 Seeding users (Pelapor)...');
-        const uPass = await Bun.password.hash('password123');
-        const createdUsers = await db.insert(users).values([
-            { name: 'Andi Mahasiswa', email: 'andi@student.undip.ac.id', password: uPass, phone: '081234567890', faculty: 'FSM', department: 'Informatika', isVerified: true, nimNip: '24060120130001' },
-            { name: 'Siska Mahasiswa', email: 'siska@student.undip.ac.id', password: uPass, phone: '081234567891', faculty: 'FSM', department: 'Biologi', isVerified: true, nimNip: '24060120140002' },
-            { name: 'Budi Dosen', email: 'budi@lecturer.undip.ac.id', password: uPass, phone: '081234567892', faculty: 'FSM', department: 'Fisika', isVerified: true, nimNip: '198001012005011001' },
-        ]).returning();
+        // Batch insert
+        const newUsers = await db.insert(users).values(
+            userData.map((u, i) => ({
+                name: u.name,
+                email: u.email,
+                password: pass,
+                phone: `0812345678${i}`,
+                faculty: 'FSM',
+                department: u.dept,
+                isVerified: true,
+            }))
+        ).returning();
+        
+        createdUsers.push(...newUsers);
+        console.log(`✅ ${createdUsers.length} users seeded.`);
+    } catch (e) {
+        console.error('❌ Failed users:', e);
+        process.exit(1);
+    }
 
-        // 3. Seed Staff (Multiple Roles)
-        console.log('👮 Seeding staff members...');
-        const pass = await Bun.password.hash('password123');
-        const createdStaff = await db.insert(staff).values([
-            { name: 'Admin Utama', email: 'admin@laporfsm.com', password: pass, role: 'admin' },
-            { name: 'Sapto Supervisor', email: 'supervisor@laporfsm.com', password: pass, role: 'supervisor' },
-            { name: 'Agus Teknisi', email: 'teknisi@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Kelistrikan' },
-            { name: 'Bambang Teknisi', email: 'bambang@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Sanitasi' },
-            { name: 'Dodi Teknisi', email: 'dodi@laporfsm.com', password: pass, role: 'teknisi', specialization: 'Umum' },
-            { name: 'Siti PJ Gedung A', email: 'siti@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Budi PJ Gedung B', email: 'budi_pj@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Citra PJ Gedung C', email: 'citra@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Deni PJ Gedung D', email: 'deni@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Eko PJ Gedung E', email: 'eko@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Feri PJ Gedung F', email: 'feri@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Gita PJ Lab Terpadu', email: 'gita@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Hadi PJ Perpustakaan', email: 'hadi@laporfsm.com', password: pass, role: 'pj_gedung' },
-            { name: 'Indra PJ Dekanat', email: 'indra@laporfsm.com', password: pass, role: 'pj_gedung' },
-        ]).returning();
+    // 4. Staff
+    const createdStaff: any[] = [];
+    const pjs: any[] = [];
+    const techs: any[] = [];
+    try {
+        console.log('Step 4: Seeding staff...');
+        
+        // Admin
+        await db.insert(staff).values({ name: 'Admin', email: 'admin@laporfsm.com', password: pass, role: 'admin' });
+        // Supervisor
+        await db.insert(staff).values({ name: 'Supervisor', email: 'supervisor@laporfsm.com', password: pass, role: 'supervisor' });
 
-        const tAgus = createdStaff.find(s => s.email === 'teknisi@laporfsm.com')!;
-        const tBambang = createdStaff.find(s => s.email === 'bambang@laporfsm.com')!;
-        const tDodi = createdStaff.find(s => s.email === 'dodi@laporfsm.com')!;
-        const sSapto = createdStaff.find(s => s.role === 'supervisor')!;
-        const pSiti = createdStaff.find(s => s.email === 'siti@laporfsm.com')!;
+        // Techs
+        const techData = [
+            { name: 'Agus T', email: 'teknisi@laporfsm.com', spec: 'Kelistrikan' },
+            { name: 'Bambang T', email: 'bambang@laporfsm.com', spec: 'Sanitasi' },
+            { name: 'Dodi T', email: 'dodi@laporfsm.com', spec: 'Umum' },
+        ];
+        for (const t of techData) {
+            const [nt] = await db.insert(staff).values({ ...t, password: pass, role: 'teknisi' }).returning();
+            techs.push(nt);
+            createdStaff.push(nt);
+        }
 
-        // 4. Seed Reports (Diverse Scenarios)
-        console.log('📝 Seeding 15+ diverse reports...');
+        // PJs
+        const pjData = [
+            { name: 'Siti A', email: 'siti@laporfsm.com', b: 'Gedung A' },
+            { name: 'Budi B', email: 'budi_pj@laporfsm.com', b: 'Gedung B' },
+            { name: 'Citra C', email: 'citra@laporfsm.com', b: 'Gedung C' },
+            { name: 'Deni D', email: 'deni@laporfsm.com', b: 'Gedung D' },
+            { name: 'Eko E', email: 'eko@laporfsm.com', b: 'Gedung E' },
+            { name: 'Feri F', email: 'feri@laporfsm.com', b: 'Gedung F' },
+        ];
+        for (const p of pjData) {
+            const [np] = await db.insert(staff).values({ 
+                name: p.name, email: p.email, password: pass, role: 'pj_gedung', managedBuilding: p.b 
+            }).returning();
+            pjs.push(np);
+            createdStaff.push(np);
+        }
+        console.log(`✅ Staff seeded.`);
+    } catch (e) {
+        console.error('❌ Failed staff:', e);
+        process.exit(1);
+    }
 
-        // -- GEDUNG E (Area Eko)
-        const [r1] = await db.insert(reports).values({
-            userId: createdUsers[0].id,
-            categoryId: catListrik.id,
-            title: 'AC Mati di E101',
-            description: 'AC tidak dingin sama sekali sejak pagi.',
-            building: 'Gedung E',
-            locationDetail: 'Ruang Kelas E101',
-            status: 'pending',
-            mediaUrls: ['https://images.unsplash.com/photo-1545241047-6083a3684587?w=500'],
-        }).returning();
+    // 5. Reports
+    try {
+        console.log('Step 5: Generating reports...');
+        const templates = [
+            { t: 'AC Panas', c: 'Kelistrikan' }, 
+            { t: 'Kran Bocor', c: 'Sanitasi' }, 
+            { t: 'Ubin Rusak', c: 'Infrastruktur' },
+            { t: 'Sampah Penuh', c: 'Kebersihan' },
+            { t: 'Kursi Patah', c: 'Fasilitas Umum' }
+        ];
+        const statuses = ['pending', 'terverifikasi', 'diproses', 'selesai', 'ditolak'];
+        const images = ['https://images.unsplash.com/photo-1545241047-6083a3684587?w=500'];
 
-        // -- GEDUNG A (Area Siti)
-        const [r2] = await db.insert(reports).values({
-            userId: createdUsers[1].id,
-            categoryId: catBersih.id,
-            title: 'Sampah Menumpuk di Koridor',
-            description: 'Sampah sudah 2 hari tidak diangkat.',
-            building: 'Gedung A',
-            locationDetail: 'Lantai 2, depan Lift',
-            status: 'terverifikasi',
-            verifiedBy: pSiti.id,
-            verifiedAt: new Date(Date.now() - 3600000),
-        }).returning();
-
-        // -- GEDUNG C (InProgress)
-        const [r3] = await db.insert(reports).values({
-            userId: createdUsers[2].id,
-            categoryId: catSanitasi.id,
-            title: 'Kran Air Patah',
-            description: 'Air mengalir terus di wastafel.',
-            building: 'Gedung C',
-            locationDetail: 'Toilet Dosen Lt 1',
-            status: 'penanganan',
-            assignedTo: tBambang.id,
-            assignedAt: new Date(Date.now() - 7200000),
-            handlingStartedAt: new Date(Date.now() - 3600000),
-        }).returning();
-
-        // -- LAB KOMPUTER (On Hold)
-        const [r4] = await db.insert(reports).values({
-            userId: createdUsers[0].id,
-            categoryId: catIT.id,
-            title: 'WiFi Lab MIPA 1 Mati',
-            description: 'Satu ruangan tidak bisa akses internet.',
-            building: 'Laboratorium',
-            locationDetail: 'Lab Komputer MIPA 1',
-            status: 'onHold',
-            assignedTo: tAgus.id,
-            assignedAt: new Date(Date.now() - 86400000),
-            handlingStartedAt: new Date(Date.now() - 43200000),
-            pausedAt: new Date(Date.now() - 3600000),
-            holdReason: 'Menunggu perangkat pengganti dari gudang.',
-        }).returning();
-
-        // -- RECALLED (Needs revision)
-        const [r5] = await db.insert(reports).values({
-            userId: createdUsers[1].id,
-            categoryId: catInfra.id,
-            title: 'Engsel Pintu Rusak',
-            description: 'Pintu tidak bisa ditutup rapat karena engselnya bengkok.',
-            building: 'Gedung B',
-            status: 'recalled',
-            assignedTo: tDodi.id,
-            updatedAt: new Date(),
-        }).returning();
-
-        // -- EMERGENCY (High Priority)
-        const [r6] = await db.insert(reports).values({
-            userId: createdUsers[2].id,
-            categoryId: catListrik.id,
-            title: 'Korsleting Panel Listrik',
-            description: 'Ada bau terbakar dari boks panel.',
-            building: 'Gedung D',
-            isEmergency: true,
-            status: 'diproses',
-            assignedTo: tAgus.id,
-            assignedAt: new Date(),
-        }).returning();
-
-        // -- COMPLETED (Pending Approval)
-        const [r7] = await db.insert(reports).values({
-            userId: createdUsers[0].id,
-            categoryId: catBersih.id,
-            title: 'Genangan Air di Lobby',
-            description: 'Ada genangan air di lobby depan pintu masuk, sepertinya dari atap yang bocor.',
-            building: 'Gedung A',
-            status: 'selesai',
-            assignedTo: tBambang.id,
-            handlingCompletedAt: new Date(Date.now() - 1800000),
-            handlerNotes: 'Atap sudah ditambal sementara.',
-        }).returning();
-
-        // -- HISTORY (Approved)
-        await db.insert(reports).values([
-            {
-                userId: createdUsers[1].id,
-                categoryId: catListrik.id,
-                title: 'Lampu Kelas Mati',
-                description: 'Lampu di bagian belakang kelas mati 2 baris.',
-                building: 'Gedung B',
-                status: 'approved',
-                assignedTo: tAgus.id,
-                approvedBy: sSapto.id,
-                approvedAt: new Date(Date.now() - 86400000),
-            },
-            {
-                userId: createdUsers[2].id,
-                categoryId: catSanitasi.id,
-                title: 'Toilet Mampet',
-                description: 'Saluran pembuangan toilet lantai 1 mampet.',
-                building: 'Gedung C',
-                status: 'approved',
-                assignedTo: tBambang.id,
-                approvedBy: sSapto.id,
-                approvedAt: new Date(Date.now() - 172800000),
-            }
-        ]);
-
-        // 4.1. Seed Reports for Grouping Testing (AC Bocor - Gedung E)
-        console.log('📦 Seeding grouping candidate reports...');
-        await db.insert(reports).values([
-            {
-                userId: createdUsers[0].id,
-                categoryId: catListrik.id,
-                title: 'AC Bocor di E102',
-                description: 'AC meneteskan air cukup deras, mengganggu kuliah.',
-                building: 'Gedung E',
-                locationDetail: 'Ruang E102',
+        for (const pj of pjs) {
+            // GUARANTEED FRESH REPORTS to populate dashboard
+            // 1. Today
+            await db.insert(reports).values({
+                userId: rnd(createdUsers).id,
+                categoryId: cats[0].id,
+                title: 'Laporan Baru Hari Ini',
+                description: `Tes laporan hari ini di ${pj.managedBuilding}`,
+                building: pj.managedBuilding,
+                locationDetail: 'Lobby Utama',
                 status: 'pending',
-                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
-                createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-            },
-            {
-                userId: createdUsers[1].id,
-                categoryId: catListrik.id,
-                title: 'AC Bocor di E103',
-                description: 'AC bocor membasahi lantai.',
-                building: 'Gedung E',
-                locationDetail: 'Ruang E103',
-                status: 'pending', // Pending so Supervisor can group them
-                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
-                createdAt: new Date(Date.now() - 3500000), // ~58 mins ago
-            },
-            {
-                userId: createdUsers[0].id,
-                categoryId: catListrik.id,
-                title: 'AC Bocor di E104',
-                description: 'Tetesan air AC merusak plafon.',
-                building: 'Gedung E',
-                locationDetail: 'Ruang E104',
-                status: 'pending',
-                mediaUrls: ['https://images.unsplash.com/photo-1621905251189-08b95d50c04f?w=500'],
-                createdAt: new Date(Date.now() - 3400000), // ~56 mins ago
-            },
-        ]);
-
-        // 5. Seed Logs (Make timeline rich)
-        console.log('📜 Seeding audit logs for all reports...');
-        const allReports = await db.select().from(reports);
-        console.log(`Found ${allReports.length} reports to process.`);
-
-        for (const r of allReports) {
-            // Log Creation
-            await db.insert(reportLogs).values({
-                reportId: r.id,
-                actorId: r.userId?.toString() || "0",
-                actorName: createdUsers.find(u => u.id === r.userId)?.name || "Reporter",
-                actorRole: 'pelapor',
-                action: 'created',
-                toStatus: 'pending',
-                reason: 'Laporan baru dikirim melalui aplikasi.',
-                timestamp: new Date(r.createdAt!.getTime() - 1000),
+                isEmergency: false,
+                mediaUrls: images,
+                createdAt: new Date(),
+                updatedAt: new Date()
             });
 
-            if (r.status !== 'pending') {
-                // Log Verification
-                await db.insert(reportLogs).values({
-                    reportId: r.id,
-                    actorId: pSiti.id.toString(),
-                    actorName: pSiti.name,
-                    actorRole: 'pj_gedung',
-                    action: 'verified',
-                    fromStatus: 'pending',
-                    toStatus: 'terverifikasi',
-                    reason: 'Sudah diinspeksi di lapangan.',
-                    timestamp: new Date(r.createdAt!.getTime() + 600000),
-                });
-            }
+            // 2. 3 Days Ago (Inside Week)
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            await db.insert(reports).values({
+                userId: rnd(createdUsers).id,
+                categoryId: cats[1].id,
+                title: 'Laporan Minggu Ini',
+                description: `Tes laporan minggu ini di ${pj.managedBuilding}`,
+                building: pj.managedBuilding,
+                locationDetail: 'Koridor Lt 2',
+                status: 'terverifikasi',
+                isEmergency: false,
+                mediaUrls: images,
+                createdAt: threeDaysAgo,
+                updatedAt: threeDaysAgo
+            });
 
-            if (r.assignedTo) {
-                // Log Assignment
-                await db.insert(reportLogs).values({
-                    reportId: r.id,
-                    actorId: sSapto.id.toString(),
-                    actorName: sSapto.name,
-                    actorRole: 'supervisor',
-                    action: 'handling',
-                    fromStatus: 'terverifikasi',
-                    toStatus: 'diproses',
-                    reason: 'Teknisi ditugaskan.',
-                    timestamp: new Date(r.createdAt!.getTime() + 1200000),
-                });
-            }
+            // 5-8 random reports per building
+            const count = 5 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < count; i++) {
+                const tmpl = rnd(templates);
+                const user = rnd(createdUsers);
+                const cat = cats.find(c => c.name === tmpl.c) || cats[0];
+                const status = rnd(statuses);
+                const isEmergency = Math.random() < 0.15;
+                const d = rndDate(30, 4); // 4 days ago to 30 days ago (so they don't overlap with guaranteed ones mostly)
 
-            if (r.status === 'onHold' && r.holdReason) {
-                await db.insert(reportLogs).values({
-                    reportId: r.id,
-                    actorId: r.assignedTo!.toString(),
-                    actorName: createdStaff.find(s => s.id === r.assignedTo)?.name || "Teknisi",
-                    actorRole: 'teknisi',
-                    action: 'paused',
-                    fromStatus: 'penanganan',
-                    toStatus: 'onHold',
-                    reason: r.holdReason,
+                await db.insert(reports).values({
+                    userId: user.id,
+                    categoryId: cat.id,
+                    title: isEmergency ? `[DARURAT] ${tmpl.t}` : tmpl.t,
+                    description: `Laporan simulasi di ${pj.managedBuilding}`,
+                    building: pj.managedBuilding,
+                    locationDetail: 'Lantai 1',
+                    status: status,
+                    isEmergency: isEmergency,
+                    mediaUrls: images,
+                    createdAt: d,
+                    updatedAt: d
                 });
             }
         }
-
-        console.log('✅ EXTENDED seeding completed! Use credentials below for testing.');
-        console.log('------------------------------------------------------------');
-        console.log('PELAPOR (Login with Email & "password123"):');
-        console.log(' - andi@student.undip.ac.id');
-        console.log(' - siska@student.undip.ac.id');
-        console.log(' - budi@lecturer.undip.ac.id');
-        console.log('STAFF (Login with Email & "password123"):');
-        console.log(' - Admin: admin@laporfsm.com');
-        console.log(' - Supervisor: supervisor@laporfsm.com');
-        console.log(' - Teknisi: teknisi@laporfsm.com (Agus)');
-        console.log(' - PJ Gedung: siti@laporfsm.com (Gedung A)');
-        console.log(' - PJ Gedung: eko@laporfsm.com (Gedung E)');
-        console.log(' - ... sisa akun PJ: budi_pj (B), citra (C), deni (D), feri (F), gita (Lab), hadi (Perpus), indra (Dekanat) @laporfsm.com');
-    } catch (err) {
-        console.error('❌ SEED ERROR:', err);
-        throw err;
+        console.log('✅ Reports generated (with guaranteed fresh data).');
+    } catch (e) {
+        console.error('❌ Failed reports:', e);
+        process.exit(1);
     }
+
+    // 6. Logs (Simplified)
+    try {
+        console.log('Step 6: Generating basic logs...');
+        const allReports = await db.select().from(reports);
+        for (const r of allReports) {
+            await db.insert(reportLogs).values({
+                reportId: r.id,
+                actorId: r.userId!.toString(),
+                actorName: 'User',
+                actorRole: 'pelapor',
+                action: 'created',
+                toStatus: 'pending',
+                timestamp: r.createdAt
+            });
+        }
+        console.log('✅ Logs generated.');
+
+    } catch (e) {
+        console.error('❌ Failed logs:', e);
+    }
+
+    console.log('🎉 SEED COMPLETED SUCCESSFULLY!');
+    process.exit(0);
 }
 
-seed().catch(err => {
-    console.error('❌ Seeding failed:', err);
-    process.exit(1);
-});
+seed();

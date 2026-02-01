@@ -90,15 +90,20 @@ class ExportService {
       }
 
       // Finalize file
-      final fileBytes = excel.save();
+      // Use encode() instead of save() to get bytes without triggering library's auto-download
+      final fileBytes = excel.encode();
 
-      if (kIsWeb) {
+      if (kIsWeb && fileBytes != null) {
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-        final blob = html.Blob([fileBytes!]);
+        final blob = html.Blob([fileBytes]);
         final url = html.Url.createObjectUrlFromBlob(blob);
-        html.AnchorElement(href: url)
+        final anchor = html.AnchorElement(href: url)
           ..setAttribute("download", "${title.replaceAll(' ', '_')}_$timestamp.xlsx")
-          ..click();
+          ..style.display = 'none';
+        
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
         html.Url.revokeObjectUrl(url);
       }
 
@@ -159,9 +164,13 @@ class ExportService {
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         final blob = html.Blob([response.data], 'application/pdf');
         final url = html.Url.createObjectUrlFromBlob(blob);
-        html.AnchorElement(href: url)
+        final anchor = html.AnchorElement(href: url)
           ..setAttribute("download", "${title.replaceAll(' ', '_')}_$timestamp.pdf")
-          ..click();
+          ..style.display = 'none';
+          
+        html.document.body?.children.add(anchor);
+        anchor.click();
+        html.document.body?.children.remove(anchor);
         html.Url.revokeObjectUrl(url);
       }
 

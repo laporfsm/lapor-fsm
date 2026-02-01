@@ -36,6 +36,7 @@ import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_de
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_statistics_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_help_page.dart';
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_settings_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_edit_profile_page.dart';
 
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
@@ -457,6 +458,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/pj-gedung/help',
       builder: (context, state) => const PJGedungHelpPage(),
+    ),
+    GoRoute(
+      path: '/pj-gedung/edit-profile',
+      builder: (context, state) => const PJGedungEditProfilePage(),
     ),
     // ===============================================
     // ===============================================

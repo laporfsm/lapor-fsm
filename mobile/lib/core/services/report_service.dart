@@ -324,16 +324,6 @@ class ReportService {
         },
       );
 
-      debugPrint(
-        '[REPORT_SERVICE] Response status: ${response.data['status']}, data count: ${(response.data['data'] as List?)?.length ?? 0}',
-      );
-      if (response.data['data'] != null &&
-          (response.data['data'] as List).isNotEmpty) {
-        debugPrint(
-          '[REPORT_SERVICE] First item: ${(response.data['data'] as List)[0]}',
-        );
-      }
-
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
       }

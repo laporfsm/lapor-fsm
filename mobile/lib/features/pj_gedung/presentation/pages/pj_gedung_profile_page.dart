@@ -6,19 +6,52 @@ import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
 
-class PJGedungProfilePage extends StatelessWidget {
+class PJGedungProfilePage extends StatefulWidget {
   const PJGedungProfilePage({super.key});
 
-  Map<String, dynamic> get _profile => {
-    'name': 'Budi PJ Gedung',
-    'nip': '198501012010011001',
-    'email': 'budi.gedung@undip.ac.id',
-    'phone': '08765432109',
-    'building': 'Gedung A - Dekanat',
-  };
+  @override
+  State<PJGedungProfilePage> createState() => _PJGedungProfilePageState();
+}
+
+class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
+  Map<String, dynamic> _profile = {};
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = await authService.getCurrentUser();
+    
+    // Fetch building from local storage or API if needed, 
+    // for now we try to get what we have or default to 'Gedung A' if managedBuilding isn't in local storage yet
+    // In a real app we might want to refresh profile from API here.
+    
+    if (mounted) {
+      setState(() {
+        _profile = {
+          'name': user?['name'] ?? 'Staff',
+          'nip': user?['nimNip'] ?? '-',
+          'email': user?['email'] ?? '-',
+          'phone': user?['phone'] ?? '-',
+          'building': user?['managedBuilding'] ?? '-',
+        };
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -121,12 +154,17 @@ class PJGedungProfilePage extends StatelessWidget {
                           label: "Telepon",
                           value: _profile['phone'],
                         ),
-                        const Divider(height: 24),
-                        ProfileInfoRow(
-                          icon: LucideIcons.building2,
-                          label: "Gedung",
-                          value: _profile['building'],
-                        ),
+                        if (_profile['building'] != null && _profile['building'] != 'null')
+                          Column(
+                            children: [
+                              const Divider(height: 24),
+                              ProfileInfoRow(
+                                icon: LucideIcons.building2,
+                                label: "Gedung",
+                                value: _profile['building'],
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
@@ -140,6 +178,12 @@ class PJGedungProfilePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ProfileSection(
                 children: [
+                  ProfileMenuItem(
+                    icon: LucideIcons.userCog,
+                    label: "Ubah Profil",
+                    onTap: () => context.push('/pj-gedung/edit-profile'),
+                    color: AppTheme.pjGedungColor,
+                  ),
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
                     label: "Pengaturan",

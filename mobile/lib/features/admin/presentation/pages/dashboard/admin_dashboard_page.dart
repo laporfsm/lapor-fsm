@@ -362,26 +362,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             const Gap(20),
                             Expanded(
-                                // Calculate max value for normalized scaling
-                                final maxVal = (_stats?['weeklyTrend'] as List? ?? [])
-                                    .fold(1, (max, t) => (t['value'] as int) > max ? t['value'] as int : max);
-                                
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceEvenly,
-                                  children: (_stats?['weeklyTrend'] as List? ?? [])
-                                      .map((t) {
-                                        final val = (t['value'] as int).toDouble();
-                                        return _buildStatBar(
-                                          context,
-                                          t['day'] ?? '',
-                                          val / maxVal,
-                                          (val * 0.8) / maxVal, // Simulated "completed" ratio
-                                        );
-                                      })
-                                      .toList(),
-                                );
+                              child: Builder(
+                                builder: (context) {
+                                  final trendList = _stats?['weeklyTrend'] as List? ?? [];
+                                  final maxVal = trendList.fold(1, (max, t) => (t['value'] as int) > max ? t['value'] as int : max);
+                                  
+                                  return Row(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: trendList.map((t) {
+                                      final val = (t['value'] as int).toDouble();
+                                      return _buildStatBar(
+                                        context,
+                                        t['day'] ?? '',
+                                        val / maxVal,
+                                        (val * 0.8) / maxVal, // Simulated "completed" ratio
+                                      );
+                                    }).toList(),
+                                  );
+                                },
+                              ),
                             ),
                             const Gap(10),
                             Row(

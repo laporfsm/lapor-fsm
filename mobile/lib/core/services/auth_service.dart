@@ -18,6 +18,7 @@ class AuthService {
   static const String _userEmergencyNameKey = 'user_emergency_name';
   static const String _userEmergencyPhoneKey = 'user_emergency_phone';
   static const String _userIsVerifiedKey = 'user_is_verified';
+  static const String _userManagedBuildingKey = 'user_managed_building';
 
   // Login for Pelapor (Email & Password)
   Future<Map<String, dynamic>> login({
@@ -163,9 +164,14 @@ class AuthService {
     if (user['isVerified'] != null) {
       await prefs.setBool(_userIsVerifiedKey, user['isVerified']);
     }
+    // New: Managed Building
+    if (user['managedBuilding'] != null) {
+      await prefs.setString(_userManagedBuildingKey, user['managedBuilding']);
+    }
 
     apiService.setAuthToken(token);
   }
+
 
   // Get current user from local storage
   Future<Map<String, dynamic>?> getCurrentUser() async {
@@ -187,6 +193,7 @@ class AuthService {
       'emergencyName': prefs.getString(_userEmergencyNameKey),
       'emergencyPhone': prefs.getString(_userEmergencyPhoneKey),
       'isVerified': prefs.getBool(_userIsVerifiedKey),
+      'managedBuilding': prefs.getString(_userManagedBuildingKey),
     };
   }
 
