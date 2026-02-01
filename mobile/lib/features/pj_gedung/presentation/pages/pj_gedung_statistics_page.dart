@@ -205,8 +205,15 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
 
   Widget _buildComparison() {
     final thisMonth = _stats?['thisMonth'] ?? 0;
+    final monthlyProgress = _stats?['monthlyProgress'] as List? ?? [0, 0, 0, 0];
+    int maxProg = 0;
+    for (var val in monthlyProgress) {
+      if ((val as int) > maxProg) maxProg = val;
+    }
+
     final lastMonth = _stats?['lastMonth'] ?? 0;
     final isUp = thisMonth > lastMonth;
+
 
     return Column(
       children: [
@@ -239,10 +246,18 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildSimpleBar(0.4, 'Minggu 1'),
-              _buildSimpleBar(0.6, 'Minggu 2'),
-              _buildSimpleBar(0.5, 'Minggu 3'),
-              _buildSimpleBar(0.8, 'Hingga Hari Ini'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[0] as int) / maxProg : 0.05,
+                  'Minggu 1'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[1] as int) / maxProg : 0.05,
+                  'Minggu 2'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[2] as int) / maxProg : 0.05,
+                  'Minggu 3'),
+              _buildSimpleBar(
+                  maxProg > 0 ? (monthlyProgress[3] as int) / maxProg : 0.05,
+                  'Minggu 4+'),
             ],
           ),
         ),
