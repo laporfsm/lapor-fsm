@@ -6,19 +6,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/notification_service.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+import 'package:mobile/core/services/fcm_service.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Initialize Notification Service
-  await NotificationService.init();
-  
+
+  // Initialize Firebase
+  await Firebase.initializeApp();
+
+  // Initialize Notification Services
+  await NotificationService.init(); // Keep existing local notification init for now
+  await FCMService.init(); // Initialize FCM
+
   // Restore Auth Session if exists
   final prefs = await SharedPreferences.getInstance();
   final token = prefs.getString('auth_token');
   if (token != null) {
     apiService.setAuthToken(token);
   }
-  
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

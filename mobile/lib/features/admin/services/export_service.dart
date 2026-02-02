@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+
 import 'package:excel/excel.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'package:mobile/core/utils/save_file.dart';
 import 'package:mobile/core/services/api_service.dart';
 
 class ExportService {
@@ -48,7 +47,9 @@ class ExportService {
       // Header Style
       final CellStyle headerStyle = CellStyle(
         bold: true,
-        backgroundColorHex: ExcelColor.fromHexString('#059669'), // Emerald Green
+        backgroundColorHex: ExcelColor.fromHexString(
+          '#059669',
+        ), // Emerald Green
         fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
         horizontalAlign: HorizontalAlign.Center,
       );
@@ -63,12 +64,14 @@ class ExportService {
         'Detail Lokasi',
         'Pelapor',
         'Status',
-        'Darurat'
+        'Darurat',
       ];
 
       // Add Headers
       for (var i = 0; i < headers.length; i++) {
-        var cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        var cell = sheet.cell(
+          CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
         cell.value = TextCellValue(headers[i]);
         cell.cellStyle = headerStyle;
       }
@@ -78,33 +81,83 @@ class ExportService {
         final rowData = data[i];
         final rowIndex = i + 1;
 
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex)).value = IntCellValue(rowIndex);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex)).value = TextCellValue(rowData['createdAt']?.toString().split('T').first ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex)).value = TextCellValue(rowData['title'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex)).value = TextCellValue(rowData['category'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex)).value = TextCellValue(rowData['building'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex)).value = TextCellValue(rowData['locationDetail'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex)).value = TextCellValue(rowData['reporterName'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex)).value = TextCellValue(rowData['status'] ?? '-');
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: rowIndex)).value = TextCellValue(rowData['isEmergency'] == true ? 'YA' : 'TIDAK');
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex),
+            )
+            .value = IntCellValue(
+          rowIndex,
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['createdAt']?.toString().split('T').first ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['title'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['category'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['building'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['locationDetail'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['reporterName'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['status'] ?? '-',
+        );
+        sheet
+            .cell(
+              CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: rowIndex),
+            )
+            .value = TextCellValue(
+          rowData['isEmergency'] == true ? 'YA' : 'TIDAK',
+        );
       }
 
       // Finalize file
       // Use encode() instead of save() to get bytes without triggering library's auto-download
       final fileBytes = excel.encode();
 
-      if (kIsWeb && fileBytes != null) {
+      if (fileBytes != null) {
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-        final blob = html.Blob([fileBytes]);
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute("download", "${title.replaceAll(' ', '_')}_$timestamp.xlsx")
-          ..style.display = 'none';
-        
-        html.document.body?.children.add(anchor);
-        anchor.click();
-        html.document.body?.children.remove(anchor);
-        html.Url.revokeObjectUrl(url);
+        final fileName = "${title.replaceAll(' ', '_')}_$timestamp.xlsx";
+        await saveFile(
+          fileBytes,
+          fileName,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
       }
 
       if (context.mounted) {
@@ -160,19 +213,9 @@ class ExportService {
         options: Options(responseType: ResponseType.bytes),
       );
 
-      if (kIsWeb) {
-        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-        final blob = html.Blob([response.data], 'application/pdf');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute("download", "${title.replaceAll(' ', '_')}_$timestamp.pdf")
-          ..style.display = 'none';
-          
-        html.document.body?.children.add(anchor);
-        anchor.click();
-        html.document.body?.children.remove(anchor);
-        html.Url.revokeObjectUrl(url);
-      }
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final fileName = "${title.replaceAll(' ', '_')}_$timestamp.pdf";
+      await saveFile(response.data, fileName, 'application/pdf');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
