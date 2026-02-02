@@ -47,6 +47,18 @@ export const FCMService = {
 
             if (!token) return;
 
+            const androidConfig: any = {
+                priority: 'high',
+                notification: {
+                    clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+                }
+            };
+
+            if (data.type === 'emergency') {
+                androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v2';
+                androidConfig.notification.sound = 'emergency_alert';
+            }
+
             await admin.messaging().send({
                 token: token,
                 notification: {
@@ -54,12 +66,7 @@ export const FCMService = {
                     body,
                 },
                 data: data,
-                android: {
-                    priority: 'high',
-                    notification: {
-                        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-                    }
-                },
+                android: androidConfig,
                 apns: {
                     payload: {
                         aps: {
@@ -94,11 +101,24 @@ export const FCMService = {
 
         if (tokens.length === 0) return;
 
+        const androidConfig: any = {
+            priority: 'high',
+            notification: {
+                clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+            }
+        };
+
+        if (data.type === 'emergency') {
+            androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v2';
+            androidConfig.notification.sound = 'emergency_alert';
+        }
+
         try {
             await admin.messaging().sendEachForMulticast({
                 tokens,
                 notification: { title, body },
-                data
+                data,
+                android: androidConfig,
             });
             console.log(`✅ FCM Broadcast to ${tokens.length} ${role}s`);
         } catch (error) {

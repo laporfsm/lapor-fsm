@@ -24,7 +24,7 @@ export class NotificationService {
                 'user',
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
             console.log(`[NOTIF-USER] ID:${userId} - ${title}: ${message} (Report: ${reportId})`);
@@ -52,7 +52,7 @@ export class NotificationService {
                 'staff',
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
             console.log(`[NOTIF-STAFF] ID:${staffId} - ${title}: ${message} (Report: ${reportId})`);
@@ -85,7 +85,7 @@ export class NotificationService {
                 role,
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
             console.log(`[NOTIF-ROLE] ${role} (${roleStaff.length}) - ${title}: ${message} (Report: ${reportId})`);
