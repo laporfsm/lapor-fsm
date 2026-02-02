@@ -13,7 +13,7 @@ class NotificationState {
   final bool isLoading;
 
   const NotificationState({
-    required this.items, 
+    required this.items,
     required this.unreadCount,
     this.isLoading = false,
   });
@@ -42,7 +42,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
   NotificationState build() {
     // Watch current user to react to login/logout
     final userAsync = ref.watch(currentUserProvider);
-    
+
     ref.onDispose(() {
       _timer?.cancel();
     });
@@ -63,7 +63,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
   void _startPolling() {
     if (_timer != null) return; // Already polling
-    
+
     _fetchNotifications(); // Immediate fetch
     _timer = Timer.periodic(
       const Duration(seconds: 15),
@@ -81,7 +81,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
       final userId = user['id'];
       final role = user['role'];
-      
+
       // Determine correct notification type based on role
       // In current system: pelapor=user, and others (teknisi, supervisor, pj_gedung, admin)=staff
       final type = (role == 'pelapor' || role == 'user') ? 'user' : 'staff';
@@ -104,16 +104,16 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
         // Check for new items to alert (Only if there's a new max ID)
         if (!_isFirstLoad && currentMaxId > _lastMaxId) {
-          final newItems = fetchedItems.where(
-            (e) => (int.tryParse(e.id) ?? 0) > _lastMaxId,
-          ).toList();
-          
+          final newItems = fetchedItems
+              .where((e) => (int.tryParse(e.id) ?? 0) > _lastMaxId)
+              .toList();
+
           // Show the most recent one as local notification if many came at once
           if (newItems.isNotEmpty) {
             // Sort by time just in case
             newItems.sort((a, b) => b.time.compareTo(a.time));
             final latest = newItems.first;
-            
+
             await NotificationService.showNotification(
               id: int.tryParse(latest.id) ?? 0,
               title: latest.title,
@@ -146,7 +146,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
           title: item.title,
           message: item.message,
           time: item.time,
-          isRead: true, 
+          isRead: true,
           type: item.type,
           reportId: item.reportId,
         );
@@ -219,9 +219,9 @@ class NotificationNotifier extends Notifier<NotificationState> {
     state = state.copyWith(items: []);
 
     try {
-      // Assuming there's a delete-all endpoint or we loop. 
+      // Assuming there's a delete-all endpoint or we loop.
       // For now, let's assume we need to implement it in backend or just clear local if not available.
-      // The backend doesn't have a delete-all yet, so let's just clear local for now 
+      // The backend doesn't have a delete-all yet, so let's just clear local for now
       // or implement it in backend.
       // I'll add a placeholder call.
       await apiService.dio.delete('/notifications/all/$type/$userId');
