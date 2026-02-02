@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   emergencyName: text('emergency_name'),
   emergencyPhone: text('emergency_phone'),
   idCardUrl: text('id_card_url'), // For non-undip users
+  fcmToken: text('fcm_token'),
   isVerified: boolean('is_verified').default(false), // Admin verification
   isEmailVerified: boolean('is_email_verified').default(false),
   emailVerificationToken: text('email_verification_token'),
@@ -29,6 +30,7 @@ export const staff = pgTable('staff', {
   email: text('email').notNull().unique(),
   phone: text('phone'),
   address: text('address'),
+  fcmToken: text('fcm_token'),
   password: text('password').notNull(), // Hashed password
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'

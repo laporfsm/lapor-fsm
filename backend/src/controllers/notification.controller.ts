@@ -1,10 +1,34 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../db';
-import { notifications } from '../db/schema';
+import { notifications, users, staff } from '../db/schema';
 import { eq, desc, and, or } from 'drizzle-orm';
 import { mapToMobileNotification } from '../utils/mapper';
 
 export const notificationController = new Elysia({ prefix: '/notifications' })
+    // Save FCM Token
+    .post('/fcm-token', async ({ body }) => {
+        const { userId, role, token } = body;
+        const id = typeof userId === 'string' ? parseInt(userId) : userId;
+
+        if (role === 'user' || role === 'pelapor') {
+            await db.update(users)
+                .set({ fcmToken: token })
+                .where(eq(users.id, id));
+        } else {
+            await db.update(staff)
+                .set({ fcmToken: token })
+                .where(eq(staff.id, id));
+        }
+
+        return { status: 'success', message: 'FCM Token updated' };
+    }, {
+        body: t.Object({
+            userId: t.Any(), // Can be string or number
+            role: t.String(),
+            token: t.String()
+        })
+    })
+
     // Get notifications for a user OR staff
     .get('/:type/:id', async ({ params, set }) => {
         const { type, id } = params;
@@ -15,7 +39,7 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
             return { status: 'error', message: 'Invalid ID format' };
         }
 
-        const whereClause = type === 'user' 
+        const whereClause = type === 'user'
             ? eq(notifications.userId, targetId)
             : eq(notifications.staffId, targetId);
 
@@ -41,8 +65,8 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
 
         if (updated.length === 0) return { status: 'error', message: 'Notification not found' };
 
-        return { 
-            status: 'success', 
+        return {
+            status: 'success',
             data: mapToMobileNotification(updated[0])
         };
     })
@@ -52,7 +76,7 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
         const { type, id } = body;
         const targetId = parseInt(id);
 
-        const whereClause = type === 'user' 
+        const whereClause = type === 'user'
             ? eq(notifications.userId, targetId)
             : eq(notifications.staffId, targetId);
 
@@ -68,13 +92,13 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
             id: t.String(),
         })
     })
-    
+
     // Delete all for user/staff
     .delete('/all/:type/:id', async ({ params }) => {
         const { type, id } = params;
         const targetId = parseInt(id);
 
-        const whereClause = type === 'user' 
+        const whereClause = type === 'user'
             ? eq(notifications.userId, targetId)
             : eq(notifications.staffId, targetId);
 

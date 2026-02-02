@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:flutter/foundation.dart';
 
 // Singleton instance
 final authService = AuthService();
@@ -46,7 +47,8 @@ class AuthService {
         'message': response.data['message'] ?? 'Login gagal',
       };
     } catch (e) {
-      return {'success': false, 'message': 'Email atau password salah'};
+      debugPrint('LOGIN ERROR: $e');
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 
@@ -122,7 +124,8 @@ class AuthService {
         'message': response.data['message'] ?? 'Login staff gagal',
       };
     } catch (e) {
-      return {'success': false, 'message': 'Email atau password salah'};
+      debugPrint('STAFF LOGIN ERROR: $e');
+      return {'success': false, 'message': 'Error: $e'};
     }
   }
 
@@ -172,7 +175,6 @@ class AuthService {
     apiService.setAuthToken(token);
   }
 
-
   // Get current user from local storage
   Future<Map<String, dynamic>?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
@@ -211,8 +213,9 @@ class AuthService {
     String? emergencyPhone,
   }) async {
     try {
-      final String endpoint =
-          role == 'pelapor' ? '/auth/profile/$id' : '/auth/staff-profile/$id';
+      final String endpoint = role == 'pelapor'
+          ? '/auth/profile/$id'
+          : '/auth/staff-profile/$id';
 
       final response = await apiService.dio.patch(
         endpoint,
