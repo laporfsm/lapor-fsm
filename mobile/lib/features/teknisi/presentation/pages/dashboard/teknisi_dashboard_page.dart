@@ -444,16 +444,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
           context,
           'Siap Dimulai',
           'Lihat Semua',
-          () => context.push(
-            Uri(
-              path: '/teknisi/all-reports',
-              queryParameters: {
-                'status': 'diproses,recalled',
-                if (_currentStaffId != null)
-                  'assignedTo': _currentStaffId.toString(),
-              },
-            ).toString(),
-          ),
+          () => context.push('/teknisi/siap-dimulai'),
           count: count,
         ),
         const Gap(12),
@@ -495,16 +486,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     return Column(
       children: [
         _buildSectionHeader(context, 'Sedang Dikerjakan', 'Lihat Semua', () {
-          context.push(
-            Uri(
-              path: '/teknisi/all-reports',
-              queryParameters: {
-                'status': 'penanganan',
-                if (_currentStaffId != null)
-                  'assignedTo': _currentStaffId.toString(),
-              },
-            ).toString(),
-          );
+          context.push('/teknisi/sedang-dikerjakan');
         }, count: count),
         const Gap(12),
         if (_activeReports.isEmpty)

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 class TeknisiProfilePage extends StatefulWidget {
   const TeknisiProfilePage({super.key});
@@ -16,6 +17,7 @@ class TeknisiProfilePage extends StatefulWidget {
 class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
   Map<String, dynamic>? _profile;
   bool _isLoading = true;
+  Map<String, int> _stats = {'menunggu': 0, 'ditangani': 0, 'disetujui': 0};
 
   @override
   void initState() {
@@ -25,19 +27,63 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
 
   Future<void> _loadUserData() async {
     final user = await authService.getCurrentUser();
-    if (mounted) {
-      setState(() {
-        _profile = user;
-        _isLoading = false;
-      });
+    if (user != null) {
+      final statsData = await reportService.getTechnicianDashboardStats(
+        user['id'].toString(),
+      );
+      if (mounted) {
+        setState(() {
+          _profile = user;
+          if (statsData != null) {
+            _stats = {
+              'menunggu': statsData['diproses'] ?? 0,
+              'ditangani':
+                  (statsData['penanganan'] ?? 0) +
+                  (statsData['onHold'] ?? 0) +
+                  (statsData['selesai'] ?? 0) +
+                  (statsData['recalled'] ?? 0),
+              'disetujui': 0, // Will be fetched separately
+            };
+            // Fetch approved count separately
+            _fetchApprovedCount(int.tryParse(user['id'].toString()) ?? 0);
+          }
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Map<String, int> get _stats => {
-    'handled': 0, // In real app, these should also come from API
-    'completed': 0,
-    'inProgress': 0,
-  };
+  Future<void> _fetchApprovedCount(int staffId) async {
+    try {
+      final reports = await reportService.getStaffReports(
+        role: 'technician',
+        status: 'approved',
+        assignedTo: staffId,
+      );
+      if (mounted) {
+        setState(() {
+          _stats['disetujui'] = reports.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching approved count: $e');
+    }
+  }
+
+  void _navigateToReports(String status) {
+    final staffId = _profile?['id']?.toString();
+    context.push(
+      Uri(
+        path: '/teknisi/all-reports',
+        queryParameters: {
+          'status': status,
+          if (staffId != null) 'assignedTo': staffId,
+        },
+      ).toString(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -200,25 +246,30 @@ class _TeknisiProfilePageState extends State<TeknisiProfilePage> {
                 children: [
                   Expanded(
                     child: _StatItem(
-                      icon: LucideIcons.fileText,
-                      value: _stats['handled'].toString(),
+                      icon: LucideIcons.inbox,
+                      value: _stats['menunggu'].toString(),
+                      label: "Menunggu",
+                      onTap: () => _navigateToReports('diproses'),
+                    ),
+                  ),
+                  Container(width: 1, height: 40, color: Colors.grey.shade200),
+                  Expanded(
+                    child: _StatItem(
+                      icon: LucideIcons.hammer,
+                      value: _stats['ditangani'].toString(),
                       label: "Ditangani",
+                      onTap: () => _navigateToReports(
+                        'penanganan,onHold,selesai,recalled',
+                      ),
                     ),
                   ),
                   Container(width: 1, height: 40, color: Colors.grey.shade200),
                   Expanded(
                     child: _StatItem(
-                      icon: LucideIcons.checkCircle,
-                      value: _stats['completed'].toString(),
-                      label: "Selesai",
-                    ),
-                  ),
-                  Container(width: 1, height: 40, color: Colors.grey.shade200),
-                  Expanded(
-                    child: _StatItem(
-                      icon: LucideIcons.clock,
-                      value: _stats['inProgress'].toString(),
-                      label: "Proses",
+                      icon: LucideIcons.checkCircle2,
+                      value: _stats['disetujui'].toString(),
+                      label: "Disetujui",
+                      onTap: () => _navigateToReports('approved'),
                     ),
                   ),
                 ],
@@ -299,25 +350,37 @@ class _StatItem extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   const _StatItem({
     required this.icon,
     required this.value,
     required this.label,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: AppTheme.secondaryColor),
-        const Gap(4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.secondaryColor),
+            const Gap(4),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
         ),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-      ],
+      ),
     );
   }
 }

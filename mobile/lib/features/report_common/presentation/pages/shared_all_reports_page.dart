@@ -218,7 +218,9 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
-          isEmergency: _emergencyOnly,
+          isEmergency: _emergencyOnly
+              ? true
+              : null, // Only filter when true, null = include all
           period: _selectedPeriod,
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           category: _selectedCategory,

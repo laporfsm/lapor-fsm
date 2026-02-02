@@ -35,10 +35,10 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .from(reports)
             .where(and(eq(reports.assignedTo, staffId), eq(reports.status, 'diproses')));
 
-        // Time based counts
-        const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfDay)));
-        const weekReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfWeek)));
-        const monthReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.createdAt, startOfMonth)));
+        // Time based counts - using handlingStartedAt for when technician started working
+        const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfDay)));
+        const weekReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfWeek)));
+        const monthReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfMonth)));
 
         // Emergency pending
         const emergencyCount = await db
@@ -58,7 +58,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 diproses: Number(diprosesCount[0]?.count || 0),
                 penanganan: Number(countsMap['penanganan'] || 0),
                 onHold: Number(countsMap['onHold'] || 0),
-                selesai: Number(countsMap['selesai'] || 0) + Number(countsMap['approved'] || 0),
+                selesai: Number(countsMap['selesai'] || 0),
                 recalled: Number(recalledCount[0]?.count || 0),
                 todayReports: Number(todayReports[0]?.count || 0),
                 weekReports: Number(weekReports[0]?.count || 0),
@@ -88,11 +88,30 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         // For 'diproses' status, show all (any technician can pick up)
         // For other statuses, only show what's assigned to them (handled in frontend)
 
-        if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
+        if (isEmergency === 'true') {
+            conditions.push(eq(reports.isEmergency, true));
+        } else if (isEmergency === 'false') {
+            conditions.push(eq(reports.isEmergency, false));
+        }
 
         // Filter by assignedTo
         if (query.assignedTo && !isNaN(parseInt(query.assignedTo))) {
             conditions.push(eq(reports.assignedTo, parseInt(query.assignedTo)));
+        }
+
+        // Filter by period (based on handlingStartedAt)
+        if (query.period) {
+            const now = new Date();
+            if (query.period === 'today') {
+                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                conditions.push(gte(reports.handlingStartedAt, startOfDay));
+            } else if (query.period === 'week') {
+                const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                conditions.push(gte(reports.handlingStartedAt, startOfWeek));
+            } else if (query.period === 'month') {
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                conditions.push(gte(reports.handlingStartedAt, startOfMonth));
+            }
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

@@ -54,6 +54,9 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
             role: 'technician',
             status: 'diproses',
             isEmergency: false,
+            assignedTo: int.tryParse(
+              user['id'].toString(),
+            ), // Fetch assigned tasks
           ),
         ]);
 
@@ -90,14 +93,18 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Laporan Masuk'),
-        backgroundColor: Colors.white,
+        title: const Text(
+          'Laporan Masuk',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: AppTheme.teknisiColor,
         automaticallyImplyLeading: false,
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppTheme.teknisiColor,
-          labelColor: AppTheme.teknisiColor,
-          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.white,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
           tabs: [
             Tab(
               child: Row(

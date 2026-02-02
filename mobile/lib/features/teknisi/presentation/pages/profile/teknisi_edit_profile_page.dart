@@ -121,22 +121,14 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Edit Profil'),
-        backgroundColor: Colors.white,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'SIMPAN',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-          ),
-        ],
+        backgroundColor: AppTheme.teknisiColor,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -152,13 +144,13 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                    border: Border.all(color: AppTheme.primaryColor, width: 3),
+                    color: AppTheme.teknisiColor.withValues(alpha: 0.1),
+                    border: Border.all(color: AppTheme.teknisiColor, width: 3),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     LucideIcons.wrench,
                     size: 48,
-                    color: AppTheme.primaryColor,
+                    color: AppTheme.teknisiColor,
                   ),
                 ),
               ),

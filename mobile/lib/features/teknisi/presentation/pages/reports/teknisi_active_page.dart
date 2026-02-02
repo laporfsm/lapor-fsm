@@ -91,12 +91,17 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Laporan Aktif'),
-        backgroundColor: Colors.white,
+        title: const Text(
+          'Laporan Aktif',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: AppTheme.teknisiColor,
         automaticallyImplyLeading: false,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50),
           child: Container(
+            width: double.infinity,
+            color: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [

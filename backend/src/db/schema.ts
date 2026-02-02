@@ -28,6 +28,7 @@ export const staff = pgTable('staff', {
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   phone: text('phone'),
+  address: text('address'),
   password: text('password').notNull(), // Hashed password
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
