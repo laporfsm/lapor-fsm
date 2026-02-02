@@ -27,6 +27,8 @@ import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_help_
 import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_edit_profile_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_profile_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_all_reports_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_siap_dimulai_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_sedang_dikerjakan_page.dart';
 
 // PJ Gedung imports
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
@@ -84,7 +86,8 @@ final appRouter = GoRouter(
     final String location = state.uri.path;
 
     // List of auth-related paths that should be accessible when NOT logged in
-    final bool isAuthPath = location == '/login' ||
+    final bool isAuthPath =
+        location == '/login' ||
         location == '/register' ||
         location == '/forgot-password' ||
         location == '/complete-profile';
@@ -110,7 +113,7 @@ final appRouter = GoRouter(
     if (location == '/') {
       final user = await authService.getCurrentUser();
       final role = user?['role'];
-      
+
       if (role == 'teknisi') return '/teknisi';
       if (role == 'supervisor') return '/supervisor';
       if (role == 'pj_gedung') return '/pj-gedung';
@@ -326,6 +329,14 @@ final appRouter = GoRouter(
           assignedTo: assignedTo != null ? int.tryParse(assignedTo) : null,
         );
       },
+    ),
+    GoRoute(
+      path: '/teknisi/siap-dimulai',
+      builder: (context, state) => const TeknisiSiapDimulaiPage(),
+    ),
+    GoRoute(
+      path: '/teknisi/sedang-dikerjakan',
+      builder: (context, state) => const TeknisiSedangDikerjakanPage(),
     ),
 
     // ===============================================

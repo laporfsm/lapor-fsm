@@ -122,10 +122,10 @@ export const authController = new Elysia({ prefix: '/auth' })
 
       // Send Real Email
       try {
-          // Fire and forget - don't block response on email sending unless critical
-          EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
+        // Fire and forget - don't block response on email sending unless critical
+        EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
       } catch (err) {
-          console.error('[AUTH] Background email send failed:', err);
+        console.error('[AUTH] Background email send failed:', err);
       }
 
       return {
@@ -168,12 +168,12 @@ export const authController = new Elysia({ prefix: '/auth' })
     }
 
     // ... existing logic ...
-    
+
     // (Optimization: cleaned up for brevity in tool call, sticking to adding new endpoint below)
     if (user[0].isEmailVerified) {
-        return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
     }
-      
+
     if (user[0].emailVerificationToken !== token) {
       set.status = 400;
       return { status: 'error', message: 'Kode verifikasi tidak valid' };
@@ -231,29 +231,29 @@ export const authController = new Elysia({ prefix: '/auth' })
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
     await db.update(users)
-        .set({ 
-            emailVerificationToken: verificationToken, 
-            emailVerificationExpiresAt: expiresAt 
-        })
-        .where(eq(users.id, user[0].id));
+      .set({
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiresAt: expiresAt
+      })
+      .where(eq(users.id, user[0].id));
 
     // In a real app, send actual email here
     console.log(`[AUTH] Resent Verification token for ${email}: ${verificationToken}`);
 
     // Send Real Email
     try {
-        EmailService.sendVerificationEmail(email, user[0].name, verificationToken);
+      EmailService.sendVerificationEmail(email, user[0].name, verificationToken);
     } catch (err) {
-        console.error('[AUTH] Background email send failed:', err);
+      console.error('[AUTH] Background email send failed:', err);
     }
 
     return {
-        status: 'success',
-        message: 'Kode verifikasi baru telah dikirim ke email Anda.'
+      status: 'success',
+      message: 'Kode verifikasi baru telah dikirim ke email Anda.'
     };
   }, {
     body: t.Object({
-        email: t.String()
+      email: t.String()
     })
   })
 
@@ -348,6 +348,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     const updateData: any = {};
 
     if (body.phone) updateData.phone = body.phone;
+    if (body.address !== undefined) updateData.address = body.address;
     if (body.specialization) updateData.specialization = body.specialization;
     if (body.name) updateData.name = body.name;
 
@@ -370,6 +371,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     body: t.Object({
       name: t.Optional(t.String()),
       phone: t.Optional(t.String()),
+      address: t.Optional(t.String()),
       specialization: t.Optional(t.String()),
     }),
   })
