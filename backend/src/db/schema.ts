@@ -18,6 +18,9 @@ export const users = pgTable('users', {
   isEmailVerified: boolean('is_email_verified').default(false),
   emailVerificationToken: text('email_verification_token'),
   emailVerificationExpiresAt: timestamp('email_verification_expires_at'),
+  passwordResetToken: text('password_reset_token'),
+  passwordResetExpiresAt: timestamp('password_reset_expires_at'),
+  fcmToken: text('fcm_token'), // Firebase Cloud Messaging token for push notifications
   isActive: boolean('is_active').default(true), // Admin suspension
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -32,6 +35,7 @@ export const staff = pgTable('staff', {
   password: text('password').notNull(), // Hashed password
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
+  fcmToken: text('fcm_token'), // Firebase Cloud Messaging token for push notifications
   isActive: boolean('is_active').default(true),
   managedBuilding: text('managed_building'), // Specific for PJ Gedung
   createdAt: timestamp('created_at').defaultNow(),

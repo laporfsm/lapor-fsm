@@ -74,6 +74,7 @@ import 'package:mobile/features/admin/presentation/pages/profile/admin_profile_p
 // Auth & Common imports
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:mobile/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
 // Navigation key for ShellRoute
@@ -90,6 +91,7 @@ final appRouter = GoRouter(
         location == '/login' ||
         location == '/register' ||
         location == '/forgot-password' ||
+        location == '/reset-password' ||
         location == '/complete-profile';
 
     if (!loggedIn) {
@@ -141,6 +143,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/forgot-password',
       builder: (context, state) => const ForgotPasswordPage(),
+    ),
+    GoRoute(
+      path: '/reset-password',
+      builder: (context, state) => ResetPasswordPage(
+        token: state.uri.queryParameters['token'],
+        email: state.uri.queryParameters['email'],
+      ),
     ),
 
     // ===============================================

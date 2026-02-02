@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 import 'package:mobile/core/services/api_service.dart';
 
 // Singleton instance
@@ -291,5 +292,81 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     apiService.clearAuthToken();
+  }
+
+  // Send Password Reset Link
+  Future<Map<String, dynamic>> sendPasswordResetLink({
+    required String email,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/auth/forgot-password',
+        data: {'email': email},
+      );
+
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      }
+
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mengirim link reset password',
+      };
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? 'Terjadi kesalahan pada request',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Terjadi kesalahan koneksi: $e',
+      };
+    }
+  }
+
+  // Reset Password
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/auth/reset-password',
+        data: {
+          'email': email,
+          'token': token,
+          'newPassword': newPassword,
+        },
+      );
+
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      }
+
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mereset password',
+      };
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        return {
+          'success': false,
+          'message': e.response?.data['message'] ?? 'Terjadi kesalahan sistem',
+        };
+      }
+      return {
+        'success': false,
+        'message': 'Gagal mereset password: $e',
+      };
+    }
   }
 }

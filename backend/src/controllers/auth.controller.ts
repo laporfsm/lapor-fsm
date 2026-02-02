@@ -16,17 +16,29 @@ export const authController = new Elysia({ prefix: '/auth' })
   )
   // User Login (Pelapor)
   .post('/login', async ({ body, jwt, set }) => {
+    console.log('[LOGIN] Attempting login for:', body.email);
     const foundUser = await db.select().from(users).where(eq(users.email, body.email)).limit(1);
     if (foundUser.length === 0) {
+      console.log('[LOGIN] User not found');
       set.status = 401;
       return { status: 'error', message: 'Email atau password salah' };
     }
 
+    console.log('[LOGIN] User found. Verifying password...');
+    // Debug: Log first few chars of stored hash (safe to log hash header usually)
+    console.log('[LOGIN] Stored hash start:', foundUser[0].password.substring(0, 10) + '...');
+    
     const isMatch = await Bun.password.verify(body.password, foundUser[0].password);
+    console.log('[LOGIN] Password match result:', isMatch);
+
     if (!isMatch) {
       set.status = 401;
       return { status: 'error', message: 'Email atau password salah' };
     }
+    
+    console.log('[LOGIN] Checks passed. user.isActive:', foundUser[0].isActive);
+    console.log('[LOGIN] Checks passed. user.isEmailVerified:', foundUser[0].isEmailVerified);
+    console.log('[LOGIN] Checks passed. user.isVerified:', foundUser[0].isVerified);
 
     if (!foundUser[0].isActive) {
       set.status = 403;
@@ -34,8 +46,17 @@ export const authController = new Elysia({ prefix: '/auth' })
     }
 
     if (!foundUser[0].isEmailVerified) {
+      // NOTE: For debugging, we might want to temporarily bypass this if verification flow is broken
       set.status = 403;
       return { status: 'error', message: 'Email belum diverifikasi. Silakan verifikasi email Anda terlebih dahulu.' };
+    }
+
+    if (!foundUser[0].isVerified) {
+       // set.status = 403;
+       // return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
+       // FOR DEBUG: Allow unverified users to login temporarily if that's the blocker, 
+       // BUT let's keep it strict first and see the logs.
+       console.log('[LOGIN] User is not verified by admin yet.');
     }
 
     if (!foundUser[0].isVerified) {
@@ -256,6 +277,165 @@ export const authController = new Elysia({ prefix: '/auth' })
       email: t.String()
     })
   })
+
+  // Forgot Password - Send reset link
+  .post('/forgot-password', async ({ body, set }) => {
+    const { email } = body;
+    console.log('[FORGOT PASSWORD] Receiving request for:', email);
+    
+    // Check in users table first
+    let user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    console.log('[FORGOT PASSWORD] User found in users table:', user.length > 0);
+
+    let isStaff = false;
+    
+    // If not found in users, check in staff table
+    if (user.length === 0) {
+      const staffUser = await db.select().from(staff).where(eq(staff.email, email)).limit(1);
+      if (staffUser.length === 0) {
+        // PERUBAHAN: Memberitahu user jika email tidak ditemukan untuk UX yang lebih baik
+        console.log('[FORGOT PASSWORD] User NOT found (returning 404):', email);
+        set.status = 404;
+        return {
+          status: 'error',
+          message: 'Email tidak terdaftar dalam sistem.'
+        };
+      }
+      isStaff = true;
+      // For staff, we'll use a different approach since staff table doesn't have reset token fields
+      // For now, let's keep it simple or implement staff specific logic later
+      // But for this request, we proceed assuming user table logic primarily or adapt
+      // NOTE: Current implementation assumes user table structure for token updates.
+      // If staff needs reset, they should contact admin or we need to add fields to staff table.
+      set.status = 400;
+      return { status: 'error', message: 'Fitur reset password untuk staff belum tersedia. Hubungi admin.' };
+    }
+
+    // Generate reset token
+    const crypto = require('crypto');
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+    if (!isStaff && user.length > 0) {
+      // Update user with reset token
+      await db.update(users)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiresAt: expiresAt
+        })
+        .where(eq(users.id, user[0].id));
+
+      // Construct reset link (using app URL from env or default)
+      const appUrl = process.env.APP_URL || 'http://localhost:8080';
+      const resetLink = `${appUrl}/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+      // Send email
+      try {
+        await EmailService.sendPasswordResetEmail(email, user[0].name, resetLink);
+      } catch (err) {
+        console.error('[AUTH] Failed to send password reset email:', err);
+      }
+
+      console.log(`[AUTH] Password reset token for ${email}: ${resetToken}`);
+    }
+
+    return {
+      status: 'success',
+      message: 'Jika email terdaftar, link reset password akan dikirim.'
+    };
+  }, {
+    body: t.Object({
+      email: t.String()
+    })
+  })
+
+  // Reset Password - Verify token and update password
+  .post('/reset-password', async ({ body, set }) => {
+    const { email, token, newPassword } = body;
+
+    console.log('[RESET PASSWORD] Attempting reset for email:', email);
+    console.log('[RESET PASSWORD] Token received:', token);
+
+    try {
+      // Find user with valid reset token
+      const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+      if (user.length === 0) {
+        console.log('[RESET PASSWORD] User not found for email:', email);
+        set.status = 400;
+        return { status: 'error', message: 'Link reset password tidak valid.' };
+      }
+
+      console.log('[RESET PASSWORD] User found:', user[0].email);
+      console.log('[RESET PASSWORD] Token in DB:', user[0].passwordResetToken);
+      console.log('[RESET PASSWORD] Token matches:', user[0].passwordResetToken === token);
+
+      if (user[0].passwordResetToken !== token) {
+        set.status = 400;
+        return { status: 'error', message: 'Link reset password tidak valid atau sudah digunakan.' };
+      }
+
+      if (user[0].passwordResetExpiresAt && new Date() > new Date(user[0].passwordResetExpiresAt)) {
+        console.log('[RESET PASSWORD] Token expired');
+        set.status = 400;
+        return { status: 'error', message: 'Link reset password sudah kedaluwarsa. Silakan minta link baru.' };
+      }
+
+      // Hash new password and update
+      console.log('[RESET PASSWORD] Hashing new password...');
+      const hashedPassword = await Bun.password.hash(newPassword);
+      console.log('[RESET PASSWORD] Password hashed successfully');
+
+      console.log('[RESET PASSWORD] Updating user password in database...');
+      const updateResult = await db.update(users)
+        .set({
+          password: hashedPassword,
+          passwordResetToken: null,
+          passwordResetExpiresAt: null,
+          isEmailVerified: true // Implicitly verify email on successful password reset
+        })
+        .where(eq(users.id, user[0].id))
+        .returning();
+
+      console.log('[RESET PASSWORD] Update result:', updateResult);
+      
+      if (updateResult.length === 0) {
+        console.error('[RESET PASSWORD] Failed to update password - no rows affected');
+        set.status = 500;
+        return { status: 'error', message: 'Gagal mengupdate password di database' };
+      }
+
+      console.log('[RESET PASSWORD] Password updated successfully for user:', user[0].email);
+
+      // Log password reset
+      await db.insert(reportLogs).values({
+        action: 'password_reset',
+        actorId: user[0].id.toString(),
+        actorName: user[0].name,
+        actorRole: 'user',
+        reason: 'User mereset password melalui email',
+      });
+
+      return {
+        status: 'success',
+        message: 'Password berhasil direset. Silakan login dengan password baru Anda.'
+      };
+    } catch (error: any) {
+      console.error('[RESET PASSWORD] Error:', error);
+      set.status = 500;
+      return { status: 'error', message: 'Terjadi kesalahan saat mereset password: ' + error.message };
+    }
+  }, {
+    body: t.Object({
+      email: t.String(),
+      token: t.String(),
+      newPassword: t.String()
+    })
+  })
+
+
+
 
   // Staff Login (Email & Password)
   .post('/staff-login', async ({ body, jwt, set }) => {

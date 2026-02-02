@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// Forgot Password Page
 /// Flow:
@@ -21,6 +22,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController();
   bool _isLoading = false;
   bool _emailSent = false;
+  String _submittedEmail = ''; // Store the submitted email for resend
 
   @override
   void dispose() {
@@ -28,20 +30,37 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  Future<void> _handleSendResetLink() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _handleSendResetLink({bool isResend = false}) async {
+    // Only validate if not a resend (form is visible on initial send)
+    if (!isResend && !_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
+    // Store the email for resend functionality
+    final email = isResend ? _submittedEmail : _emailController.text.trim();
+    if (!isResend) {
+      _submittedEmail = email;
+    }
+
     try {
-      // TODO: Integrate with backend API to send reset password email
-      await Future.delayed(const Duration(seconds: 2));
+      // Call backend API to send reset password email
+      final result = await authService.sendPasswordResetLink(email: email);
 
       if (mounted) {
-        setState(() {
-          _emailSent = true;
-          _isLoading = false;
-        });
+        if (result['success'] == true) {
+          setState(() {
+            _emailSent = true;
+            _isLoading = false;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message'] ?? 'Gagal mengirim link reset'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() => _isLoading = false);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -57,8 +76,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   void _resendEmail() {
-    setState(() => _emailSent = false);
-    _handleSendResetLink();
+    _handleSendResetLink(isResend: true);
   }
 
   @override
