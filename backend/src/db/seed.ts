@@ -17,7 +17,7 @@ function rndDate(daysAgoStart: number, daysAgoEnd: number) {
 
 async function seed() {
     console.log('🚀 Starting COMPREHENSIVE Database Seeding...');
-    
+
     // Hash placeholder
     let pass = "password123_placeholder";
     try {
@@ -81,9 +81,10 @@ async function seed() {
                 faculty: 'FSM',
                 department: u.dept,
                 isVerified: true,
+                isEmailVerified: true,
             }))
         ).returning();
-        
+
         createdUsers.push(...newUsers);
         console.log(`✅ ${createdUsers.length} users seeded.`);
     } catch (e) {
@@ -97,7 +98,7 @@ async function seed() {
     const techs: any[] = [];
     try {
         console.log('Step 4: Seeding staff...');
-        
+
         // Admin
         await db.insert(staff).values({ name: 'Admin', email: 'admin@laporfsm.com', password: pass, role: 'admin' });
         // Supervisor
@@ -125,8 +126,8 @@ async function seed() {
             { name: 'Feri F', email: 'feri@laporfsm.com', b: 'Gedung F' },
         ];
         for (const p of pjData) {
-            const [np] = await db.insert(staff).values({ 
-                name: p.name, email: p.email, password: pass, role: 'pj_gedung', managedBuilding: p.b 
+            const [np] = await db.insert(staff).values({
+                name: p.name, email: p.email, password: pass, role: 'pj_gedung', managedBuilding: p.b
             }).returning();
             pjs.push(np);
             createdStaff.push(np);
@@ -141,8 +142,8 @@ async function seed() {
     try {
         console.log('Step 5: Generating reports...');
         const templates = [
-            { t: 'AC Panas', c: 'Kelistrikan' }, 
-            { t: 'Kran Bocor', c: 'Sanitasi' }, 
+            { t: 'AC Panas', c: 'Kelistrikan' },
+            { t: 'Kran Bocor', c: 'Sanitasi' },
             { t: 'Ubin Rusak', c: 'Infrastruktur' },
             { t: 'Sampah Penuh', c: 'Kebersihan' },
             { t: 'Kursi Patah', c: 'Fasilitas Umum' }
