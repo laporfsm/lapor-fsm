@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { notifications, staff, users } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { FCMService } from './fcm.service';
 
 export class NotificationService {
 
@@ -16,7 +17,16 @@ export class NotificationService {
                 type,
                 reportId,
             });
-            // TODO: Trigger Push Notification (FCM) to User
+
+            // Trigger Push Notification (FCM)
+            await FCMService.sendToUser(
+                userId.toString(),
+                'user',
+                title,
+                message,
+                reportId ? { reportId: reportId.toString() } : {}
+            );
+
             console.log(`[NOTIF-USER] ID:${userId} - ${title}: ${message} (Report: ${reportId})`);
         } catch (e) {
             console.error('Failed to notify user', e);
@@ -35,7 +45,16 @@ export class NotificationService {
                 type,
                 reportId,
             });
-            // TODO: Trigger Push Notification (FCM) to Staff
+
+            // Trigger Push Notification (FCM)
+            await FCMService.sendToUser(
+                staffId.toString(),
+                'staff',
+                title,
+                message,
+                reportId ? { reportId: reportId.toString() } : {}
+            );
+
             console.log(`[NOTIF-STAFF] ID:${staffId} - ${title}: ${message} (Report: ${reportId})`);
         } catch (e) {
             console.error('Failed to notify staff', e);
@@ -60,6 +79,15 @@ export class NotificationService {
             }));
 
             await db.insert(notifications).values(newNotifs);
+
+            // Trigger Broadcast (FCM)
+            await FCMService.broadcastToStaff(
+                role,
+                title,
+                message,
+                reportId ? { reportId: reportId.toString() } : {}
+            );
+
             console.log(`[NOTIF-ROLE] ${role} (${roleStaff.length}) - ${title}: ${message} (Report: ${reportId})`);
         } catch (e) {
             console.error(`Failed to notify role ${role}`, e);
@@ -74,3 +102,5 @@ export class NotificationService {
         await this.notifyRole('admin', title, message, 'emergency', reportId);
     }
 }
+
+

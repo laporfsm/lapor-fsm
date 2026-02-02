@@ -15,12 +15,12 @@ import { categoryController } from "./controllers/admin/category.controller";
 const app = new Elysia()
   .onError(({ code, error, set }) => {
     console.error(`[API ERROR] ${code}:`, error);
-    
+
     if (code === 'VALIDATION') {
       set.status = 400;
       return { status: 'error', message: 'Validasi input gagal', details: error.all };
     }
-    
+
     if (code === 'NOT_FOUND') {
       set.status = 404;
       return { status: 'error', message: 'Endpoint tidak ditemukan' };
@@ -47,7 +47,10 @@ const app = new Elysia()
   .use(adminController)
   .use(notificationController)
   .use(categoryController)
-  .listen(3000);
+  .listen({
+    port: 3000,
+    hostname: '0.0.0.0'
+  });
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
