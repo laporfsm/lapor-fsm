@@ -83,6 +83,8 @@ export const reportController = new Elysia({ prefix: '/reports' })
     const reporterStaff = alias(staff, 'reporter_staff');
     const handlerStaff = alias(staff, 'handler_staff');
 
+    const verifierStaff = alias(staff, 'verifier_staff');
+
     const result = await db
       .select({
         id: reports.id,
@@ -108,7 +110,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         handlerName: handlerStaff.name,
         approvedBy: reports.approvedBy,
         verifiedBy: reports.verifiedBy,
-        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        supervisorName: verifierStaff.name,
         pausedAt: reports.pausedAt,
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
@@ -120,6 +122,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
       .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
+      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(whereClause)
       .orderBy(desc(reports.createdAt))
       .limit(limitNum)
@@ -161,6 +164,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
 
     const reporterStaff = alias(staff, 'reporter_staff');
     const handlerStaff = alias(staff, 'handler_staff');
+    const verifierStaff = alias(staff, 'verifier_staff');
 
     const result = await db
       .select({
@@ -186,7 +190,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         handlerName: handlerStaff.name,
         approvedBy: reports.approvedBy,
         verifiedBy: reports.verifiedBy,
-        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        supervisorName: verifierStaff.name,
         pausedAt: reports.pausedAt,
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
@@ -198,6 +202,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
       .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
+      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(condition)
       .orderBy(desc(reports.createdAt));
 
@@ -218,6 +223,8 @@ export const reportController = new Elysia({ prefix: '/reports' })
     const reportId = parseInt(params.id);
     const reporterStaff = alias(staff, 'reporter_staff');
     const handlerStaff = alias(staff, 'handler_staff');
+
+    const verifierStaff = alias(staff, 'verifier_staff');
 
     const result = await db
       .select({
@@ -244,7 +251,9 @@ export const reportController = new Elysia({ prefix: '/reports' })
         reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
         handlerName: handlerStaff.name,
-        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+        approvedBy: reports.approvedBy,
+        verifiedBy: reports.verifiedBy,
+        supervisorName: verifierStaff.name,
         assignedTo: reports.assignedTo,
       })
       .from(reports)
@@ -252,6 +261,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
       .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
+      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(eq(reports.id, reportId))
       .limit(1);
 

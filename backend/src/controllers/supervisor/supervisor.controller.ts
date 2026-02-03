@@ -2,16 +2,18 @@ import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte, isNull } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+
+import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
 
 export const supervisorController = new Elysia({ prefix: '/supervisor' })
     // Dashboard statistics
     .get('/dashboard/:staffId', async ({ params }) => {
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfDay = getStartOfDay();
+        const startOfWeek = getStartOfWeek();
+        const startOfMonth = getStartOfMonth();
 
         // Count reports by status
         const statusCounts = await db
@@ -132,6 +134,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+        const verifierStaff = alias(staff, 'verifier_staff');
+
         const result = await db
             .select({
                 id: reports.id,
@@ -151,12 +155,15 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reporterEmail: users.email,
                 categoryName: categories.name,
                 handlerName: staff.name,
-                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+                approvedBy: reports.approvedBy,
+                verifiedBy: reports.verifiedBy,
+                supervisorName: verifierStaff.name,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
             .leftJoin(staff, eq(reports.assignedTo, staff.id))
+            .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
             .where(whereClause)
             .orderBy(desc(reports.createdAt))
             .limit(limitNum)
@@ -209,6 +216,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 userId: reports.userId,
                 reporterName: users.name,
                 categoryName: categories.name,
+                approvedBy: reports.approvedBy,
+                verifiedBy: reports.verifiedBy,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
@@ -259,7 +269,13 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
         }
 
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
+        return {
+            status: 'success',
+            data: mapToMobileReport({
+                ...updated[0],
+                supervisorName: foundStaff[0]?.name
+            })
+        };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
@@ -302,7 +318,13 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
         }
 
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
+        return {
+            status: 'success',
+            data: mapToMobileReport({
+                ...updated[0],
+                supervisorName: foundSupervisor[0]?.name
+            })
+        };
     }, {
         body: t.Object({
             supervisorId: t.Number(),
@@ -381,7 +403,13 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`, 'success', reportId);
         }
 
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
+        return {
+            status: 'success',
+            data: mapToMobileReport({
+                ...updated[0],
+                supervisorName: foundStaff[0]?.name
+            })
+        };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })

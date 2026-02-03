@@ -631,7 +631,10 @@ class _SupervisorDashboardPageState
             reporterName: report.reporterName,
             showStatus: true,
             onTap: () {
-              context.push('/supervisor/report/${report.id}');
+              context.push(
+                '/supervisor/review/${report.id}',
+                extra: {'status': report.status},
+              );
             },
           ),
         );

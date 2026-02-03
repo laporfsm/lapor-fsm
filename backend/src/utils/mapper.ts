@@ -12,14 +12,14 @@ export const mapToMobileReport = (report: any, logs: any[] = []) => {
     status: report.status, // Matches ReportStatus enum in mobile
     createdAt: report.createdAt instanceof Date ? report.createdAt.toISOString() : new Date().toISOString(),
     // Map handlingCompletedAt to completedAt for mobile
-    completedAt: report.handlingCompletedAt instanceof Date 
-      ? report.handlingCompletedAt.toISOString() 
+    completedAt: report.handlingCompletedAt instanceof Date
+      ? report.handlingCompletedAt.toISOString()
       : (report.completedAt || null),
     imageUrl: report.mediaUrls && report.mediaUrls.length > 0 ? report.mediaUrls[0] : null,
     mediaUrls: report.mediaUrls || [],
     handledBy: report.handlerName ? [report.handlerName] : [],
-    supervisorId: report.approvedBy?.toString() || report.verifiedBy?.toString() || "",
-    supervisorName: report.supervisorName || "",
+    supervisorId: report.approvedBy?.toString() || report.verifiedBy?.toString() || null,
+    supervisorName: report.supervisorName || null,
     logs: (logs || []).map(log => ({
       ...log,
       id: log.id.toString(),

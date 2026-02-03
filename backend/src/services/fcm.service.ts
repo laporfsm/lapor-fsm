@@ -55,7 +55,7 @@ export const FCMService = {
             };
 
             if (data.type === 'emergency') {
-                androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v2';
+                androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v3';
                 androidConfig.notification.sound = 'emergency_alert';
             }
 
@@ -109,7 +109,7 @@ export const FCMService = {
         };
 
         if (data.type === 'emergency') {
-            androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v2';
+            androidConfig.notification.channelId = 'lapor_fsm_channel_emergency_v3';
             androidConfig.notification.sound = 'emergency_alert';
         }
 

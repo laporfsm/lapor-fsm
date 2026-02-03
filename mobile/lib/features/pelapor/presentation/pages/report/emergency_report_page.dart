@@ -25,7 +25,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   final List<Uint8List> _selectedImagesBytes = []; // For web compatibility
   String? _selectedBuilding;
   final _locationDetailController = TextEditingController();
-  final _titleController = TextEditingController(text: "Laporan Darurat"); // New Title Controller
+  final _titleController = TextEditingController(
+    text: "Laporan Darurat",
+  ); // New Title Controller
   double? _latitude;
   double? _longitude;
   bool _isSubmitting = false;
@@ -206,7 +208,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         mediaUrls: mediaUrls,
         isEmergency: true,
         categoryId: emergencyCategoryId, // Auto-assign 'Darurat' category
-        status: 'diproses',
+        status: 'pending',
       );
 
       if (mounted) {

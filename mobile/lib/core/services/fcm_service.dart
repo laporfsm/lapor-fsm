@@ -82,7 +82,7 @@ class FCMService {
     // 2. Emergency Channel (Custom Sound)
     const AndroidNotificationChannel emergencyChannel =
         AndroidNotificationChannel(
-          'lapor_fsm_channel_emergency_v2', // FORCE UPDATE V2
+          'lapor_fsm_channel_emergency_v3', // FORCE UPDATE V3
           'Emergency Alerts',
           description: 'Critical alerts requiring immediate attention.',
           importance: Importance.max,
@@ -128,7 +128,7 @@ class FCMService {
       String? sound;
 
       if (message.data['type'] == 'emergency') {
-        channelId = 'lapor_fsm_channel_emergency_v2';
+        channelId = 'lapor_fsm_channel_emergency_v3';
         sound = 'emergency_alert';
       }
 
@@ -139,7 +139,7 @@ class FCMService {
         NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
-            channelId == 'lapor_fsm_channel_emergency_v2'
+            channelId == 'lapor_fsm_channel_emergency_v3'
                 ? 'Emergency Alerts'
                 : 'High Importance Notifications',
             channelDescription:
