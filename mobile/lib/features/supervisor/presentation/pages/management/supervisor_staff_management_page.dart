@@ -4,6 +4,8 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 
+import 'package:mobile/features/supervisor/data/services/supervisor_staff_service.dart';
+
 class SupervisorStaffManagementPage extends StatefulWidget {
   const SupervisorStaffManagementPage({super.key});
 
@@ -17,63 +19,42 @@ class _SupervisorStaffManagementPageState
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final SupervisorStaffService _staffService = SupervisorStaffService();
+
   String _selectedFilter = 'Semua';
+  bool _isLoading = true;
 
-  // Mock Data
-  final List<Map<String, dynamic>> _technicians = [
-    {
-      'id': '1',
-      'name': 'Budi Santoso',
-      'email': 'budi@undip.ac.id',
-      'role': 'Teknisi Listrik',
-      'isActive': true,
-    },
-    {
-      'id': '2',
-      'name': 'Andi Prasetyo',
-      'email': 'andi@undip.ac.id',
-      'role': 'Teknisi Sipil',
-      'isActive': true,
-    },
-    {
-      'id': '3',
-      'name': 'Eko Wahyu',
-      'email': 'eko@undip.ac.id',
-      'role': 'Teknisi AC',
-      'isActive': false,
-    },
-    {
-      'id': '4',
-      'name': 'Citra Dewi',
-      'email': 'citra@undip.ac.id',
-      'role': 'Teknisi Jaringan',
-      'isActive': true,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _pjGedung = [
-    {
-      'id': 'pj1',
-      'name': 'Rina PJ Gedung',
-      'email': 'pj_a@undip.ac.id',
-      'role': 'PJ Gedung',
-      'isActive': true,
-      'location': 'Gedung A',
-    },
-    {
-      'id': 'pj2',
-      'name': 'Siti PJ Gedung',
-      'email': 'pj_b@undip.ac.id',
-      'role': 'PJ Gedung',
-      'isActive': true,
-      'location': 'Gedung B',
-    },
-  ];
+  List<Map<String, dynamic>> _technicians = [];
+  List<Map<String, dynamic>> _pjGedung = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final techs = await _staffService.getTechnicians();
+      final pjs = await _staffService.getPJGedung();
+
+      if (mounted) {
+        setState(() {
+          _technicians = techs;
+          _pjGedung = pjs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat data: $e')));
+      }
+    }
   }
 
   @override
@@ -85,6 +66,10 @@ class _SupervisorStaffManagementPageState
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Column(
       children: [
         Container(
@@ -266,7 +251,7 @@ class _SupervisorStaffManagementPageState
     Map<String, dynamic> staff, {
     required bool isTechnician,
   }) {
-    final isActive = staff['isActive'] as bool;
+    final isActive = (staff['isActive'] as bool?) ?? true;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -355,7 +340,7 @@ class _SupervisorStaffManagementPageState
                       const Gap(4),
                       Text(
                         isTechnician
-                            ? staff['role']
+                            ? staff['specialization'] ?? 'Teknisi'
                             : staff['location'] ?? 'Area Umum',
                         style: TextStyle(
                           color: !isTechnician

@@ -377,3 +377,202 @@ class _StatusBox extends StatelessWidget {
     return Expanded(child: content);
   }
 }
+
+/// Status stats grid for Supervisor Dashboard.
+/// Shows all 9 statuses in a 3x3 grid layout.
+class SupervisorStatusStatsRow extends StatelessWidget {
+  final int pendingCount;
+  final int terverifikasiCount;
+  final int diprosesCount;
+  final int penangananCount;
+  final int onHoldCount;
+  final int selesaiCount;
+  final int recalledCount;
+  final int approvedCount;
+  final int ditolakCount;
+  final Function(String status)? onTap;
+
+  const SupervisorStatusStatsRow({
+    super.key,
+    required this.pendingCount,
+    required this.terverifikasiCount,
+    required this.diprosesCount,
+    required this.penangananCount,
+    required this.onHoldCount,
+    required this.selesaiCount,
+    required this.recalledCount,
+    required this.approvedCount,
+    required this.ditolakCount,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Status Laporan',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+              ),
+              Icon(
+                Icons.insights_rounded,
+                size: 16,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
+          const Gap(16),
+          // Row 1: Pending, Terverifikasi, Diproses
+          Row(
+            children: [
+              _SupervisorStatusBox(
+                label: 'Pending',
+                count: pendingCount,
+                statusKey: 'pending',
+                onTap: () => onTap?.call('pending'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'Terverifikasi',
+                count: terverifikasiCount,
+                statusKey: 'terverifikasi',
+                onTap: () => onTap?.call('terverifikasi'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'Diproses',
+                count: diprosesCount,
+                statusKey: 'diproses',
+                onTap: () => onTap?.call('diproses'),
+              ),
+            ],
+          ),
+          const Gap(8),
+          // Row 2: Penanganan, On Hold, Selesai
+          Row(
+            children: [
+              _SupervisorStatusBox(
+                label: 'Penanganan',
+                count: penangananCount,
+                statusKey: 'penanganan',
+                onTap: () => onTap?.call('penanganan'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'On Hold',
+                count: onHoldCount,
+                statusKey: 'onHold',
+                onTap: () => onTap?.call('onHold'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'Selesai',
+                count: selesaiCount,
+                statusKey: 'selesai',
+                onTap: () => onTap?.call('selesai'),
+              ),
+            ],
+          ),
+          const Gap(8),
+          // Row 3: Recalled, Approved, Ditolak
+          Row(
+            children: [
+              _SupervisorStatusBox(
+                label: 'Recalled',
+                count: recalledCount,
+                statusKey: 'recalled',
+                onTap: () => onTap?.call('recalled'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'Approved',
+                count: approvedCount,
+                statusKey: 'approved',
+                onTap: () => onTap?.call('approved'),
+              ),
+              const Gap(8),
+              _SupervisorStatusBox(
+                label: 'Ditolak',
+                count: ditolakCount,
+                statusKey: 'ditolak',
+                onTap: () => onTap?.call('ditolak'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupervisorStatusBox extends StatelessWidget {
+  final String label;
+  final int count;
+  final String statusKey;
+  final VoidCallback? onTap;
+
+  const _SupervisorStatusBox({
+    required this.label,
+    required this.count,
+    required this.statusKey,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTheme.getStatusColor(statusKey);
+    return Expanded(
+      child: BouncingButton(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Column(
+            children: [
+              Text(
+                count.toString(),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                  fontSize: 18,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: color.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

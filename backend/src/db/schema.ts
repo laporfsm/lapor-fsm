@@ -19,6 +19,8 @@ export const users = pgTable('users', {
   isEmailVerified: boolean('is_email_verified').default(false),
   emailVerificationToken: text('email_verification_token'),
   emailVerificationExpiresAt: timestamp('email_verification_expires_at'),
+  passwordResetToken: text('password_reset_token'),
+  passwordResetExpiresAt: timestamp('password_reset_expires_at'),
   isActive: boolean('is_active').default(true), // Admin suspension
   createdAt: timestamp('created_at').defaultNow(),
 });
@@ -36,6 +38,13 @@ export const staff = pgTable('staff', {
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
   isActive: boolean('is_active').default(true),
   managedBuilding: text('managed_building'), // Specific for PJ Gedung
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
+// Buildings table
+export const buildings = pgTable('buildings', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull().unique(),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
@@ -138,4 +147,6 @@ export type ReportLog = typeof reportLogs.$inferSelect;
 export type NewReportLog = typeof reportLogs.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
+export type Building = typeof buildings.$inferSelect;
+export type NewBuilding = typeof buildings.$inferInsert;
 

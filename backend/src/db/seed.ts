@@ -1,11 +1,11 @@
 import { db } from './index';
-import { users, staff, categories, reports, reportLogs, notifications } from './schema';
+import { users, staff, categories, reports, reportLogs, notifications, buildings } from './schema';
 import { sql } from 'drizzle-orm';
 
 async function seed() {
   console.log('🌱 Start seeding from dump...');
   console.log('🧹 Clearing existing data...');
-  await db.execute(sql`TRUNCATE TABLE ${notifications}, ${reportLogs}, ${reports}, ${categories}, ${staff}, ${users} RESTART IDENTITY CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE ${notifications}, ${reportLogs}, ${reports}, ${categories}, ${buildings}, ${staff}, ${users} RESTART IDENTITY CASCADE`);
 
   console.log('👤 Inserting Users...');
   await db.insert(users).values([
@@ -229,8 +229,110 @@ async function seed() {
       "isActive": true,
       "managedBuilding": "Gedung A",
       "createdAt": new Date("2026-02-02T09:13:22.979Z")
+    },
+    // Missing PJs restored
+    {
+      "id": 200,
+      "name": "PJ Gedung G",
+      "email": "pj_g@lapor.com",
+      "phone": "08123456790",
+      "nip": "198001012005011007",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung G",
+      "createdAt": new Date("2026-02-02T09:13:25.000Z")
+    },
+    {
+      "id": 201,
+      "name": "PJ Gedung H",
+      "email": "pj_h@lapor.com",
+      "phone": "08123456791",
+      "nip": "198001012005011008",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung H",
+      "createdAt": new Date("2026-02-02T09:13:25.100Z")
+    },
+    {
+      "id": 202,
+      "name": "PJ Gedung I",
+      "email": "pj_i@lapor.com",
+      "phone": "08123456792",
+      "nip": "198001012005011009",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung I",
+      "createdAt": new Date("2026-02-02T09:13:25.200Z")
+    },
+    {
+      "id": 203,
+      "name": "PJ Gedung J",
+      "email": "pj_j@lapor.com",
+      "phone": "08123456793",
+      "nip": "198001012005011010",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung J",
+      "createdAt": new Date("2026-02-02T09:13:25.300Z")
+    },
+    {
+      "id": 204,
+      "name": "PJ Gedung K",
+      "email": "pj_k@lapor.com",
+      "phone": "08123456794",
+      "nip": "198001012005011011",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung K",
+      "createdAt": new Date("2026-02-02T09:13:25.400Z")
+    },
+    {
+      "id": 205,
+      "name": "PJ Gedung Acintya",
+      "email": "pj_acintya@lapor.com",
+      "phone": "08123456795",
+      "nip": "198001012005011012",
+      "role": "pj_gedung",
+      "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
+      "specialization": null,
+      "isActive": true,
+      "managedBuilding": "Gedung Acintya Prasada",
+      "createdAt": new Date("2026-02-02T09:13:25.500Z")
     }
   ] as any);
+
+  console.log('🏢 Inserting Buildings...');
+  await db.insert(buildings).values([
+    { name: 'Gedung A' },
+    { name: 'Gedung B' },
+    { name: 'Gedung C' },
+    { name: 'Gedung D' },
+    { name: 'Gedung E' },
+    { name: 'Gedung F' },
+    { name: 'Gedung G' },
+    { name: 'Gedung H' },
+    { name: 'Gedung I' },
+    { name: 'Gedung J' },
+    { name: 'Gedung K' },
+    { name: 'Gedung L' },
+    { name: 'Parkiran Motor' },
+    { name: 'Parkiran Mobil' },
+    { name: 'Masjid' },
+    { name: 'Gedung Acintya Prasada' },
+    { name: 'Taman Rumah Kita' },
+    { name: 'Kantin' },
+    { name: 'Lainnya' },
+  ]);
 
   console.log('📁 Inserting Categories...');
   await db.insert(categories).values([
@@ -617,22 +719,22 @@ async function seed() {
       ],
       "isEmergency": false,
       "status": "selesai",
-      "assignedTo": null,
-      "assignedAt": null,
-      "handlingStartedAt": null,
-      "handlingCompletedAt": null,
+      "assignedTo": 146,
+      "assignedAt": new Date("2026-01-14T22:00:00.000Z"),
+      "handlingStartedAt": new Date("2026-01-14T22:30:00.000Z"),
+      "handlingCompletedAt": new Date("2026-01-15T09:23:34.168Z"),
       "pausedAt": null,
       "totalPausedDurationSeconds": 0,
       "holdReason": null,
       "holdPhoto": null,
-      "handlerNotes": null,
+      "handlerNotes": "Kursi sudah diperbaiki",
       "handlerMediaUrls": [],
-      "verifiedBy": null,
-      "verifiedAt": null,
+      "verifiedBy": 145,
+      "verifiedAt": new Date("2026-01-14T21:50:00.000Z"),
       "approvedBy": null,
       "approvedAt": null,
       "createdAt": new Date("2026-01-14T21:23:34.168Z"),
-      "updatedAt": new Date("2026-01-14T21:23:34.168Z")
+      "updatedAt": new Date("2026-01-15T09:23:34.168Z")
     },
     {
       "id": 242,
@@ -651,22 +753,22 @@ async function seed() {
       ],
       "isEmergency": true,
       "status": "selesai",
-      "assignedTo": null,
-      "assignedAt": null,
-      "handlingStartedAt": null,
-      "handlingCompletedAt": null,
+      "assignedTo": 147,
+      "assignedAt": new Date("2026-01-06T19:00:00.000Z"),
+      "handlingStartedAt": new Date("2026-01-06T19:15:00.000Z"),
+      "handlingCompletedAt": new Date("2026-01-07T08:49:22.530Z"),
       "pausedAt": null,
       "totalPausedDurationSeconds": 0,
       "holdReason": null,
       "holdPhoto": null,
-      "handlerNotes": null,
+      "handlerNotes": "Ubin sudah diganti dengan yang baru",
       "handlerMediaUrls": [],
-      "verifiedBy": null,
-      "verifiedAt": null,
+      "verifiedBy": 145,
+      "verifiedAt": new Date("2026-01-06T18:55:00.000Z"),
       "approvedBy": null,
       "approvedAt": null,
       "createdAt": new Date("2026-01-06T18:49:22.530Z"),
-      "updatedAt": new Date("2026-01-06T18:49:22.530Z")
+      "updatedAt": new Date("2026-01-07T08:49:22.530Z")
     },
     {
       "id": 243,
@@ -787,22 +889,22 @@ async function seed() {
       ],
       "isEmergency": false,
       "status": "selesai",
-      "assignedTo": null,
-      "assignedAt": null,
-      "handlingStartedAt": null,
-      "handlingCompletedAt": null,
+      "assignedTo": 148,
+      "assignedAt": new Date("2026-01-07T04:00:00.000Z"),
+      "handlingStartedAt": new Date("2026-01-07T04:30:00.000Z"),
+      "handlingCompletedAt": new Date("2026-01-07T06:08:57.706Z"),
       "pausedAt": null,
       "totalPausedDurationSeconds": 0,
       "holdReason": null,
       "holdPhoto": null,
-      "handlerNotes": null,
+      "handlerNotes": "Sampah sudah diangkut",
       "handlerMediaUrls": [],
-      "verifiedBy": null,
-      "verifiedAt": null,
+      "verifiedBy": 145,
+      "verifiedAt": new Date("2026-01-07T03:30:00.000Z"),
       "approvedBy": null,
       "approvedAt": null,
       "createdAt": new Date("2026-01-07T03:08:57.706Z"),
-      "updatedAt": new Date("2026-01-07T03:08:57.706Z")
+      "updatedAt": new Date("2026-01-07T06:08:57.706Z")
     },
     {
       "id": 247,
@@ -2463,6 +2565,72 @@ async function seed() {
       "assignedTo": 146,
       "createdAt": new Date("2026-02-03T00:00:00.000Z"),
       "updatedAt": new Date("2026-02-03T00:15:00.000Z")
+    },
+    // === NON-GEDUNG REPORTS (Gedung tanpa PJ) ===
+    {
+      "id": 1005,
+      "userId": 33,
+      "categoryId": 230,
+      "title": "Lampu Parkiran Mati",
+      "description": "Lampu di area parkiran motor bagian timur tidak menyala sejak tadi malam.",
+      "building": "Parkiran Motor",
+      "locationDetail": "Area Timur",
+      "isEmergency": false,
+      "status": "pending",
+      "createdAt": new Date("2026-02-03T01:00:00.000Z"),
+      "updatedAt": new Date("2026-02-03T01:00:00.000Z")
+    },
+    {
+      "id": 1006,
+      "userId": 34,
+      "categoryId": 231,
+      "title": "Kran Wudhu Bocor",
+      "description": "Air terus mengalir dari kran wudhu di masjid.",
+      "building": "Masjid",
+      "locationDetail": "Tempat Wudhu Pria",
+      "isEmergency": false,
+      "status": "pending",
+      "createdAt": new Date("2026-02-03T02:00:00.000Z"),
+      "updatedAt": new Date("2026-02-03T02:00:00.000Z")
+    },
+    {
+      "id": 1007,
+      "userId": 35,
+      "categoryId": 233,
+      "title": "Sampah Menumpuk di Kantin",
+      "description": "Sampah di area kantin sudah penuh dan belum diangkut.",
+      "building": "Kantin",
+      "locationDetail": "Belakang Counter",
+      "isEmergency": false,
+      "status": "pending",
+      "createdAt": new Date("2026-02-03T03:00:00.000Z"),
+      "updatedAt": new Date("2026-02-03T03:00:00.000Z")
+    },
+    {
+      "id": 1008,
+      "userId": 33,
+      "categoryId": 232,
+      "title": "Atap Bocor Gedung G",
+      "description": "Atap bocor di lorong lantai 2 Gedung G saat hujan.",
+      "building": "Gedung G",
+      "locationDetail": "Lorong Lt 2",
+      "isEmergency": false,
+      "status": "pending",
+      "createdAt": new Date("2026-02-03T04:00:00.000Z"),
+      "updatedAt": new Date("2026-02-03T04:00:00.000Z")
+    },
+    {
+      "id": 1009,
+      "userId": 34,
+      "categoryId": 235,
+      "title": "WiFi Mati di Gedung H",
+      "description": "Tidak ada koneksi WiFi di seluruh lantai 3 Gedung H.",
+      "building": "Gedung H",
+      "locationDetail": "Lantai 3",
+      "isEmergency": false,
+      "status": "pending",
+      "createdAt": new Date("2026-02-03T05:00:00.000Z"),
+      "updatedAt": new Date("2026-02-03T05:00:00.000Z")
     }
   ] as any);
 

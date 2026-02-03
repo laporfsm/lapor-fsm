@@ -47,6 +47,7 @@ import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_archive_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_rejected_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_export_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_non_gedung_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_detail_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_statistics_page.dart';
@@ -409,6 +410,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const SupervisorRejectedReportsPage(),
     ),
     // Export Reports Page
+    GoRoute(
+      path: '/supervisor/non-gedung',
+      builder: (context, state) => const SupervisorNonGedungPage(),
+    ),
     GoRoute(
       path: '/supervisor/export',
       builder: (context, state) => const SupervisorExportPage(),

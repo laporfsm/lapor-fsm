@@ -47,3 +47,6 @@ app.*.map.json
 # Automation Scripts
 tool/screenshot_automation/
 android/app/google-services.json
+
+# Firebase Credentials
+lib/firebase_options.dart

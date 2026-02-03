@@ -3,17 +3,17 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/utils/icon_helper.dart';
-import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart'; // For color constants
 
-class SupervisorCategoriesPage extends StatefulWidget {
-  const SupervisorCategoriesPage({super.key});
+class SupervisorCategoriesView extends StatefulWidget {
+  const SupervisorCategoriesView({super.key});
 
   @override
-  State<SupervisorCategoriesPage> createState() =>
-      _SupervisorCategoriesPageState();
+  State<SupervisorCategoriesView> createState() =>
+      _SupervisorCategoriesViewState();
 }
 
-class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
+class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _categories = [];
   bool _isLoading = true;
@@ -53,25 +53,17 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: supervisorColor,
-        elevation: 0,
-        leading: null,
-        title: const Text(
-          'Kelola Kategori',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
+      // No AppBar, embedded in Tab
       body: Column(
         children: [
           // Search Bar
           Container(
-            color: supervisorColor,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.all(16),
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: TextField(
                 controller: _searchController,
@@ -111,7 +103,12 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                 : _filteredCategories.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(
+                      16,
+                      0,
+                      16,
+                      80,
+                    ), // Padding for FAB
                     itemCount: _filteredCategories.length,
                     itemBuilder: (context, index) =>
                         _buildCategoryCard(_filteredCategories[index]),
@@ -146,13 +143,6 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
               fontWeight: FontWeight.w500,
               color: Colors.grey.shade600,
             ),
-          ),
-          const Gap(4),
-          Text(
-            hasSearch
-                ? 'Coba kata kunci lain'
-                : 'Tap + untuk menambah kategori',
-            style: TextStyle(color: Colors.grey.shade400),
           ),
         ],
       ),
@@ -398,6 +388,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                         child: ElevatedButton(
                           onPressed: () async {
                             final messenger = ScaffoldMessenger.of(context);
+                            final nav = Navigator.of(context);
 
                             bool success;
                             if (isEditing) {
@@ -416,6 +407,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                             }
 
                             if (success) {
+                              nav.pop(); // Close sheet
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -428,7 +420,6 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                               );
                               _fetchCategories();
                             } else {
-                              setState(() => _isLoading = false);
                               messenger.showSnackBar(
                                 const SnackBar(
                                   content: Text('Gagal menyimpan kategori'),
@@ -484,7 +475,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
-                    fontFamily: 'PlusJakartaSans', // Ensure font matches app
+                    fontFamily: 'PlusJakartaSans',
                   ),
                   children: [
                     const TextSpan(
@@ -530,12 +521,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                         final messenger = ScaffoldMessenger.of(context);
 
                         navigator.pop(); // Close dialog
-                        setState(
-                          () => _isLoading = true,
-                        ); // Show loading overlay
-
-                        // Add small delay to prevent flickering if API is too fast
-                        await Future.delayed(const Duration(milliseconds: 300));
+                        setState(() => _isLoading = true);
 
                         try {
                           final result = await reportService.deleteCategory(
@@ -545,7 +531,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                           );
 
                           if (result['success']) {
-                            // Optimistic update: Remove from list immediately
+                            // Optimistic update
                             setState(() {
                               _categories.removeWhere(
                                 (c) => c['id'] == category['id'],
@@ -559,7 +545,6 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                                 backgroundColor: Colors.green,
                               ),
                             );
-                            // Fetch again just to be sure
                             _fetchCategories();
                           } else {
                             setState(() => _isLoading = false);
