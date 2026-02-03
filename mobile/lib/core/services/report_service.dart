@@ -438,15 +438,17 @@ class ReportService {
   // LIFECYCLE MANAGEMENT (PJ & Supervisor)
   // ===========================================================================
 
-  /// Verify a report (PJ Gedung / Supervisor)
+  /// Verify a report (PJ Gedung or Supervisor)
   Future<Report> verifyReport(
     String reportId,
     int staffId, {
     String? notes,
+    String role = 'pj_gedung', // 'pj_gedung' or 'supervisor'
   }) async {
     try {
+      final prefix = role == 'supervisor' ? 'supervisor' : 'pj-gedung';
       final response = await apiService.dio.post(
-        '/pj-gedung/reports/$reportId/verify',
+        '/$prefix/reports/$reportId/verify',
         data: {'staffId': staffId, if (notes != null) 'notes': notes},
       );
       if (response.data['status'] == 'success') {

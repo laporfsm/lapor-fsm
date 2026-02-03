@@ -6,14 +6,15 @@ import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
 
+import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
+
 export const technicianController = new Elysia({ prefix: '/technician' })
     // Dashboard statistics for technician
     .get('/dashboard/:staffId', async ({ params }) => {
         const staffId = parseInt(params.staffId);
-        const now = new Date();
-        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfDay = getStartOfDay();
+        const startOfWeek = getStartOfWeek();
+        const startOfMonth = getStartOfMonth();
 
         const statusCounts = await db
             .select({
@@ -103,14 +104,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         if (query.period) {
             const now = new Date();
             if (query.period === 'today') {
-                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                conditions.push(gte(reports.handlingStartedAt, startOfDay));
+                conditions.push(gte(reports.handlingStartedAt, getStartOfDay()));
             } else if (query.period === 'week') {
-                const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                conditions.push(gte(reports.handlingStartedAt, startOfWeek));
+                conditions.push(gte(reports.handlingStartedAt, getStartOfWeek()));
             } else if (query.period === 'month') {
-                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-                conditions.push(gte(reports.handlingStartedAt, startOfMonth));
+                conditions.push(gte(reports.handlingStartedAt, getStartOfMonth()));
             }
         }
 
@@ -137,6 +135,9 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
                 reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
                 categoryName: categories.name,
+                approvedBy: reports.approvedBy,
+                verifiedBy: reports.verifiedBy,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
@@ -422,7 +423,9 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterPhone: users.phone,
                 categoryName: categories.name,
                 handlerName: staff.name,
-                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
+                approvedBy: reports.approvedBy,
+                verifiedBy: reports.verifiedBy,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))

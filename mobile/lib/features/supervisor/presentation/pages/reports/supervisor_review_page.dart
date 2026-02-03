@@ -219,7 +219,11 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
 
         switch (action) {
           case ReportAction.verified:
-            await reportService.verifyReport(_report!.id, staffId);
+            await reportService.verifyReport(
+              _report!.id,
+              staffId,
+              role: 'supervisor',
+            );
             break;
           case ReportAction.handling:
             if (technicianId != null) {
