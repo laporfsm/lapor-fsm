@@ -32,11 +32,38 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const weekReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfWeek));
         const monthReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfMonth));
 
-        // Emergency pending
+        // Emergency: All emergency reports except approved
         const emergencyCount = await db
             .select({ count: count() })
             .from(reports)
-            .where(and(eq(reports.isEmergency, true), or(eq(reports.status, 'pending'), eq(reports.status, 'terverifikasi'))));
+            .where(and(
+                eq(reports.isEmergency, true),
+                sql`${reports.status} != 'approved'`
+            ));
+
+        // Get all managed buildings (buildings that have a PJ Gedung)
+        const managedBuildings = await db
+            .select({ building: staff.managedBuilding })
+            .from(staff)
+            .where(sql`${staff.managedBuilding} IS NOT NULL AND ${staff.managedBuilding} != ''`);
+
+        const managedBuildingList = managedBuildings.map(b => b.building).filter(Boolean) as string[];
+
+        // Non-Gedung Pending: Reports with status 'pending' in buildings without a PJ Gedung
+        let nonGedungPendingCount = 0;
+        if (managedBuildingList.length > 0) {
+            const nonGedungResult = await db
+                .select({ count: count() })
+                .from(reports)
+                .where(and(
+                    eq(reports.status, 'pending'),
+                    sql`${reports.building} NOT IN (${sql.join(managedBuildingList.map(b => sql`${b}`), sql`, `)})`
+                ));
+            nonGedungPendingCount = nonGedungResult[0]?.count || 0;
+        } else {
+            // If no managed buildings, all pending reports are "non-gedung"
+            nonGedungPendingCount = countsMap['pending'] || 0;
+        }
 
         // Recent reports
         const recentReports = await db
@@ -53,13 +80,20 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         return {
             status: 'success',
             data: {
+                // Individual status counts (9 statuses)
                 pending: countsMap['pending'] || 0,
-                verifikasi: (countsMap['terverifikasi'] || 0) + (countsMap['verifikasi'] || 0),
-                penanganan: (countsMap['diproses'] || 0) + (countsMap['penanganan'] || 0),
+                terverifikasi: countsMap['terverifikasi'] || 0,
+                diproses: countsMap['diproses'] || 0,
+                penanganan: countsMap['penanganan'] || 0,
+                onHold: countsMap['onHold'] || 0,
                 selesai: countsMap['selesai'] || 0,
-                approved: countsMap['approved'] || 0,
                 recalled: countsMap['recalled'] || 0,
+                approved: countsMap['approved'] || 0,
+                ditolak: countsMap['ditolak'] || 0,
+                // Special counts
                 emergency: emergencyCount[0]?.count || 0,
+                nonGedungPending: nonGedungPendingCount,
+                // Period counts
                 todayReports: todayReports[0]?.count || 0,
                 weekReports: weekReports[0]?.count || 0,
                 monthReports: monthReports[0]?.count || 0,
@@ -77,7 +111,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
-        
+
         // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
         if (status && status !== 'all') {
             const statusList = status.split(',').map(s => s.trim());
@@ -89,7 +123,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 conditions.push(eq(reports.status, statusList[0]));
             }
         }
-        
+
         if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
@@ -110,8 +144,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 status: reports.status,
                 createdAt: reports.createdAt,
                 userId: reports.userId,
+                // Completion tracking
+                handlingCompletedAt: reports.handlingCompletedAt,
                 // Detailed Info
                 reporterName: users.name,
+                reporterEmail: users.email,
                 categoryName: categories.name,
                 handlerName: staff.name,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = ${reports.approvedBy})`,
@@ -129,10 +166,61 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         if (result.length > 0) {
             console.log('[DEBUG] First result sample:', JSON.stringify(result[0], null, 2));
         }
-        
+
         return {
             status: 'success',
             data: result.map(r => mapToMobileReport(r)),
+        };
+    })
+
+    // Get Non-Gedung pending reports (buildings without PJ Gedung)
+    .get('/reports/non-gedung', async ({ query }) => {
+        const { limit = '20' } = query;
+        const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
+
+        // Get all managed buildings
+        const managedBuildings = await db
+            .select({ building: staff.managedBuilding })
+            .from(staff)
+            .where(sql`${staff.managedBuilding} IS NOT NULL AND ${staff.managedBuilding} != ''`);
+
+        const managedBuildingList = managedBuildings.map(b => b.building).filter(Boolean) as string[];
+
+        let conditions = [
+            eq(reports.status, 'pending'),
+            isNull(reports.parentId),
+        ];
+
+        if (managedBuildingList.length > 0) {
+            conditions.push(sql`${reports.building} NOT IN (${sql.join(managedBuildingList.map(b => sql`${b}`), sql`, `)})`);
+        }
+
+        const result = await db
+            .select({
+                id: reports.id,
+                title: reports.title,
+                description: reports.description,
+                building: reports.building,
+                locationDetail: reports.locationDetail,
+                mediaUrls: reports.mediaUrls,
+                isEmergency: reports.isEmergency,
+                status: reports.status,
+                createdAt: reports.createdAt,
+                userId: reports.userId,
+                reporterName: users.name,
+                categoryName: categories.name,
+            })
+            .from(reports)
+            .leftJoin(users, eq(reports.userId, users.id))
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .where(and(...conditions))
+            .orderBy(desc(reports.createdAt))
+            .limit(limitNum);
+
+        return {
+            status: 'success',
+            data: result.map(r => mapToMobileReport(r)),
+            count: result.length,
         };
     })
 
@@ -462,5 +550,31 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         return {
             status: 'success',
             data: techs.map(t => ({ ...t, id: t.id.toString() })),
+        };
+    })
+
+    // Get all PJ Gedung
+    .get('/pj-gedung', async () => {
+        const pjs = await db
+            .select({
+                id: staff.id,
+                name: staff.name,
+                email: staff.email,
+                phone: staff.phone, // Include phone
+                isActive: staff.isActive,
+                managedBuilding: staff.managedBuilding,
+            })
+            .from(staff)
+            .where(eq(staff.role, 'pj_gedung'))
+            .orderBy(staff.managedBuilding);
+
+        return {
+            status: 'success',
+            data: pjs.map(p => ({
+                ...p,
+                id: p.id.toString(),
+                // Use managedBuilding as location
+                location: p.managedBuilding,
+            })),
         };
     });

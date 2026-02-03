@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_master_data_page.dart';
 
 class SupervisorProfilePage extends StatelessWidget {
   const SupervisorProfilePage({super.key});
@@ -29,9 +30,16 @@ class SupervisorProfilePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Profil Saya'),
-        backgroundColor: Colors.white,
+        title: const Text('Pengaturan'),
+        centerTitle: true,
+        backgroundColor: AppTheme.supervisorColor,
+        foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -192,8 +200,20 @@ class SupervisorProfilePage extends StatelessWidget {
               child: ProfileSection(
                 children: [
                   ProfileMenuItem(
+                    icon: LucideIcons.database,
+                    label: "Master Data",
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SupervisorMasterDataPage(),
+                      ),
+                    ),
+                    color: AppTheme.supervisorColor,
+                  ),
+                  ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Pengaturan",
+                    label:
+                        "Pengaturan Akun", // Renamed to avoid confusion with page title
                     onTap: () => context.push('/supervisor/settings'),
                     color: AppTheme.supervisorColor,
                   ),

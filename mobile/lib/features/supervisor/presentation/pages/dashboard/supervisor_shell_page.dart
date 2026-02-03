@@ -4,44 +4,49 @@ import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervis
 import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_profile_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_main_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_reports_container_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_page.dart';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
 
 /// Supervisor theme color - Dark Blue-Purple (Indigo 800) (differentiated from Pelapor blue & Teknisi orange)
 const Color supervisorColor = Color(0xFF3730A3);
 
 /// Shell page untuk Supervisor dengan persistent bottom navigation bar.
 /// Menggunakan IndexedStack untuk mempertahankan state setiap tab.
-class SupervisorShellPage extends StatefulWidget {
+class SupervisorShellPage extends ConsumerStatefulWidget {
   const SupervisorShellPage({super.key});
 
   @override
-  State<SupervisorShellPage> createState() => _SupervisorShellPageState();
+  ConsumerState<SupervisorShellPage> createState() =>
+      _SupervisorShellPageState();
 }
 
-class _SupervisorShellPageState extends State<SupervisorShellPage> {
-  int _currentIndex = 0;
+class _SupervisorShellPageState extends ConsumerState<SupervisorShellPage> {
+  // Local state is now managed by provider for the index
 
-  // List of pages for each tab
-  // NOTE: Each page should NOT have its own Scaffold with bottom nav (except ContainerPage which manages its own Scaffold body)
   final List<Widget> _pages = const [
     SupervisorDashboardPage(), // Tab 0: Dashboard
     SupervisorTechnicianMainPage(), // Tab 1: Staff
-    SupervisorReportsContainerPage(), // Tab 2: Laporan (Container with Tabs)
-    SupervisorCategoriesPage(), // Tab 3: Kategori (NEW)
-    SupervisorProfilePage(), // Tab 4: Profil
+    SupervisorReportsContainerPage(), // Tab 2: Laporan
+    SupervisorProfilePage(), // Tab 3: Setting (was Profil)
   ];
 
   @override
   Widget build(BuildContext context) {
+    final navState = ref.watch(supervisorNavigationProvider);
+    final currentIndex = navState.bottomNavIndex;
+
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _pages),
+      body: IndexedStack(index: currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
+        currentIndex: currentIndex,
         selectedItemColor: supervisorColor,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {
-          setState(() => _currentIndex = index);
+          ref
+              .read(supervisorNavigationProvider.notifier)
+              .setBottomNavIndex(index);
         },
         items: const [
           BottomNavigationBarItem(
@@ -57,12 +62,8 @@ class _SupervisorShellPageState extends State<SupervisorShellPage> {
             label: 'Laporan',
           ),
           BottomNavigationBarItem(
-            icon: Icon(LucideIcons.tag), // Tag icon for Categories
-            label: 'Kategori',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(LucideIcons.user),
-            label: 'Profil',
+            icon: Icon(LucideIcons.settings), // Changed to Settings
+            label: 'Setting', // Renamed from Profil
           ),
         ],
       ),

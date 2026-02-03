@@ -189,8 +189,21 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   Future<void> _fetchData() async {
     setState(() => _isLoading = true);
-    await Future.wait([_fetchReports(), _fetchCategories()]);
+    await Future.wait([_fetchReports(), _fetchCategories(), _fetchBuildings()]);
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _fetchBuildings() async {
+    try {
+      final buildings = await reportService.getBuildings();
+      if (mounted) {
+        setState(() {
+          _buildings = buildings.map((b) => b['name'] as String).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching buildings: $e');
+    }
   }
 
   Future<void> _fetchCategories() async {
@@ -268,33 +281,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   List<String> get _categories => _categoryNames;
 
-  List<String> get _buildings {
-    // Static list of major buildings for FSM
-    return [
-      'Gedung A',
-      'Gedung B',
-      'Gedung C',
-      'Gedung D',
-      'Gedung E',
-      'Gedung F',
-      'Gedung G',
-      'Gedung H',
-      'Gedung I',
-      'Gedung J',
-      'Gedung K',
-      'Gedung L',
-      'Gedung Acintya Prasada',
-      'Laboratorium',
-      'Perpustakaan',
-      'Dekanat',
-      'Masjid',
-      'Kantin',
-      'Parkiran Motor',
-      'Parkiran Mobil',
-      'Taman Rumah Kita',
-      'Lainnya',
-    ];
-  }
+  List<String> _buildings = [];
 
   bool get _hasActiveFilters {
     bool hasDateFilter = false;
@@ -726,33 +713,26 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
             minChildSize: 0.5,
             expand: false,
             builder: (context, scrollController) {
-              return SingleChildScrollView(
-                controller: scrollController,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade300,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
+              return Column(
+                children: [
+                  // Handle Bar
+                  const Gap(16),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    const Gap(20),
-                    Row(
+                  ),
+                  const Gap(16),
+
+                  // Header with Actions
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Filter Laporan',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
                         TextButton(
                           onPressed: () {
                             setModalState(() {
@@ -764,197 +744,218 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               _selectedDateRange = null;
                             });
                             setState(() {});
+                            // _fetchReports(); // Don't fetch on reset immediately? User usually wants to reset then apply.
+                            // But usually Reset implies clearing.
+                            // If Apply button exists, Reset should probably just clear selection.
+                          },
+                          child: const Text(
+                            'Reset',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        const Text(
+                          'Filter Laporan',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
                             _fetchReports();
                           },
-                          child: const Text('Reset'),
+                          child: Text(
+                            'Terapkan',
+                            style: TextStyle(
+                              color: widget.appBarColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const Gap(20),
+                  ),
+                  const Divider(),
 
-                    // Emergency Toggle
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Hanya Darurat'),
-                      secondary: Icon(
-                        LucideIcons.alertTriangle,
-                        color: _emergencyOnly
-                            ? AppTheme.emergencyColor
-                            : Colors.grey,
-                      ),
-                      value: _emergencyOnly,
-                      onChanged: (value) {
-                        setModalState(() => _emergencyOnly = value);
-                        setState(() => _emergencyOnly = value);
-                      },
-                    ),
-                    const Divider(),
-                    const Gap(12),
-
-                    // Period Filter
-                    const Text(
-                      'Rentang Waktu',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                  // Scrollable Content
+                  Expanded(
+                    child: ListView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        ChoiceChip(
-                          avatar: const Icon(LucideIcons.calendar, size: 16),
-                          label: const Text('Hari Ini'),
-                          selected: _selectedPeriod == 'today',
-                          onSelected: (selected) {
-                            setModalState(() {
-                              _selectedPeriod = selected ? 'today' : null;
-                            });
-                            setState(() {});
-                          },
-                        ),
-                        ChoiceChip(
-                          avatar: const Icon(
-                            LucideIcons.calendarDays,
-                            size: 16,
+                        // Emergency Toggle
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Hanya Darurat'),
+                          secondary: Icon(
+                            LucideIcons.alertTriangle,
+                            color: _emergencyOnly
+                                ? AppTheme.emergencyColor
+                                : Colors.grey,
                           ),
-                          label: const Text('Minggu Ini'),
-                          selected: _selectedPeriod == 'week',
-                          onSelected: (selected) {
-                            setModalState(() {
-                              _selectedPeriod = selected ? 'week' : null;
-                            });
-                            setState(() {});
+                          value: _emergencyOnly,
+                          onChanged: (value) {
+                            setModalState(() => _emergencyOnly = value);
+                            setState(() => _emergencyOnly = value);
                           },
                         ),
-                        ChoiceChip(
-                          avatar: const Icon(
-                            LucideIcons.calendarRange,
-                            size: 16,
-                          ),
-                          label: const Text('Bulan Ini'),
-                          selected: _selectedPeriod == 'month',
-                          onSelected: (selected) {
-                            setModalState(() {
-                              _selectedPeriod = selected ? 'month' : null;
-                            });
-                            setState(() {});
-                          },
+                        const Divider(),
+                        const Gap(12),
+
+                        // Period Filter
+                        const Text(
+                          'Rentang Waktu',
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
+                        const Gap(8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ChoiceChip(
+                              avatar: const Icon(
+                                LucideIcons.calendar,
+                                size: 16,
+                              ),
+                              label: const Text('Hari Ini'),
+                              selected: _selectedPeriod == 'today',
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedPeriod = selected ? 'today' : null;
+                                });
+                                setState(() {});
+                              },
+                            ),
+                            ChoiceChip(
+                              avatar: const Icon(
+                                LucideIcons.calendarDays,
+                                size: 16,
+                              ),
+                              label: const Text('Minggu Ini'),
+                              selected: _selectedPeriod == 'week',
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedPeriod = selected ? 'week' : null;
+                                });
+                                setState(() {});
+                              },
+                            ),
+                            ChoiceChip(
+                              avatar: const Icon(
+                                LucideIcons.calendarRange,
+                                size: 16,
+                              ),
+                              label: const Text('Bulan Ini'),
+                              selected: _selectedPeriod == 'month',
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedPeriod = selected ? 'month' : null;
+                                });
+                                setState(() {});
+                              },
+                            ),
+                          ],
+                        ),
+                        const Gap(20),
+
+                        // Status Filter
+                        const Text(
+                          'Status',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const Gap(8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children:
+                              (widget.allowedStatuses != null
+                                      ? widget.allowedStatuses!
+                                      : ReportStatus.values.where(
+                                          (s) =>
+                                              // Exclude legacy/duplicate statuses by name string to be safe
+                                              s.name != 'verifikasi' &&
+                                              s.name != 'archived',
+                                        ))
+                                  .map((status) {
+                                    final isSelected = _selectedStatuses
+                                        .contains(status);
+                                    return FilterChip(
+                                      label: Text(status.label),
+                                      selected: isSelected,
+                                      selectedColor: status.color.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      checkmarkColor: status.color,
+                                      onSelected: (selected) {
+                                        setModalState(() {
+                                          if (selected) {
+                                            _selectedStatuses.add(status);
+                                          } else {
+                                            _selectedStatuses.remove(status);
+                                          }
+                                        });
+                                        setState(() {});
+                                      },
+                                    );
+                                  })
+                                  .toList(),
+                        ),
+                        const Gap(20),
+
+                        // Category Filter
+                        const Text(
+                          'Kategori',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const Gap(8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _categories.map((cat) {
+                            return ChoiceChip(
+                              label: Text(cat),
+                              selected: _selectedCategory == cat,
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedCategory = selected ? cat : null;
+                                });
+                                setState(() {});
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const Gap(20),
+
+                        // Building Filter
+                        const Text(
+                          'Lokasi',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const Gap(8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _buildings.map((building) {
+                            return ChoiceChip(
+                              label: Text(building),
+                              selected: _selectedBuilding == building,
+                              onSelected: (selected) {
+                                setModalState(() {
+                                  _selectedBuilding = selected
+                                      ? building
+                                      : null;
+                                });
+                                setState(() {});
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        const Gap(20), // Bottom padding
                       ],
                     ),
-                    const Gap(20),
-
-                    // Status Filter
-                    const Text(
-                      'Status',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children:
-                          (widget.allowedStatuses != null
-                                  ? widget.allowedStatuses!
-                                  : ReportStatus.values)
-                              .map((status) {
-                                final isSelected = _selectedStatuses.contains(
-                                  status,
-                                );
-                                return FilterChip(
-                                  label: Text(status.label),
-                                  selected: isSelected,
-                                  selectedColor: status.color.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                  checkmarkColor: status.color,
-                                  onSelected: (selected) {
-                                    setModalState(() {
-                                      if (selected) {
-                                        _selectedStatuses.add(status);
-                                      } else {
-                                        _selectedStatuses.remove(status);
-                                      }
-                                    });
-                                    setState(() {});
-                                  },
-                                );
-                              })
-                              .toList(),
-                    ),
-                    const Gap(20),
-
-                    // Category Filter
-                    const Text(
-                      'Kategori',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _categories.map((cat) {
-                        return ChoiceChip(
-                          label: Text(cat),
-                          selected: _selectedCategory == cat,
-                          onSelected: (selected) {
-                            setModalState(() {
-                              _selectedCategory = selected ? cat : null;
-                            });
-                            setState(() {});
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const Gap(20),
-
-                    // Building Filter
-                    const Text(
-                      'Gedung',
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                    const Gap(8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _buildings.map((building) {
-                        return ChoiceChip(
-                          label: Text(building),
-                          selected: _selectedBuilding == building,
-                          onSelected: (selected) {
-                            setModalState(() {
-                              _selectedBuilding = selected ? building : null;
-                            });
-                            setState(() {});
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const Gap(20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _fetchReports();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: widget.appBarColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Terapkan Filter',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
-                    const Gap(12),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           );

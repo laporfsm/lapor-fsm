@@ -4,7 +4,9 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 
 class SupervisorActivityLogPage extends StatefulWidget {
-  const SupervisorActivityLogPage({super.key});
+  final bool isEmbedded;
+
+  const SupervisorActivityLogPage({super.key, this.isEmbedded = false});
 
   @override
   State<SupervisorActivityLogPage> createState() =>
@@ -95,28 +97,68 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          color: Colors.white,
-          child: TabBar(
-            controller: _tabController,
-            labelColor: AppTheme.primaryColor,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: AppTheme.primaryColor,
-            tabs: const [
-              Tab(text: 'Teknisi'),
-              Tab(text: 'PJ Gedung'),
-            ],
+    if (widget.isEmbedded) {
+      return Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: AppTheme.primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: AppTheme.primaryColor,
+              tabs: const [
+                Tab(text: 'Teknisi'),
+                Tab(text: 'PJ Gedung'),
+              ],
+            ),
           ),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: [_buildLogList(_technicianLogs), _buildLogList(_pjLogs)],
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildLogList(_technicianLogs),
+                _buildLogList(_pjLogs),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Aktivitas & Log'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 1,
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: AppTheme.primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: AppTheme.primaryColor,
+              tabs: const [
+                Tab(text: 'Teknisi'),
+                Tab(text: 'PJ Gedung'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildLogList(_technicianLogs),
+                _buildLogList(_pjLogs),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
