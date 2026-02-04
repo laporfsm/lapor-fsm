@@ -232,11 +232,14 @@ export const adminController = new Elysia({ prefix: '/admin' })
             });
         }
 
+        const totalEmergency = await db.select({ count: count() }).from(reports).where(eq(reports.isEmergency, true));
+
         return {
             status: 'success',
             data: {
                 totalReports: totalReports[0]?.count || 0,
                 totalUsers: totalUsers[0]?.count || 0,
+                totalEmergency: totalEmergency[0]?.count || 0,
                 avgHandlingMinutes,
                 reportsByStatus: reportsByStatus.reduce((acc, curr) => {
                     acc[curr.status || 'unknown'] = curr.count;
@@ -344,20 +347,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
         };
     })
 
-    // Fetch System Logs (Filtered to User actions)
+    // Fetch System Logs
     .get('/logs', async () => {
         const logs = await db
             .select()
             .from(reportLogs)
-            .where(inArray(reportLogs.action, [
-                'register', 
-                'verify_email', 
-                'verified', 
-                'suspended', 
-                'activated'
-            ]))
             .orderBy(desc(reportLogs.timestamp))
-            .limit(50);
+            .limit(100);
 
         return {
             status: 'success',
@@ -367,7 +363,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 user: l.actorName,
                 details: l.reason || `Status changed from ${l.fromStatus} to ${l.toStatus}`,
                 time: l.timestamp,
-                type: l.reportId ? 'Laporan' : 'User'
+                type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action)) 
+                    ? 'Verifikasi' 
+                    : (l.reportId === null || l.action === 'created') ? 'User' : 'Laporan'
             }))
         };
     })
@@ -377,7 +375,6 @@ export const adminController = new Elysia({ prefix: '/admin' })
         const logs = await db
             .select()
             .from(reportLogs)
-            .where(inArray(reportLogs.action, ['register', 'verify_email', 'verified', 'suspended', 'activated']))
             .orderBy(desc(reportLogs.timestamp));
 
         const doc = new PDFDocument({ margin: 40 });
@@ -421,7 +418,6 @@ export const adminController = new Elysia({ prefix: '/admin' })
         const logs = await db
             .select()
             .from(reportLogs)
-            .where(inArray(reportLogs.action, ['register', 'verify_email', 'verified', 'suspended', 'activated']))
             .orderBy(desc(reportLogs.timestamp));
 
         const workbook = new ExcelJS.Workbook();
