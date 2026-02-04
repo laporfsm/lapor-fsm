@@ -13,16 +13,17 @@ class AdminActivityLogPage extends StatefulWidget {
   State<AdminActivityLogPage> createState() => _AdminActivityLogPageState();
 }
 
-class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
+class _AdminActivityLogPageState extends State<AdminActivityLogPage> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
   String _searchQuery = '';
   List<Map<String, dynamic>> _allLogs = [];
-  List<Map<String, dynamic>> _filteredLogs = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -33,29 +34,27 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
       setState(() {
         _allLogs = logs;
         _isLoading = false;
-        _filterLogs();
       });
     }
   }
 
-  void _filterLogs() {
-    setState(() {
-      _filteredLogs = _allLogs.where((log) {
-        final matchesSearch =
-            log['user'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
+  List<Map<String, dynamic>> _getFilteredLogs(String type) {
+    return _allLogs.where((log) {
+      final matchesSearch =
+          log['user'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
 
-        final matchesType = log['type'] == 'User'; // Strict filter for User logs
+      final matchesType = log['type'] == type;
 
-        return matchesSearch && matchesType;
-      }).toList();
-    });
+      return matchesSearch && matchesType;
+    }).toList();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -76,16 +75,29 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showExportOptions(context),
-        backgroundColor: AppTheme.adminColor,
-        tooltip: 'Export Log',
-        child: const Icon(LucideIcons.download, color: Colors.white),
+        actions: [
+          IconButton(
+            onPressed: () => _showExportOptions(context),
+            icon: const Icon(LucideIcons.download),
+            tooltip: 'Export Log',
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
+          tabs: const [
+            Tab(text: 'Aktivitas User'),
+            Tab(text: 'Verifikasi User'),
+            Tab(text: 'Logs Laporan'),
+          ],
+        ),
       ),
       body: Column(
         children: [
-          // Search Header (Filters removed as backend only returns User logs)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
@@ -110,30 +122,46 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                 ),
               ),
               onChanged: (val) {
-                _searchQuery = val;
-                _filterLogs();
+                setState(() => _searchQuery = val);
               },
             ),
           ),
-
-          // Log List
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredLogs.isEmpty
-                    ? const Center(child: Text('Tidak ada log ditemukan'))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredLogs.length,
-                        separatorBuilder: (c, i) => const Gap(12),
-                        itemBuilder: (context, index) {
-                          final log = _filteredLogs[index];
-                          return _buildLogItem(log);
-                        },
-                      ),
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildLogList('User'),
+                      _buildLogList('Verifikasi'),
+                      _buildLogList('Laporan'),
+                    ],
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLogList(String type) {
+    final filtered = _getFilteredLogs(type);
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'Tidak ada log ${type.toLowerCase()} ditemukan',
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: filtered.length,
+      separatorBuilder: (c, i) => const Gap(12),
+      itemBuilder: (context, index) {
+        final log = filtered[index];
+        return _buildLogItem(log);
+      },
     );
   }
 
@@ -154,6 +182,10 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
       case 'User':
         icon = LucideIcons.user;
         color = Colors.orange;
+        break;
+      case 'Verifikasi':
+        icon = LucideIcons.userCheck;
+        color = Colors.purple;
         break;
       default:
         icon = LucideIcons.activity;
@@ -194,7 +226,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                       ),
                     ),
                     Text(
-                      DateFormat('HH:mm').format(log['time']),
+                      DateFormat('dd MMM, HH:mm').format(log['time']),
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: 12,
@@ -218,6 +250,25 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
   }
 
   void _showExportOptions(BuildContext context) {
+    String currentType;
+    String displayType;
+    
+    switch (_tabController.index) {
+      case 0:
+        currentType = 'User';
+        displayType = 'Aktivitas User';
+        break;
+      case 1:
+        currentType = 'Verifikasi';
+        displayType = 'Verifikasi User';
+        break;
+      default:
+        currentType = 'Laporan';
+        displayType = 'Update Laporan';
+    }
+    
+    final currentLogs = _getFilteredLogs(currentType);
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -230,9 +281,9 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Export Log Sistem',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Text(
+                'Export Log $displayType',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Gap(20),
               ListTile(
@@ -240,7 +291,12 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                 title: const Text('Export ke Excel (.xlsx)'),
                 onTap: () {
                   Navigator.pop(context);
-                  ExportService.exportLogsExcel(context, _filteredLogs);
+                  ExportService.exportLogsExcel(
+                    context,
+                    currentLogs,
+                    title: 'Log $displayType',
+                    primaryColor: AppTheme.adminColor,
+                  );
                 },
               ),
               ListTile(
@@ -250,7 +306,10 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                   Navigator.pop(context);
                   ExportService.generateAdminLogsPdf(
                     context: context,
-                    logs: _filteredLogs,
+                    logs: currentLogs,
+                    title: 'Log $displayType',
+                    primaryColor: AppTheme.adminColor,
+                    brandingSuffix: 'Admin Dashboard',
                   );
                 },
               ),

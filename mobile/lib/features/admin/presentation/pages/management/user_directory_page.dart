@@ -7,7 +7,9 @@ import 'package:mobile/features/admin/services/export_service.dart';
 
 class UserDirectoryPage extends StatefulWidget {
   final String? searchQuery;
-  const UserDirectoryPage({super.key, this.searchQuery});
+  final Map<String, dynamic>? filters;
+
+  const UserDirectoryPage({super.key, this.searchQuery, this.filters});
 
   @override
   State<UserDirectoryPage> createState() => _UserDirectoryPageState();
@@ -27,7 +29,8 @@ class _UserDirectoryPageState extends State<UserDirectoryPage> {
   @override
   void didUpdateWidget(UserDirectoryPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != oldWidget.searchQuery) {
+    if (widget.searchQuery != oldWidget.searchQuery ||
+        widget.filters != oldWidget.filters) {
       _filterData();
     }
   }
@@ -45,17 +48,29 @@ class _UserDirectoryPageState extends State<UserDirectoryPage> {
   }
 
   void _filterData() {
-    if (widget.searchQuery == null || widget.searchQuery!.isEmpty) {
-      setState(() => _filteredUsers = _allUsers);
-      return;
-    }
+    final query = (widget.searchQuery ?? '').toLowerCase();
+    
+    // Filters
+    final filterRole = widget.filters?['role']?.toString().toLowerCase() ?? 'semua';
+    final filterStatus = widget.filters?['status']?.toString().toLowerCase() ?? 'semua';
 
-    final query = widget.searchQuery!.toLowerCase();
     setState(() {
       _filteredUsers = _allUsers.where((user) {
         final name = (user['name'] ?? '').toString().toLowerCase();
         final email = (user['email'] ?? '').toString().toLowerCase();
-        return name.contains(query) || email.contains(query);
+        final role = (user['role'] ?? 'pelapor').toString().toLowerCase(); // Default to pelapor if missing
+        final isActive = user['isActive'] == true;
+
+        // Search Match
+        final matchesSearch = name.contains(query) || email.contains(query);
+
+        // Filter Match
+        final matchesRole = filterRole == 'semua' || role == filterRole;
+        final matchesStatus = filterStatus == 'semua' ||
+            (filterStatus == 'aktif' && isActive) ||
+            (filterStatus == 'nonaktif' && !isActive);
+            
+        return matchesSearch && matchesRole && matchesStatus;
       }).toList();
     });
   }
@@ -64,15 +79,35 @@ class _UserDirectoryPageState extends State<UserDirectoryPage> {
   Widget build(BuildContext context) {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
 
-    return Scaffold(
-      backgroundColor: Colors.transparent, // Transparent to blend with tab
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => ExportService.exportData(context, 'Data User', 'user'),
-        backgroundColor: AppTheme.adminColor,
-        tooltip: 'Export User',
-        child: const Icon(LucideIcons.download, color: Colors.white),
-      ),
-      body: ListView.builder(
+    if (_filteredUsers.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.searchX,
+              size: 64,
+              color: Colors.grey.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ditemukan user',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            Text(
+              'Coba sesuaikan filter atau pencarian Anda',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _filteredUsers.length,
         itemBuilder: (context, index) {
@@ -118,7 +153,6 @@ class _UserDirectoryPageState extends State<UserDirectoryPage> {
             ),
           );
         },
-      ),
-    );
+      );
   }
 }

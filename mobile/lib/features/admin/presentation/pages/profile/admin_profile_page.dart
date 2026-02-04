@@ -114,22 +114,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
             ),
             const Gap(16),
 
-            // Menu Sections
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ProfileSection(
-                title: 'Pengaturan',
-                children: [
-                  ProfileMenuItem(
-                    icon: LucideIcons.lock,
-                    label: 'Ubah Password',
-                    onTap: () => _showChangePasswordSheet(context),
-                    color: AppTheme.adminColor,
-                  ),
-                ],
-              ),
-            ),
-            const Gap(16),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -175,84 +159,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     );
   }
 
-  void _showChangePasswordSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-        ),
-        child: Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Ubah Password',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const Gap(20),
-              const _PasswordField(label: 'Password Lama'),
-              const Gap(12),
-              const _PasswordField(label: 'Password Baru'),
-              const Gap(12),
-              const _PasswordField(label: 'Konfirmasi Password'),
-              const Gap(20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Batal'),
-                    ),
-                  ),
-                  const Gap(12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Password berhasil diubah'),
-                            backgroundColor: Color(0xFF22C55E),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.adminColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Simpan'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   void _showHelpSheet(BuildContext context) {
     showModalBottomSheet(
@@ -466,63 +372,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
   }
 }
 
-class _PasswordField extends StatefulWidget {
-  final String label;
-
-  const _PasswordField({required this.label});
-
-  @override
-  State<_PasswordField> createState() => _PasswordFieldState();
-}
-
-class _PasswordFieldState extends State<_PasswordField> {
-  bool _obscure = true;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          widget.label,
-          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-        ),
-        const Gap(6),
-        TextField(
-          obscureText: _obscure,
-          decoration: InputDecoration(
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscure ? LucideIcons.eye : LucideIcons.eyeOff,
-                size: 18,
-                color: Colors.grey.shade400,
-              ),
-              onPressed: () => setState(() => _obscure = !_obscure),
-            ),
-            filled: true,
-            fillColor: const Color(0xFFF8FAFC),
-            contentPadding: const EdgeInsets.symmetric(
-              vertical: 12,
-              horizontal: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.shade200),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppTheme.adminColor),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 class _HelpItem extends StatelessWidget {
   final IconData icon;

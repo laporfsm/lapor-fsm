@@ -55,23 +55,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     try {
       final responses = await Future.wait([
         apiService.dio.get('/admin/dashboard'),
-        // Fetch emergency count manually
-        apiService.dio.get(
-          '/reports',
-          queryParameters: {'isEmergency': true, 'limit': 1},
-        ),
-        // Fetch recent reports
         apiService.dio.get(
           '/reports',
           queryParameters: {
             'limit': 5,
             'sort': 'desc',
-          }, // assuming sort param or default is desc
+          },
         ),
       ]);
 
       final dashboardRes = responses[0];
-      final recentRes = responses[2];
+      final recentRes = responses[1];
 
       if (mounted) {
         setState(() {
@@ -326,7 +320,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             icon: LucideIcons.users,
                             color: Colors.green,
                             onTap: () => context.go(
-                              '/admin/staff', // Assuming route exists or users?tab=2
+                              '/admin/users?tab=2',
                             ), 
                           ),
                           _QuickActionButton(

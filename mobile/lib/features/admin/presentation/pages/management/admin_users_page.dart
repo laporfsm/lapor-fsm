@@ -4,6 +4,7 @@ import 'package:mobile/features/admin/presentation/pages/management/staff_manage
 import 'package:mobile/features/admin/presentation/pages/management/user_directory_page.dart';
 import 'package:mobile/features/admin/presentation/pages/management/user_verification_page.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/features/admin/services/export_service.dart';
 
 class AdminUsersPage extends StatefulWidget {
   final int initialIndex;
@@ -20,6 +21,14 @@ class _AdminUsersPageState extends State<AdminUsersPage>
   late TabController _tabController;
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  int _staffRefreshKey = 0; // Key to force refresh staff list
+
+  // Store filters for each tab: 0=Directory, 1=Verification, 2=Staff
+  final List<Map<String, dynamic>> _tabFilters = [
+    {'role': 'Semua', 'status': 'Semua'}, // Directory
+    {'department': 'Semua'}, // Verification
+    {'role': 'Semua', 'status': 'Aktif'}, // Staff
+  ];
 
   @override
   void initState() {
@@ -29,6 +38,9 @@ class _AdminUsersPageState extends State<AdminUsersPage>
       vsync: this,
       initialIndex: widget.initialIndex,
     );
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -62,6 +74,22 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         backgroundColor: AppTheme.adminColor,
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(LucideIcons.download),
+            tooltip: 'Export Data',
+            onPressed: () {
+              final titles = ['Data User', 'Data User Pending', 'Data Staff'];
+              final types = ['user', 'verification_history', 'staff'];
+              ExportService.exportData(
+                context,
+                titles[_tabController.index],
+                types[_tabController.index],
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
@@ -117,13 +145,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                   child: IconButton(
                     icon: const Icon(LucideIcons.filter),
                     color: AppTheme.adminColor,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Filter belum diimplementasikan'),
-                        ),
-                      );
-                    },
+                    onPressed: _showFilterModal,
                   ),
                 ),
               ],
@@ -134,17 +156,189 @@ class _AdminUsersPageState extends State<AdminUsersPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                UserDirectoryPage(searchQuery: _searchQuery),
-                UserVerificationPage(searchQuery: _searchQuery),
+                UserDirectoryPage(
+                  searchQuery: _searchQuery,
+                  filters: _tabFilters[0],
+                ),
+                UserVerificationPage(
+                  searchQuery: _searchQuery,
+                  filters: _tabFilters[1],
+                ),
                 StaffManagementPage(
+                  key: ValueKey(_staffRefreshKey),
                   searchQuery: _searchQuery,
                   shouldOpenAddDialog: widget.action == 'add',
+                  filters: _tabFilters[2],
                 ),
               ],
             ),
           ),
         ],
       ),
+      floatingActionButton: _tabController.index == 2
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const StaffManagementPage.addStaffDialog(),
+                ).then((value) {
+                  if (value == true) {
+                    setState(() {
+                      _staffRefreshKey++; // Force reload
+                    });
+                  }
+                });
+              },
+              backgroundColor: AppTheme.adminColor,
+              icon: const Icon(LucideIcons.plus),
+              label: const Text('Tambah Staff'),
+            )
+          : null,
+    );
+  }
+
+  void _showFilterModal() {
+    final index = _tabController.index;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _FilterBottomSheet(
+        index: index,
+        currentFilters: Map.from(_tabFilters[index]),
+        onApply: (newFilters) {
+          setState(() {
+            _tabFilters[index] = newFilters;
+          });
+        },
+      ),
+    );
+  }
+}
+
+class _FilterBottomSheet extends StatefulWidget {
+  final int index;
+  final Map<String, dynamic> currentFilters;
+  final Function(Map<String, dynamic>) onApply;
+
+  const _FilterBottomSheet({
+    required this.index,
+    required this.currentFilters,
+    required this.onApply,
+  });
+
+  @override
+  State<_FilterBottomSheet> createState() => _FilterBottomSheetState();
+}
+
+class _FilterBottomSheetState extends State<_FilterBottomSheet> {
+  late Map<String, dynamic> _filters;
+
+  @override
+  void initState() {
+    super.initState();
+    _filters = Map.from(widget.currentFilters);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Filter Data',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(LucideIcons.x),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (widget.index == 0) ...[
+            _buildDropdown(
+              'Role User',
+              'role',
+              ['Semua', 'Pelapor', 'Teknisi', 'PJ Gedung', 'Supervisor', 'Admin'],
+            ),
+            const SizedBox(height: 16),
+            _buildDropdown('Status', 'status', ['Semua', 'Aktif', 'Nonaktif']),
+          ] else if (widget.index == 1) ...[
+            _buildDropdown(
+              'Departemen',
+              'department',
+              ['Semua', 'Teknik Komputer', 'Elektro', 'Sipil', 'Mesin'],
+            ),
+          ] else if (widget.index == 2) ...[
+            _buildDropdown(
+              'Role Staff',
+              'role',
+              ['Semua', 'Supervisor', 'PJ Gedung', 'Teknisi', 'Admin'],
+            ),
+            const SizedBox(height: 16),
+            _buildDropdown('Status', 'status', ['Semua', 'Aktif', 'Nonaktif']),
+          ],
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () {
+                widget.onApply(_filters);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.adminColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Terapkan Filter'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown(String label, String key, List<String> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _filters[key] ?? items.first,
+              isExpanded: true,
+              items: items.map((item) {
+                return DropdownMenuItem(value: item, child: Text(item));
+              }).toList(),
+              onChanged: (value) {
+                setState(() => _filters[key] = value);
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

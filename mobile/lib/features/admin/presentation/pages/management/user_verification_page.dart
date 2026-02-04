@@ -6,7 +6,9 @@ import 'package:mobile/core/theme.dart';
 
 class UserVerificationPage extends StatefulWidget {
   final String? searchQuery;
-  const UserVerificationPage({super.key, this.searchQuery});
+  final Map<String, dynamic>? filters;
+
+  const UserVerificationPage({super.key, this.searchQuery, this.filters});
 
   @override
   State<UserVerificationPage> createState() => _UserVerificationPageState();
@@ -26,7 +28,8 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
   @override
   void didUpdateWidget(UserVerificationPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != oldWidget.searchQuery) {
+    if (widget.searchQuery != oldWidget.searchQuery ||
+        widget.filters != oldWidget.filters) {
       _filterData();
     }
   }
@@ -44,20 +47,25 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
   }
 
   void _filterData() {
-    if (widget.searchQuery == null || widget.searchQuery!.isEmpty) {
-      setState(() => _filteredPendingUsers = _allPendingUsers);
-      return;
-    }
-
-    final query = widget.searchQuery!.toLowerCase();
+    final query = (widget.searchQuery ?? '').toLowerCase();
+    
+    // Filters
+    final filterDept = widget.filters?['department']?.toString().toLowerCase() ?? 'semua';
+    
     setState(() {
       _filteredPendingUsers = _allPendingUsers.where((user) {
         final name = (user['name'] ?? '').toString().toLowerCase();
         final email = (user['email'] ?? '').toString().toLowerCase();
         final dept = (user['department'] ?? '').toString().toLowerCase();
-        return name.contains(query) ||
+        
+        // Search & Filter
+        final matchesSearch = name.contains(query) ||
             email.contains(query) ||
             dept.contains(query);
+            
+        final matchesDept = filterDept == 'semua' || dept == filterDept;
+
+        return matchesSearch && matchesDept;
       }).toList();
     });
   }
@@ -89,17 +97,26 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  LucideIcons.checkCircle,
+                  LucideIcons.searchX,
                   size: 64,
-                  color: Colors.green.withValues(alpha: 0.5),
+                  color: Colors.grey.withValues(alpha: 0.3),
                 ),
                 const Gap(16),
                 Text(
-                  widget.searchQuery != null && widget.searchQuery!.isNotEmpty
-                      ? 'Tidak ditemukan user sesuai pencarian'
-                      : 'Tidak ada user pending',
-                  style: const TextStyle(color: Colors.grey),
+                  'Tidak ditemukan user pending',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade600,
+                  ),
                 ),
+                Text(
+                  'Coba sesuaikan filter atau pencarian Anda',
+                  style: TextStyle(color: Colors.grey.shade500),
+                ),
+                if (_allPendingUsers.isEmpty && (widget.searchQuery == null || widget.searchQuery!.isEmpty))
+                   // Specialized hint if absolutely no pending users regardless of filter (optional, but keep it simple first)
+                   const SizedBox.shrink(),
               ],
             ),
           )
