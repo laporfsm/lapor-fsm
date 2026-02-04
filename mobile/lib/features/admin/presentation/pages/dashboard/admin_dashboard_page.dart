@@ -6,7 +6,6 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';

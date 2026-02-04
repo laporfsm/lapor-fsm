@@ -69,7 +69,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
 
       if (mounted) {
         if (result['success']) {
-          _showSuccessDialog();
+          _showSuccessDialog(result['message'] ?? 'Email berhasil diverifikasi!');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -122,7 +122,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(String message) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -145,13 +145,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             ),
             const Gap(20),
             const Text(
-              'Email Terverifikasi!',
+              'Berhasil!',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const Gap(12),
             Text(
-              'Terima kasih. Akun Anda sekarang menunggu persetujuan final dari Admin sebelum dapat digunakan.',
+              message,
               style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),

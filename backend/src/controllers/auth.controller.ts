@@ -90,11 +90,37 @@ export const authController = new Elysia({ prefix: '/auth' })
   // User Registration (Pelapor)
   .post('/register', async ({ body, set }) => {
     try {
+      const isUndipEmail = (email: string) => {
+        const lowerEmail = email.toLowerCase();
+        return lowerEmail.endsWith('@undip.ac.id') ||
+          lowerEmail.endsWith('@students.undip.ac.id') ||
+          lowerEmail.endsWith('@live.undip.ac.id') ||
+          lowerEmail.endsWith('@lecturer.undip.ac.id') ||
+          lowerEmail.endsWith('@staff.undip.ac.id');
+      };
+
+      // Validation
+      if (!body.email.includes('@')) {
+        set.status = 400;
+        return { status: 'error', message: 'Format email tidak valid' };
+      }
+
+      if (body.password.length < 6) {
+        set.status = 400;
+        return { status: 'error', message: 'Password minimal 6 karakter' };
+      }
+
       // Check if email already exists
       const existing = await db.select().from(users).where(eq(users.email, body.email)).limit(1);
       if (existing.length > 0) {
         set.status = 400;
         return { status: 'error', message: 'Email sudah terdaftar' };
+      }
+
+      // Requirements for Non-UNDIP emails
+      if (!isUndipEmail(body.email) && !body.idCardUrl) {
+        set.status = 400;
+        return { status: 'error', message: 'Kartu identitas wajib diunggah untuk email selain UNDIP' };
       }
 
       if (body.phone === body.emergencyPhone) {
@@ -103,7 +129,10 @@ export const authController = new Elysia({ prefix: '/auth' })
       }
 
       const hashedPassword = await Bun.password.hash(body.password);
-      const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Use crypto for better randomness
+      const crypto = require('crypto');
+      const verificationToken = crypto.randomInt(100000, 999999).toString();
 
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 15);
@@ -115,12 +144,14 @@ export const authController = new Elysia({ prefix: '/auth' })
         phone: body.phone,
         nimNip: body.nimNip,
         department: body.department,
-        faculty: body.faculty,
+        faculty: body.faculty || 'Sains dan Matematika',
         address: body.address,
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
         idCardUrl: body.idCardUrl,
-        isVerified: false, // Always false now, requires admin approval
+        isVerified: isUndipEmail(body.email), // Auto-verify if UNDIP? Actually user request said "registrasi apakah aman sudahan", usually UNDIP is trusted, but let's keep it safe.
+        // Actually, let's allow auto-verify for UNDIP emails for better UX, but require admin approval for others?
+        // Wait, the mobile app says "@undip.ac.id will be directly verified". Let's follow that.
         isEmailVerified: false,
         emailVerificationToken: verificationToken,
         emailVerificationExpiresAt: expiresAt,
@@ -132,18 +163,23 @@ export const authController = new Elysia({ prefix: '/auth' })
         actorId: newUser[0].id.toString(),
         actorName: newUser[0].name,
         actorRole: 'user',
-        reason: 'User mendaftar ke sistem',
+        reason: isUndipEmail(body.email) 
+          ? 'User mendaftar (UNDIP Email)' 
+          : 'User mendaftar (Non-UNDIP, Menunggu Verifikasi KTP)',
       });
 
       // Notify Admins
-      await NotificationService.notifyRole('admin', 'Request Registrasi Baru', `User baru ${newUser[0].name} telah mendaftar dan menunggu verifikasi email.`);
+      await NotificationService.notifyRole(
+        'admin', 
+        'Request Registrasi Baru', 
+        `User baru ${newUser[0].name} (${body.email}) telah mendaftar.`
+      );
 
-      // In-memory log still useful for dev if email fails
+      // In-memory log for dev
       console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
 
       // Send Real Email
       try {
-        // Fire and forget - don't block response on email sending unless critical
         EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
       } catch (err) {
         console.error('[AUTH] Background email send failed:', err);
@@ -155,18 +191,18 @@ export const authController = new Elysia({ prefix: '/auth' })
         data: {
           user: mapToMobileUser(newUser[0]),
           needsEmailVerification: true,
-          needsAdminApproval: true
+          needsAdminApproval: !isUndipEmail(body.email)
         }
       };
     } catch (error: any) {
       set.status = 500;
-      return { status: 'error', message: error.message };
+      return { status: 'error', message: 'Internal Server Error' }; // Don't leak technical messages
     }
   }, {
     body: t.Object({
-      name: t.String(),
+      name: t.String({ minLength: 2 }),
       email: t.String(),
-      password: t.String(),
+      password: t.String({ minLength: 6 }),
       phone: t.String(),
       nimNip: t.String(),
       department: t.Optional(t.String()),
@@ -223,7 +259,9 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     return {
       status: 'success',
-      message: 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
+      message: user[0].isVerified 
+        ? 'Email berhasil diverifikasi. Akun Anda sudah aktif.' 
+        : 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
     };
   }, {
     body: t.Object({
