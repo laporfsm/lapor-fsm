@@ -5,18 +5,20 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
 
-class AdminDashboardPage extends StatefulWidget {
+class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
 
   @override
-  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+  ConsumerState<AdminDashboardPage> createState() => _AdminDashboardPageState();
 }
 
-class _AdminDashboardPageState extends State<AdminDashboardPage> {
+class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   Map<String, dynamic>? _stats;
   List<Map<String, dynamic>> _recentReports = [];
   List<Map<String, dynamic>> _systemLogs = [];

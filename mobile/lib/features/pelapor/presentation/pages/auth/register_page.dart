@@ -226,7 +226,11 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         if (result['success']) {
-          if (result['needsApproval'] == true) {
+          if (result['needsEmailVerification'] == true) {
+             context.go(
+               '/email-verification?email=${Uri.encodeComponent(_emailController.text)}',
+             );
+          } else if (result['needsApproval'] == true) {
             _showPendingApprovalDialog();
           } else {
             ScaffoldMessenger.of(context).showSnackBar(

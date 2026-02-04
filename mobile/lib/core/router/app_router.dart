@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/login_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/register_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/auth/email_verification_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/auth/complete_profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/home_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/create_report_page.dart';
@@ -136,6 +137,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/complete-profile',
       builder: (context, state) => const CompleteProfilePage(),
+    ),
+    GoRoute(
+      path: '/email-verification',
+      builder: (context, state) {
+        final email = state.uri.queryParameters['email'] ?? '';
+        return EmailVerificationPage(email: email);
+      },
     ),
     GoRoute(
       path: '/notifications',

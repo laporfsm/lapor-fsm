@@ -86,13 +86,72 @@ class AuthService {
       if (response.data['status'] == 'success') {
         return {
           'success': true,
-          'needsApproval': response.data['data']['needsApproval'],
+          'needsApproval': response.data['data']['needsAdminApproval'] ?? false,
+          'needsEmailVerification': response.data['data']['needsEmailVerification'] ?? false,
           'message': response.data['message'],
         };
       }
       return {
         'success': false,
         'message': response.data['message'] ?? 'Registrasi gagal',
+      };
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Verify Email (OTP)
+  Future<Map<String, dynamic>> verifyEmail({
+    required String email,
+    required String token,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/auth/verify-email',
+        data: {'email': email, 'token': token},
+      );
+
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Verifikasi gagal',
+      };
+    } catch (e) {
+      if (e is DioException && e.response != null) {
+        return {
+          'success': false,
+          'message':
+              e.response?.data['message'] ?? 'Kode verifikasi tidak valid',
+        };
+      }
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
+  // Resend Verification Code
+  Future<Map<String, dynamic>> resendVerification({
+    required String email,
+  }) async {
+    try {
+      final response = await apiService.dio.post(
+        '/auth/resend-verification',
+        data: {'email': email},
+      );
+
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': response.data['message'],
+        };
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mengirim ulang kode',
       };
     } catch (e) {
       return {'success': false, 'message': e.toString()};

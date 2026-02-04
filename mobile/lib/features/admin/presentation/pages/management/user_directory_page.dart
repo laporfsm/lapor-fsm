@@ -114,41 +114,70 @@ class _UserDirectoryPageState extends State<UserDirectoryPage> {
           final user = _filteredUsers[index];
           final isActive = user['isActive'] == true;
 
-          return Card(
-            elevation: 0,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: Colors.grey.shade200),
-            ),
-            child: ListTile(
-              onTap: () async {
-                await context.push('/admin/users/${user['id']}');
-                _loadData(); // Refresh on return
-              },
-              leading: CircleAvatar(
-                backgroundColor: isActive
-                    ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                    : Colors.red.withValues(alpha: 0.1),
-                child: Icon(
-                  LucideIcons.user,
-                  color: isActive ? AppTheme.primaryColor : Colors.red,
-                  size: 20,
-                ),
+          return Opacity(
+            opacity: isActive ? 1.0 : 0.6,
+            child: Card(
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: Colors.grey.shade200),
               ),
-              title: Text(
-                user['name'] ?? 'No Name',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isActive ? Colors.black : Colors.grey,
-                  decoration: isActive ? null : TextDecoration.lineThrough,
+              child: ListTile(
+                onTap: () async {
+                  await context.push('/admin/users/${user['id']}');
+                  _loadData(); // Refresh on return
+                },
+                leading: CircleAvatar(
+                  backgroundColor: isActive
+                      ? AppTheme.primaryColor.withValues(alpha: 0.1)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  child: Icon(
+                    LucideIcons.user,
+                    color: isActive ? AppTheme.primaryColor : Colors.grey,
+                    size: 20,
+                  ),
                 ),
-              ),
-              subtitle: Text(user['email'] ?? '-'),
-              trailing: const Icon(
-                LucideIcons.chevronRight,
-                size: 16,
-                color: Colors.grey,
+                title: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        user['name'] ?? 'No Name',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isActive ? Colors.black : Colors.grey.shade600,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (!isActive)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'NONAKTIF',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                subtitle: Text(user['email'] ?? '-'),
+                trailing: const Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: Colors.grey,
+                ),
               ),
             ),
           );
