@@ -111,7 +111,8 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
         }
 
         await refresh();
-        if (!mounted) return;
+        if (!context.mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -120,11 +121,11 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
             backgroundColor: approve ? Colors.green : Colors.red,
           ),
         );
-        if (!approve) context.pop();
+        if (!approve && context.mounted) context.pop();
       }
     } catch (e) {
       debugPrint('Error processing verification: $e');
-      if (!mounted) return;
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(

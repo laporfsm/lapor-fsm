@@ -3,16 +3,18 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/admin/services/export_service.dart';
+
 
 class StaffManagementPage extends StatefulWidget {
   final String? searchQuery;
-  final bool shouldOpenAddDialog; // New parameter
+  final bool shouldOpenAddDialog;
+  final Map<String, dynamic>? filters; // Add filters param
 
   const StaffManagementPage({
     super.key,
     this.searchQuery,
     this.shouldOpenAddDialog = false,
+    this.filters,
   });
 
   @override
@@ -39,7 +41,8 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   @override
   void didUpdateWidget(StaffManagementPage oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.searchQuery != oldWidget.searchQuery) {
+    if (widget.searchQuery != oldWidget.searchQuery ||
+        widget.filters != oldWidget.filters) {
       _filterData();
     }
   }
@@ -57,25 +60,39 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
   }
 
   void _filterData() {
-    if (widget.searchQuery == null || widget.searchQuery!.isEmpty) {
-      setState(() => _filteredStaff = _allStaff);
-      return;
-    }
+    final query = (widget.searchQuery ?? '').toLowerCase();
+    
+    // Filters
+    final filterRole = widget.filters?['role']?.toString().toLowerCase() ?? 'semua';
+    final filterStatus = widget.filters?['status']?.toString().toLowerCase() ?? 'semua';
 
-    final query = widget.searchQuery!.toLowerCase();
     setState(() {
       _filteredStaff = _allStaff.where((staff) {
         final name = (staff['name'] ?? '').toString().toLowerCase();
         final email = (staff['email'] ?? '').toString().toLowerCase();
-        return name.contains(query) || email.contains(query);
+        final role = (staff['role'] ?? '').toString().toLowerCase();
+        final isActive = staff['isActive'] == true;
+
+        // Search Match
+        final matchesSearch = name.contains(query) || email.contains(query);
+
+        // Filter Match
+        final matchesRole = filterRole == 'semua' || role == filterRole;
+        final matchesStatus = filterStatus == 'semua' ||
+            (filterStatus == 'aktif' && isActive) ||
+            (filterStatus == 'nonaktif' && !isActive);
+
+        return matchesSearch && matchesRole && matchesStatus;
       }).toList();
     });
   }
 
   void _showAddStaffDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => const _AddStaffDialog(),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const AddStaffBottomSheet(),
     ).then((value) {
       if (value == true) _loadData(); // Refresh if added
     });
@@ -165,192 +182,218 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'export_staff',
-            onPressed: () =>
-                ExportService.exportData(context, 'Data Staff', 'staff'),
-            backgroundColor: Colors.white,
-            foregroundColor: AppTheme.adminColor,
-            tooltip: 'Export Staff',
-            child: const Icon(LucideIcons.download),
-          ),
-          const Gap(12),
-          FloatingActionButton.extended(
-            heroTag: 'add_staff',
-            onPressed: _showAddStaffDialog,
-            backgroundColor: AppTheme.adminColor,
-            foregroundColor: Colors.white,
-            icon: const Icon(LucideIcons.plus),
-            label: const Text('Tambah Staff'),
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+
+    if (_filteredStaff.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              LucideIcons.searchX,
+              size: 64,
+              color: Colors.grey.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ditemukan staff',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade600,
+              ),
+            ),
+            Text(
+              'Coba sesuaikan filter atau pencarian Anda',
+              style: TextStyle(color: Colors.grey.shade500),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: _filteredStaff.length,
+      separatorBuilder: (context, index) => const Gap(12),
+      itemBuilder: (context, index) {
+        final staff = _filteredStaff[index];
+        return _buildStaffCard(staff);
+      },
+    );
+  }
+
+  Widget _buildStaffCard(Map<String, dynamic> staff) {
+    final role = staff['role']?.toString() ?? '';
+    final isActive = staff['isActive'] == true;
+
+    Color roleColor;
+    Color roleBgColor;
+    
+    switch (role) {
+      case 'admin':
+        roleColor = Colors.purple;
+        roleBgColor = Colors.purple.withValues(alpha: 0.1);
+        break;
+      case 'pj_gedung':
+        roleColor = Colors.orange;
+        roleBgColor = Colors.orange.withValues(alpha: 0.1);
+        break;
+      case 'teknisi':
+        roleColor = Colors.blue;
+        roleBgColor = Colors.blue.withValues(alpha: 0.1);
+        break;
+      default: // supervisor
+        roleColor = AppTheme.primaryColor;
+        roleBgColor = AppTheme.primaryColor.withValues(alpha: 0.1);
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+        border: Border.all(color: Colors.grey.shade100),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredStaff.length,
-              separatorBuilder: (context, index) => const Gap(12),
-              itemBuilder: (context, index) {
-                final staff = _filteredStaff[index];
-                final role = staff['role'];
-                final isActive = staff['isActive'] == true;
-
-                return Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: isActive
-                            ? (role == 'admin'
-                                  ? Colors.purple.withValues(alpha: 0.1)
-                                  : Colors.indigo.withValues(alpha: 0.1))
-                            : Colors.grey.withValues(alpha: 0.1),
-                        child: Icon(
-                          role == 'admin'
-                              ? LucideIcons.shield
-                              : LucideIcons.userCog,
-                          color: isActive
-                              ? (role == 'admin'
-                                    ? Colors.purple
-                                    : Colors.indigo)
-                              : Colors.grey,
-                          size: 20,
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          staff['name'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const Gap(16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              staff['name'],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
+                        if (!isActive) ...[
+                          const Gap(8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                            Text(
-                              role.toString().toUpperCase(),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Nonaktif',
                               style: TextStyle(
-                                color: role == 'admin'
-                                    ? Colors.purple
-                                    : Colors.indigo,
                                 fontSize: 10,
+                                color: Colors.red.shade700,
                                 fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            Text(
-                              staff['email'],
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (!isActive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'NON-AKTIF',
-                            style: TextStyle(color: Colors.red, fontSize: 10),
-                          ),
-                        ),
-                      const Spacer(),
-                      PopupMenuButton<String>(
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _showEditStaffDialog(staff);
-                          } else if (value == 'reset_password') {
-                            _showResetPasswordDialog(staff);
-                          } else if (value == 'toggle_status') {
-                            _toggleStaffStatus(staff);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(LucideIcons.edit, size: 18),
-                                Gap(8),
-                                Text('Edit Data'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'reset_password',
-                            child: Row(
-                              children: [
-                                Icon(LucideIcons.key, size: 18),
-                                Gap(8),
-                                Text('Reset Password'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'toggle_status',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  isActive
-                                      ? LucideIcons.ban
-                                      : LucideIcons.checkCircle,
-                                  size: 18,
-                                  color: isActive ? Colors.red : Colors.green,
-                                ),
-                                const Gap(8),
-                                Text(
-                                  isActive ? 'Nonaktifkan' : 'Aktifkan',
-                                  style: TextStyle(
-                                    color: isActive ? Colors.red : Colors.green,
-                                  ),
-                                ),
-                              ],
                             ),
                           ),
                         ],
-                        child: const Icon(
-                          LucideIcons.moreVertical,
-                          color: Colors.grey,
+                      ],
+                    ),
+                    const Gap(4),
+                    Text(
+                      staff['email'],
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Gap(8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: roleBgColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        role.replaceAll('_', ' ').toUpperCase(),
+                        style: TextStyle(
+                          color: roleColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              // Action Buttons
+              Row(
+                children: [
+                  _buildActionButton(
+                    icon: LucideIcons.key,
+                    color: Colors.orange,
+                    tooltip: 'Reset Password',
+                    onTap: () => _showResetPasswordDialog(staff),
                   ),
-                );
-              },
-            ),
+                  const Gap(8),
+                  _buildActionButton(
+                    icon: LucideIcons.pencil,
+                    color: Colors.blue,
+                    tooltip: 'Edit',
+                    onTap: () => _showEditStaffDialog(staff),
+                  ),
+                  const Gap(8),
+                  _buildActionButton(
+                    icon: isActive ? LucideIcons.userX : LucideIcons.userCheck,
+                    color: isActive ? Colors.red : Colors.green,
+                    tooltip: isActive ? 'Nonaktifkan' : 'Aktifkan',
+                    onTap: () => _toggleStaffStatus(staff),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+    required String tooltip,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, size: 18, color: color),
+      ),
+    );
+  }
+
+
 }
 
-class _AddStaffDialog extends StatefulWidget {
-  const _AddStaffDialog();
+class AddStaffBottomSheet extends StatefulWidget {
+  const AddStaffBottomSheet({super.key});
 
   @override
-  State<_AddStaffDialog> createState() => _AddStaffDialogState();
+  State<AddStaffBottomSheet> createState() => _AddStaffBottomSheetState();
 }
 
-class _AddStaffDialogState extends State<_AddStaffDialog> {
+class _AddStaffBottomSheetState extends State<AddStaffBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -375,11 +418,18 @@ class _AddStaffDialogState extends State<_AddStaffDialog> {
       if (success) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Staff berhasil ditambahkan')),
+          const SnackBar(
+            content: Text('Staff berhasil ditambahkan'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Gagal menambahkan staff')),
+          const SnackBar(
+            content: Text('Gagal menambahkan staff'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -387,88 +437,192 @@ class _AddStaffDialogState extends State<_AddStaffDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Tambah Staff Baru'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nama Lengkap'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
-              const Gap(12),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                validator: (v) => v!.isEmpty ? 'Wajib diisi' : null,
-              ),
-              const Gap(12),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Password'),
-                obscureText: true,
-                validator: (v) => v!.length < 6 ? 'Min 6 karakter' : null,
-              ),
-              const Gap(12),
-              DropdownButtonFormField<String>(
-                initialValue: _role,
-                decoration: const InputDecoration(labelText: 'Role'),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'supervisor',
-                    child: Text('Supervisor'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'pj_gedung',
-                    child: Text('PJ Gedung'),
-                  ),
-                  DropdownMenuItem(value: 'teknisi', child: Text('Teknisi')),
-                  DropdownMenuItem(value: 'admin', child: Text('Admin')),
-                ],
-                onChanged: (v) => setState(() => _role = v!),
-              ),
-            ],
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Gap(12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
+          const Gap(24),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppTheme.adminColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    LucideIcons.userPlus,
+                    color: AppTheme.adminColor,
+                  ),
+                ),
+                const Gap(16),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tambah Staff Baru',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Lengkapi data untuk membuat akun staff',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const Gap(32),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  _buildField(
+                    controller: _nameController,
+                    label: 'Nama Lengkap',
+                    icon: LucideIcons.user,
+                    validator: (v) => v!.isEmpty ? 'Nama wajib diisi' : null,
+                  ),
+                  const Gap(16),
+                  _buildField(
+                    controller: _emailController,
+                    label: 'Email',
+                    icon: LucideIcons.mail,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => v!.isEmpty ? 'Email wajib diisi' : null,
+                  ),
+                  const Gap(16),
+                  _buildField(
+                    controller: _passwordController,
+                    label: 'Password',
+                    icon: LucideIcons.key,
+                    obscureText: true,
+                    validator: (v) => v!.length < 6 ? 'Min 6 karakter' : null,
+                  ),
+                  const Gap(16),
+                  DropdownButtonFormField<String>(
+                    initialValue: _role,
+                    decoration: InputDecoration(
+                      labelText: 'Role Akses',
+                      prefixIcon: const Icon(LucideIcons.shieldCheck, size: 20),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'supervisor',
+                        child: Text('Supervisor'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'pj_gedung',
+                        child: Text('PJ Gedung'),
+                      ),
+                      DropdownMenuItem(value: 'teknisi', child: Text('Teknisi')),
+                      DropdownMenuItem(value: 'admin', child: Text('Admin')),
+                    ],
+                    onChanged: (v) => setState(() => _role = v!),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(32),
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: SizedBox(
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.adminColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 0,
+                ),
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Buat Akun Staff',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+          const Gap(12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppTheme.adminColor),
         ),
       ),
-      actions: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              style: TextButton.styleFrom(foregroundColor: Colors.grey),
-              child: const Text('Batal'),
-            ),
-            const Gap(8),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.adminColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(color: Colors.white),
-                    )
-                  : const Text('Simpan'),
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

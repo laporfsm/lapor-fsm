@@ -5,6 +5,9 @@ import 'package:dio/dio.dart';
 import 'package:excel/excel.dart';
 import 'package:mobile/core/utils/save_file.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class ExportService {
   static Future<void> exportData(
@@ -12,7 +15,10 @@ class ExportService {
     String title,
     String dataType, {
     List<dynamic>? data,
+    Color? primaryColor,
   }) async {
+    final themeColor = primaryColor ?? const Color(0xFF059669); // Default to Emerald
+    final hexColor = '#${themeColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
     // Show loading snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -47,9 +53,7 @@ class ExportService {
       // Header Style
       final CellStyle headerStyle = CellStyle(
         bold: true,
-        backgroundColorHex: ExcelColor.fromHexString(
-          '#059669',
-        ), // Emerald Green
+        backgroundColorHex: ExcelColor.fromHexString(hexColor),
         fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
         horizontalAlign: HorizontalAlign.Center,
       );
@@ -164,7 +168,104 @@ class ExportService {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Berhasil mengekspor $title ke Excel (.xlsx)'),
+            content: Text('Berhasil mengekspor $title ke Excel'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: themeColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengekspor data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  static Future<void> exportLogsExcel(
+    BuildContext context,
+    List<Map<String, dynamic>> logs, {
+    String title = 'Log Sistem',
+    Color primaryColor = const Color(0xFF9333EA), // Default to Admin Purple
+  }) async {
+    final hexColor = '#${primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Menyiapkan file Excel $title...'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    try {
+      if (logs.isEmpty) {
+        throw Exception('Tidak ada log untuk diekspor');
+      }
+
+      final excel = Excel.createExcel();
+      final sheet = excel['Sheet1'];
+
+      final CellStyle headerStyle = CellStyle(
+        bold: true,
+        backgroundColorHex: ExcelColor.fromHexString(hexColor),
+        fontColorHex: ExcelColor.fromHexString('#FFFFFF'),
+        horizontalAlign: HorizontalAlign.Center,
+      );
+
+      final List<String> headers = ['No', 'Waktu', 'User', 'Aksi', 'Detail'];
+
+      for (var i = 0; i < headers.length; i++) {
+        var cell = sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        cell.value = TextCellValue(headers[i]);
+        cell.cellStyle = headerStyle;
+      }
+
+      for (var i = 0; i < logs.length; i++) {
+        final log = logs[i];
+        final rowIndex = i + 1;
+
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
+            .value = IntCellValue(rowIndex);
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
+            .value = TextCellValue(
+          DateFormat('yyyy-MM-dd HH:mm:ss').format(log['time']),
+        );
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex))
+            .value = TextCellValue(log['user'] ?? '-');
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex))
+            .value = TextCellValue(log['action'] ?? '-');
+        sheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex))
+            .value = TextCellValue(log['details'] ?? '-');
+      }
+
+      final fileBytes = excel.encode();
+
+      if (fileBytes != null) {
+        final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+        final fileName = "${title.replaceAll(' ', '_')}_$timestamp.xlsx";
+        await saveFile(
+          fileBytes,
+          fileName,
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berhasil mengekspor $title ke Excel'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.green,
           ),
@@ -236,5 +337,183 @@ class ExportService {
         );
       }
     }
+  }
+
+  static Future<void> generateAdminLogsPdf({
+    required BuildContext context,
+    required List<Map<String, dynamic>> logs,
+    String title = 'Log Aktivitas Sistem',
+    Color? primaryColor,
+    String brandingSuffix = 'Admin Dashboard',
+  }) async {
+    final themeColor = primaryColor ?? const Color(0xFF9333EA);
+    final pdfThemeColor = PdfColor.fromInt(themeColor.toARGB32());
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Menyiapkan file PDF $title...'),
+        duration: const Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      final pdf = pw.Document();
+      final font = await PdfGoogleFonts.interRegular();
+      final fontBold = await PdfGoogleFonts.interBold();
+      
+
+      pdf.addPage(
+        pw.MultiPage(
+          theme: pw.ThemeData.withFont(base: font, bold: fontBold),
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          header: (context) => pw.Column(
+            children: [
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Lapor FSM!',
+                          style: pw.TextStyle(
+                              fontSize: 24,
+                              fontWeight: pw.FontWeight.bold,
+                              color: pdfThemeColor)),
+                      pw.Text('Sistem Informasi Pelaporan Fasilitas',
+                          style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(title,
+                          style: pw.TextStyle(
+                              fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                      pw.Text(
+                        'Dicetak: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.now())}',
+                        style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 8),
+              pw.Divider(color: pdfThemeColor, thickness: 2),
+              pw.SizedBox(height: 16),
+            ],
+          ),
+          footer: (context) => pw.Column(
+            children: [
+              pw.Divider(color: PdfColors.grey300),
+              pw.SizedBox(height: 8),
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Lapor FSM - $brandingSuffix',
+                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                  pw.Text('Halaman ${context.pageNumber} dari ${context.pagesCount}',
+                      style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                ],
+              ),
+            ],
+          ),
+          build: (context) => [
+            // Summary Card
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                border: pw.Border.all(color: PdfColors.grey300),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  _buildSummaryItem('Total Entri', logs.length.toString(), pdfThemeColor),
+                  _buildSummaryItem('Periode', 'Semua Data', pdfThemeColor),
+                  _buildSummaryItem('Filter', title.replaceFirst('Log ', ''), pdfThemeColor),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 24),
+
+            // Logs Table
+            pw.TableHelper.fromTextArray(
+              context: context,
+              headers: ['No', 'Waktu', 'Aksi', 'Detail', 'Oleh'],
+              columnWidths: {
+                0: const pw.FixedColumnWidth(25),
+                1: const pw.FixedColumnWidth(75),
+                2: const pw.FixedColumnWidth(70),
+                3: const pw.FlexColumnWidth(2),
+                4: const pw.FixedColumnWidth(60),
+              },
+              data: List.generate(logs.length, (index) {
+                final log = logs[index];
+                return [
+                  (index + 1).toString(),
+                  DateFormat('dd/MM HH:mm').format(log['time']),
+                  log['action'] ?? '-',
+                  log['details'] ?? '-',
+                  log['user'] ?? '-',
+                ];
+              }),
+              headerStyle: pw.TextStyle(
+                  fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
+              headerDecoration: pw.BoxDecoration(color: pdfThemeColor),
+              cellStyle: const pw.TextStyle(fontSize: 8),
+              oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey100),
+              border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+              headerHeight: 25,
+              cellHeight: 25,
+              cellAlignments: {
+                0: pw.Alignment.center,
+                1: pw.Alignment.center,
+                2: pw.Alignment.centerLeft,
+                3: pw.Alignment.centerLeft,
+                4: pw.Alignment.centerLeft,
+              },
+            ),
+          ],
+        ),
+      );
+
+      final bytes = await pdf.save();
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final fileName = "${title.replaceAll(' ', '_')}_$timestamp.pdf";
+      
+      await saveFile(bytes, fileName, 'application/pdf');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berhasil mengunduh $fileName'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal membuat PDF Log: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  static pw.Widget _buildSummaryItem(String label, String value, PdfColor color) {
+    return pw.Column(
+      children: [
+        pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+        pw.SizedBox(height: 2),
+        pw.Text(value,
+            style: pw.TextStyle(
+                fontSize: 10, fontWeight: pw.FontWeight.bold, color: color)),
+      ],
+    );
   }
 }

@@ -13,17 +13,17 @@ class AdminActivityLogPage extends StatefulWidget {
   State<AdminActivityLogPage> createState() => _AdminActivityLogPageState();
 }
 
-class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
+class _AdminActivityLogPageState extends State<AdminActivityLogPage> with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
   String _searchQuery = '';
   List<Map<String, dynamic>> _allLogs = [];
-  List<Map<String, dynamic>> _filteredLogs = [];
   bool _isLoading = true;
-  String _selectedFilter = 'Semua'; // Semua, Login, Laporan, User
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadData();
   }
 
@@ -34,30 +34,27 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
       setState(() {
         _allLogs = logs;
         _isLoading = false;
-        _filterLogs();
       });
     }
   }
 
-  void _filterLogs() {
-    setState(() {
-      _filteredLogs = _allLogs.where((log) {
-        final matchesSearch =
-            log['user'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
+  List<Map<String, dynamic>> _getFilteredLogs(String type) {
+    return _allLogs.where((log) {
+      final matchesSearch =
+          log['user'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
 
-        final matchesType =
-            _selectedFilter == 'Semua' || log['type'] == _selectedFilter;
+      final matchesType = log['type'] == type;
 
-        return matchesSearch && matchesType;
-      }).toList();
-    });
+      return matchesSearch && matchesType;
+    }).toList();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -78,104 +75,96 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         elevation: 0,
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            ExportService.exportData(context, 'Log Aktivitas', 'log'),
-        backgroundColor: AppTheme.adminColor,
-        tooltip: 'Export Log',
-        child: const Icon(LucideIcons.download, color: Colors.white),
+        actions: [
+          IconButton(
+            onPressed: () => _showExportOptions(context),
+            icon: const Icon(LucideIcons.download),
+            tooltip: 'Export Log',
+          ),
+          const SizedBox(width: 8),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
+          tabs: const [
+            Tab(text: 'Aktivitas User'),
+            Tab(text: 'Verifikasi User'),
+            Tab(text: 'Logs Laporan'),
+          ],
+        ),
       ),
       body: Column(
         children: [
-          // Search & Filter Header
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Cari log aktivitas...',
-                    prefixIcon: const Icon(LucideIcons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onChanged: (val) {
-                    _searchQuery = val;
-                    _filterLogs();
-                  },
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari log aktivitas...',
+                prefixIcon: const Icon(LucideIcons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                const Gap(12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('Semua'),
-                      const Gap(8),
-                      _buildFilterChip('Login'),
-                      const Gap(8),
-                      _buildFilterChip('Laporan'),
-                      const Gap(8),
-                      _buildFilterChip('User'),
-                    ],
-                  ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              ],
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                setState(() => _searchQuery = val);
+              },
             ),
           ),
-
-          // Log List
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredLogs.isEmpty
-                    ? const Center(child: Text('Tidak ada log ditemukan'))
-                    : ListView.separated(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _filteredLogs.length,
-                        separatorBuilder: (c, i) => const Gap(12),
-                        itemBuilder: (context, index) {
-                          final log = _filteredLogs[index];
-                          return _buildLogItem(log);
-                        },
-                      ),
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildLogList('User'),
+                      _buildLogList('Verifikasi'),
+                      _buildLogList('Laporan'),
+                    ],
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    final isSelected = _selectedFilter == label;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (val) {
-        setState(() => _selectedFilter = label);
-        _filterLogs();
+  Widget _buildLogList(String type) {
+    final filtered = _getFilteredLogs(type);
+    if (filtered.isEmpty) {
+      return Center(
+        child: Text(
+          'Tidak ada log ${type.toLowerCase()} ditemukan',
+          style: TextStyle(color: Colors.grey.shade600),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: filtered.length,
+      separatorBuilder: (c, i) => const Gap(12),
+      itemBuilder: (context, index) {
+        final log = filtered[index];
+        return _buildLogItem(log);
       },
-      selectedColor: AppTheme.adminColor.withValues(alpha: 0.2),
-      checkmarkColor: AppTheme.adminColor,
-      labelStyle: TextStyle(
-        color: isSelected ? AppTheme.adminColor : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
     );
   }
+
 
   Widget _buildLogItem(Map<String, dynamic> log) {
     IconData icon;
@@ -193,6 +182,10 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
       case 'User':
         icon = LucideIcons.user;
         color = Colors.orange;
+        break;
+      case 'Verifikasi':
+        icon = LucideIcons.userCheck;
+        color = Colors.purple;
         break;
       default:
         icon = LucideIcons.activity;
@@ -233,7 +226,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                       ),
                     ),
                     Text(
-                      DateFormat('HH:mm').format(log['time']),
+                      DateFormat('dd MMM, HH:mm').format(log['time']),
                       style: TextStyle(
                         color: Colors.grey.shade500,
                         fontSize: 12,
@@ -253,6 +246,77 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showExportOptions(BuildContext context) {
+    String currentType;
+    String displayType;
+    
+    switch (_tabController.index) {
+      case 0:
+        currentType = 'User';
+        displayType = 'Aktivitas User';
+        break;
+      case 1:
+        currentType = 'Verifikasi';
+        displayType = 'Verifikasi User';
+        break;
+      default:
+        currentType = 'Laporan';
+        displayType = 'Update Laporan';
+    }
+    
+    final currentLogs = _getFilteredLogs(currentType);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Export Log $displayType',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Gap(20),
+              ListTile(
+                leading: const Icon(LucideIcons.fileSpreadsheet, color: Colors.green),
+                title: const Text('Export ke Excel (.xlsx)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ExportService.exportLogsExcel(
+                    context,
+                    currentLogs,
+                    title: 'Log $displayType',
+                    primaryColor: AppTheme.adminColor,
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.fileText, color: Colors.red),
+                title: const Text('Export ke PDF (.pdf)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ExportService.generateAdminLogsPdf(
+                    context: context,
+                    logs: currentLogs,
+                    title: 'Log $displayType',
+                    primaryColor: AppTheme.adminColor,
+                    brandingSuffix: 'Admin Dashboard',
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

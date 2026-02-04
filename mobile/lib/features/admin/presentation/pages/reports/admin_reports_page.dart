@@ -25,7 +25,7 @@ class AdminReportsPage extends StatelessWidget {
       },
       floatingActionButton: FloatingActionButton(
         onPressed: () =>
-            ExportService.exportData(context, 'Laporan', 'laporan'),
+            ExportService.exportData(context, 'Laporan', 'laporan', primaryColor: AppTheme.adminColor),
         backgroundColor: AppTheme.adminColor,
         tooltip: 'Export Laporan',
         child: const Icon(LucideIcons.download, color: Colors.white),

@@ -1,7 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/api_service.dart';
@@ -20,54 +19,59 @@ class FCMService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
-    // 1. Initialize Firebase
-    // Note: Firebase.initializeApp() is usually called in main.dart,
-    // but ensuring it's ready here won't hurt.
+    try {
+      // 1. Request Permissions
+      NotificationSettings settings = await _firebaseMessaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    // 2. Request Permissions
-    NotificationSettings settings = await _firebaseMessaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('User granted permission');
-    } else {
-      debugPrint('User declined or has not accepted permission');
-      return;
-    }
-
-    // 3. Setup Background Handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // 4. Setup Local Notifications Channel (Android)
-    await _setupLocalNotifications();
-
-    // 5. Setup Foreground Handler
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Got a message whilst in the foreground!');
-      debugPrint('Message data: ${message.data}');
-
-      if (message.notification != null) {
-        debugPrint(
-          'Message also contained a notification: ${message.notification}',
-        );
-        _showLocalNotification(message);
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User granted permission');
+      } else {
+        debugPrint('User declined or has not accepted permission');
+        return;
       }
-    });
 
-    // 6. Get Token & Save
-    String? token = await _firebaseMessaging.getToken();
-    if (token != null) {
-      debugPrint('FCM Token: $token');
-      await _saveTokenToBackend(token);
+      // 2. Setup Background Handler (Mobile only usually, but handled by package)
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // 3. Setup Local Notifications Channel (Android)
+      await _setupLocalNotifications();
+
+      // 4. Setup Foreground Handler
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('Got a message whilst in the foreground!');
+        debugPrint('Message data: ${message.data}');
+
+        if (message.notification != null) {
+          debugPrint(
+            'Message also contained a notification: ${message.notification}',
+          );
+          _showLocalNotification(message);
+        }
+      });
+
+      // 5. Get Token & Save
+      // On Web, this might fail with AbortError if push service is unavailable
+      try {
+        String? token = await _firebaseMessaging.getToken();
+        if (token != null) {
+          debugPrint('FCM Token: $token');
+          await _saveTokenToBackend(token);
+        }
+      } catch (e) {
+        debugPrint('FCM Token Error (e.g. Web Push Service issue): $e');
+      }
+
+      // 6. Listen for token refresh
+      _firebaseMessaging.onTokenRefresh.listen((newToken) {
+        _saveTokenToBackend(newToken);
+      });
+    } catch (e) {
+      debugPrint('FCM Initialization Error: $e');
     }
-
-    // 7. Listen for token refresh
-    _firebaseMessaging.onTokenRefresh.listen((newToken) {
-      _saveTokenToBackend(newToken);
-    });
   }
 
   static Future<void> _setupLocalNotifications() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -54,23 +55,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     try {
       final responses = await Future.wait([
         apiService.dio.get('/admin/dashboard'),
-        // Fetch emergency count manually
-        apiService.dio.get(
-          '/reports',
-          queryParameters: {'isEmergency': true, 'limit': 1},
-        ),
-        // Fetch recent reports
         apiService.dio.get(
           '/reports',
           queryParameters: {
             'limit': 5,
             'sort': 'desc',
-          }, // assuming sort param or default is desc
+          },
         ),
       ]);
 
       final dashboardRes = responses[0];
-      final recentRes = responses[2];
+      final recentRes = responses[1];
 
       if (mounted) {
         setState(() {
@@ -310,24 +305,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Better spacing
                         children: [
                           _QuickActionButton(
-                            label: 'Verifikasi',
+                            label: 'Verifikasi User',
                             icon: LucideIcons.userCheck,
                             color: Colors.orange,
                             onTap: () => context.go(
                               '/admin/users?tab=1',
-                            ), // Tab 1: Verifikasi
+                            ),
                           ),
-                          const Gap(40),
                           _QuickActionButton(
-                            label: 'Staff',
-                            icon: LucideIcons.userPlus,
+                            label: 'Kelola Staff',
+                            icon: LucideIcons.users,
                             color: Colors.green,
                             onTap: () => context.go(
-                              '/admin/users?tab=2&action=add',
-                            ), // Tab 2: Staff, Action: Add
+                              '/admin/users?tab=2',
+                            ), 
+                          ),
+                          _QuickActionButton(
+                             label: 'Semua Laporan',
+                             icon: LucideIcons.fileText,
+                             color: Colors.blue,
+                             onTap: () => context.go('/admin/reports'),
                           ),
                         ],
                       ),
@@ -343,7 +343,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Container(
-                        height: 220, // Increased height to prevent overflow
+                        height: 240,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -354,7 +354,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Laporan Masuk vs Selesai',
+                              'Tren Laporan (7 Hari Terakhir)',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -362,53 +362,82 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             const Gap(20),
                             Expanded(
-                              child: Builder(
-                                builder: (context) {
-                                  final trendList = _stats?['weeklyTrend'] as List? ?? [];
-                                  final maxVal = trendList.fold(1, (max, t) => (t['value'] as int) > max ? t['value'] as int : max);
-                                  
-                                  return Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: trendList.map((t) {
-                                      final val = (t['value'] as int).toDouble();
-                                      return _buildStatBar(
-                                        context,
-                                        t['day'] ?? '',
-                                        val / maxVal,
-                                        (val * 0.8) / maxVal, // Simulated "completed" ratio
-                                      );
-                                    }).toList(),
-                                  );
-                                },
-                              ),
-                            ),
-                            const Gap(10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  color: AppTheme.adminColor,
-                                ),
-                                const Gap(4),
-                                const Text(
-                                  'Masuk',
-                                  style: TextStyle(fontSize: 10),
-                                ),
-                                const Gap(16),
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  color: Colors.green,
-                                ),
-                                const Gap(4),
-                                const Text(
-                                  'Selesai',
-                                  style: TextStyle(fontSize: 10),
-                                ),
-                              ],
+                              child: _stats?['weeklyTrend'] == null
+                                  ? const Center(
+                                      child: Text(
+                                        'Belum ada data grafik',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    )
+                                  : BarChart(
+                                      BarChartData(
+                                        alignment: BarChartAlignment.spaceEvenly,
+                                        maxY: 50, // Static max for now or calc dynamic
+                                        barTouchData: BarTouchData(
+                                          touchTooltipData: BarTouchTooltipData(
+                                            getTooltipColor: (_) => Colors.white,
+                                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                              return BarTooltipItem(
+                                                '${rod.toY.toInt()}',
+                                                TextStyle(
+                                                  color: rod.color ?? Colors.blue,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        titlesData: FlTitlesData(
+                                          show: true,
+                                          bottomTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              getTitlesWidget: (value, meta) {
+                                                final list = _stats?['weeklyTrend'] as List?;
+                                                if (list != null && value >= 0 && value < list.length) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(top: 8.0),
+                                                    child: Text(
+                                                      list[value.toInt()]['day'].toString().substring(0, 3),
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade400,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return const Text('');
+                                              },
+                                            ),
+                                          ),
+                                          leftTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                          topTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                          rightTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                        ),
+                                        gridData: const FlGridData(show: false),
+                                        borderData: FlBorderData(show: false),
+                                        barGroups: (_stats?['weeklyTrend'] as List? ?? []).asMap().entries.map((e) {
+                                          final val = (e.value['value'] as num? ?? 0).toDouble();
+                                          return BarChartGroupData(
+                                            x: e.key,
+                                            barRods: [
+                                              BarChartRodData(
+                                                toY: val,
+                                                color: AppTheme.adminColor,
+                                                width: 16,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
                             ),
                           ],
                         ),
@@ -752,45 +781,6 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-Widget _buildStatBar(
-  BuildContext context,
-  String label,
-  double pct1,
-  double pct2,
-) {
-  // Ensure bars are visible even with 0 or very small counts
-  final h1 = (100 * pct1).clamp(2.0, 100.0);
-  final h2 = (100 * pct2).clamp(2.0, 100.0);
-  return Column(
-    mainAxisAlignment: MainAxisAlignment.end,
-    children: [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            width: 8,
-            height: h1,
-            decoration: BoxDecoration(
-              color: AppTheme.adminColor,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const Gap(4),
-          Container(
-            width: 8,
-            height: h2,
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ],
-      ),
-      const Gap(8),
-      Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-    ],
-  );
-}
 
 class _CompactStatItem extends StatelessWidget {
   final String label;

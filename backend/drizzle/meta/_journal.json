@@ -15,6 +15,13 @@
       "when": 1769931369869,
       "tag": "0001_thin_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770019074012,
+      "tag": "0002_add_password_reset_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -38,6 +38,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
   final _imagePicker = ImagePicker();
 
+  String? _selectedDepartment;
+  final List<String> _departments = [
+    'Matematika',
+    'Biologi',
+    'Kimia',
+    'Fisika',
+    'Statistika',
+    'Informatika',
+    'Bioteknologi',
+  ];
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -206,7 +217,8 @@ class _RegisterPageState extends State<RegisterPage> {
         password: _passwordController.text,
         phone: _phoneController.text,
         nimNip: _nimNipController.text,
-        department: 'Sains dan Matematika', // Default or from form if added
+        department: _selectedDepartment, // Updated to use dropdown value
+        faculty: 'Sains dan Matematika', // Fixed
         address: _addressController.text,
         emergencyName: _emergencyNameController.text,
         emergencyPhone: _emergencyPhoneController.text,
@@ -750,6 +762,66 @@ class _RegisterPageState extends State<RegisterPage> {
               }
               return null;
             },
+          ),
+          const Gap(20),
+
+          // Department Dropdown
+          const Text(
+            'Departemen / Prodi *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const Gap(8),
+          DropdownButtonFormField<String>(
+            decoration: _inputDecoration(
+              'Pilih Departemen',
+              LucideIcons.graduationCap,
+            ),
+            // ignore: deprecated_member_use
+            value: _selectedDepartment,
+            items: _departments.map((dept) {
+              return DropdownMenuItem(
+                value: dept,
+                child: Text(dept),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedDepartment = value;
+              });
+            },
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Departemen wajib dipilih';
+              }
+              return null;
+            },
+          ),
+          const Gap(20),
+
+          // Faculty (Read-only)
+          const Text(
+            'Fakultas',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const Gap(8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            width: double.infinity,
+            child: Row(
+              children: [
+                Icon(LucideIcons.school, color: Colors.grey.shade500, size: 20),
+                const Gap(10),
+                Text(
+                  'Sains dan Matematika',
+                  style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                ),
+              ],
+            ),
           ),
           const Gap(20),
 

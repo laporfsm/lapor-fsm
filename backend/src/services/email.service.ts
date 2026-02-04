@@ -46,4 +46,42 @@ export class EmailService {
             return false;
         }
     }
+
+    /**
+     * Send a password reset email to the user
+     * @param to User's email address
+     * @param name User's name
+     * @param resetLink Password reset link
+     */
+    static async sendPasswordResetEmail(to: string, name: string, resetLink: string) {
+        try {
+            const info = await this.transporter.sendMail({
+                from: `"Lapor FSM" <${process.env.SMTP_USER}>`,
+                to: to,
+                subject: 'Reset Password Akun Lapor FSM',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #0d47a1;">Reset Password Anda</h2>
+                        <p>Halo <strong>${name}</strong>,</p>
+                        <p>Kami menerima permintaan untuk mereset password akun <strong>Lapor FSM</strong> Anda.</p>
+                        <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${resetLink}" style="background-color: #0d47a1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Reset Password
+                            </a>
+                        </div>
+                        <p style="margin-top: 20px;"><strong>Link ini akan kedaluwarsa dalam 1 jam.</strong></p>
+                        <p>Jika Anda tidak meminta reset password, abaikan email ini. Password Anda akan tetap aman.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #888;">Lapor FSM - Fakultas Sains dan Matematika Universitas Diponegoro</p>
+                    </div>
+                `
+            });
+            console.log(`[EMAIL] Password reset email sent to ${to}: ${info.messageId}`);
+            return true;
+        } catch (error) {
+            console.error('[EMAIL] Failed to send password reset email:', error);
+            return false;
+        }
+    }
 }
