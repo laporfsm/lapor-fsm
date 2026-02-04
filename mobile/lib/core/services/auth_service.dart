@@ -65,6 +65,7 @@ class AuthService {
     String? address,
     String? emergencyName,
     String? emergencyPhone,
+    String? idCardUrl,
   }) async {
     try {
       final response = await apiService.dio.post(
@@ -80,6 +81,7 @@ class AuthService {
           'address': address,
           'emergencyName': emergencyName,
           'emergencyPhone': emergencyPhone,
+          'idCardUrl': idCardUrl,
         },
       );
 

@@ -45,7 +45,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
     if (_userData == null) return;
 
     final isActive = _userData!['isActive'] == true;
-    final action = isActive ? 'Menonaktifkan' : 'Mengaktifkan';
 
     final confirm = await showDialog<bool>(
       context: context,

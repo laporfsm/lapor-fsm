@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 /// Registration Page with email validation
 /// - If email is *.undip.ac.id -> proceed directly
@@ -209,20 +210,44 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     setState(() => _isLoading = true);
+    
+    String? idCardUrl;
 
     try {
+      // 1. If ID card is required, upload it first
+      if (_requiresIdCard && _idCardBytes != null) {
+        // Need to convert bytes back to XFile for upload service
+        // or modify upload service to accept bytes.
+        // For simplicity, let's use XFile.fromData but that's not always available for all versions.
+        // Better: Use a helper or just use the bytes directly if we can.
+        // Looking at report_service.dart, uploadImage takes XFile.
+        
+        // Since we already have the path from pickImage (if not on web), but on web we have bytes.
+        // Let's assume we can use XFile.fromData for all cases if needed, but since we have _idCardBytes 
+        // and we want to be safe across platforms:
+        final xFile = XFile.fromData(_idCardBytes!, name: 'id_card.jpg');
+        idCardUrl = await reportService.uploadImage(xFile);
+        
+        if (idCardUrl == null) {
+          throw 'Gagal mengunggah kartu identitas. Silakan coba lagi.';
+        }
+      }
+
+      // 2. Proceed with registration
       final result = await authService.register(
         name: _nameController.text,
         email: _emailController.text,
         password: _passwordController.text,
         phone: _phoneController.text,
         nimNip: _nimNipController.text,
-        department: _selectedDepartment, // Updated to use dropdown value
-        faculty: 'Sains dan Matematika', // Fixed
+        department: _selectedDepartment,
+        faculty: 'Sains dan Matematika',
         address: _addressController.text,
         emergencyName: _emergencyNameController.text,
         emergencyPhone: _emergencyPhoneController.text,
+        idCardUrl: idCardUrl,
       );
+
 
       if (mounted) {
         if (result['success']) {
