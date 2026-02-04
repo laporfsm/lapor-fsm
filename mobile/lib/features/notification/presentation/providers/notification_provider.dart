@@ -95,17 +95,28 @@ class NotificationNotifier extends Notifier<NotificationState> {
             .map((json) => NotificationItem.fromJson(json))
             .toList();
 
+        // Filter for Admin: Only show Verification/Registration requests
+        List<NotificationItem> finalItems = fetchedItems;
+        if (role == 'admin') {
+          finalItems = fetchedItems.where((item) {
+            final text = '${item.title} ${item.message}'.toLowerCase();
+            return text.contains('verifikasi') ||
+                text.contains('registrasi') ||
+                text.contains('pendaftaran');
+          }).toList();
+        }
+
         // Calculate max ID
         int currentMaxId = 0;
-        if (fetchedItems.isNotEmpty) {
-          currentMaxId = fetchedItems
+        if (finalItems.isNotEmpty) {
+          currentMaxId = finalItems
               .map((e) => int.tryParse(e.id) ?? 0)
               .reduce((a, b) => a > b ? a : b);
         }
 
         // Check for new items to alert (Only if there's a new max ID)
         if (!_isFirstLoad && currentMaxId > _lastMaxId) {
-          final newItems = fetchedItems
+          final newItems = finalItems
               .where((e) => (int.tryParse(e.id) ?? 0) > _lastMaxId)
               .toList();
 
@@ -130,7 +141,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         }
 
         _lastMaxId = currentMaxId;
-        state = state.copyWith(items: fetchedItems, isLoading: false);
+        state = state.copyWith(items: finalItems, isLoading: false);
       }
     } catch (e) {
       debugPrint('Notification Poll Error: $e');

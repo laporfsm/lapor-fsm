@@ -19,7 +19,6 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
   List<Map<String, dynamic>> _allLogs = [];
   List<Map<String, dynamic>> _filteredLogs = [];
   bool _isLoading = true;
-  String _selectedFilter = 'Semua'; // Semua, Login, Laporan, User
 
   @override
   void initState() {
@@ -47,8 +46,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
             log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
             log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
 
-        final matchesType =
-            _selectedFilter == 'Semua' || log['type'] == _selectedFilter;
+        final matchesType = log['type'] == 'User'; // Strict filter for User logs
 
         return matchesSearch && matchesType;
       }).toList();
@@ -242,7 +240,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                 title: const Text('Export ke Excel (.xlsx)'),
                 onTap: () {
                   Navigator.pop(context);
-                  ExportService.exportData(context, 'Log Sistem User', 'log', data: _filteredLogs);
+                  ExportService.exportLogsExcel(context, _filteredLogs);
                 },
               ),
               ListTile(
@@ -250,7 +248,10 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
                 title: const Text('Export ke PDF (.pdf)'),
                 onTap: () {
                   Navigator.pop(context);
-                  ExportService.exportAdminLogsPdf(context);
+                  ExportService.generateAdminLogsPdf(
+                    context: context,
+                    logs: _filteredLogs,
+                  );
                 },
               ),
             ],

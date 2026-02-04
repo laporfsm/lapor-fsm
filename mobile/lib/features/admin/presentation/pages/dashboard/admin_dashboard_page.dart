@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -367,55 +368,82 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             ),
                             const Gap(20),
                             Expanded(
-                              child: Builder(
-                                builder: (context) {
-                                  final trendList = _stats?['weeklyTrend'] as List? ?? [];
-                                  if (trendList.isEmpty) {
-                                    return const Center(
+                              child: _stats?['weeklyTrend'] == null
+                                  ? const Center(
                                       child: Text(
                                         'Belum ada data grafik',
                                         style: TextStyle(color: Colors.grey),
                                       ),
-                                    );
-                                  }
-                                  
-                                  // Find max value safely
-                                  int maxVal = 1;
-                                  for (var item in trendList) {
-                                    if (item is Map && item.containsKey('value')) {
-                                      final val = item['value'] as int? ?? 0;
-                                      if (val > maxVal) maxVal = val;
-                                    }
-                                  }
-
-                                  return Row(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: trendList.map((t) {
-                                      final val = (t['value'] as int? ?? 0).toDouble();
-                                      final day = t['day']?.toString() ?? '';
-                                      
-                                      return _buildStatBar(
-                                        context,
-                                        day,
-                                        val / maxVal,
-                                        // Mocking "Done" ratio as 80% of "In" for visual demo if not provided
-                                        // Real implementation should provide 'done' count in API if needed
-                                        (val * 0.7) / maxVal, 
-                                      );
-                                    }).toList(),
-                                  );
-                                },
-                              ),
-                            ),
-                            const Gap(16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                _buildLegendItem(AppTheme.adminColor, 'Masuk'),
-                                const Gap(16),
-                                _buildLegendItem(Colors.green, 'Selesai'),
-                              ],
+                                    )
+                                  : BarChart(
+                                      BarChartData(
+                                        alignment: BarChartAlignment.spaceEvenly,
+                                        maxY: 50, // Static max for now or calc dynamic
+                                        barTouchData: BarTouchData(
+                                          touchTooltipData: BarTouchTooltipData(
+                                            getTooltipColor: (_) => Colors.white,
+                                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                              return BarTooltipItem(
+                                                '${rod.toY.toInt()}',
+                                                TextStyle(
+                                                  color: rod.color ?? Colors.blue,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        titlesData: FlTitlesData(
+                                          show: true,
+                                          bottomTitles: AxisTitles(
+                                            sideTitles: SideTitles(
+                                              showTitles: true,
+                                              getTitlesWidget: (value, meta) {
+                                                final list = _stats?['weeklyTrend'] as List?;
+                                                if (list != null && value >= 0 && value < list.length) {
+                                                  return Padding(
+                                                    padding: const EdgeInsets.only(top: 8.0),
+                                                    child: Text(
+                                                      list[value.toInt()]['day'].toString().substring(0, 3),
+                                                      style: TextStyle(
+                                                        color: Colors.grey.shade400,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return const Text('');
+                                              },
+                                            ),
+                                          ),
+                                          leftTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                          topTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                          rightTitles: const AxisTitles(
+                                            sideTitles: SideTitles(showTitles: false),
+                                          ),
+                                        ),
+                                        gridData: const FlGridData(show: false),
+                                        borderData: FlBorderData(show: false),
+                                        barGroups: (_stats?['weeklyTrend'] as List? ?? []).asMap().entries.map((e) {
+                                          final val = (e.value['value'] as num? ?? 0).toDouble();
+                                          return BarChartGroupData(
+                                            x: e.key,
+                                            barRods: [
+                                              BarChartRodData(
+                                                toY: val,
+                                                color: AppTheme.adminColor,
+                                                width: 16,
+                                                borderRadius: BorderRadius.circular(4),
+                                              ),
+                                            ],
+                                          );
+                                        }).toList(),
+                                      ),
+                                    ),
                             ),
                           ],
                         ),
@@ -759,65 +787,6 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-Widget _buildStatBar(
-  BuildContext context,
-  String label,
-  double pct1,
-  double pct2,
-) {
-  // Ensure bars are visible even with 0 or very small counts
-  final h1 = (100 * pct1).clamp(2.0, 100.0);
-  final h2 = (100 * pct2).clamp(2.0, 100.0);
-  return Column(
-    mainAxisAlignment: MainAxisAlignment.end,
-    children: [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Container(
-            width: 8,
-            height: h1,
-            decoration: BoxDecoration(
-              color: AppTheme.adminColor,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          const Gap(4),
-          Container(
-            width: 8,
-            height: h2,
-            decoration: BoxDecoration(
-              color: Colors.green,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ],
-      ),
-      const Gap(8),
-      Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-    ],
-  );
-}
-
-Widget _buildLegendItem(Color color, String label) {
-  return Row(
-    children: [
-      Container(
-        width: 10,
-        height: 10,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
-      ),
-      const Gap(6),
-      Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-      ),
-    ],
-  );
-}
 
 class _CompactStatItem extends StatelessWidget {
   final String label;
