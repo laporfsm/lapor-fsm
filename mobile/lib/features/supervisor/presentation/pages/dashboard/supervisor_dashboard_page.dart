@@ -14,33 +14,42 @@ import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
+
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
-class SupervisorDashboardPage extends StatefulWidget {
+class SupervisorDashboardPage extends ConsumerStatefulWidget {
   const SupervisorDashboardPage({super.key});
 
   @override
-  State<SupervisorDashboardPage> createState() =>
+  ConsumerState<SupervisorDashboardPage> createState() =>
       _SupervisorDashboardPageState();
 }
 
-class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
+class _SupervisorDashboardPageState
+    extends ConsumerState<SupervisorDashboardPage> {
   bool _isLoading = true;
   Timer? _refreshTimer;
 
-  Map<String, int> _dashboardStats = {
+  Map<String, dynamic> _dashboardStats = {
     'pending': 0,
-    'verifikasi': 0,
+    'terverifikasi': 0,
+    'diproses': 0,
     'penanganan': 0,
+    'onHold': 0,
     'selesai': 0,
-    'approved': 0,
     'recalled': 0,
+    'approved': 0,
+    'ditolak': 0,
     'emergency': 0,
+    'nonGedungPending': 0,
     'todayReports': 0,
     'weekReports': 0,
     'monthReports': 0,
   };
 
+  List<Report> _nonGedungReports = [];
   List<Report> _readyToProcessReports = [];
   List<Report> _pendingReviewReports = [];
 
@@ -74,63 +83,70 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
         // Fetch stats and lists
         final results = await Future.wait([
           reportService.getSupervisorDashboardStats(staffId),
+          reportService.getNonGedungReports(limit: 20), // Non-gedung pending
           reportService.getStaffReports(
             role: 'supervisor',
-            status: 'pending,terverifikasi',
+            status: 'terverifikasi', // Only terverifikasi for "Siap Diproses"
           ),
           reportService.getStaffReports(role: 'supervisor', status: 'selesai'),
         ]);
 
-        debugPrint('[DASHBOARD] Results received:');
-        debugPrint('[DASHBOARD] Stats: ${results[0]}');
-        debugPrint(
-          '[DASHBOARD] Ready reports raw count: ${(results[1] as List).length}',
-        );
-        debugPrint('[DASHBOARD] Ready reports raw data: ${results[1]}');
-        debugPrint(
-          '[DASHBOARD] Review reports raw count: ${(results[2] as List).length}',
-        );
-        debugPrint('[DASHBOARD] Review reports raw data: ${results[2]}');
+        debugPrint('[DASHBOARD] Results received');
 
         if (mounted) {
           setState(() {
             if (results[0] != null) {
-              _dashboardStats = Map<String, int>.from(results[0] as Map);
+              final rawStats = results[0] as Map<String, dynamic>;
+              _dashboardStats = {
+                'pending': rawStats['pending'] ?? 0,
+                'terverifikasi': rawStats['terverifikasi'] ?? 0,
+                'diproses': rawStats['diproses'] ?? 0,
+                'penanganan': rawStats['penanganan'] ?? 0,
+                'onHold': rawStats['onHold'] ?? 0,
+                'selesai': rawStats['selesai'] ?? 0,
+                'recalled': rawStats['recalled'] ?? 0,
+                'approved': rawStats['approved'] ?? 0,
+                'ditolak': rawStats['ditolak'] ?? 0,
+                'emergency': rawStats['emergency'] ?? 0,
+                'nonGedungPending': rawStats['nonGedungPending'] ?? 0,
+                'todayReports': rawStats['todayReports'] ?? 0,
+                'weekReports': rawStats['weekReports'] ?? 0,
+                'monthReports': rawStats['monthReports'] ?? 0,
+              };
             }
 
-            List<Report> readyReports = [];
+            // Non-Gedung Reports
             try {
-              readyReports = (results[1] as List).map((json) {
-                debugPrint('[DASHBOARD] Converting ready report: $json');
-                return Report.fromJson(json as Map<String, dynamic>);
-              }).toList();
-              debugPrint(
-                '[DASHBOARD] Successfully converted ${readyReports.length} ready reports',
-              );
-            } catch (e, stackTrace) {
+              _nonGedungReports = (results[1] as List)
+                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+                  .toList();
+            } catch (e) {
+              debugPrint('[DASHBOARD] Error converting non-gedung reports: $e');
+              _nonGedungReports = [];
+            }
+
+            // Ready to Process (Terverifikasi only)
+            try {
+              _readyToProcessReports = (results[2] as List)
+                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+                  .toList();
+            } catch (e) {
               debugPrint('[DASHBOARD] Error converting ready reports: $e');
-              debugPrint('[DASHBOARD] Stack trace: $stackTrace');
+              _readyToProcessReports = [];
             }
 
-            List<Report> reviewReports = [];
+            // Pending Review (Selesai)
             try {
-              reviewReports = (results[2] as List).map((json) {
-                debugPrint('[DASHBOARD] Converting review report: $json');
-                return Report.fromJson(json as Map<String, dynamic>);
-              }).toList();
-              debugPrint(
-                '[DASHBOARD] Successfully converted ${reviewReports.length} review reports',
-              );
-            } catch (e, stackTrace) {
+              _pendingReviewReports = (results[3] as List)
+                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+                  .toList();
+            } catch (e) {
               debugPrint('[DASHBOARD] Error converting review reports: $e');
-              debugPrint('[DASHBOARD] Stack trace: $stackTrace');
+              _pendingReviewReports = [];
             }
-
-            _readyToProcessReports = readyReports;
-            _pendingReviewReports = reviewReports;
 
             debugPrint(
-              '[DASHBOARD] Final counts - Ready to process: ${_readyToProcessReports.length}, Pending review: ${_pendingReviewReports.length}',
+              '[DASHBOARD] Final counts - Non-Gedung: ${_nonGedungReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
             );
             _isLoading = false;
           });
@@ -293,8 +309,20 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
                       const Gap(16),
                       _buildStatsSection(context),
                       const Gap(24),
-                      // Section: Siap Diproses (Ready for Assignment)
-                      // Includes: Verified Building Reports & Non-Building Reports
+
+                      // Section: Non-Gedung (Pending reports from buildings without PJ)
+                      _buildSectionHeader(
+                        context,
+                        'Non-Gedung',
+                        'Lihat Semua',
+                        () => context.push('/supervisor/non-gedung'),
+                        count: _stats['nonGedungPending'] ?? 0,
+                      ),
+                      const Gap(12),
+                      _buildNonGedungList(context),
+                      const Gap(24),
+
+                      // Section: Siap Diproses (Terverifikasi only)
                       _buildSectionHeader(
                         context,
                         'Siap Diproses',
@@ -302,18 +330,16 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
                         () => context.push(
                           Uri(
                             path: '/supervisor/reports/filter',
-                            queryParameters: {
-                              'status': 'pending,terverifikasi',
-                            },
+                            queryParameters: {'status': 'terverifikasi'},
                           ).toString(),
                         ),
-                        count: _readyToProcessReports.length,
+                        count: _stats['terverifikasi'] ?? 0,
                       ),
                       const Gap(12),
                       _buildReadyToProcessList(context),
                       const Gap(24),
 
-                      // Section: Menunggu Approval (Completed by Technician)
+                      // Section: Menunggu Approval (Selesai)
                       _buildSectionHeader(
                         context,
                         'Menunggu Approval',
@@ -324,18 +350,22 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
                             queryParameters: {'status': 'selesai'},
                           ).toString(),
                         ),
-                        count: _pendingReviewReports.length,
+                        count: _stats['selesai'] ?? 0,
                       ),
                       const Gap(12),
                       _buildApprovalList(context),
                       const Gap(24),
 
+                      // Section: Aktivitas & Log (no counter)
                       _buildSectionHeader(
                         context,
                         "Aktivitas & Log",
                         "Lihat Semua",
                         () {
-                          context.push('/supervisor/activity-log');
+                          // Navigate to Staff tab (Index 1) -> Activity Log (Tab 0)
+                          ref
+                              .read(supervisorNavigationProvider.notifier)
+                              .navigateToActivityLog();
                         },
                       ),
                       const Gap(12),
@@ -489,84 +519,18 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
         ),
         const Gap(12),
 
-        // Status Stats (Grid Layout)
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Status Laporan',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const Gap(12),
-
-              // Row 1: Pending, Verifikasi, Penanganan
-              Row(
-                children: [
-                  StatusBadgeCard(
-                    label: 'Pending',
-                    count: _stats['pending'] ?? 0,
-                    color: Colors.grey,
-                    onTap: () => _navigateToStatus(context, 'pending'),
-                  ),
-                  const Gap(8),
-                  StatusBadgeCard(
-                    label: 'Verifikasi',
-                    count: _stats['verifikasi'] ?? 0,
-                    color: Colors.blue,
-                    onTap: () => _navigateToStatus(context, 'terverifikasi'),
-                  ),
-                  const Gap(8),
-                  StatusBadgeCard(
-                    label: 'Penanganan',
-                    count: _stats['penanganan'] ?? 0,
-                    color: Colors.orange,
-                    onTap: () =>
-                        _navigateToStatus(context, 'diproses,penanganan'),
-                  ),
-                ],
-              ),
-              const Gap(8),
-
-              // Row 2: Selesai, Approved, Recalled
-              Row(
-                children: [
-                  StatusBadgeCard(
-                    label: 'Selesai',
-                    count: _stats['selesai'] ?? 0,
-                    color: Colors.teal,
-                    onTap: () => _navigateToStatus(context, 'selesai'),
-                  ),
-                  const Gap(8),
-                  StatusBadgeCard(
-                    label: 'Approved',
-                    count: _stats['approved'] ?? 0,
-                    color: Colors.green,
-                    onTap: () => _navigateToStatus(context, 'approved'),
-                  ),
-                  const Gap(8),
-                  StatusBadgeCard(
-                    label: 'Recalled',
-                    count: _stats['recalled'] ?? 0,
-                    color: Colors.amber,
-                    onTap: () => _navigateToStatus(context, 'recalled'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        // Status Stats Grid (9 statuses in 3x3)
+        SupervisorStatusStatsRow(
+          pendingCount: _stats['pending'] ?? 0,
+          terverifikasiCount: _stats['terverifikasi'] ?? 0,
+          diprosesCount: _stats['diproses'] ?? 0,
+          penangananCount: _stats['penanganan'] ?? 0,
+          onHoldCount: _stats['onHold'] ?? 0,
+          selesaiCount: _stats['selesai'] ?? 0,
+          recalledCount: _stats['recalled'] ?? 0,
+          approvedCount: _stats['approved'] ?? 0,
+          ditolakCount: _stats['ditolak'] ?? 0,
+          onTap: (status) => _navigateToStatus(context, status),
         ),
       ],
     );
@@ -619,6 +583,62 @@ class _SupervisorDashboardPageState extends State<SupervisorDashboardPage> {
         ),
         TextButton(onPressed: onTap, child: Text(actionText)),
       ],
+    );
+  }
+
+  Widget _buildNonGedungList(BuildContext context) {
+    if (_nonGedungReports.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                LucideIcons.building2,
+                size: 48,
+                color: Colors.grey.shade300,
+              ),
+              const Gap(8),
+              Text(
+                'Tidak ada laporan non-gedung pending',
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show only first 3 reports
+    final displayReports = _nonGedungReports.take(3).toList();
+
+    return Column(
+      children: displayReports.map((report) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: UniversalReportCard(
+            id: report.id,
+            title: report.title,
+            location: report.building,
+            locationDetail: report.locationDetail,
+            category: report.category,
+            status: report.status,
+            isEmergency: report.isEmergency,
+            reporterName: report.reporterName,
+            showStatus: true,
+            onTap: () {
+              context.push(
+                '/supervisor/review/${report.id}',
+                extra: {'status': report.status},
+              );
+            },
+          ),
+        );
+      }).toList(),
     );
   }
 

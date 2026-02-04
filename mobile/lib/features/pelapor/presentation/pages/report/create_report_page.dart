@@ -48,32 +48,26 @@ class _CreateReportPageState extends State<CreateReportPage> {
   bool _isFetchingLocation = false;
 
   // Data gedung FSM
-  final List<String> _buildings = [
-    'Gedung A',
-    'Gedung B',
-    'Gedung C',
-    'Gedung D',
-    'Gedung E',
-    'Gedung F',
-    'Gedung G',
-    'Gedung H',
-    'Gedung I',
-    'Gedung J',
-    'Gedung K',
-    'Gedung L',
-    'Parkiran Motor',
-    'Parkiran Mobil',
-    'Masjid',
-    'Gedung Acintya Prasada',
-    'Taman Rumah Kita',
-    'Kantin',
-    'Lainnya',
-  ];
+  List<String> _buildings = [];
 
   @override
   void initState() {
     super.initState();
     _fetchCurrentLocation();
+    _fetchBuildings();
+  }
+
+  Future<void> _fetchBuildings() async {
+    try {
+      final buildings = await reportService.getBuildings();
+      if (mounted) {
+        setState(() {
+          _buildings = buildings.map((b) => b['name'] as String).toList();
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching buildings: $e');
+    }
   }
 
   Future<void> _fetchCurrentLocation() async {

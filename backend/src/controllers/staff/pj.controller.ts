@@ -6,6 +6,7 @@ import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
 import { jwt } from '@elysiajs/jwt';
 import PDFDocument from 'pdfkit';
+import { getStartOfWeek } from '../../utils/date.utils';
 
 const statusLabels: Record<string, string> = {
     'pending': 'Perlu Verifikasi',
@@ -41,14 +42,14 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             console.log('DEBUG: No userId found in token');
             return { managedBuilding: undefined };
         }
-        
+
         try {
             console.log(`DEBUG: Looking up Staff ID ${userId} for managedBuilding...`);
             const user = await db.select({ managedBuilding: staff.managedBuilding })
                 .from(staff)
                 .where(eq(staff.id, userId))
                 .limit(1);
-            
+
             console.log('DEBUG: DB Result:', user);
             return { managedBuilding: user[0]?.managedBuilding };
         } catch (e) {
@@ -56,7 +57,6 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             return { managedBuilding: undefined };
         }
     })
-    // Dashboard statistics for PJ Gedung
     // Dashboard statistics for PJ Gedung
     .get('/dashboard', async ({ managedBuilding }) => {
         if (!managedBuilding) {
@@ -66,6 +66,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             };
         }
 
+        const startOfWeek = getStartOfWeek();
+
         // Strict Filter: Reports.building == Staff.managed_building
         const whereClause = sql`${reports.building} = ${managedBuilding}`;
 
@@ -73,11 +75,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         const todayReports = await db.select({ count: count() })
             .from(reports)
             .where(and(sql`DATE(${reports.createdAt}) = CURRENT_DATE`, whereClause));
-        
+
         const weekReports = await db.select({ count: count() })
             .from(reports)
-            .where(and(sql`${reports.createdAt} >= NOW() - INTERVAL '7 days'`, whereClause));
-        
+            .where(and(sql`${reports.createdAt} >= ${startOfWeek}`, whereClause));
+
         const monthReports = await db.select({ count: count() })
             .from(reports)
             .where(and(sql`${reports.createdAt} >= DATE_TRUNC('month', NOW())`, whereClause));
@@ -115,9 +117,9 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         let conditions = [];
 
         if (!managedBuilding) {
-            return { 
-                status: 'error', 
-                message: 'Akses ditolak: Akun Anda tidak memiliki wilayah gedung yang ditetapkan.' 
+            return {
+                status: 'error',
+                message: 'Akses ditolak: Akun Anda tidak memiliki wilayah gedung yang ditetapkan.'
             };
         }
 
@@ -126,7 +128,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         // Optional sub-filtering (e.g. searching for room number inside the building)
         if (building) {
-             conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         }
 
         // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
@@ -150,7 +152,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         if (period === 'today') {
             conditions.push(sql`DATE(${reports.createdAt}) = CURRENT_DATE`);
         } else if (period === 'week') {
-            conditions.push(sql`${reports.createdAt} >= NOW() - INTERVAL '7 days'`);
+            const startOfWeek = getStartOfWeek();
+            conditions.push(sql`${reports.createdAt} >= ${startOfWeek}`);
         } else if (period === 'month') {
             conditions.push(sql`${reports.createdAt} >= DATE_TRUNC('month', NOW())`);
         }
@@ -177,6 +180,9 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 createdAt: reports.createdAt,
                 reporterName: users.name,
                 categoryName: categories.name,
+                approvedBy: reports.approvedBy,
+                verifiedBy: reports.verifiedBy,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
@@ -203,6 +209,13 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         if (foundStaff.length === 0) {
             return { status: 'error', message: 'Staff tidak ditemukan' };
+        }
+
+        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        if (current[0].isEmergency) {
+            return { status: 'error', message: 'Laporan darurat hanya bisa diverifikasi oleh Supervisor.' };
         }
 
         const updated = await db
@@ -237,7 +250,13 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Notify Supervisor
         await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].building} telah diverifikasi oleh PJ Gedung.`);
 
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
+        return {
+            status: 'success',
+            data: mapToMobileReport({
+                ...updated[0],
+                supervisorName: foundStaff[0]?.name
+            })
+        };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
@@ -259,6 +278,10 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
         if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+        if (current[0].isEmergency) {
+            return { status: 'error', message: 'Laporan darurat hanya bisa ditolak oleh Supervisor.' };
+        }
 
         const updated = await db
             .update(reports)
@@ -288,15 +311,15 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     // Get statistics for PJ Gedung (Dynamic & Correctly Filtered)
     .get('/statistics', async ({ query, managedBuilding }) => {
         const { building } = query;
-        
+
         let buildingFilter = managedBuilding || building;
         if (!buildingFilter) {
             return { status: 'error', message: 'Membutuhkan filter gedung' };
         }
-        
+
         // Strict Match if managing, otherwise loose match for admin/general
-        let whereClause = managedBuilding 
-            ? sql`${reports.building} = ${managedBuilding}` 
+        let whereClause = managedBuilding
+            ? sql`${reports.building} = ${managedBuilding}`
             : sql`${reports.building} ILIKE ${buildingFilter}`;
 
         // 1. Issue Categories
@@ -315,13 +338,13 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             dateStr: sql<string>`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`,
             count: count()
         })
-        .from(reports)
-        .where(and(
-            whereClause, 
-            sql`${reports.createdAt} >= CURRENT_DATE - INTERVAL '6 days'` // Last 7 days including today
-        ))
-        .groupBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`)
-        .orderBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`);
+            .from(reports)
+            .where(and(
+                whereClause,
+                sql`${reports.createdAt} >= CURRENT_DATE - INTERVAL '6 days'` // Last 7 days including today
+            ))
+            .groupBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`)
+            .orderBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`);
 
         // Transform into full 7-day array
         const weeklyMap = weeklyRaw.reduce((acc, curr) => {
@@ -337,7 +360,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             const mm = String(d.getMonth() + 1).padStart(2, '0');
             const dd = String(d.getDate()).padStart(2, '0');
             const dateStr = `${yyyy}-${mm}-${dd}`;
-            
+
             fullWeeklyTrend.push({
                 day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
                 value: weeklyMap[dateStr] || 0
@@ -348,14 +371,14 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         const thisMonthCount = await db.select({ count: count() })
             .from(reports)
             .where(and(
-                whereClause, 
+                whereClause,
                 sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`
             ));
-            
+
         const lastMonthCount = await db.select({ count: count() })
             .from(reports)
             .where(and(
-                whereClause, 
+                whereClause,
                 sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`
             ));
 
@@ -366,11 +389,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             week3: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) BETWEEN 15 AND 21 THEN 1 ELSE 0 END)`,
             week4: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) >= 22 THEN 1 ELSE 0 END)`,
         })
-        .from(reports)
-        .where(and(
-            whereClause,
-            sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`
-        ));
+            .from(reports)
+            .where(and(
+                whereClause,
+                sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`
+            ));
 
         const mp = monthlyProgressRaw[0];
 
@@ -401,7 +424,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         // Enforce building filtering from JWT if available
         if (managedBuilding) {
-             conditions.push(sql`${reports.building} = ${managedBuilding}`);
+            conditions.push(sql`${reports.building} = ${managedBuilding}`);
         } else if (building) {
             conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
         }
@@ -414,7 +437,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             }
         }
         if (building && !managedBuilding) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`); // Only add manual building filter if not scoped
-        
+
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
         if (search) conditions.push(or(
             sql`${reports.title} ILIKE ${'%' + search + '%'}`,

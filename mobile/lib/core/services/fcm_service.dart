@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/api_service.dart';
@@ -70,19 +71,32 @@ class FCMService {
   }
 
   static Future<void> _setupLocalNotifications() async {
+    // 1. Normal Channel
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'lapor_fsm_channel_high', // id
-      'High Importance Notifications', // title
-      description:
-          'This channel is used for important notifications.', // description
+      'lapor_fsm_channel_high_v2',
+      'High Importance Notifications',
+      description: 'This channel is used for important notifications.',
       importance: Importance.max,
     );
 
-    await _localNotifications
+    // 2. Emergency Channel (Custom Sound)
+    const AndroidNotificationChannel emergencyChannel =
+        AndroidNotificationChannel(
+          'lapor_fsm_channel_emergency_v3', // FORCE UPDATE V3
+          'Emergency Alerts',
+          description: 'Critical alerts requiring immediate attention.',
+          importance: Importance.max,
+          sound: RawResourceAndroidNotificationSound('emergency_alert'),
+          playSound: true,
+        );
+
+    final platform = _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
-        >()
-        ?.createNotificationChannel(channel);
+        >();
+
+    await platform?.createNotificationChannel(channel);
+    await platform?.createNotificationChannel(emergencyChannel);
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -91,6 +105,17 @@ class FCMService {
         InitializationSettings(android: initializationSettingsAndroid);
 
     await _localNotifications.initialize(initializationSettings);
+
+    // DEBUG: Print Channels
+    final List<AndroidNotificationChannel>? channels = await platform
+        ?.getNotificationChannels();
+    if (channels != null) {
+      for (var c in channels) {
+        debugPrint(
+          'CHANNEL: ${c.id}, Name: ${c.name}, Sound: ${c.sound?.sound}, Importance: ${c.importance}',
+        );
+      }
+    }
   }
 
   static void _showLocalNotification(RemoteMessage message) {
@@ -98,18 +123,32 @@ class FCMService {
     AndroidNotification? android = message.notification?.android;
 
     if (notification != null && android != null) {
+      // Determine Channel based on Data payload
+      String channelId = 'lapor_fsm_channel_high_v2';
+      String? sound;
+
+      if (message.data['type'] == 'emergency') {
+        channelId = 'lapor_fsm_channel_emergency_v3';
+        sound = 'emergency_alert';
+      }
+
       _localNotifications.show(
         notification.hashCode,
         notification.title,
         notification.body,
         NotificationDetails(
           android: AndroidNotificationDetails(
-            'lapor_fsm_channel_high',
-            'High Importance Notifications',
+            channelId,
+            channelId == 'lapor_fsm_channel_emergency_v3'
+                ? 'Emergency Alerts'
+                : 'High Importance Notifications',
             channelDescription:
                 'This channel is used for important notifications.',
             icon: android.smallIcon,
             color: const Color(0xFF0055A5), // Primary Color
+            sound: sound != null
+                ? RawResourceAndroidNotificationSound(sound)
+                : null,
           ),
         ),
       );

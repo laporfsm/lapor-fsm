@@ -1,20 +1,45 @@
 import { db } from '../db';
-import { notifications, staff, users } from '../db/schema';
+import { notifications, staff, users, reports } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { FCMService } from './fcm.service';
 
 export class NotificationService {
 
     /**
+     * Helper to determine if a notification should use the emergency type/sound
+     */
+    private static async resolveType(reportId?: number, currentType: string = 'info'): Promise<'info' | 'success' | 'warning' | 'emergency'> {
+        if (currentType === 'emergency') return 'emergency';
+        if (!reportId) return currentType as any;
+
+        try {
+            const report = await db.select({ isEmergency: reports.isEmergency })
+                .from(reports)
+                .where(eq(reports.id, reportId))
+                .limit(1);
+
+            if (report.length > 0 && report[0].isEmergency) {
+                return 'emergency';
+            }
+        } catch (e) {
+            console.error('[NOTIF-SERVICE] Failed to check emergency status', e);
+        }
+
+        return currentType as any;
+    }
+
+    /**
      * Create a notification for a specific User (Pelapor)
      */
     static async notifyUser(userId: number, title: string, message: string, type: 'info' | 'success' | 'warning' | 'emergency' = 'info', reportId?: number) {
         try {
+            const finalType = await this.resolveType(reportId, type);
+
             await db.insert(notifications).values({
                 userId,
                 title,
                 message,
-                type,
+                type: finalType,
                 reportId,
             });
 
@@ -24,10 +49,10 @@ export class NotificationService {
                 'user',
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
-            console.log(`[NOTIF-USER] ID:${userId} - ${title}: ${message} (Report: ${reportId})`);
+            console.log(`[NOTIF-USER] ID:${userId} - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {
             console.error('Failed to notify user', e);
         }
@@ -38,11 +63,13 @@ export class NotificationService {
      */
     static async notifyStaff(staffId: number, title: string, message: string, type: 'info' | 'success' | 'warning' | 'emergency' = 'info', reportId?: number) {
         try {
+            const finalType = await this.resolveType(reportId, type);
+
             await db.insert(notifications).values({
                 staffId,
                 title,
                 message,
-                type,
+                type: finalType,
                 reportId,
             });
 
@@ -52,10 +79,10 @@ export class NotificationService {
                 'staff',
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
-            console.log(`[NOTIF-STAFF] ID:${staffId} - ${title}: ${message} (Report: ${reportId})`);
+            console.log(`[NOTIF-STAFF] ID:${staffId} - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {
             console.error('Failed to notify staff', e);
         }
@@ -66,6 +93,7 @@ export class NotificationService {
      */
     static async notifyRole(role: 'supervisor' | 'teknisi' | 'pj_gedung' | 'admin', title: string, message: string, type: 'info' | 'success' | 'warning' | 'emergency' = 'info', reportId?: number) {
         try {
+            const finalType = await this.resolveType(reportId, type);
             const roleStaff = await db.select().from(staff).where(eq(staff.role, role));
 
             if (roleStaff.length === 0) return;
@@ -74,7 +102,7 @@ export class NotificationService {
                 staffId: s.id,
                 title,
                 message,
-                type,
+                type: finalType,
                 reportId,
             }));
 
@@ -85,10 +113,10 @@ export class NotificationService {
                 role,
                 title,
                 message,
-                reportId ? { reportId: reportId.toString() } : {}
+                { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
-            console.log(`[NOTIF-ROLE] ${role} (${roleStaff.length}) - ${title}: ${message} (Report: ${reportId})`);
+            console.log(`[NOTIF-ROLE] ${role} (${roleStaff.length}) - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {
             console.error(`Failed to notify role ${role}`, e);
         }

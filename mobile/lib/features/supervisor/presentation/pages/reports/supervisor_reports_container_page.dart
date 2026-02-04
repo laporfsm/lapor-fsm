@@ -71,28 +71,27 @@ class SupervisorReportsContainerPage extends StatelessWidget {
               initialStatuses: const [
                 ReportStatus.pending,
                 ReportStatus.terverifikasi,
-                ReportStatus.verifikasi,
+                // ReportStatus.verifikasi, // REMOVED
                 ReportStatus.diproses,
                 ReportStatus.penanganan,
                 ReportStatus.onHold,
                 ReportStatus.selesai,
-                ReportStatus.recalled, // Added Recalled to initial
+                ReportStatus.recalled,
               ],
               allowedStatuses: const [
                 // Only show relevant active statuses in filter
                 ReportStatus.pending,
                 ReportStatus.terverifikasi,
-                ReportStatus.verifikasi,
                 ReportStatus.diproses,
                 ReportStatus.penanganan,
                 ReportStatus.onHold,
                 ReportStatus.selesai,
-                ReportStatus
-                    .recalled, // Optional: keep recycled here if supervisor needs to filter it, otherwise remove
+                ReportStatus.recalled,
               ],
               showBackButton: false, // It's a tab
               appBarColor: supervisorColor, // Pass supervisor theme
-              role: 'supervisor', // Added: use supervisor endpoint for proper data fetching
+              role:
+                  'supervisor', // Added: use supervisor endpoint for proper data fetching
             ),
 
             // Tab 2: Riwayat
@@ -116,73 +115,11 @@ class SupervisorReportsContainerPage extends StatelessWidget {
           ],
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => _showExportOptions(context),
+          onPressed: () => context.push('/supervisor/export'),
           backgroundColor: Colors.white,
           child: const Icon(LucideIcons.download, color: Colors.green),
         ),
       ),
-    );
-  }
-
-  void _showExportOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Export Laporan',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Unduh data laporan yang sedang ditampilkan.',
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                leading: const Icon(
-                  LucideIcons.fileSpreadsheet,
-                  color: Colors.green,
-                ),
-                title: const Text('Export ke Excel (.xlsx)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh Excel... (Mock)')),
-                  );
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(LucideIcons.fileText, color: Colors.red),
-                title: const Text('Export ke PDF (.pdf)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Mengunduh PDF... (Mock)')),
-                  );
-                },
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

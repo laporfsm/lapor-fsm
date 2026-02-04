@@ -225,6 +225,74 @@ class ReportService {
     }
   }
 
+  // ===========================================================================
+  // BUILDING MANAGEMENT
+  // ===========================================================================
+
+  // Get Buildings
+  Future<List<Map<String, dynamic>>> getBuildings({String? search}) async {
+    try {
+      final response = await apiService.dio.get(
+        '/buildings',
+        queryParameters: {if (search != null) 'search': search},
+      );
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching buildings: $e');
+      return [];
+    }
+  }
+
+  // Create Building
+  Future<bool> createBuilding(String name) async {
+    try {
+      final response = await apiService.dio.post(
+        '/buildings',
+        data: {'name': name},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error creating building: $e');
+      return false;
+    }
+  }
+
+  // Update Building
+  Future<bool> updateBuilding(int id, String name) async {
+    try {
+      final response = await apiService.dio.put(
+        '/buildings/$id',
+        data: {'name': name},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error updating building: $e');
+      return false;
+    }
+  }
+
+  // Delete Building
+  Future<Map<String, dynamic>> deleteBuilding(int id) async {
+    try {
+      final response = await apiService.dio.delete('/buildings/$id');
+      if (response.data['status'] == 'success') {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': response.data['message']};
+      }
+    } catch (e) {
+      debugPrint('Error deleting building: $e');
+      String msg = 'Gagal menghapus gedung.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
+    }
+  }
+
   // STAFF ENDPOINTS
 
   // Get PJ Gedung Dashboard Stats
@@ -273,6 +341,25 @@ class ReportService {
     } catch (e) {
       debugPrint('Error fetching Supervisor dashboard stats: $e');
       return null;
+    }
+  }
+
+  // Get Non-Gedung Pending Reports (buildings without PJ Gedung)
+  Future<List<Map<String, dynamic>>> getNonGedungReports({
+    int limit = 20,
+  }) async {
+    try {
+      final response = await apiService.dio.get(
+        '/supervisor/reports/non-gedung',
+        queryParameters: {'limit': limit.toString()},
+      );
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching non-gedung reports: $e');
+      return [];
     }
   }
 
@@ -351,15 +438,17 @@ class ReportService {
   // LIFECYCLE MANAGEMENT (PJ & Supervisor)
   // ===========================================================================
 
-  /// Verify a report (PJ Gedung / Supervisor)
+  /// Verify a report (PJ Gedung or Supervisor)
   Future<Report> verifyReport(
     String reportId,
     int staffId, {
     String? notes,
+    String role = 'pj_gedung', // 'pj_gedung' or 'supervisor'
   }) async {
     try {
+      final prefix = role == 'supervisor' ? 'supervisor' : 'pj-gedung';
       final response = await apiService.dio.post(
-        '/pj-gedung/reports/$reportId/verify',
+        '/$prefix/reports/$reportId/verify',
         data: {'staffId': staffId, if (notes != null) 'notes': notes},
       );
       if (response.data['status'] == 'success') {
@@ -574,6 +663,24 @@ class ReportService {
       throw Exception(response.data['message']);
     } catch (e) {
       throw Exception('Gagal menyelesaikan tugas: $e');
+    }
+  }
+
+  // Export reports (Returns bytes)
+  Future<List<int>?> exportReports({String? status, String? building}) async {
+    try {
+      final response = await apiService.dio.get(
+        '/supervisor/reports/export',
+        queryParameters: {
+          if (status != null) 'status': status,
+          if (building != null) 'building': building,
+        },
+        options: Options(responseType: ResponseType.bytes),
+      );
+      return response.data;
+    } catch (e) {
+      debugPrint('Error exporting reports: $e');
+      return null;
     }
   }
 }

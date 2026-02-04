@@ -14,15 +14,16 @@ class NotificationService {
 
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -41,24 +42,44 @@ class NotificationService {
     String? payload,
   }) async {
     debugPrint('NotificationService: showNotification ($title: $message)');
-    
+
     if (kIsWeb) return;
 
-    final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'lapor_fsm_channel',
-      'Lapor FSM Notifications',
-      channelDescription: 'Notifications for report status updates',
-      importance: isEmergency ? Importance.max : Importance.defaultImportance,
-      priority: isEmergency ? Priority.high : Priority.defaultPriority,
-      color: isEmergency ? const Color(0xFFFF0000) : const Color(0xFF0055A5),
-    );
+    final String channelId = isEmergency
+        ? 'lapor_fsm_channel_emergency_v3'
+        : 'lapor_fsm_channel_high_v2';
+    final String channelName = isEmergency
+        ? 'Emergency Alerts'
+        : 'High Importance Notifications';
+    final String channelDescription = isEmergency
+        ? 'Critical alerts requiring immediate attention.'
+        : 'This channel is used for important notifications.';
+
+    final AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: Importance.max,
+          priority: Priority.high,
+          color: isEmergency
+              ? const Color(0xFFFF0000)
+              : const Color(0xFF0055A5),
+          sound: isEmergency
+              ? const RawResourceAndroidNotificationSound('emergency_alert')
+              : null,
+          playSound: true,
+        );
 
     final NotificationDetails notificationDetails = NotificationDetails(
       android: androidDetails,
-      iOS: const DarwinNotificationDetails(
+      iOS: DarwinNotificationDetails(
         presentAlert: true,
         presentBadge: true,
         presentSound: true,
+        sound: isEmergency
+            ? 'emergency_alert.wav'
+            : null, // Fallback placeholder for iOS
       ),
     );
 
