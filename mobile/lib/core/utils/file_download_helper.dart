@@ -13,6 +13,7 @@ Future<void> saveAndShareFileNative(
   final file = File('${directory.path}/$fileName');
   await file.writeAsBytes(bytes, flush: true);
 
+  // ignore: deprecated_member_use
   await Share.shareXFiles([
     XFile(file.path, mimeType: mimeType),
   ], text: 'Export Laporan FSM');

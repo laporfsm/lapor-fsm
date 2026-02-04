@@ -33,7 +33,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
   DateTimeRange? _selectedDateRange;
 
   // Advanced Filters
-  Set<ReportStatus> _selectedStatuses = {};
+  final Set<ReportStatus> _selectedStatuses = {};
   String? _selectedCategory;
   String? _selectedBuilding;
 

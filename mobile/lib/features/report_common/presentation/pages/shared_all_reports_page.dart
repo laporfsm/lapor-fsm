@@ -71,7 +71,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   List<String> _categoryNames = [];
 
   bool _isSelectionMode = false;
-  Set<String> _selectedReportIds = {};
+  final Set<String> _selectedReportIds = {};
 
   void _toggleSelectionMode(String reportId) {
     if (widget.role != 'supervisor') return;

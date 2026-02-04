@@ -776,6 +776,7 @@ class _RegisterPageState extends State<RegisterPage> {
               'Pilih Departemen',
               LucideIcons.graduationCap,
             ),
+            // ignore: deprecated_member_use
             value: _selectedDepartment,
             items: _departments.map((dept) {
               return DropdownMenuItem(

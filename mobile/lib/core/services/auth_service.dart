@@ -1,8 +1,5 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:mobile/core/services/api_service.dart';
-import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 
 // Singleton instance
 final authService = AuthService();

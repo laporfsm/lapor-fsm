@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
@@ -132,7 +133,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         state = state.copyWith(items: fetchedItems, isLoading: false);
       }
     } catch (e) {
-      print('Notification Poll Error: $e');
+      debugPrint('Notification Poll Error: $e');
     }
   }
 
@@ -158,7 +159,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     try {
       await apiService.dio.patch('/notifications/$id/read');
     } catch (e) {
-      print('Failed to mark read API: $e');
+      debugPrint('Failed to mark read API: $e');
     }
   }
 
@@ -190,7 +191,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
         );
       }
     } catch (e) {
-      print('Failed to mark all read API: $e');
+      debugPrint('Failed to mark all read API: $e');
     }
   }
 
@@ -202,7 +203,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
     try {
       await apiService.dio.delete('/notifications/$id');
     } catch (e) {
-      print('Failed to delete API: $e');
+      debugPrint('Failed to delete API: $e');
     }
   }
 
@@ -226,7 +227,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
       // I'll add a placeholder call.
       await apiService.dio.delete('/notifications/all/$type/$userId');
     } catch (e) {
-      print('Failed to delete all API: $e');
+      debugPrint('Failed to delete all API: $e');
     }
   }
 

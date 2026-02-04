@@ -139,23 +139,6 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
-    final isSelected = _selectedFilter == label;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (val) {
-        setState(() => _selectedFilter = label);
-        _filterLogs();
-      },
-      selectedColor: AppTheme.adminColor.withValues(alpha: 0.2),
-      checkmarkColor: AppTheme.adminColor,
-      labelStyle: TextStyle(
-        color: isSelected ? AppTheme.adminColor : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-    );
-  }
 
   Widget _buildLogItem(Map<String, dynamic> log) {
     IconData icon;
