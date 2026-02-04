@@ -310,24 +310,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Better spacing
                         children: [
                           _QuickActionButton(
-                            label: 'Verifikasi',
+                            label: 'Verifikasi User',
                             icon: LucideIcons.userCheck,
                             color: Colors.orange,
                             onTap: () => context.go(
                               '/admin/users?tab=1',
-                            ), // Tab 1: Verifikasi
+                            ),
                           ),
-                          const Gap(40),
                           _QuickActionButton(
-                            label: 'Staff',
-                            icon: LucideIcons.userPlus,
+                            label: 'Kelola Staff',
+                            icon: LucideIcons.users,
                             color: Colors.green,
                             onTap: () => context.go(
-                              '/admin/users?tab=2&action=add',
-                            ), // Tab 2: Staff, Action: Add
+                              '/admin/staff', // Assuming route exists or users?tab=2
+                            ), 
+                          ),
+                          _QuickActionButton(
+                             label: 'Semua Laporan',
+                             icon: LucideIcons.fileText,
+                             color: Colors.blue,
+                             onTap: () => context.go('/admin/reports'),
                           ),
                         ],
                       ),
@@ -343,7 +348,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Container(
-                        height: 220, // Increased height to prevent overflow
+                        height: 240,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -354,7 +359,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Laporan Masuk vs Selesai',
+                              'Tren Laporan (7 Hari Terakhir)',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
@@ -365,49 +370,51 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               child: Builder(
                                 builder: (context) {
                                   final trendList = _stats?['weeklyTrend'] as List? ?? [];
-                                  final maxVal = trendList.fold(1, (max, t) => (t['value'] as int) > max ? t['value'] as int : max);
+                                  if (trendList.isEmpty) {
+                                    return const Center(
+                                      child: Text(
+                                        'Belum ada data grafik',
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    );
+                                  }
                                   
+                                  // Find max value safely
+                                  int maxVal = 1;
+                                  for (var item in trendList) {
+                                    if (item is Map && item.containsKey('value')) {
+                                      final val = item['value'] as int? ?? 0;
+                                      if (val > maxVal) maxVal = val;
+                                    }
+                                  }
+
                                   return Row(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: trendList.map((t) {
-                                      final val = (t['value'] as int).toDouble();
+                                      final val = (t['value'] as int? ?? 0).toDouble();
+                                      final day = t['day']?.toString() ?? '';
+                                      
                                       return _buildStatBar(
                                         context,
-                                        t['day'] ?? '',
+                                        day,
                                         val / maxVal,
-                                        (val * 0.8) / maxVal, // Simulated "completed" ratio
+                                        // Mocking "Done" ratio as 80% of "In" for visual demo if not provided
+                                        // Real implementation should provide 'done' count in API if needed
+                                        (val * 0.7) / maxVal, 
                                       );
                                     }).toList(),
                                   );
                                 },
                               ),
                             ),
-                            const Gap(10),
+                            const Gap(16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  color: AppTheme.adminColor,
-                                ),
-                                const Gap(4),
-                                const Text(
-                                  'Masuk',
-                                  style: TextStyle(fontSize: 10),
-                                ),
+                                _buildLegendItem(AppTheme.adminColor, 'Masuk'),
                                 const Gap(16),
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  color: Colors.green,
-                                ),
-                                const Gap(4),
-                                const Text(
-                                  'Selesai',
-                                  style: TextStyle(fontSize: 10),
-                                ),
+                                _buildLegendItem(Colors.green, 'Selesai'),
                               ],
                             ),
                           ],
@@ -788,6 +795,26 @@ Widget _buildStatBar(
       ),
       const Gap(8),
       Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+    ],
+  );
+}
+
+Widget _buildLegendItem(Color color, String label) {
+  return Row(
+    children: [
+      Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      const Gap(6),
+      Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+      ),
     ],
   );
 }

@@ -161,12 +161,14 @@ class _AdminStatisticsPageState extends State<AdminStatisticsPage> {
                 ),
               ),
               borderData: FlBorderData(show: false),
-              lineBarsData: [
+                  lineBarsData: [
                 LineChartBarData(
                   spots: points.asMap().entries.map((e) {
+                    final val = e.value['value'];
+                    final double y = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
                     return FlSpot(
                       e.key.toDouble(),
-                      (e.value['value'] as int).toDouble(),
+                      y,
                     );
                   }).toList(),
                   isCurved: true,
@@ -309,11 +311,13 @@ class _AdminStatisticsPageState extends State<AdminStatisticsPage> {
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
               barGroups: data.asMap().entries.map((e) {
+                final val = e.value['value'];
+                final double y = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
                 return BarChartGroupData(
                   x: e.key,
                   barRods: [
                     BarChartRodData(
-                      toY: (e.value['value'] as int).toDouble(),
+                      toY: y,
                       color: Colors.purple.shade300,
                       width: 16,
                       borderRadius: BorderRadius.circular(4),
@@ -337,11 +341,13 @@ class _AdminStatisticsPageState extends State<AdminStatisticsPage> {
     final sections = distribution.entries.map((e) {
       final color = colors[index % colors.length];
       index++;
-      final double value = (e.value as int).toDouble();
+      final val = e.value;
+      final double value = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
+      
       return PieChartSectionData(
         color: color,
         value: value,
-        title: '${value.toInt()}%', // Show percentage
+        title: '${value.toInt()}', // Show count instead of % if preferred, or calc %
         titleStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,

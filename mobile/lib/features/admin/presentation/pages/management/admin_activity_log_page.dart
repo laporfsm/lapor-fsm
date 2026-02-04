@@ -80,61 +80,41 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
         elevation: 0,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            ExportService.exportData(context, 'Log Aktivitas', 'log'),
+        onPressed: () => _showExportOptions(context),
         backgroundColor: AppTheme.adminColor,
         tooltip: 'Export Log',
         child: const Icon(LucideIcons.download, color: Colors.white),
       ),
       body: Column(
         children: [
-          // Search & Filter Header
+          // Search Header (Filters removed as backend only returns User logs)
           Container(
             padding: const EdgeInsets.all(16),
             color: Colors.white,
-            child: Column(
-              children: [
-                TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Cari log aktivitas...',
-                    prefixIcon: const Icon(LucideIcons.search, size: 20),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  onChanged: (val) {
-                    _searchQuery = val;
-                    _filterLogs();
-                  },
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Cari log aktivitas...',
+                prefixIcon: const Icon(LucideIcons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                const Gap(12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _buildFilterChip('Semua'),
-                      const Gap(8),
-                      _buildFilterChip('Login'),
-                      const Gap(8),
-                      _buildFilterChip('Laporan'),
-                      const Gap(8),
-                      _buildFilterChip('User'),
-                    ],
-                  ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-              ],
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              onChanged: (val) {
+                _searchQuery = val;
+                _filterLogs();
+              },
             ),
           ),
 
@@ -253,6 +233,47 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showExportOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Export Log Sistem',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const Gap(20),
+              ListTile(
+                leading: const Icon(LucideIcons.fileSpreadsheet, color: Colors.green),
+                title: const Text('Export ke Excel (.xlsx)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ExportService.exportData(context, 'Log Sistem User', 'log', data: _filteredLogs);
+                },
+              ),
+              ListTile(
+                leading: const Icon(LucideIcons.fileText, color: Colors.red),
+                title: const Text('Export ke PDF (.pdf)'),
+                onTap: () {
+                  Navigator.pop(context);
+                  ExportService.exportAdminLogsPdf(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

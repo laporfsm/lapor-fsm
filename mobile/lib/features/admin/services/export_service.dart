@@ -237,4 +237,43 @@ class ExportService {
       }
     }
   }
+
+  static Future<void> exportAdminLogsPdf(BuildContext context) async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Menghubungi server untuk pembuatan PDF Log Sistem...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    try {
+      final response = await apiService.dio.get(
+        '/admin/logs/export/pdf',
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final fileName = "Log_Sistem_User_$timestamp.pdf";
+      await saveFile(response.data, fileName, 'application/pdf');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berhasil mengunduh $fileName'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal membuat PDF Log: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }
