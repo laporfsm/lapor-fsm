@@ -248,118 +248,129 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         roleBgColor = AppTheme.primaryColor.withValues(alpha: 0.1);
     }
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Opacity(
+      opacity: isActive ? 1.0 : 0.6,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: isActive ? Colors.grey.shade100 : Colors.red.shade100,
           ),
-        ],
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          staff['name'],
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        if (!isActive) ...[
-                          const Gap(8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
                             child: Text(
-                              'Nonaktif',
+                              staff['name'],
                               style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.red.shade700,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: isActive ? Colors.black : Colors.grey.shade700,
                               ),
                             ),
                           ),
+                          if (!isActive) ...[
+                            const Gap(8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade50,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.red.shade100),
+                              ),
+                              child: Text(
+                                'NONAKTIF',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.red.shade700,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                    const Gap(4),
-                    Text(
-                      staff['email'],
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 13,
                       ),
-                    ),
-                    const Gap(8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: roleBgColor,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        role.replaceAll('_', ' ').toUpperCase(),
+                      const Gap(4),
+                      Text(
+                        staff['email'],
                         style: TextStyle(
-                          color: roleColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
                         ),
                       ),
+                      const Gap(8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive ? roleBgColor : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          role.replaceAll('_', ' ').toUpperCase(),
+                          style: TextStyle(
+                            color: isActive ? roleColor : Colors.grey,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Gap(12),
+                // Action Buttons
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildActionButton(
+                      icon: LucideIcons.key,
+                      color: Colors.orange,
+                      tooltip: 'Reset Password',
+                      onTap: () => _showResetPasswordDialog(staff),
+                    ),
+                    const Gap(8),
+                    _buildActionButton(
+                      icon: LucideIcons.pencil,
+                      color: Colors.blue,
+                      tooltip: 'Edit',
+                      onTap: () => _showEditStaffDialog(staff),
+                    ),
+                    const Gap(8),
+                    _buildActionButton(
+                      icon: isActive ? LucideIcons.userX : LucideIcons.userCheck,
+                      color: isActive ? Colors.red : Colors.green,
+                      tooltip: isActive ? 'Nonaktifkan' : 'Aktifkan',
+                      onTap: () => _toggleStaffStatus(staff),
                     ),
                   ],
                 ),
-              ),
-              // Action Buttons
-              Row(
-                children: [
-                  _buildActionButton(
-                    icon: LucideIcons.key,
-                    color: Colors.orange,
-                    tooltip: 'Reset Password',
-                    onTap: () => _showResetPasswordDialog(staff),
-                  ),
-                  const Gap(8),
-                  _buildActionButton(
-                    icon: LucideIcons.pencil,
-                    color: Colors.blue,
-                    tooltip: 'Edit',
-                    onTap: () => _showEditStaffDialog(staff),
-                  ),
-                  const Gap(8),
-                  _buildActionButton(
-                    icon: isActive ? LucideIcons.userX : LucideIcons.userCheck,
-                    color: isActive ? Colors.red : Colors.green,
-                    tooltip: isActive ? 'Nonaktifkan' : 'Aktifkan',
-                    onTap: () => _toggleStaffStatus(staff),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

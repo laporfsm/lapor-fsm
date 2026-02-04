@@ -95,16 +95,9 @@ class NotificationNotifier extends Notifier<NotificationState> {
             .map((json) => NotificationItem.fromJson(json))
             .toList();
 
-        // Filter for Admin: Only show Verification/Registration requests
+        // Filter for Admin: Removed client-side filtering. 
+        // Admin should see all notifications sent by backend (including Reports & Emergency).
         List<NotificationItem> finalItems = fetchedItems;
-        if (role == 'admin') {
-          finalItems = fetchedItems.where((item) {
-            final text = '${item.title} ${item.message}'.toLowerCase();
-            return text.contains('verifikasi') ||
-                text.contains('registrasi') ||
-                text.contains('pendaftaran');
-          }).toList();
-        }
 
         // Calculate max ID
         int currentMaxId = 0;
