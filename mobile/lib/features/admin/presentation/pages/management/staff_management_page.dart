@@ -3,7 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/admin/services/export_service.dart';
+
 
 class StaffManagementPage extends StatefulWidget {
   final String? searchQuery;
@@ -381,9 +381,9 @@ class _StaffManagementPageState extends State<StaffManagementPage> {
         child: Icon(icon, size: 18, color: color),
       ),
     );
+  }
 
-  // Helper for parent access (keeping for compatibility or legacy)
-  static Widget addStaffDialog() => const AddStaffBottomSheet();
+
 }
 
 class AddStaffBottomSheet extends StatefulWidget {
@@ -524,7 +524,7 @@ class _AddStaffBottomSheetState extends State<AddStaffBottomSheet> {
                   ),
                   const Gap(16),
                   DropdownButtonFormField<String>(
-                    value: _role,
+                    initialValue: _role,
                     decoration: InputDecoration(
                       labelText: 'Role Akses',
                       prefixIcon: const Icon(LucideIcons.shieldCheck, size: 20),

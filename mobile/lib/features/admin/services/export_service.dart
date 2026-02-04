@@ -18,7 +18,7 @@ class ExportService {
     Color? primaryColor,
   }) async {
     final themeColor = primaryColor ?? const Color(0xFF059669); // Default to Emerald
-    final hexColor = '#${themeColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    final hexColor = '#${themeColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
     // Show loading snackbar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -192,7 +192,7 @@ class ExportService {
     String title = 'Log Sistem',
     Color primaryColor = const Color(0xFF9333EA), // Default to Admin Purple
   }) async {
-    final hexColor = '#${primaryColor.value.toRadixString(16).substring(2).toUpperCase()}';
+    final hexColor = '#${primaryColor.toARGB32().toRadixString(16).substring(2).toUpperCase()}';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Menyiapkan file Excel $title...'),
@@ -347,7 +347,7 @@ class ExportService {
     String brandingSuffix = 'Admin Dashboard',
   }) async {
     final themeColor = primaryColor ?? const Color(0xFF9333EA);
-    final pdfThemeColor = PdfColor.fromInt(themeColor.value);
+    final pdfThemeColor = PdfColor.fromInt(themeColor.toARGB32());
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Menyiapkan file PDF $title...'),

@@ -182,7 +182,7 @@ class _AdminUsersPageState extends State<AdminUsersPage>
                   context: context,
                   isScrollControlled: true,
                   backgroundColor: Colors.transparent,
-                  builder: (context) => const StaffManagementPage.addStaffDialog(),
+                  builder: (context) => const AddStaffBottomSheet(),
                 ).then((value) {
                   if (value == true) {
                     setState(() {
