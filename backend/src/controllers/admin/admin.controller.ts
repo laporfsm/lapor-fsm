@@ -851,64 +851,178 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     // Export Logs PDF
     .get('/logs/export/pdf', async ({ set }) => {
-        const logs = await db
-            .select()
-            .from(reportLogs)
-            .orderBy(desc(reportLogs.timestamp));
+        try {
+            const logs = await db
+                .select()
+                .from(reportLogs)
+                .orderBy(desc(reportLogs.timestamp));
 
-        const doc = new PDFDocument({ margin: 40 });
-        const chunks: Buffer[] = [];
-        doc.on('data', chunks.push.bind(chunks));
+            const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape', bufferPages: true });
+            const chunks: Buffer[] = [];
+            
+            const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
+                doc.on('data', (chunk) => chunks.push(chunk));
+                doc.on('end', () => resolve(Buffer.concat(chunks)));
+                doc.on('error', (err) => reject(err));
+            });
 
-        doc.fontSize(18).text('LOG SISTEM - KATEGORI USER', { align: 'center' });
-        doc.fontSize(10).text(`Dicetak pada: ${new Date().toLocaleString()}`, { align: 'center' });
-        doc.moveDown();
+            const safeText = (str: string | null | undefined): string => {
+                if (!str) return '-';
+                return str.replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, '').trim() || '-';
+            };
 
-        let y = doc.y;
-        doc.fontSize(10).font('Helvetica-Bold');
-        doc.text('Waktu', 40, y);
-        doc.text('User', 140, y);
-        doc.text('Aksi', 240, y);
-        doc.text('Detail', 340, y);
-        doc.moveDown();
-        doc.font('Helvetica').fontSize(9);
+            const colors = {
+                primary: '#7C3AED', // Purple (Admin Theme)
+                text: '#1F2937',
+                textLight: '#6B7280',
+                border: '#E5E7EB',
+                rowOdd: '#F9FAFB',
+                white: '#FFFFFF'
+            };
 
-        logs.forEach(l => {
-            if (doc.y > 700) doc.addPage();
-            y = doc.y;
-            doc.text(new Date(l.timestamp!).toLocaleString(), 40, y, { width: 90 });
-            doc.text(l.actorName || '-', 140, y, { width: 90 });
-            doc.text(l.action, 240, y, { width: 90 });
-            doc.text(l.reason || '-', 340, y, { width: 220 });
-            doc.moveDown();
-        });
+            // --- HEADER ---
+            doc.font('Helvetica-Bold').fontSize(24).fillColor(colors.primary).text('Lapor FSM!', 30, 30);
+            doc.fontSize(10).fillColor(colors.textLight).text('Sistem Informasi Pelaporan Fasilitas FSM Undip', 30, 55);
+            doc.fontSize(14).fillColor(colors.text).text('LOG AKTIVITAS SISTEM', 400, 30, { align: 'right', width: 410 });
+            doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 50, { align: 'right', width: 410 });
+            doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
-        doc.end();
-        const buffer = await new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
-        set.headers['Content-Type'] = 'application/pdf';
-        set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.pdf';
-        return buffer;
+            // --- SUMMARY CARD ---
+            const summaryY = 90;
+            doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
+            
+            const drawSummaryItem = (label: string, value: string, x: number) => {
+                doc.fillColor(colors.textLight).fontSize(9).text(safeText(label), x, summaryY + 10, { align: 'center', width: 250 });
+                doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(14).text(safeText(value), x, summaryY + 25, { align: 'center', width: 250 });
+            };
+
+            drawSummaryItem('Total Log Aktivitas', logs.length.toString(), 30);
+            drawSummaryItem('Rentang Waktu', `${logs.length > 0 ? new Date(logs[logs.length-1].timestamp!).toLocaleDateString('id-ID') : '-'} s/d Hari Ini`, 280);
+
+            // --- TABLE ---
+            let currentY = 160;
+            const colWidths = [40, 110, 150, 120, 362]; // Total 782
+            const headers = ['No', 'Waktu', 'User/Aktor', 'Aksi', 'Detail Perubahan / Catatan'];
+
+            const drawHeader = () => {
+                doc.rect(30, currentY, 782, 25).fill(colors.primary);
+                let currentX = 30;
+                doc.fillColor(colors.white).font('Helvetica-Bold').fontSize(9);
+                headers.forEach((header, i) => {
+                    doc.text(safeText(header), currentX + 5, currentY + 7, { width: colWidths[i] - 10, align: 'left' });
+                    currentX += colWidths[i];
+                });
+                currentY += 25;
+            };
+
+            drawHeader();
+
+            logs.forEach((l, i) => {
+                const rowHeight = 35;
+                if (currentY + rowHeight > 550) {
+                    doc.addPage({ margin: 30, size: 'A4', layout: 'landscape' });
+                    currentY = 30;
+                    drawHeader();
+                }
+                if (i % 2 === 1) doc.rect(30, currentY, 782, rowHeight).fill(colors.rowOdd);
+                
+                let currentX = 30;
+                doc.fillColor(colors.text).font('Helvetica').fontSize(8);
+                
+                const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+                
+                const drawCell = (text: string, colIdx: number, bold: boolean = false) => {
+                    if (bold) doc.font('Helvetica-Bold'); else doc.font('Helvetica');
+                    doc.text(safeText(text), currentX + 5, currentY + 10, { width: colWidths[colIdx] - 10, height: rowHeight - 15, lineBreak: true, ellipsis: true });
+                    currentX += colWidths[colIdx];
+                };
+
+                drawCell((i + 1).toString(), 0);
+                drawCell(timeStr, 1);
+                drawCell(l.actorName || '-', 2, true);
+                drawCell(l.action.toUpperCase(), 3);
+                
+                const details = l.reason || (l.fromStatus && l.toStatus ? `Status: ${l.fromStatus} -> ${l.toStatus}` : '-');
+                drawCell(details, 4);
+                
+                currentY += rowHeight;
+            });
+
+            // --- FOOTER ---
+            const range = doc.bufferedPageRange();
+            for (let i = 0; i < range.count; i++) {
+                doc.switchToPage(i);
+                doc.fontSize(8).fillColor(colors.textLight).text(`Halaman ${i + 1} dari ${range.count} - Log Aktivitas Lapor FSM`, 30, 570, { align: 'right', width: 782 });
+                doc.moveTo(30, 565).lineTo(812, 565).lineWidth(0.5).stroke(colors.border);
+            }
+
+            doc.end();
+            const buffer = await pdfBufferPromise;
+            set.headers['Content-Type'] = 'application/pdf';
+            set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_laporfsm.pdf';
+            return buffer;
+        } catch (e) {
+            console.error('Error generating Logs PDF:', e);
+            set.status = 500;
+            return { error: 'Failed' };
+        }
     })
 
     // Export Logs Excel
     .get('/logs/export/excel', async ({ set }) => {
-        const logs = await db.select().from(reportLogs).orderBy(desc(reportLogs.timestamp));
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('System Logs');
-        worksheet.columns = [
-            { header: 'Waktu', key: 'time', width: 25 },
-            { header: 'User', key: 'user', width: 20 },
-            { header: 'Aksi', key: 'action', width: 15 },
-            { header: 'Detail', key: 'details', width: 50 },
-        ];
-        logs.forEach(l => {
-            worksheet.addRow({ time: l.timestamp, user: l.actorName, action: l.action, details: l.reason });
-        });
-        const buffer = await workbook.xlsx.writeBuffer();
-        set.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.xlsx';
-        return buffer;
+        try {
+            const logsData = await db
+                .select()
+                .from(reportLogs)
+                .orderBy(desc(reportLogs.timestamp));
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Log Sistem');
+
+            worksheet.columns = [
+                { header: 'No', key: 'no', width: 5 },
+                { header: 'Waktu', key: 'time', width: 25 },
+                { header: 'Aktor (User)', key: 'actor', width: 25 },
+                { header: 'Role', key: 'role', width: 15 },
+                { header: 'Aksi', key: 'action', width: 20 },
+                { header: 'Dari Status', key: 'from', width: 15 },
+                { header: 'Ke Status', key: 'to', width: 15 },
+                { header: 'Alasan / Detail', key: 'reason', width: 50 },
+            ];
+
+            // Styling header
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: '7C3AED' }
+            };
+            worksheet.getRow(1).font = { color: { argb: 'FFFFFF' }, bold: true };
+
+            logsData.forEach((l, i) => {
+                worksheet.addRow({
+                    no: i + 1,
+                    time: l.timestamp ? new Date(l.timestamp).toLocaleString('id-ID') : '-',
+                    actor: l.actorName,
+                    role: l.actorRole,
+                    action: l.action,
+                    from: l.fromStatus,
+                    to: l.toStatus,
+                    reason: l.reason
+                });
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            set.headers['Content-Type'] = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_laporfsm.xlsx';
+            return buffer;
+        } catch (e) {
+            console.error('Error generating Logs Excel:', e);
+            set.status = 500;
+            return { error: 'Failed' };
+        }
     })
+
 
     // ==========================================
     // USER MANAGEMENT
