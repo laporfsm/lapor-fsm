@@ -714,6 +714,85 @@ class ReportService {
       return null;
     }
   }
+
+  // ===========================================================================
+  // SPECIALIZATION MANAGEMENT
+  // ===========================================================================
+
+  // Get Specializations
+  Future<List<Map<String, dynamic>>> getSpecializations({
+    String? search,
+  }) async {
+    try {
+      final response = await apiService.dio.get(
+        '/specializations',
+        queryParameters: {if (search != null) 'search': search},
+      );
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching specializations: $e');
+      return [];
+    }
+  }
+
+  // Create Specialization
+  Future<bool> createSpecialization(
+    String name,
+    String icon,
+    String? description,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/specializations',
+        data: {'name': name, 'icon': icon, 'description': description},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error creating specialization: $e');
+      return false;
+    }
+  }
+
+  // Update Specialization
+  Future<bool> updateSpecialization(
+    int id,
+    String name,
+    String icon,
+    String? description,
+  ) async {
+    try {
+      final response = await apiService.dio.put(
+        '/specializations/$id',
+        data: {'name': name, 'icon': icon, 'description': description},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error updating specialization: $e');
+      return false;
+    }
+  }
+
+  // Delete Specialization
+  Future<Map<String, dynamic>> deleteSpecialization(int id) async {
+    try {
+      final response = await apiService.dio.delete('/specializations/$id');
+      if (response.data['status'] == 'success') {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': response.data['message']};
+      }
+    } catch (e) {
+      debugPrint('Error deleting specialization: $e');
+      String msg = 'Gagal menghapus spesialisasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
+    }
+  }
 }
 
 // Singleton instance

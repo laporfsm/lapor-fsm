@@ -1,11 +1,11 @@
 import { db } from './index';
-import { users, staff, categories, reports, reportLogs, notifications, buildings } from './schema';
+import { users, staff, categories, reports, reportLogs, notifications, buildings, specializations } from './schema';
 import { sql } from 'drizzle-orm';
 
 async function seed() {
   console.log('🌱 Start seeding from dump...');
   console.log('🧹 Clearing existing data...');
-  await db.execute(sql`TRUNCATE TABLE ${notifications}, ${reportLogs}, ${reports}, ${categories}, ${buildings}, ${staff}, ${users} RESTART IDENTITY CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE ${notifications}, ${reportLogs}, ${reports}, ${categories}, ${buildings}, ${staff}, ${users}, ${specializations} RESTART IDENTITY CASCADE`);
 
   console.log('📦 Inserting users...');
   await db.insert(users).values([
@@ -119,7 +119,7 @@ async function seed() {
       "fcmToken": null,
       "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
       "role": "teknisi",
-      "specialization": null,
+      "specialization": "Air",
       "isActive": true,
       "managedBuilding": null,
       "createdAt": new Date("2026-02-02T09:13:22.469Z")
@@ -133,7 +133,7 @@ async function seed() {
       "fcmToken": null,
       "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
       "role": "teknisi",
-      "specialization": null,
+      "specialization": "Bangunan",
       "isActive": true,
       "managedBuilding": null,
       "createdAt": new Date("2026-02-02T09:13:22.689Z")
@@ -315,7 +315,7 @@ async function seed() {
       "fcmToken": "ecTtFe4XRYuXBmJkP2YNve:APA91bHqHB8N0Gqz8KS61der1lLzwym1R5XPbu3Cq7xuQ8rU1FGBdeebg2pJbsQ1qlOgWQFUAufHsoyrGyE82mCEdKqYBYaJjIOIADhdTwZS2QE83_yDpEQ",
       "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
       "role": "teknisi",
-      "specialization": null,
+      "specialization": "Listrik",
       "isActive": true,
       "managedBuilding": null,
       "createdAt": new Date("2026-02-02T09:13:22.267Z")
@@ -425,21 +425,21 @@ async function seed() {
   await db.insert(categories).values([
     {
       "id": 230,
-      "name": "Kelistrikan",
+      "name": "Listrik",
       "type": "non-emergency",
       "icon": "zap",
       "description": "Masalah instalasi listrik."
     },
     {
       "id": 231,
-      "name": "Sanitasi",
+      "name": "Air",
       "type": "non-emergency",
       "icon": "droplet",
       "description": "Masalah air dan pipa."
     },
     {
       "id": 232,
-      "name": "Infrastruktur",
+      "name": "Bangunan",
       "type": "non-emergency",
       "icon": "building",
       "description": "Bangunan dan ruang."
@@ -460,7 +460,7 @@ async function seed() {
     },
     {
       "id": 235,
-      "name": "Internet/IT",
+      "name": "Jaringan",
       "type": "non-emergency",
       "icon": "wifi",
       "description": "Jaringan dan IT."
@@ -4533,6 +4533,15 @@ async function seed() {
       "createdAt": new Date("2026-02-03T20:53:58.444Z")
     }
   ] as any);
+
+  console.log('📦 Inserting specializations...');
+  await db.insert(specializations).values([
+    { name: 'Listrik', icon: 'zap', description: 'Masalah instalasi listrik' },
+    { name: 'AC', icon: 'air-vent', description: 'Perbaikan dan perawatan AC' },
+    { name: 'Air', icon: 'droplet', description: 'Masalah saluran air dan plumbing' },
+    { name: 'Bangunan', icon: 'building', description: 'Perbaikan fisik bangunan dan sipil' },
+    { name: 'Jaringan', icon: 'wifi', description: 'Masalah internet dan infrastruktur IT' },
+  ]);
 
   console.log('✅ Seeding completed!');
 }

@@ -4,13 +4,15 @@ import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_view.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_buildings_view.dart';
 
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_specializations_view.dart';
+
 class SupervisorMasterDataPage extends StatelessWidget {
   const SupervisorMasterDataPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         appBar: AppBar(
@@ -29,11 +31,16 @@ class SupervisorMasterDataPage extends StatelessWidget {
             tabs: [
               Tab(text: 'Kategori', icon: Icon(LucideIcons.tag)),
               Tab(text: 'Lokasi', icon: Icon(LucideIcons.building)),
+              Tab(text: 'Spesialis', icon: Icon(LucideIcons.wrench)),
             ],
           ),
         ),
         body: const TabBarView(
-          children: [SupervisorCategoriesView(), SupervisorBuildingsView()],
+          children: [
+            SupervisorCategoriesView(),
+            SupervisorBuildingsView(),
+            SupervisorSpecializationsView(),
+          ],
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,7 @@ class _SupervisorTechnicianListPageState
   final _supervisorStaffService = SupervisorStaffService();
 
   List<Map<String, dynamic>> _technicians = [];
+  List<String> _specializations = [];
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -39,9 +41,11 @@ class _SupervisorTechnicianListPageState
 
     try {
       final techs = await _supervisorStaffService.getTechnicians();
+      final specs = await reportService.getSpecializations();
       if (mounted) {
         setState(() {
           _technicians = techs;
+          _specializations = specs.map((e) => e['name'].toString()).toList();
           _isLoading = false;
         });
       }
@@ -149,7 +153,7 @@ class _SupervisorTechnicianListPageState
   }
 
   Widget _buildFilterChips() {
-    final filters = ['Semua', 'Aktif', 'Nonaktif', 'Listrik', 'Sipil'];
+    final filters = ['Semua', 'Aktif', 'Nonaktif', ..._specializations];
     return Container(
       color: Colors.white,
       width: double.infinity,
