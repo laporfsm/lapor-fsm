@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 
+import 'package:mobile/features/supervisor/data/services/supervisor_staff_service.dart';
+
 class SupervisorTechnicianFormPage extends StatefulWidget {
   final String? technicianId; // If null, creating new technician
 
@@ -16,6 +18,9 @@ class SupervisorTechnicianFormPage extends StatefulWidget {
 
 class _SupervisorTechnicianFormPageState
     extends State<SupervisorTechnicianFormPage> {
+  // Service
+  final _supervisorStaffService = SupervisorStaffService();
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -43,24 +48,72 @@ class _SupervisorTechnicianFormPageState
     }
   }
 
-  void _loadTechnicianData() {
-    // TODO: [BACKEND] Fetch technician data by ID
-    setState(() {
-      _nameController.text = 'Budi Santoso';
-      _emailController.text = 'budi.santoso@staff.undip.ac.id';
-      _phoneController.text = '081234567890';
-      _selectedRole = 'Teknisi Listrik';
-    });
+  Future<void> _loadTechnicianData() async {
+    setState(() => _isLoading = true);
+    try {
+      final technician = await _supervisorStaffService.getTechnicianDetail(
+        widget.technicianId!,
+      );
+      if (mounted && technician != null) {
+        setState(() {
+          _nameController.text = technician['name'] ?? '';
+          _emailController.text = technician['email'] ?? '';
+          _phoneController.text = technician['phone'] ?? '';
+
+          // Map backend 'specialization' to UI dropdown
+          // Note: technician['role'] is the system role ('teknisi'),
+          // while 'specialization' contains 'Teknisi Listrik', etc.
+          final spec = technician['specialization'] as String?;
+          if (spec != null && _roles.contains(spec)) {
+            _selectedRole = spec;
+          }
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat data teknisi')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
-  void _saveTechnician() {
+  Future<void> _saveTechnician() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // TODO: [BACKEND] API Call to Create/Update Technician
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
+      final data = {
+        'name': _nameController.text,
+        'email': _emailController.text,
+        'phone': _phoneController.text,
+        'specialization': _selectedRole, // Correct key for backend
+      };
+
+      if (!isEditing) {
+        // Add password for new technician
+        data['password'] = _passwordController.text;
+      }
+
+      bool success;
+      if (isEditing) {
+        success = await _supervisorStaffService.updateTechnician(
+          widget.technicianId!,
+          data,
+        );
+      } else {
+        success = await _supervisorStaffService.createTechnician(data);
+      }
+
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -72,8 +125,15 @@ class _SupervisorTechnicianFormPageState
             ),
           );
           context.pop(true); // Return true to refresh list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal menyimpan data'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
-      });
+      }
     }
   }
 
@@ -126,8 +186,17 @@ class _SupervisorTechnicianFormPageState
                 controller: _phoneController,
                 icon: LucideIcons.phone,
                 keyboardType: TextInputType.phone,
-                validator: (v) =>
-                    v!.isEmpty ? 'Nomor telepon wajib diisi' : null,
+                validator: (v) {
+                  if (v == null || v.isEmpty) {
+                    return 'Nomor telepon wajib diisi';
+                  }
+                  if (!RegExp(r'^[0-9]+$').hasMatch(v)) {
+                    return 'Hanya boleh angka';
+                  }
+                  if (v.length < 10) return 'Minimal 10 digit';
+                  if (v.length > 15) return 'Maksimal 15 digit';
+                  return null;
+                },
               ),
               const Gap(24),
               _buildSectionTitle('Peran & Akses'),

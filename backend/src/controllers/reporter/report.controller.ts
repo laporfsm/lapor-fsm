@@ -78,6 +78,10 @@ export const reportController = new Elysia({ prefix: '/reports' })
       }
     }
 
+    // Filter out Merged Child Reports (where parentId is not null) by default
+    // Unless we specifically want to see them (maybe add a query param for that later)
+    conditions.push(sql`${reports.parentId} IS NULL`);
+
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const reporterStaff = alias(staff, 'reporter_staff');

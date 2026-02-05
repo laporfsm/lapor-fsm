@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, reportLogs, staff, users, categories } from '../../db/schema';
-import { eq, desc, and, or, sql, count, gte, lte, isNull } from 'drizzle-orm';
+import { eq, desc, and, or, sql, count, gte, lte, isNull, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
@@ -465,11 +465,44 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const targets = await db
             .select()
             .from(reports)
-            .where(sql`${reports.id} IN ${reportIds}`)
+            .where(inArray(reports.id, reportIds))
             .orderBy(reports.createdAt);
 
         if (targets.length !== reportIds.length) {
             return { status: 'error', message: 'Beberapa laporan tidak ditemukan.' };
+        }
+
+        // Validate: All reports must be in triage status (Pending/Verified)
+        // Prevent merging already assigned/processed reports
+        const invalidStatus = targets.find(r =>
+            !['pending', 'terverifikasi', 'verifikasi'].includes(r.status || '')
+        );
+
+        if (invalidStatus) {
+            return {
+                status: 'error',
+                message: `Laporan #${invalidStatus.id} sudah diproses/selesai. Hanya laporan Pending/Terverifikasi yang bisa digabung.`
+            };
+        }
+
+        // Validate: All reports must be from the same Building/Location
+        const firstBuilding = targets[0].building;
+        const differentBuilding = targets.find(r => r.building !== firstBuilding);
+
+        if (differentBuilding) {
+            return {
+                status: 'error',
+                message: 'Semua laporan harus berasal dari lokasi/gedung yang sama.'
+            };
+        }
+
+        // Validate: Reports must not be already merged (Child)
+        const alreadyChild = targets.find(r => r.parentId != null);
+        if (alreadyChild) {
+            return {
+                status: 'error',
+                message: `Laporan #${alreadyChild.id} sudah merupakan bagian dari gabungan lain.`
+            };
         }
 
         // Designate the oldest (first) as Master/Parent
@@ -477,14 +510,30 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const children = targets.slice(1);
         const childIds = children.map(c => c.id);
 
-        // Update Children: Set parentId to parent.id
-        await db
-            .update(reports)
-            .set({
-                parentId: parent.id,
-                updatedAt: new Date(),
-            })
-            .where(sql`${reports.id} IN ${childIds}`);
+        if (childIds.length > 0) {
+            // Update Children: Set parentId and status to 'recalled' (hidden/merged)
+            await db
+                .update(reports)
+                .set({
+                    parentId: parent.id,
+                    status: 'recalled', // Mark as recalled/merged
+                    updatedAt: new Date(),
+                })
+                .where(inArray(reports.id, childIds));
+
+            // Log for Children
+            for (const child of children) {
+                await db.insert(reportLogs).values({
+                    reportId: child.id,
+                    actorId: staffId.toString(),
+                    actorName: "Supervisor",
+                    actorRole: "supervisor",
+                    action: 'groupedChild',
+                    toStatus: 'recalled',
+                    reason: `Digabungkan ke laporan #${parent.id}`,
+                });
+            }
+        }
 
         // Log for Parent
         await db.insert(reportLogs).values({
@@ -496,19 +545,6 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             toStatus: parent.status || 'pending',
             reason: notes || `Digabungkan dengan ${children.length} laporan lain.`,
         });
-
-        // Log for Children
-        for (const child of children) {
-            await db.insert(reportLogs).values({
-                reportId: child.id,
-                actorId: staffId.toString(),
-                actorName: "Supervisor",
-                actorRole: "supervisor",
-                action: 'grouped_child',
-                toStatus: child.status || 'pending',
-                reason: `Digabungkan ke laporan #${parent.id}`,
-            });
-        }
 
         return {
             status: 'success',
@@ -605,4 +641,242 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 location: p.managedBuilding,
             })),
         };
+    })
+
+    // Get technician detail
+    .get('/technicians/:id', async ({ params }) => {
+        const staffId = parseInt(params.id);
+        const technician = await db
+            .select({
+                id: staff.id,
+                name: staff.name,
+                email: staff.email,
+                phone: staff.phone,
+                specialization: staff.specialization,
+                role: staff.role,
+                isActive: staff.isActive,
+                createdAt: staff.createdAt,
+            })
+            .from(staff)
+            .where(eq(staff.id, staffId))
+            .limit(1);
+
+        if (technician.length === 0) {
+            return { status: 'error', message: 'Teknisi tidak ditemukan' };
+        }
+
+        // Mock stats and logs if not available yet (for frontend compatibility)
+        // In real app, we would query stats from reports table.
+        return {
+            status: 'success',
+            data: {
+                ...technician[0],
+                id: technician[0].id.toString(),
+                stats: {
+                    completed: 0, // Placeholder
+                    inProgress: 0,
+                    avgTime: '-',
+                },
+                logs: [], // Placeholder
+            }
+        };
+    })
+
+    // ===========================================================================
+    // TECHNICIAN CRUD
+    // ===========================================================================
+
+    // Create Technician
+    .post('/technicians', async ({ body }) => {
+        // Validate if email exists
+        const existing = await db.select().from(staff).where(eq(staff.email, body.email)).limit(1);
+        if (existing.length > 0) {
+            return { status: 'error', message: 'Email sudah terdaftar (Supervisor/Teknisi/PJ).' };
+        }
+
+        // Default password or provided
+        const plainPassword = body.password || 'teknisi123';
+        const hashedPassword = await Bun.password.hash(plainPassword);
+
+        try {
+            const newStaff = await db.insert(staff).values({
+                name: body.name,
+                email: body.email,
+                phone: body.phone,
+                role: 'teknisi',
+                specialization: body.specialization || 'Umum',
+                password: hashedPassword,
+                isActive: true,
+            }).returning();
+
+            return {
+                status: 'success',
+                data: { ...newStaff[0], id: newStaff[0].id.toString() },
+                message: 'Teknisi berhasil ditambahkan'
+            };
+        } catch (e: any) {
+            console.error('Create Technician Error:', e);
+            return { status: 'error', message: 'Gagal menambahkan teknisi: ' + e.message };
+        }
+    }, {
+        body: t.Object({
+            name: t.String({ minLength: 2 }),
+            email: t.String(),
+            phone: t.String(),
+            specialization: t.String(),
+            password: t.Optional(t.String()),
+        })
+    })
+
+    // Update Technician
+    .put('/technicians/:id', async ({ params, body }) => {
+        const staffId = parseInt(params.id);
+
+        try {
+            const updated = await db
+                .update(staff)
+                .set({
+                    name: body.name,
+                    email: body.email,
+                    phone: body.phone,
+                    specialization: body.specialization,
+                })
+                .where(eq(staff.id, staffId))
+                .returning();
+
+            if (updated.length === 0) {
+                return { status: 'error', message: 'Teknisi tidak ditemukan' };
+            }
+
+            return {
+                status: 'success',
+                data: { ...updated[0], id: updated[0].id.toString() },
+                message: 'Data teknisi berhasil diperbarui'
+            };
+        } catch (e: any) {
+            console.error('Update Technician Error:', e);
+            return { status: 'error', message: 'Gagal memperbarui teknisi: ' + e.message };
+        }
+    }, {
+        body: t.Object({
+            name: t.String(),
+            email: t.String(),
+            phone: t.String(),
+            specialization: t.String(),
+        })
+    })
+
+    // Delete Technician
+    .delete('/technicians/:id', async ({ params }) => {
+        const staffId = parseInt(params.id);
+
+        try {
+            // Check dependency: reports assigned to this technician?
+            // For now, simple delete. If foreign key constraint exists, it will throw.
+            // We could also Soft Delete (isActive = false).
+            // Let's try simple delete first as requested.
+
+            const deleted = await db.delete(staff).where(eq(staff.id, staffId)).returning();
+
+            if (deleted.length === 0) {
+                return { status: 'error', message: 'Teknisi tidak ditemukan' };
+            }
+
+            return { status: 'success', message: 'Teknisi berhasil dihapus' };
+        } catch (e: any) {
+            console.error('Delete Technician Error:', e);
+            return { status: 'error', message: 'Gagal menghapus teknisi (mungkin sedang menangani laporan).' };
+        }
+    })
+
+    // ===========================================================================
+    // REJECTED REPORTS ACTIONS
+    // ===========================================================================
+
+    // Archive Report (Change status to 'archived')
+    .post('/reports/:id/archive', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+            if (foundStaff.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
+
+            const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+            if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+            // Ensure report is rejected before archiving
+            if (current[0].status !== 'ditolak') {
+                return { status: 'error', message: 'Hanya laporan dengan status "ditolak" yang dapat diarsipkan.' };
+            }
+
+            const updated = await db.update(reports)
+                .set({
+                    status: 'archived' as any,
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
+
+            // Insert Log
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'archived',
+                fromStatus: 'ditolak',
+                toStatus: 'archived',
+                reason: 'Laporan ditolak telah diarsipkan oleh supervisor',
+            });
+
+            return { status: 'success', data: mapToMobileReport(updated[0]) };
+        } catch (e: any) {
+            console.error('Archive Report Error:', e);
+            return { status: 'error', message: 'Gagal mengarsipkan laporan.' };
+        }
+    }, {
+        body: t.Object({ staffId: t.Number() })
+    })
+
+    // Return Report to Queue (Change status back to 'pending')
+    .post('/reports/:id/return-to-queue', async ({ params, body }) => {
+        const reportId = parseInt(params.id);
+        const staffId = body.staffId;
+
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+            if (foundStaff.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
+
+            const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+            if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+
+            const updated = await db.update(reports)
+                .set({
+                    status: 'pending',
+                    assignedTo: null, // Clear assignment
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
+
+            // Insert Log
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'recalled', // Or a new action if preferred, but recalled fits reverting assignment
+                fromStatus: current[0].status || 'ditolak',
+                toStatus: 'pending',
+                reason: 'Penolakan dibatalkan, laporan dikembalikan ke antrian',
+            });
+
+            return { status: 'success', data: mapToMobileReport(updated[0]) };
+        } catch (e: any) {
+            console.error('Return to Queue Error:', e);
+            return { status: 'error', message: 'Gagal mengembalikan laporan ke antrian.' };
+        }
+    }, {
+        body: t.Object({ staffId: t.Number() })
     });

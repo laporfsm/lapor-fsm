@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/features/supervisor/data/services/supervisor_staff_service.dart';
 
 class SupervisorTechnicianListPage extends StatefulWidget {
   const SupervisorTechnicianListPage({super.key});
@@ -17,44 +18,42 @@ class _SupervisorTechnicianListPageState
   final TextEditingController _searchController = TextEditingController();
   String _selectedFilter = 'Semua';
 
-  // Mock Data Updated to match Management Context
-  final List<Map<String, dynamic>> _technicians = [
-    {
-      'id': '1',
-      'name': 'Budi Santoso',
-      'email': 'budi@undip.ac.id',
-      'role': 'Teknisi Listrik',
-      'isActive': true,
-    },
-    {
-      'id': '2',
-      'name': 'Andi Prasetyo',
-      'email': 'andi@undip.ac.id',
-      'role': 'Teknisi Sipil',
-      'isActive': true,
-    },
-    {
-      'id': '3',
-      'name': 'Eko Wahyu',
-      'email': 'eko@undip.ac.id',
-      'role': 'Teknisi AC',
-      'isActive': false,
-    },
-    {
-      'id': '4',
-      'name': 'Citra Dewi',
-      'email': 'citra@undip.ac.id',
-      'role': 'Teknisi Jaringan',
-      'isActive': true,
-    },
-    {
-      'id': 'pj1',
-      'name': 'Rina PJ Gedung',
-      'email': 'pj@undip.ac.id',
-      'role': 'PJ Gedung',
-      'isActive': true,
-    },
-  ];
+  // Service
+  final _supervisorStaffService = SupervisorStaffService();
+
+  List<Map<String, dynamic>> _technicians = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTechnicians();
+  }
+
+  Future<void> _fetchTechnicians() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final techs = await _supervisorStaffService.getTechnicians();
+      if (mounted) {
+        setState(() {
+          _technicians = techs;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Gagal memuat data: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,6 +82,8 @@ class _SupervisorTechnicianListPageState
                     vertical: 14,
                   ),
                 ),
+                onChanged: (value) =>
+                    setState(() {}), // Local filtering trigger
               ),
             ),
           ),
@@ -90,29 +91,61 @@ class _SupervisorTechnicianListPageState
           _buildFilterChips(),
 
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _technicians.length,
-              separatorBuilder: (context, index) => const Gap(12),
-              itemBuilder: (context, index) {
-                final tech = _technicians[index];
-                return _buildTechnicianCard(context, tech);
-              },
-            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _errorMessage != null
+                ? Center(child: Text(_errorMessage!))
+                : RefreshIndicator(
+                    onRefresh: _fetchTechnicians,
+                    child: _technicians.isEmpty
+                        ? const Center(child: Text('Belum ada teknisi'))
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: _filteredTechnicians.length,
+                            separatorBuilder: (context, index) => const Gap(12),
+                            itemBuilder: (context, index) {
+                              final tech = _filteredTechnicians[index];
+                              return _buildTechnicianCard(context, tech);
+                            },
+                          ),
+                  ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await context.push('/supervisor/technicians/add');
-          // Refresh logic here if needed
-          setState(() {});
+          debugPrint('Navigating to Add Technician...');
+          final result = await context.push('/supervisor/technicians/add');
+          debugPrint('Returned from Add Technician. Result: $result');
+          if (result == true) {
+            debugPrint('Refreshing technicians list...');
+            await _fetchTechnicians();
+          }
         },
         backgroundColor: AppTheme.supervisorColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(LucideIcons.userPlus, color: Colors.white),
       ),
     );
+  }
+
+  // Helper to filter locally
+  List<Map<String, dynamic>> get _filteredTechnicians {
+    return _technicians.where((tech) {
+      final matchesSearch = tech['name'].toString().toLowerCase().contains(
+        _searchController.text.toLowerCase(),
+      );
+
+      if (!matchesSearch) return false;
+
+      if (_selectedFilter == 'Semua') return true;
+      if (_selectedFilter == 'Aktif') return tech['isActive'] == true;
+      if (_selectedFilter == 'Nonaktif') return tech['isActive'] == false;
+
+      // Filter by specialization/role
+      final String role = tech['specialization'] ?? tech['role'] ?? '';
+      return role.contains(_selectedFilter);
+    }).toList();
   }
 
   Widget _buildFilterChips() {
@@ -249,11 +282,9 @@ class _SupervisorTechnicianListPageState
                         ),
                         const Gap(4),
                         Text(
-                          tech['role'],
+                          _getRoleDisplayName(tech),
                           style: TextStyle(
-                            color: tech['role'] == 'PJ Gedung'
-                                ? const Color(0xFFEA580C)
-                                : Colors.blue.shade700,
+                            color: _getRoleColor(tech),
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -272,10 +303,12 @@ class _SupervisorTechnicianListPageState
                   color: Colors.blue,
                   onTap: () async {
                     // Prevent navigating to detail when clicking edit
-                    await context.push(
+                    final result = await context.push(
                       '/supervisor/technicians/edit/${tech['id']}',
                     );
-                    setState(() {});
+                    if (result == true) {
+                      _fetchTechnicians();
+                    }
                   },
                 ),
                 const Gap(8),
@@ -323,5 +356,20 @@ class _SupervisorTechnicianListPageState
         child: Icon(icon, size: 18, color: color),
       ),
     );
+  }
+
+  String _getRoleDisplayName(Map<String, dynamic> tech) {
+    if (tech['role'] == 'pj_gedung' || tech['role'] == 'PJ Gedung') {
+      return 'PJ Gedung';
+    }
+    // For technicians, prefer 'specialization'
+    return tech['specialization'] ?? tech['role'] ?? 'Teknisi';
+  }
+
+  Color _getRoleColor(Map<String, dynamic> tech) {
+    if (tech['role'] == 'pj_gedung' || tech['role'] == 'PJ Gedung') {
+      return const Color(0xFFEA580C);
+    }
+    return Colors.blue.shade700;
   }
 }

@@ -3,7 +3,8 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// Halaman untuk Supervisor mereview laporan yang ditolak oleh Teknisi.
 /// Supervisor dapat:
@@ -19,35 +20,36 @@ class SupervisorRejectedReportsPage extends StatefulWidget {
 
 class _SupervisorRejectedReportsPageState
     extends State<SupervisorRejectedReportsPage> {
-  // TODO: [BACKEND] Fetch rejected reports from API
-  final List<Map<String, dynamic>> _rejectedReports = [
-    {
-      'id': 101,
-      'title': 'Atap Bocor di Koridor',
-      'category': 'Sipil & Bangunan',
-      'building': 'Gedung B, Lt 2',
-      'reporter': 'Ahmad Fauzi',
-      'reportedAt': DateTime.now().subtract(const Duration(days: 1)),
-      'rejectedBy': 'Budi Teknisi',
-      'rejectedAt': DateTime.now().subtract(const Duration(hours: 2)),
-      'rejectionReason':
-          'Memerlukan alat berat dan koordinasi dengan pihak ketiga. Bukan kapasitas teknisi internal.',
-      'isEmergency': false,
-    },
-    {
-      'id': 102,
-      'title': 'Kerusakan Lift Barang',
-      'category': 'Kelistrikan',
-      'building': 'Gedung C',
-      'reporter': 'Siti Rahayu',
-      'reportedAt': DateTime.now().subtract(const Duration(days: 2)),
-      'rejectedBy': 'Andi Teknisi',
-      'rejectedAt': DateTime.now().subtract(const Duration(hours: 5)),
-      'rejectionReason':
-          'Lift memerlukan teknisi khusus dari vendor. Tidak bisa ditangani internal.',
-      'isEmergency': true,
-    },
-  ];
+  List<Map<String, dynamic>> _rejectedReports = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRejectedReports();
+  }
+
+  Future<void> _fetchRejectedReports() async {
+    setState(() => _isLoading = true);
+    try {
+      // Assuming 'ditolak' status for rejected reports
+      final reports = await reportService.getStaffReports(
+        role: 'supervisor',
+        status: 'ditolak',
+      );
+      if (mounted) {
+        setState(() {
+          _rejectedReports = reports;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        debugPrint('Error fetching rejected reports: $e');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,17 +61,27 @@ class _SupervisorRejectedReportsPageState
         elevation: 0,
         leading: IconButton(
           onPressed: () => context.pop(),
-          icon: const Icon(LucideIcons.arrowLeft),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+        ),
+        titleTextStyle: const TextStyle(
+          color: Colors.black,
+          fontWeight: FontWeight.bold,
+          fontSize: 18,
         ),
       ),
-      body: _rejectedReports.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _rejectedReports.isEmpty
           ? _buildEmptyState()
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _rejectedReports.length,
-              itemBuilder: (context, index) {
-                return _buildRejectedReportCard(_rejectedReports[index]);
-              },
+          : RefreshIndicator(
+              onRefresh: _fetchRejectedReports,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _rejectedReports.length,
+                itemBuilder: (context, index) {
+                  return _buildRejectedReportCard(_rejectedReports[index]);
+                },
+              ),
             ),
     );
   }
@@ -96,6 +108,11 @@ class _SupervisorRejectedReportsPageState
   }
 
   Widget _buildRejectedReportCard(Map<String, dynamic> report) {
+    // Helper to safely get string values
+    String getStr(String key) => report[key]?.toString() ?? '-';
+    bool isEmergency =
+        report['isEmergency'] == true || report['isEmergency'] == 1;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -113,7 +130,7 @@ class _SupervisorRejectedReportsPageState
       child: Column(
         children: [
           // Emergency Banner
-          if (report['isEmergency'] == true)
+          if (isEmergency)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 6),
@@ -192,7 +209,7 @@ class _SupervisorRejectedReportsPageState
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        report['category'],
+                        getStr('category'),
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontSize: 11,
@@ -205,7 +222,7 @@ class _SupervisorRejectedReportsPageState
 
                 // Title
                 Text(
-                  report['title'],
+                  getStr('title'),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -223,7 +240,7 @@ class _SupervisorRejectedReportsPageState
                     ),
                     const Gap(4),
                     Text(
-                      report['building'],
+                      getStr('building'),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -237,7 +254,9 @@ class _SupervisorRejectedReportsPageState
                     ),
                     const Gap(4),
                     Text(
-                      report['reporter'],
+                      getStr(
+                        'reporterName',
+                      ), // reporter -> reporterName as per typical API
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -268,7 +287,7 @@ class _SupervisorRejectedReportsPageState
                           ),
                           const Gap(6),
                           Text(
-                            'Ditolak oleh ${report['rejectedBy']}',
+                            'Ditolak oleh ${getStr('rejectedBy')}',
                             style: TextStyle(
                               color: Colors.red.shade700,
                               fontSize: 12,
@@ -279,7 +298,7 @@ class _SupervisorRejectedReportsPageState
                       ),
                       const Gap(8),
                       Text(
-                        'Alasan: "${report['rejectionReason']}"',
+                        'Alasan: "${getStr('rejectionReason')}"', // Ensure backend sends rejectionReason
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           fontSize: 13,
@@ -315,7 +334,7 @@ class _SupervisorRejectedReportsPageState
                         icon: const Icon(LucideIcons.refreshCw, size: 16),
                         label: const Text('Kembalikan'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: supervisorColor,
+                          backgroundColor: AppTheme.supervisorColor,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
@@ -441,7 +460,7 @@ class _SupervisorRejectedReportsPageState
               _returnToQueue(report);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: supervisorColor,
+              backgroundColor: AppTheme.supervisorColor,
               foregroundColor: Colors.white,
             ),
             child: const Text('Kembalikan'),
@@ -451,34 +470,63 @@ class _SupervisorRejectedReportsPageState
     );
   }
 
-  void _archiveReport(Map<String, dynamic> report) {
-    // TODO: [BACKEND] API call to archive rejected report
-    // - Update report status to 'archived_rejected'
-    // - Send notification to reporter
-    setState(() {
-      _rejectedReports.removeWhere((r) => r['id'] == report['id']);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Laporan "${report['title']}" telah diarsipkan'),
-        backgroundColor: Colors.red.shade600,
-      ),
+  Future<void> _archiveReport(Map<String, dynamic> report) async {
+    final user = await AuthService().getCurrentUser();
+    final staffId = int.tryParse(user?['id']?.toString() ?? '0') ?? 0;
+
+    final success = await reportService.archiveRejectedReport(
+      report['id'].toString(),
+      staffId,
     );
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _rejectedReports.removeWhere((r) => r['id'] == report['id']);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Laporan "${report['title']}" telah diarsipkan'),
+          backgroundColor: Colors.red.shade600,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal mengarsipkan laporan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _returnToQueue(Map<String, dynamic> report) {
-    // TODO: [BACKEND] API call to return report to queue
-    // - Update report status back to 'pending' or 'verifikasi'
-    // - Clear rejection info
-    // - Notify technicians of available report
-    setState(() {
-      _rejectedReports.removeWhere((r) => r['id'] == report['id']);
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Laporan "${report['title']}" dikembalikan ke antrian'),
-        backgroundColor: supervisorColor,
-      ),
+  Future<void> _returnToQueue(Map<String, dynamic> report) async {
+    final user = await AuthService().getCurrentUser();
+    final staffId = int.tryParse(user?['id']?.toString() ?? '0') ?? 0;
+
+    final success = await reportService.returnReportToQueue(
+      report['id'].toString(),
+      staffId,
     );
+    if (!mounted) return;
+
+    if (success) {
+      setState(() {
+        _rejectedReports.removeWhere((r) => r['id'] == report['id']);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Laporan dikembalikan ke antrian'),
+          backgroundColor: AppTheme.supervisorColor,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Gagal mengembalikan laporan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

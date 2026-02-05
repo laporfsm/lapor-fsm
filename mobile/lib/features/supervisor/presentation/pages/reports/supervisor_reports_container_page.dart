@@ -63,7 +63,6 @@ class SupervisorReportsContainerPage extends StatelessWidget {
         body: TabBarView(
           children: [
             // Tab 1: Aktif
-            // Filtered to show all strictly active statuses + Selesai (waiting approval)
             SharedAllReportsPage(
               showAppBar: false, // Hide inner AppBar
               onReportTap: (reportId, status) =>
@@ -92,10 +91,14 @@ class SupervisorReportsContainerPage extends StatelessWidget {
               appBarColor: supervisorColor, // Pass supervisor theme
               role:
                   'supervisor', // Added: use supervisor endpoint for proper data fetching
+              floatingActionButton: FloatingActionButton(
+                onPressed: () => context.push('/supervisor/export'),
+                backgroundColor: Colors.white,
+                child: const Icon(LucideIcons.download, color: Colors.green),
+              ),
             ),
 
             // Tab 2: Riwayat
-            // Filtered to Approved & Ditolak
             SharedAllReportsPage(
               showAppBar: false, // Hide inner AppBar
               onReportTap: (reportId, status) =>
@@ -111,13 +114,13 @@ class SupervisorReportsContainerPage extends StatelessWidget {
               showBackButton: false,
               appBarColor: supervisorColor, // Pass supervisor theme
               role: 'supervisor',
+              floatingActionButton: FloatingActionButton(
+                onPressed: () => context.push('/supervisor/export'),
+                backgroundColor: Colors.white,
+                child: const Icon(LucideIcons.download, color: Colors.green),
+              ),
             ),
           ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => context.push('/supervisor/export'),
-          backgroundColor: Colors.white,
-          child: const Icon(LucideIcons.download, color: Colors.green),
         ),
       ),
     );

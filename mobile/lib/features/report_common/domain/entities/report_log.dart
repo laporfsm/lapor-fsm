@@ -56,6 +56,10 @@ class ReportLog {
         return 'Pengerjaan dipause oleh $actor$reasonText';
       case ReportAction.resumed:
         return 'Pengerjaan dilanjutkan oleh $actor';
+      case ReportAction.grouped:
+        return 'Laporan digabungkan oleh $actor$reasonText';
+      case ReportAction.groupedChild:
+        return 'Laporan digabungkan ke induk oleh $actor$reasonText';
     }
   }
 
@@ -104,4 +108,6 @@ enum ReportAction {
   archived,
   paused,
   resumed,
+  grouped,
+  groupedChild,
 }
