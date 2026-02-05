@@ -666,6 +666,37 @@ class ReportService {
     }
   }
 
+  // ===========================================================================
+  // REJECTED REPORTS MANAGEMENT
+
+  /// Archive rejected report (Supervisor)
+  Future<bool> archiveRejectedReport(String reportId, int staffId) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/archive',
+        data: {'staffId': staffId},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error archiving report: $e');
+      return false;
+    }
+  }
+
+  /// Return rejected report to queue (Supervisor)
+  Future<bool> returnReportToQueue(String reportId, int staffId) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/return-to-queue',
+        data: {'staffId': staffId},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error returning report to queue: $e');
+      return false;
+    }
+  }
+
   // Export reports (Returns bytes)
   Future<List<int>?> exportReports({String? status, String? building}) async {
     try {

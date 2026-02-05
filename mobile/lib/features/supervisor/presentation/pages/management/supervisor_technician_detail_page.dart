@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile/features/supervisor/data/services/supervisor_staff_service.dart';
 
 class SupervisorTechnicianDetailPage extends StatefulWidget {
   final String technicianId;
@@ -17,8 +18,10 @@ class SupervisorTechnicianDetailPage extends StatefulWidget {
 
 class _SupervisorTechnicianDetailPageState
     extends State<SupervisorTechnicianDetailPage> {
-  // Mock Data
-  late Map<String, dynamic> _technician;
+  // Use Service
+  final _supervisorStaffService = SupervisorStaffService();
+
+  Map<String, dynamic>? _technician;
   bool _isLoading = true;
 
   @override
@@ -27,61 +30,26 @@ class _SupervisorTechnicianDetailPageState
     _loadTechnicianData();
   }
 
-  void _loadTechnicianData() {
-    // Simulate API call
-    Future.delayed(const Duration(milliseconds: 500), () {
+  Future<void> _loadTechnicianData() async {
+    setState(() => _isLoading = true);
+    try {
+      final data = await _supervisorStaffService.getTechnicianDetail(
+        widget.technicianId,
+      );
       if (mounted) {
         setState(() {
-          _technician = {
-            'id': widget.technicianId,
-            'name': 'Budi Santoso',
-            'role': 'Teknisi Listrik',
-            'email': 'budi.santoso@staff.undip.ac.id',
-            'phone': '081234567890',
-            'status': 'online',
-            'lastActive': DateTime.now(),
-            'stats': {'completed': 45, 'inProgress': 2, 'avgTime': '45 menit'},
-            'logs': [
-              {
-                'time': DateTime.now().subtract(const Duration(minutes: 15)),
-                'action': 'Menyelesaikan Laporan',
-                'description': 'Laporan #102: AC Mati di Ruang 201',
-                'type': 'complete', // complete, process, check_in
-              },
-              {
-                'time': DateTime.now().subtract(const Duration(hours: 1)),
-                'action': 'Memulai Penanganan',
-                'description': 'Laporan #102: AC Mati di Ruang 201',
-                'type': 'process',
-              },
-              {
-                'time': DateTime.now().subtract(const Duration(hours: 2)),
-                'action': 'Login Aplikasi',
-                'description': 'Masuk pada pukul 08:00 WIB',
-                'type': 'check_in',
-              },
-              {
-                'time': DateTime.now().subtract(
-                  const Duration(days: 1, hours: 2),
-                ),
-                'action': 'Menyelesaikan Laporan',
-                'description': 'Laporan #98: Lampu taman mati',
-                'type': 'complete',
-              },
-              {
-                'time': DateTime.now().subtract(
-                  const Duration(days: 1, hours: 5),
-                ),
-                'action': 'Login Aplikasi',
-                'description': 'Masuk pada pukul 07:55 WIB',
-                'type': 'check_in',
-              },
-            ],
-          };
+          _technician = data;
           _isLoading = false;
         });
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal memuat data: $e')));
+      }
+    }
   }
 
   void _deleteTechnician() {
@@ -90,7 +58,7 @@ class _SupervisorTechnicianDetailPageState
       builder: (context) => AlertDialog(
         title: const Text('Hapus Teknisi?'),
         content: Text(
-          'Apakah Anda yakin ingin menghapus data teknisi "${_technician['name']}"? Tindakan ini tidak dapat dibatalkan.',
+          'Apakah Anda yakin ingin menghapus data teknisi "${_technician?['name']}"? Tindakan ini tidak dapat dibatalkan.',
         ),
         actions: [
           TextButton(
@@ -98,16 +66,31 @@ class _SupervisorTechnicianDetailPageState
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
-              // TODO: [BACKEND] Delete technician API call
-              context.pop(); // Close dialog
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Teknisi berhasil dihapus'),
-                  backgroundColor: Colors.red,
-                ),
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+
+              final success = await _supervisorStaffService.deleteTechnician(
+                widget.technicianId,
               );
-              context.pop(true); // Return to list and refresh
+
+              if (!context.mounted) return;
+
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Teknisi berhasil dihapus'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                context.pop(true); // Return to list and refresh
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Gagal menghapus teknisi'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: const Text('Hapus', style: TextStyle(color: Colors.red)),
           ),
@@ -120,6 +103,51 @@ class _SupervisorTechnicianDetailPageState
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Use local variable for type promotion/null safety
+    final technician = _technician;
+
+    if (technician == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          title: const Text('Detail Aktivitas'),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+            onPressed: () => context.pop(),
+          ),
+          titleTextStyle: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                LucideIcons.alertCircle,
+                size: 64,
+                color: Colors.grey.shade300,
+              ),
+              const Gap(16),
+              Text(
+                'Data teknisi tidak ditemukan',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: _loadTechnicianData,
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -160,6 +188,8 @@ class _SupervisorTechnicianDetailPageState
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // Safe to use ! or cast here since we checked null
+
             // Profile Header
             Container(
               color: Colors.white,
@@ -172,7 +202,7 @@ class _SupervisorTechnicianDetailPageState
                       alpha: 0.1,
                     ),
                     child: Text(
-                      _technician['name'].substring(0, 1),
+                      technician['name'].substring(0, 1),
                       style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -182,14 +212,14 @@ class _SupervisorTechnicianDetailPageState
                   ),
                   const Gap(16),
                   Text(
-                    _technician['name'],
+                    technician['name'],
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    _technician['role'],
+                    technician['role'],
                     style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                   const Gap(24),
@@ -199,17 +229,17 @@ class _SupervisorTechnicianDetailPageState
                     children: [
                       _buildStatItem(
                         'Selesai',
-                        _technician['stats']['completed'].toString(),
+                        technician['stats']['completed'].toString(),
                       ),
                       _buildVerticalDivider(),
                       _buildStatItem(
                         'Proses',
-                        _technician['stats']['inProgress'].toString(),
+                        technician['stats']['inProgress'].toString(),
                       ),
                       _buildVerticalDivider(),
                       _buildStatItem(
                         'Avg. Waktu',
-                        _technician['stats']['avgTime'],
+                        technician['stats']['avgTime'],
                       ),
                     ],
                   ),
@@ -235,7 +265,7 @@ class _SupervisorTechnicianDetailPageState
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const Gap(16),
-                  ...(_technician['logs'] as List).map(
+                  ...(technician['logs'] as List).map(
                     (log) => _buildLogItem(log),
                   ),
                 ],

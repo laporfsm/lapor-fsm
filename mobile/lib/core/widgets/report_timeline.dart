@@ -231,6 +231,10 @@ extension ReportActionLabel on ReportAction {
         return 'Ditunda';
       case ReportAction.resumed:
         return 'Dilanjutkan';
+      case ReportAction.grouped:
+        return 'Digabungkan';
+      case ReportAction.groupedChild:
+        return 'Digabungkan ke Induk';
     }
   }
 }
