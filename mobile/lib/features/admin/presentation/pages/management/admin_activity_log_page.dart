@@ -95,7 +95,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
           tabs: const [
-            Tab(text: 'Aktivitas User'),
+            Tab(text: 'Riwayat Admin'),
             Tab(text: 'Verifikasi User'),
             Tab(text: 'Logs Laporan'),
           ],
@@ -137,7 +137,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
                 : TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildLogList('User'),
+                      _buildLogList('Admin'),
                       _buildLogList('Verifikasi'),
                       _buildLogList('Laporan'),
                     ],
@@ -184,9 +184,9 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         icon = LucideIcons.fileText;
         color = Colors.blue;
         break;
-      case 'User':
-        icon = LucideIcons.user;
-        color = Colors.orange;
+      case 'Admin':
+        icon = LucideIcons.userCog;
+        color = Colors.indigo;
         break;
       case 'Verifikasi':
         icon = LucideIcons.userCheck;

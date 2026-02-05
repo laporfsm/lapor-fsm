@@ -842,9 +842,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 user: l.actorName,
                 details: l.reason || `Status changed from ${l.fromStatus} to ${l.toStatus}`,
                 time: l.timestamp,
-                type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action)) 
+                type: (l.action === 'verified') 
                     ? 'Verifikasi' 
-                    : (l.reportId === null || l.action === 'created') ? 'User' : 'Laporan'
+                    : (l.reportId !== null) ? 'Laporan' : 'Admin'
             }))
         };
     })
@@ -887,22 +887,37 @@ export const adminController = new Elysia({ prefix: '/admin' })
             doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 50, { align: 'right', width: 410 });
             doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
+            const summary = {
+                total: logs.length,
+                user: logs.filter(l => !l.reportId && l.action !== 'verified').length,
+                verification: logs.filter(l => !l.reportId && l.action === 'verified').length,
+                report: logs.filter(l => !!l.reportId).length
+            };
+
+            const getCategoryLabel = (l: any) => {
+                if (l.reportId) return 'LAPORAN';
+                if (l.action === 'verified') return 'VERIFIKASI';
+                return 'ADMIN';
+            };
+
             // --- SUMMARY CARD ---
             const summaryY = 90;
             doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
             
-            const drawSummaryItem = (label: string, value: string, x: number) => {
-                doc.fillColor(colors.textLight).fontSize(9).text(safeText(label), x, summaryY + 10, { align: 'center', width: 250 });
-                doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(14).text(safeText(value), x, summaryY + 25, { align: 'center', width: 250 });
+            const drawSummaryItem = (label: string, value: string, x: number, width: number = 195) => {
+                doc.fillColor(colors.textLight).fontSize(8).text(safeText(label), x, summaryY + 14, { align: 'center', width });
+                doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(12).text(safeText(value), x, summaryY + 26, { align: 'center', width });
             };
 
-            drawSummaryItem('Total Log Aktivitas', logs.length.toString(), 30);
-            drawSummaryItem('Rentang Waktu', `${logs.length > 0 ? new Date(logs[logs.length-1].timestamp!).toLocaleDateString('id-ID') : '-'} s/d Hari Ini`, 280);
+            drawSummaryItem('Total Logs', summary.total.toString(), 30);
+            drawSummaryItem('Riwayat Admin', summary.user.toString(), 225);
+            drawSummaryItem('Verifikasi User', summary.verification.toString(), 420);
+            drawSummaryItem('Logs Laporan', summary.report.toString(), 615);
 
             // --- TABLE ---
             let currentY = 160;
-            const colWidths = [40, 110, 150, 120, 362]; // Total 782
-            const headers = ['No', 'Waktu', 'User/Aktor', 'Aksi', 'Detail Perubahan / Catatan'];
+            const colWidths = [30, 100, 120, 110, 100, 322]; // Total 782
+            const headers = ['No', 'Waktu', 'Kategori', 'Aktor (Admin/Sistem)', 'Aksi', 'Detail Aktivitas / Catatan'];
 
             const drawHeader = () => {
                 doc.rect(30, currentY, 782, 25).fill(colors.primary);
@@ -939,11 +954,12 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
                 drawCell((i + 1).toString(), 0);
                 drawCell(timeStr, 1);
-                drawCell(l.actorName || '-', 2, true);
-                drawCell(l.action.toUpperCase(), 3);
+                drawCell(getCategoryLabel(l), 2);
+                drawCell(l.actorName || '-', 3, true);
+                drawCell(l.action.toUpperCase(), 4);
                 
                 const details = l.reason || (l.fromStatus && l.toStatus ? `Status: ${l.fromStatus} -> ${l.toStatus}` : '-');
-                drawCell(details, 4);
+                drawCell(details, 5);
                 
                 currentY += rowHeight;
             });
@@ -981,7 +997,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             worksheet.columns = [
                 { header: 'No', key: 'no', width: 5 },
-                { header: 'Waktu', key: 'time', width: 25 },
+                { header: 'Waktu', key: 'time', width: 20 },
+                { header: 'Kategori', key: 'category', width: 20 },
                 { header: 'Aktor (User)', key: 'actor', width: 25 },
                 { header: 'Role', key: 'role', width: 15 },
                 { header: 'Aksi', key: 'action', width: 20 },
@@ -991,18 +1008,21 @@ export const adminController = new Elysia({ prefix: '/admin' })
             ];
 
             // Styling header
-            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).height = 25;
+            worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFF' } };
             worksheet.getRow(1).fill = {
                 type: 'pattern',
                 pattern: 'solid',
                 fgColor: { argb: '7C3AED' }
             };
-            worksheet.getRow(1).font = { color: { argb: 'FFFFFF' }, bold: true };
 
             logsData.forEach((l, i) => {
+                const category = l.reportId ? 'LAPORAN' : (l.action === 'verified' ? 'VERIFIKASI' : 'ADMIN');
                 worksheet.addRow({
                     no: i + 1,
                     time: l.timestamp ? new Date(l.timestamp).toLocaleString('id-ID') : '-',
+                    category,
                     actor: l.actorName,
                     role: l.actorRole,
                     action: l.action,
