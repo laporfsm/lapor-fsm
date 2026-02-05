@@ -26,6 +26,7 @@ class SharedAllReportsPage extends StatefulWidget {
   final bool showAppBar;
   final bool enableDateFilter; // New parameter to toggle date filter visibility
   final Widget? floatingActionButton; // New parameter
+  final List<Widget>? appBarActions; // New parameter for AppBar action buttons
   final String?
   role; // New parameter to determine if we should fetch staff reports
   final int? assignedTo; // Added parameter for filtering by technician
@@ -45,6 +46,7 @@ class SharedAllReportsPage extends StatefulWidget {
     this.showBackButton = true,
     this.showAppBar = true,
     this.floatingActionButton,
+    this.appBarActions,
     this.role,
     this.assignedTo,
   });
@@ -331,6 +333,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               onTap: () {
                                 _searchController.clear();
                                 setState(() => _searchQuery = '');
+                                _fetchReports();
                               },
                               child: const Icon(LucideIcons.x, size: 18),
                             ),
@@ -546,7 +549,6 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                           itemCount: _reports.length,
                           itemBuilder: (context, index) {
                             final report = _reports[index];
-                            // ...
                             return UniversalReportCard(
                               id: report.id,
                               title: report.title,
@@ -645,6 +647,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                   onPressed: () => Navigator.pop(context),
                 )
               : null,
+          actions: widget.appBarActions,
         ),
         body: content,
         floatingActionButton: widget.floatingActionButton,
@@ -715,7 +718,6 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
             builder: (context, scrollController) {
               return Column(
                 children: [
-                  // Handle Bar
                   const Gap(16),
                   Container(
                     width: 40,
@@ -726,8 +728,6 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                     ),
                   ),
                   const Gap(16),
-
-                  // Header with Actions
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
@@ -744,56 +744,30 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               _selectedDateRange = null;
                             });
                             setState(() {});
-                            // _fetchReports(); // Don't fetch on reset immediately? User usually wants to reset then apply.
-                            // But usually Reset implies clearing.
-                            // If Apply button exists, Reset should probably just clear selection.
                           },
-                          child: const Text(
-                            'Reset',
-                            style: TextStyle(color: Colors.grey),
-                          ),
+                          child: const Text('Reset', style: TextStyle(color: Colors.grey)),
                         ),
-                        const Text(
-                          'Filter Laporan',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        const Text('Filter Laporan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         TextButton(
                           onPressed: () {
                             Navigator.pop(context);
                             _fetchReports();
                           },
-                          child: Text(
-                            'Terapkan',
-                            style: TextStyle(
-                              color: widget.appBarColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          child: Text('Terapkan', style: TextStyle(color: widget.appBarColor, fontWeight: FontWeight.bold)),
                         ),
                       ],
                     ),
                   ),
                   const Divider(),
-
-                  // Scrollable Content
                   Expanded(
                     child: ListView(
                       controller: scrollController,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
-                        // Emergency Toggle
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Hanya Darurat'),
-                          secondary: Icon(
-                            LucideIcons.alertTriangle,
-                            color: _emergencyOnly
-                                ? AppTheme.emergencyColor
-                                : Colors.grey,
-                          ),
+                          secondary: Icon(LucideIcons.alertTriangle, color: _emergencyOnly ? AppTheme.emergencyColor : Colors.grey),
                           value: _emergencyOnly,
                           onChanged: (value) {
                             setModalState(() => _emergencyOnly = value);
@@ -802,112 +776,70 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                         ),
                         const Divider(),
                         const Gap(12),
-
-                        // Period Filter
-                        const Text(
-                          'Rentang Waktu',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        const Text('Rentang Waktu', style: TextStyle(fontWeight: FontWeight.w600)),
                         const Gap(8),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
                             ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendar,
-                                size: 16,
-                              ),
+                              avatar: const Icon(LucideIcons.calendar, size: 16),
                               label: const Text('Hari Ini'),
                               selected: _selectedPeriod == 'today',
                               onSelected: (selected) {
-                                setModalState(() {
-                                  _selectedPeriod = selected ? 'today' : null;
-                                });
+                                setModalState(() => _selectedPeriod = selected ? 'today' : null);
                                 setState(() {});
                               },
                             ),
                             ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarDays,
-                                size: 16,
-                              ),
+                              avatar: const Icon(LucideIcons.calendarDays, size: 16),
                               label: const Text('Minggu Ini'),
                               selected: _selectedPeriod == 'week',
                               onSelected: (selected) {
-                                setModalState(() {
-                                  _selectedPeriod = selected ? 'week' : null;
-                                });
+                                setModalState(() => _selectedPeriod = selected ? 'week' : null);
                                 setState(() {});
                               },
                             ),
                             ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarRange,
-                                size: 16,
-                              ),
+                              avatar: const Icon(LucideIcons.calendarRange, size: 16),
                               label: const Text('Bulan Ini'),
                               selected: _selectedPeriod == 'month',
                               onSelected: (selected) {
-                                setModalState(() {
-                                  _selectedPeriod = selected ? 'month' : null;
-                                });
+                                setModalState(() => _selectedPeriod = selected ? 'month' : null);
                                 setState(() {});
                               },
                             ),
                           ],
                         ),
                         const Gap(20),
-
-                        // Status Filter
-                        const Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        const Text('Status', style: TextStyle(fontWeight: FontWeight.w600)),
                         const Gap(8),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children:
-                              (widget.allowedStatuses != null
-                                      ? widget.allowedStatuses!
-                                      : ReportStatus.values.where(
-                                          (s) =>
-                                              // Exclude legacy/duplicate statuses by name string to be safe
-                                              s.name != 'verifikasi' &&
-                                              s.name != 'archived',
-                                        ))
-                                  .map((status) {
-                                    final isSelected = _selectedStatuses
-                                        .contains(status);
-                                    return FilterChip(
-                                      label: Text(status.label),
-                                      selected: isSelected,
-                                      selectedColor: status.color.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      checkmarkColor: status.color,
-                                      onSelected: (selected) {
-                                        setModalState(() {
-                                          if (selected) {
-                                            _selectedStatuses.add(status);
-                                          } else {
-                                            _selectedStatuses.remove(status);
-                                          }
-                                        });
-                                        setState(() {});
-                                      },
-                                    );
-                                  })
-                                  .toList(),
+                          children: (widget.allowedStatuses ?? ReportStatus.values.where((s) => s.name != 'verifikasi' && s.name != 'archived'))
+                              .map((status) {
+                                final isSelected = _selectedStatuses.contains(status);
+                                return FilterChip(
+                                  label: Text(status.label),
+                                  selected: isSelected,
+                                  selectedColor: status.color.withValues(alpha: 0.2),
+                                  checkmarkColor: status.color,
+                                  onSelected: (selected) {
+                                    setModalState(() {
+                                      if (selected) {
+                                        _selectedStatuses.add(status);
+                                      } else {
+                                        _selectedStatuses.remove(status);
+                                      }
+                                    });
+                                    setState(() {});
+                                  },
+                                );
+                              }).toList(),
                         ),
                         const Gap(20),
-
-                        // Category Filter
-                        const Text(
-                          'Kategori',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        const Text('Kategori', style: TextStyle(fontWeight: FontWeight.w600)),
                         const Gap(8),
                         Wrap(
                           spacing: 8,
@@ -917,21 +849,14 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               label: Text(cat),
                               selected: _selectedCategory == cat,
                               onSelected: (selected) {
-                                setModalState(() {
-                                  _selectedCategory = selected ? cat : null;
-                                });
+                                setModalState(() => _selectedCategory = selected ? cat : null);
                                 setState(() {});
                               },
                             );
                           }).toList(),
                         ),
                         const Gap(20),
-
-                        // Building Filter
-                        const Text(
-                          'Lokasi',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
+                        const Text('Lokasi', style: TextStyle(fontWeight: FontWeight.w600)),
                         const Gap(8),
                         Wrap(
                           spacing: 8,
@@ -941,17 +866,13 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               label: Text(building),
                               selected: _selectedBuilding == building,
                               onSelected: (selected) {
-                                setModalState(() {
-                                  _selectedBuilding = selected
-                                      ? building
-                                      : null;
-                                });
+                                setModalState(() => _selectedBuilding = selected ? building : null);
                                 setState(() {});
                               },
                             );
                           }).toList(),
                         ),
-                        const Gap(20), // Bottom padding
+                        const Gap(20),
                       ],
                     ),
                   ),
@@ -976,9 +897,10 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     if (newDateRange != null) {
       setState(() {
         _selectedDateRange = newDateRange;
-        _selectedPeriod = null; // Clear preset period if custom range selected
+        _selectedPeriod = null;
       });
       _fetchReports();
     }
   }
 }
+

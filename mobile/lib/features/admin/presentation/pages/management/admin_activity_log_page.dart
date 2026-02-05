@@ -78,7 +78,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         actions: [
           IconButton(
             onPressed: () => _showExportOptions(context),
-            icon: const Icon(LucideIcons.download),
+            icon: const Icon(LucideIcons.download, color: Colors.white),
             tooltip: 'Export Log',
           ),
           const SizedBox(width: 8),
