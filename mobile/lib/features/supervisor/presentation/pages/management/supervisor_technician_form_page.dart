@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -26,25 +27,36 @@ class _SupervisorTechnicianFormPageState
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  String _selectedRole = 'Teknisi Listrik';
+  String? _selectedRole;
   bool _isLoading = false;
-
-  final List<String> _roles = [
-    'PJ Gedung',
-    'Teknisi Listrik',
-    'Teknisi Sipil',
-    'Teknisi AC',
-    'Teknisi Jaringan',
-    'Teknisi Plumbing',
-  ];
+  List<String> _roles = [];
 
   bool get isEditing => widget.technicianId != null;
 
   @override
   void initState() {
     super.initState();
+    _initData();
+  }
+
+  Future<void> _initData() async {
+    await _fetchRoles();
     if (isEditing) {
       _loadTechnicianData();
+    }
+  }
+
+  Future<void> _fetchRoles() async {
+    setState(() => _isLoading = true);
+    final data = await reportService.getSpecializations();
+    if (mounted) {
+      setState(() {
+        _roles = data.map((e) => e['name'].toString()).toList();
+        if (_roles.isNotEmpty && _selectedRole == null) {
+          _selectedRole = _roles.first;
+        }
+        _isLoading = false;
+      });
     }
   }
 
@@ -318,6 +330,10 @@ class _SupervisorTechnicianFormPageState
   }
 
   Widget _buildDropdownField() {
+    if (_roles.isEmpty && _isLoading) {
+      return const Center(child: LinearProgressIndicator());
+    }
+
     return DropdownButtonFormField<String>(
       initialValue: _selectedRole,
       decoration: InputDecoration(
@@ -331,6 +347,7 @@ class _SupervisorTechnicianFormPageState
           .map((role) => DropdownMenuItem(value: role, child: Text(role)))
           .toList(),
       onChanged: (value) => setState(() => _selectedRole = value!),
+      validator: (v) => v == null ? 'Pilih spesialisasi' : null,
     );
   }
 }

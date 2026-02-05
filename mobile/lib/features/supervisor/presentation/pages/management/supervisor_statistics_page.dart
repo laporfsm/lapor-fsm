@@ -38,12 +38,12 @@ class SupervisorStatisticsPage extends StatelessWidget {
               child: Column(
                 children: [
                   StatsBarChartItem(
-                    label: 'Kelistrikan',
+                    label: 'Listrik',
                     percentage: 0.8,
                     color: Colors.blue,
                   ),
                   StatsBarChartItem(
-                    label: 'Sipil & Bangunan',
+                    label: 'Bangunan',
                     percentage: 0.6,
                     color: Colors.orange,
                   ),

@@ -624,7 +624,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 id: staff.id,
                 name: staff.name,
                 email: staff.email,
-                phone: staff.phone, // Include phone
+                phone: staff.phone,
                 isActive: staff.isActive,
                 managedBuilding: staff.managedBuilding,
             })
@@ -637,9 +637,39 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             data: pjs.map(p => ({
                 ...p,
                 id: p.id.toString(),
-                // Use managedBuilding as location
                 location: p.managedBuilding,
             })),
+        };
+    })
+
+    // Get PJ Gedung detail
+    .get('/pj-gedung/:id', async ({ params }) => {
+        const staffId = parseInt(params.id);
+        const pj = await db
+            .select({
+                id: staff.id,
+                name: staff.name,
+                email: staff.email,
+                phone: staff.phone,
+                role: staff.role,
+                isActive: staff.isActive,
+                managedBuilding: staff.managedBuilding,
+                createdAt: staff.createdAt,
+            })
+            .from(staff)
+            .where(and(eq(staff.id, staffId), eq(staff.role, 'pj_gedung')))
+            .limit(1);
+
+        if (pj.length === 0) {
+            return { status: 'error', message: 'PJ Gedung tidak ditemukan' };
+        }
+
+        return {
+            status: 'success',
+            data: {
+                ...pj[0],
+                id: pj[0].id.toString(),
+            }
         };
     })
 
@@ -771,12 +801,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const staffId = parseInt(params.id);
 
         try {
-            // Check dependency: reports assigned to this technician?
-            // For now, simple delete. If foreign key constraint exists, it will throw.
-            // We could also Soft Delete (isActive = false).
-            // Let's try simple delete first as requested.
-
-            const deleted = await db.delete(staff).where(eq(staff.id, staffId)).returning();
+            const deleted = await db.delete(staff).where(and(eq(staff.id, staffId), eq(staff.role, 'teknisi'))).returning();
 
             if (deleted.length === 0) {
                 return { status: 'error', message: 'Teknisi tidak ditemukan' };
@@ -786,6 +811,106 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         } catch (e: any) {
             console.error('Delete Technician Error:', e);
             return { status: 'error', message: 'Gagal menghapus teknisi (mungkin sedang menangani laporan).' };
+        }
+    })
+
+    // ===========================================================================
+    // PJ GEDUNG CRUD
+    // ===========================================================================
+
+    // Create PJ Gedung
+    .post('/pj-gedung', async ({ body }) => {
+        const existing = await db.select().from(staff).where(eq(staff.email, body.email)).limit(1);
+        if (existing.length > 0) {
+            return { status: 'error', message: 'Email sudah terdaftar.' };
+        }
+
+        const plainPassword = body.password || 'pjgedung123';
+        const hashedPassword = await Bun.password.hash(plainPassword);
+
+        try {
+            const newStaff = await db.insert(staff).values({
+                name: body.name,
+                email: body.email,
+                phone: body.phone,
+                role: 'pj_gedung',
+                managedBuilding: body.managedBuilding,
+                password: hashedPassword,
+                isActive: true,
+            }).returning();
+
+            return {
+                status: 'success',
+                data: { ...newStaff[0], id: newStaff[0].id.toString() },
+                message: 'PJ Gedung berhasil ditambahkan'
+            };
+        } catch (e: any) {
+            console.error('Create PJ Gedung Error:', e);
+            return { status: 'error', message: 'Gagal menambahkan PJ Gedung: ' + e.message };
+        }
+    }, {
+        body: t.Object({
+            name: t.String({ minLength: 2 }),
+            email: t.String(),
+            phone: t.String(),
+            managedBuilding: t.String(),
+            password: t.Optional(t.String()),
+        })
+    })
+
+    // Update PJ Gedung
+    .put('/pj-gedung/:id', async ({ params, body }) => {
+        const staffId = parseInt(params.id);
+
+        try {
+            const updated = await db
+                .update(staff)
+                .set({
+                    name: body.name,
+                    email: body.email,
+                    phone: body.phone,
+                    managedBuilding: body.managedBuilding,
+                })
+                .where(and(eq(staff.id, staffId), eq(staff.role, 'pj_gedung')))
+                .returning();
+
+            if (updated.length === 0) {
+                return { status: 'error', message: 'PJ Gedung tidak ditemukan' };
+            }
+
+            return {
+                status: 'success',
+                data: { ...updated[0], id: updated[0].id.toString() },
+                message: 'Data PJ Gedung berhasil diperbarui'
+            };
+        } catch (e: any) {
+            console.error('Update PJ Gedung Error:', e);
+            return { status: 'error', message: 'Gagal memperbarui PJ Gedung: ' + e.message };
+        }
+    }, {
+        body: t.Object({
+            name: t.String(),
+            email: t.String(),
+            phone: t.String(),
+            managedBuilding: t.String(),
+        })
+    })
+
+    // Delete PJ Gedung
+    .delete('/pj-gedung/:id', async ({ params }) => {
+        const staffId = parseInt(params.id);
+
+        try {
+            const deleted = await db.delete(staff).where(and(eq(staff.id, staffId), eq(staff.role, 'pj_gedung'))).returning();
+
+            if (deleted.length === 0) {
+                return { status: 'error', message: 'PJ Gedung tidak ditemukan' };
+            }
+
+            return { status: 'success', message: 'PJ Gedung berhasil dihapus' };
+        } catch (e: any) {
+            console.error('Delete PJ Gedung Error:', e);
+            return { status: 'error', message: 'Gagal menghapus PJ Gedung.' };
         }
     })
 

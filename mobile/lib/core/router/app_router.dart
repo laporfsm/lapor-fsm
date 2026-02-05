@@ -59,6 +59,7 @@ import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_activity_log_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_building_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_pj_gedung_form_page.dart';
 
 // Admin imports
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
@@ -455,6 +456,15 @@ final appRouter = GoRouter(
       builder: (context, state) => SupervisorTechnicianFormPage(
         technicianId: state.pathParameters['id'],
       ),
+    ),
+    GoRoute(
+      path: '/supervisor/pj-gedung/add',
+      builder: (context, state) => const SupervisorPJGedungFormPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/pj-gedung/edit/:id',
+      builder: (context, state) =>
+          SupervisorPJGedungFormPage(pjGedungId: state.pathParameters['id']),
     ),
     GoRoute(
       path: '/supervisor/settings',

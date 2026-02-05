@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/services/report_service.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +24,7 @@ class _SupervisorStaffManagementPageState
 
   String _selectedFilter = 'Semua';
   bool _isLoading = true;
+  List<String> _specializations = [];
 
   List<Map<String, dynamic>> _technicians = [];
   List<Map<String, dynamic>> _pjGedung = [];
@@ -39,11 +41,13 @@ class _SupervisorStaffManagementPageState
     try {
       final techs = await _staffService.getTechnicians();
       final pjs = await _staffService.getPJGedung();
+      final specs = await reportService.getSpecializations();
 
       if (mounted) {
         setState(() {
           _technicians = techs;
           _pjGedung = pjs;
+          _specializations = specs.map((e) => e['name'].toString()).toList();
           _isLoading = false;
         });
       }
@@ -124,17 +128,22 @@ class _SupervisorStaffManagementPageState
         ),
         _buildFilterChips(),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: _technicians.length,
-            separatorBuilder: (context, index) => const Gap(12),
-            itemBuilder: (context, index) {
-              return _buildStaffCard(
-                context,
-                _technicians[index],
-                isTechnician: true,
-              );
-            },
+          child: RefreshIndicator(
+            onRefresh: _fetchData,
+            child: _technicians.isEmpty
+                ? const Center(child: Text('Belum ada teknisi'))
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _technicians.length,
+                    separatorBuilder: (context, index) => const Gap(12),
+                    itemBuilder: (context, index) {
+                      return _buildStaffCard(
+                        context,
+                        _technicians[index],
+                        isTechnician: true,
+                      );
+                    },
+                  ),
           ),
         ),
         Padding(
@@ -142,12 +151,17 @@ class _SupervisorStaffManagementPageState
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.push('/supervisor/technicians/add'),
+              onPressed: () async {
+                final result = await context.push(
+                  '/supervisor/technicians/add',
+                );
+                if (result == true) _fetchData();
+              },
               icon: const Icon(LucideIcons.userPlus, color: Colors.white),
               label: const Text('Tambah Teknisi'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.supervisorColor,
-                foregroundColor: Colors.white, // White text/icon
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -187,17 +201,44 @@ class _SupervisorStaffManagementPageState
           ),
         ),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: _pjGedung.length,
-            separatorBuilder: (context, index) => const Gap(12),
-            itemBuilder: (context, index) {
-              return _buildStaffCard(
-                context,
-                _pjGedung[index],
-                isTechnician: false,
-              );
-            },
+          child: RefreshIndicator(
+            onRefresh: _fetchData,
+            child: _pjGedung.isEmpty
+                ? const Center(child: Text('Belum ada PJ Gedung'))
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _pjGedung.length,
+                    separatorBuilder: (context, index) => const Gap(12),
+                    itemBuilder: (context, index) {
+                      return _buildStaffCard(
+                        context,
+                        _pjGedung[index],
+                        isTechnician: false,
+                      );
+                    },
+                  ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final result = await context.push('/supervisor/pj-gedung/add');
+                if (result == true) _fetchData();
+              },
+              icon: const Icon(LucideIcons.userPlus, color: Colors.white),
+              label: const Text('Tambah PJ Gedung'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.supervisorColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -205,7 +246,7 @@ class _SupervisorStaffManagementPageState
   }
 
   Widget _buildFilterChips() {
-    final filters = ['Semua', 'Aktif', 'Nonaktif', 'Listrik', 'Sipil'];
+    final filters = ['Semua', 'Aktif', 'Nonaktif', ..._specializations];
     return Container(
       color: Colors.white,
       width: double.infinity,
@@ -363,32 +404,72 @@ class _SupervisorStaffManagementPageState
                 icon: LucideIcons.pencil,
                 color: Colors.blue,
                 onTap: () async {
+                  bool? result;
                   if (isTechnician) {
-                    await context.push(
+                    result = await context.push(
                       '/supervisor/technicians/edit/${staff['id']}',
                     );
+                  } else {
+                    result = await context.push(
+                      '/supervisor/pj-gedung/edit/${staff['id']}',
+                    );
                   }
-                  setState(() {});
+                  if (result == true) _fetchData();
                 },
               ),
               const Gap(8),
               _buildActionButton(
-                icon: isActive ? LucideIcons.userX : LucideIcons.userCheck,
-                color: isActive ? Colors.red : Colors.green,
-                onTap: () {
-                  setState(() {
-                    staff['isActive'] = !isActive;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                icon: LucideIcons.trash2,
+                color: Colors.red,
+                onTap: () async {
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Hapus Staff'),
                       content: Text(
-                        isActive
-                            ? 'Staff dinonaktifkan'
-                            : 'Staff diaktifkan kembali',
+                        'Apakah Anda yakin ingin menghapus ${staff['name']}?',
                       ),
-                      duration: const Duration(seconds: 1),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Batal'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          child: const Text('Hapus'),
+                        ),
+                      ],
                     ),
                   );
+
+                  if (confirm == true) {
+                    bool success;
+                    if (isTechnician) {
+                      success = await _staffService.deleteTechnician(
+                        staff['id'].toString(),
+                      );
+                    } else {
+                      success = await _staffService.deletePJGedung(
+                        staff['id'].toString(),
+                      );
+                    }
+
+                    if (!context.mounted) return;
+
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Staff berhasil dihapus')),
+                      );
+                      _fetchData();
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Gagal menghapus staff')),
+                      );
+                    }
+                  }
                 },
               ),
             ],
