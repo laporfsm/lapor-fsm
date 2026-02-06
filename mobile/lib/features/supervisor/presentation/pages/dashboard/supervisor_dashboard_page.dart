@@ -43,13 +43,13 @@ class _SupervisorDashboardPageState
     'approved': 0,
     'ditolak': 0,
     'emergency': 0,
-    'nonLokasiPending': 0,
+    'nonGedungPending': 0,
     'todayReports': 0,
     'weekReports': 0,
     'monthReports': 0,
   };
 
-  List<Report> _nonLokasiReports = [];
+  List<Report> _nonGedungReports = [];
   List<Report> _readyToProcessReports = [];
   List<Report> _pendingReviewReports = [];
 
@@ -83,7 +83,7 @@ class _SupervisorDashboardPageState
         // Fetch stats and lists
         final results = await Future.wait([
           reportService.getSupervisorDashboardStats(staffId),
-          reportService.getNonLokasiReports(limit: 20), // Non-lokasi pending
+          reportService.getNonGedungReports(limit: 20), // Non-gedung pending
           reportService.getStaffReports(
             role: 'supervisor',
             status: 'terverifikasi', // Only terverifikasi for "Siap Diproses"
@@ -108,27 +108,33 @@ class _SupervisorDashboardPageState
                 'approved': rawStats['approved'] ?? 0,
                 'ditolak': rawStats['ditolak'] ?? 0,
                 'emergency': rawStats['emergency'] ?? 0,
-                'nonLokasiPending': rawStats['nonLokasiPending'] ?? 0,
+                'nonGedungPending': rawStats['nonGedungPending'] ?? 0,
                 'todayReports': rawStats['todayReports'] ?? 0,
                 'weekReports': rawStats['weekReports'] ?? 0,
                 'monthReports': rawStats['monthReports'] ?? 0,
               };
             }
 
-            // Non-Lokasi Reports
+            // Non-Gedung Reports
             try {
-              _nonLokasiReports = (results[1] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[1] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _nonGedungReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
-              debugPrint('[DASHBOARD] Error converting non-lokasi reports: $e');
-              _nonLokasiReports = [];
+              debugPrint('[DASHBOARD] Error converting non-gedung reports: $e');
+              _nonGedungReports = [];
             }
 
             // Ready to Process (Terverifikasi only)
             try {
-              _readyToProcessReports = (results[2] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[2] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _readyToProcessReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
               debugPrint('[DASHBOARD] Error converting ready reports: $e');
@@ -137,8 +143,11 @@ class _SupervisorDashboardPageState
 
             // Pending Review (Selesai)
             try {
-              _pendingReviewReports = (results[3] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[3] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _pendingReviewReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
               debugPrint('[DASHBOARD] Error converting review reports: $e');
@@ -146,7 +155,7 @@ class _SupervisorDashboardPageState
             }
 
             debugPrint(
-              '[DASHBOARD] Final counts - Non-Lokasi: ${_nonLokasiReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
+              '[DASHBOARD] Final counts - Non-Gedung: ${_nonGedungReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
             );
             _isLoading = false;
           });
@@ -310,16 +319,16 @@ class _SupervisorDashboardPageState
                       _buildStatsSection(context),
                       const Gap(24),
 
-                      // Section: Non-Lokasi (Pending reports from locations without PJ)
+                      // Section: Non-Gedung (Pending reports from locations without PJ)
                       _buildSectionHeader(
                         context,
-                        'Non-Lokasi',
+                        'Non-Gedung',
                         'Lihat Semua',
                         () => context.push('/supervisor/non-gedung'),
-                        count: _stats['nonLokasiPending'] ?? 0,
+                        count: _stats['nonGedungPending'] ?? 0,
                       ),
                       const Gap(12),
-                      _buildNonLokasiList(context),
+                      _buildNonGedungList(context),
                       const Gap(24),
 
                       // Section: Siap Diproses (Terverifikasi only)
@@ -589,8 +598,8 @@ class _SupervisorDashboardPageState
     );
   }
 
-  Widget _buildNonLokasiList(BuildContext context) {
-    if (_nonLokasiReports.isEmpty) {
+  Widget _buildNonGedungList(BuildContext context) {
+    if (_nonGedungReports.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -603,7 +612,7 @@ class _SupervisorDashboardPageState
               Icon(LucideIcons.mapPin, size: 48, color: Colors.grey.shade300),
               const Gap(8),
               Text(
-                'Tidak ada laporan non-lokasi pending',
+                'Tidak ada laporan non-gedung pending',
                 style: TextStyle(color: Colors.grey.shade500),
               ),
             ],
@@ -613,7 +622,7 @@ class _SupervisorDashboardPageState
     }
 
     // Show only first 3 reports
-    final displayReports = _nonLokasiReports.take(3).toList();
+    final displayReports = _nonGedungReports.take(3).toList();
 
     return Column(
       children: displayReports.map((report) {
@@ -771,7 +780,7 @@ class _SupervisorDashboardPageState
           ),
           const Divider(),
           _buildLogItem(
-            'PJ Lokasi A',
+            'PJ Gedung A',
             'memverifikasi laporan',
             'Lampu Koridor',
             '15 menit lalu',

@@ -60,6 +60,12 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   List<Report> _reports = [];
   bool _isLoading = true;
+  bool _isFetchingMore = false;
+  int _currentPage = 1;
+  int _totalReports = 0;
+  bool _hasMore = true;
+  final int _limit = 50;
+  final ScrollController _scrollController = ScrollController();
 
   Set<ReportStatus> _selectedStatuses = {};
   String? _selectedCategory;
@@ -259,7 +265,18 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   void initState() {
     super.initState();
     _initFilters();
+    _scrollController.addListener(_onScroll);
     _fetchData();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.9 &&
+        !_isFetchingMore &&
+        _hasMore &&
+        !_isLoading) {
+      _fetchMoreReports();
+    }
   }
 
   void _initFilters() {
@@ -307,29 +324,36 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     }
   }
 
-  Future<void> _fetchReports() async {
+  Future<void> _fetchReports({bool isRefresh = true}) async {
+    if (isRefresh) {
+      setState(() {
+        _currentPage = 1;
+        _hasMore = true;
+      });
+    }
+
     try {
-      List<Map<String, dynamic>> reportsData;
+      Map<String, dynamic> response;
 
       if (widget.role != null) {
         // Fetch Staff-specific reports
-        reportsData = await reportService.getStaffReports(
+        response = await reportService.getStaffReports(
           role: widget.role!,
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
-          isEmergency: _emergencyOnly
-              ? true
-              : null, // Only filter when true, null = include all
+          isEmergency: _emergencyOnly ? true : null,
           period: _selectedPeriod,
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           category: _selectedCategory,
           location: _selectedBuilding,
           assignedTo: widget.assignedTo,
+          page: _currentPage,
+          limit: _limit,
         );
       } else {
         // Fetch Public reports
-        reportsData = await reportService.getPublicReports(
+        response = await reportService.getPublicReports(
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
@@ -340,19 +364,27 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           period: _selectedPeriod,
           startDate: _selectedDateRange?.start.toIso8601String(),
           endDate: _selectedDateRange?.end.toIso8601String(),
+          limit: _limit,
+          offset: (_currentPage - 1) * _limit,
         );
       }
 
-      debugPrint(
-        'Fetched ${reportsData.length} reports from API (Role: ${widget.role})',
-      );
+      final List<Map<String, dynamic>> reportsData =
+          List<Map<String, dynamic>>.from(response['data'] ?? []);
+      final int total = response['total'] ?? 0;
 
       if (mounted) {
         setState(() {
-          _reports = reportsData.map((json) {
-            final r = Report.fromJson(json);
-            return r;
-          }).toList();
+          final newReports = reportsData
+              .map((json) => Report.fromJson(json))
+              .toList();
+          if (isRefresh) {
+            _reports = newReports;
+          } else {
+            _reports.addAll(newReports);
+          }
+          _totalReports = total;
+          _hasMore = _reports.length < _totalReports;
         });
       }
     } catch (e) {
@@ -360,9 +392,17 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     }
   }
 
+  Future<void> _fetchMoreReports() async {
+    setState(() => _isFetchingMore = true);
+    _currentPage++;
+    await _fetchReports(isRefresh: false);
+    if (mounted) setState(() => _isFetchingMore = false);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -596,7 +636,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           alignment: Alignment.centerLeft,
           child: Text(
-            '${_reports.length} laporan ditemukan',
+            '$_totalReports laporan ditemukan',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ),
@@ -629,11 +669,49 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scrollController,
                           padding: const EdgeInsets.all(16),
-                          itemCount: _reports.length,
+                          itemCount: _reports.length + 1,
                           itemBuilder: (context, index) {
+                            if (index == _reports.length) {
+                              if (_hasMore) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              } else if (_reports.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          LucideIcons.checkCircle2,
+                                          size: 20,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const Gap(8),
+                                        Text(
+                                          'Semua laporan telah dimuat',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return const SizedBox.shrink();
+                              }
+                            }
                             final report = _reports[index];
-                            // ...
                             return UniversalReportCard(
                               id: report.id,
                               title: report.title,

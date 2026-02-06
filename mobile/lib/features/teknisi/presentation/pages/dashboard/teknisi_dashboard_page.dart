@@ -101,10 +101,19 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               _dashboardStats = Map<String, int>.from(results[0] as Map);
             }
 
-            final diproses = (results[1] as List)
+            final diprosesResponse = results[1] as Map<String, dynamic>;
+            final diprosesData = List<Map<String, dynamic>>.from(
+              diprosesResponse['data'] ?? [],
+            );
+            final diproses = diprosesData
                 .map((json) => Report.fromJson(json))
                 .toList();
-            final recalled = (results[2] as List)
+
+            final recalledResponse = results[2] as Map<String, dynamic>;
+            final recalledData = List<Map<String, dynamic>>.from(
+              recalledResponse['data'] ?? [],
+            );
+            final recalled = recalledData
                 .map((json) => Report.fromJson(json))
                 .toList();
 
@@ -112,10 +121,12 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
             _readyReports = [...recalled, ...diproses]
               ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
+            final activeResponse = results[3] as Map<String, dynamic>;
+            final activeData = List<Map<String, dynamic>>.from(
+              activeResponse['data'] ?? [],
+            );
             _activeReports =
-                (results[3] as List)
-                    .map((json) => Report.fromJson(json))
-                    .toList()
+                activeData.map((json) => Report.fromJson(json)).toList()
                   ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
             _isLoading = false;

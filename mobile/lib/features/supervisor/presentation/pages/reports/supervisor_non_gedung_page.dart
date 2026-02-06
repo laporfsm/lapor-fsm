@@ -8,16 +8,16 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 
 /// Page to display all non-gedung pending reports
-/// (Reports from locations that don't have a PJ Lokasi)
-class SupervisorNonLokasiPage extends StatefulWidget {
-  const SupervisorNonLokasiPage({super.key});
+/// (Reports from locations that don't have a PJ Gedung)
+class SupervisorNonGedungPage extends StatefulWidget {
+  const SupervisorNonGedungPage({super.key});
 
   @override
-  State<SupervisorNonLokasiPage> createState() =>
-      _SupervisorNonLokasiPageState();
+  State<SupervisorNonGedungPage> createState() =>
+      _SupervisorNonGedungPageState();
 }
 
-class _SupervisorNonLokasiPageState extends State<SupervisorNonLokasiPage> {
+class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
   List<Report> _reports = [];
   bool _isLoading = true;
   String? _error;
@@ -35,8 +35,11 @@ class _SupervisorNonLokasiPageState extends State<SupervisorNonLokasiPage> {
     });
 
     try {
-      final data = await reportService.getNonLokasiReports(limit: 100);
+      final response = await reportService.getNonGedungReports(limit: 100);
       setState(() {
+        final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
+          response['data'] ?? [],
+        );
         _reports = data.map((json) => Report.fromJson(json)).toList();
         _isLoading = false;
       });
@@ -56,7 +59,7 @@ class _SupervisorNonLokasiPageState extends State<SupervisorNonLokasiPage> {
         backgroundColor: AppTheme.supervisorColor,
         foregroundColor: Colors.white,
         title: const Text(
-          'Laporan Non-Lokasi',
+          'Laporan Non-Gedung',
           style: TextStyle(
             color: Colors.white,
             fontSize: 18,
@@ -103,12 +106,12 @@ class _SupervisorNonLokasiPageState extends State<SupervisorNonLokasiPage> {
             Icon(LucideIcons.mapPin, size: 64, color: Colors.grey.shade300),
             const Gap(16),
             Text(
-              'Tidak ada laporan non-lokasi',
+              'Tidak ada laporan non-gedung',
               style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
             ),
             const Gap(8),
             Text(
-              'Laporan dari lokasi tanpa PJ\nakan muncul di sini',
+              'Laporan dari lokasi tanpa PJ Gedung\nakan muncul di sini',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             ),
@@ -145,7 +148,7 @@ class _SupervisorNonLokasiPageState extends State<SupervisorNonLokasiPage> {
                     const Gap(12),
                     Expanded(
                       child: Text(
-                        '${_reports.length} laporan dari lokasi tanpa PJ Lokasi',
+                        '${_reports.length} laporan dari lokasi tanpa PJ Gedung',
                         style: TextStyle(
                           color: AppTheme.supervisorColor,
                           fontWeight: FontWeight.w500,

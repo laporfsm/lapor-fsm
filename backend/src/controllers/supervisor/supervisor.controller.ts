@@ -106,10 +106,10 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
-        const { status, location, isEmergency, page = '1', limit = '20' } = query;
+        const { status, location, isEmergency, page = '1', limit = '50' } = query;
         console.log('[DEBUG] Supervisor /reports endpoint - status query:', status);
         const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
-        const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
+        const limitNum = isNaN(parseInt(limit)) ? 50 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
 
         let conditions = [];
@@ -135,6 +135,14 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
         const verifierStaff = alias(staff, 'verifier_staff');
+
+        // Get total count for pagination
+        const totalResult = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(whereClause);
+
+        const totalCount = totalResult[0]?.count || 0;
 
         const result = await db
             .select({
@@ -177,6 +185,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         return {
             status: 'success',
             data: result.map(r => mapToMobileReport(r)),
+            total: totalCount
         };
     })
 
@@ -238,44 +247,50 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/verify', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
-        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'terverifikasi',
-                verifiedBy: staffId,
-                verifiedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+            const updated = await db
+                .update(reports)
+                .set({
+                    status: 'terverifikasi',
+                    verifiedBy: staffId,
+                    verifiedAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
 
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "Supervisor",
-            actorRole: foundStaff[0]?.role || "supervisor",
-            action: 'verified',
-            fromStatus: 'pending',
-            toStatus: 'terverifikasi',
-            reason: body.notes || 'Laporan telah diverifikasi',
-        });
+            if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
-        // Notify User
-        if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'verified',
+                fromStatus: 'pending',
+                toStatus: 'terverifikasi',
+                reason: body.notes || 'Laporan telah diverifikasi',
+            });
+
+            // Notify User
+            if (updated[0].userId) {
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
+            }
+
+            return {
+                status: 'success',
+                data: mapToMobileReport({
+                    ...updated[0],
+                    supervisorName: foundStaff[0]?.name
+                })
+            };
+        } catch (e: any) {
+            console.error('Verify Report Error:', e);
+            return { status: 'error', message: 'Gagal memverifikasi laporan: ' + e.message };
         }
-
-        return {
-            status: 'success',
-            data: mapToMobileReport({
-                ...updated[0],
-                supervisorName: foundStaff[0]?.name
-            })
-        };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
@@ -284,47 +299,53 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/assign', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const supervisorId = body.supervisorId;
-        const foundSupervisor = await db.select().from(staff).where(eq(staff.id, supervisorId)).limit(1);
 
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'diproses',
-                assignedTo: body.technicianId,
-                assignedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
+        try {
+            const foundSupervisor = await db.select().from(staff).where(eq(staff.id, supervisorId)).limit(1);
 
-        if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+            const updated = await db
+                .update(reports)
+                .set({
+                    status: 'diproses',
+                    assignedTo: body.technicianId,
+                    assignedAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
 
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: supervisorId.toString(),
-            actorName: foundSupervisor[0]?.name || "Supervisor",
-            actorRole: foundSupervisor[0]?.role || "supervisor",
-            action: 'handling',
-            fromStatus: 'terverifikasi',
-            toStatus: 'diproses',
-            reason: `Laporan ditugaskan ke teknisi`,
-        });
+            if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
-        // Notify Technician
-        await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: supervisorId.toString(),
+                actorName: foundSupervisor[0]?.name || "Supervisor",
+                actorRole: foundSupervisor[0]?.role || "supervisor",
+                action: 'handling',
+                fromStatus: 'terverifikasi',
+                toStatus: 'diproses',
+                reason: `Laporan ditugaskan ke teknisi`,
+            });
 
-        // Notify User
-        if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
+            // Notify Technician
+            await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+
+            // Notify User
+            if (updated[0].userId) {
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
+            }
+
+            return {
+                status: 'success',
+                data: mapToMobileReport({
+                    ...updated[0],
+                    supervisorName: foundSupervisor[0]?.name
+                })
+            };
+        } catch (e: any) {
+            console.error('Assign Report Error:', e);
+            return { status: 'error', message: 'Gagal menugaskan laporan: ' + e.message };
         }
-
-        return {
-            status: 'success',
-            data: mapToMobileReport({
-                ...updated[0],
-                supervisorName: foundSupervisor[0]?.name
-            })
-        };
     }, {
         body: t.Object({
             supervisorId: t.Number(),
@@ -336,36 +357,43 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/recall', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
-        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+            const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
 
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'recalled',
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
+            if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "Supervisor",
-            actorRole: foundStaff[0]?.role || "supervisor",
-            action: 'recalled',
-            fromStatus: current[0].status || 'penanganan',
-            toStatus: 'recalled',
-            reason: body.reason,
-        });
+            const updated = await db
+                .update(reports)
+                .set({
+                    status: 'recalled',
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
 
-        // Notify Technician (if assigned)
-        if (current[0].assignedTo) {
-            await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`, 'warning', reportId);
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'recalled',
+                fromStatus: current[0].status || 'penanganan',
+                toStatus: 'recalled',
+                reason: body.reason,
+            });
+
+            // Notify Technician (if assigned)
+            if (current[0].assignedTo) {
+                await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`, 'warning', reportId);
+            }
+
+            return { status: 'success', data: mapToMobileReport(updated[0]) };
+        } catch (e: any) {
+            console.error('Recall Report Error:', e);
+            return { status: 'error', message: 'Gagal menarik kembali laporan: ' + e.message };
         }
-
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), reason: t.String() })
     })
@@ -374,42 +402,55 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/approve', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
-        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'approved',
-                approvedBy: staffId,
-                approvedAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+            if (foundStaff.length === 0) {
+                return { status: 'error', message: 'Staff Supervisor tidak ditemukan' };
+            }
 
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "Supervisor",
-            actorRole: foundStaff[0]?.role || "supervisor",
-            action: 'approved',
-            fromStatus: 'selesai',
-            toStatus: 'approved',
-            reason: body.notes || 'Penanganan disetujui',
-        });
+            const updated = await db
+                .update(reports)
+                .set({
+                    status: 'approved',
+                    approvedBy: staffId,
+                    approvedAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
 
-        // Notify User
-        if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`, 'success', reportId);
+            if (updated.length === 0) {
+                return { status: 'error', message: 'Laporan tidak ditemukan' };
+            }
+
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'approved',
+                fromStatus: 'selesai',
+                toStatus: 'approved',
+                reason: body.notes || 'Penanganan disetujui',
+            });
+
+            // Notify User
+            if (updated[0].userId) {
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Selesai', `Laporan Anda telah selesai dan disetujui.`, 'success', reportId);
+            }
+
+            return {
+                status: 'success',
+                data: mapToMobileReport({
+                    ...updated[0],
+                    supervisorName: foundStaff[0]?.name
+                })
+            };
+        } catch (e: any) {
+            console.error('Approve Report Error:', e);
+            return { status: 'error', message: 'Gagal menyetujui laporan: ' + e.message };
         }
-
-        return {
-            status: 'success',
-            data: mapToMobileReport({
-                ...updated[0],
-                supervisorName: foundStaff[0]?.name
-            })
-        };
     }, {
         body: t.Object({ staffId: t.Number(), notes: t.Optional(t.String()) })
     })
@@ -418,37 +459,43 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/reject', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
-        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
-        if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
 
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'ditolak',
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
+            const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+            if (current.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "Supervisor",
-            actorRole: foundStaff[0]?.role || "supervisor",
-            action: 'rejected',
-            fromStatus: current[0].status || 'pending',
-            toStatus: 'ditolak',
-            reason: body.reason,
-        });
+            const updated = await db
+                .update(reports)
+                .set({
+                    status: 'ditolak',
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
 
-        // Notify User
-        if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning', reportId);
+            await db.insert(reportLogs).values({
+                reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0]?.name || "Supervisor",
+                actorRole: foundStaff[0]?.role || "supervisor",
+                action: 'rejected',
+                fromStatus: current[0].status || 'pending',
+                toStatus: 'ditolak',
+                reason: body.reason,
+            });
+
+            // Notify User
+            if (updated[0].userId) {
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning', reportId);
+            }
+
+            return { status: 'success', data: mapToMobileReport(updated[0]) };
+        } catch (e: any) {
+            console.error('Reject Report Error:', e);
+            return { status: 'error', message: 'Gagal menolak laporan: ' + e.message };
         }
-
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {
         body: t.Object({ staffId: t.Number(), reason: t.String() })
     })

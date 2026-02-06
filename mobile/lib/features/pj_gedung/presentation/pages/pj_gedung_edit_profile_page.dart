@@ -54,7 +54,7 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
 
     final result = await authService.updateProfile(
       id: _currentUser!['id'],
-      role: _currentUser!['role'] ?? 'pj_location',
+      role: _currentUser!['role'] ?? 'pj_gedung',
       phone: _phoneController.text,
       address: _addressController.text,
       // Department/Faculty/Location are usually managed by Admin for staff, so we don't send them here to avoid accidental overrides

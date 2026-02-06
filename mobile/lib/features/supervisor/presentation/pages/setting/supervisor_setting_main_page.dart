@@ -47,9 +47,6 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
         if (response.data['status'] == 'success') {
           setState(() {
             _stats = response.data['data'];
-            _stats['rejected'] =
-                response.data['data']['rejected'] ??
-                0; // Ensure rejected color is available
           });
         }
       }
@@ -185,9 +182,9 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                             Expanded(
                               child: StatsBigStatItem(
                                 icon: LucideIcons.xCircle,
-                                value: (_stats['rejected'] ?? 0).toString(),
+                                value: (_stats['ditolak'] ?? 0).toString(),
                                 label: "Ditolak",
-                                color: AppTheme.getStatusColor('rejected'),
+                                color: AppTheme.getStatusColor('ditolak'),
                               ),
                             ),
                           ],

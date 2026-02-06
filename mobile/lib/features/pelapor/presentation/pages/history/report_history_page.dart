@@ -40,23 +40,28 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
   Future<void> _fetchReports() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    
+
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final reportsData = await reportService.getMyReports(
+        final response = await reportService.getMyReports(
           user['id'].toString(),
           role: user['role'],
         );
         if (mounted) {
           setState(() {
-            _myReports = reportsData.map((json) {
-              try {
-                return Report.fromJson(json);
-              } catch (e) {
-                return null;
-              }
-            }).whereType<Report>().toList();
+            final List<Map<String, dynamic>> reportsData =
+                List<Map<String, dynamic>>.from(response['data'] ?? []);
+            _myReports = reportsData
+                .map((json) {
+                  try {
+                    return Report.fromJson(json);
+                  } catch (e) {
+                    return null;
+                  }
+                })
+                .whereType<Report>()
+                .toList();
             _isLoading = false;
           });
         }
@@ -66,9 +71,9 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengambil riwayat: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengambil riwayat: $e')));
       }
     }
   }
@@ -76,23 +81,27 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
   List<Report> get _filteredReports {
     return _myReports.where((report) {
       // 1. Search Filter
-      final matchesSearch = report.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      final matchesSearch =
+          report.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           report.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          (report.locationDetail?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
-      
+          (report.locationDetail?.toLowerCase().contains(
+                _searchQuery.toLowerCase(),
+              ) ??
+              false);
+
       if (!matchesSearch) return false;
 
       // 2. Category Filter
       switch (_selectedFilter) {
         case "Aktif":
-          return report.status != ReportStatus.approved && 
-                 report.status != ReportStatus.selesai && 
-                 report.status != ReportStatus.ditolak &&
-                 report.status != ReportStatus.archived;
+          return report.status != ReportStatus.approved &&
+              report.status != ReportStatus.selesai &&
+              report.status != ReportStatus.ditolak &&
+              report.status != ReportStatus.archived;
         case "Selesai":
-          return report.status == ReportStatus.selesai || 
-                 report.status == ReportStatus.approved ||
-                 report.status == ReportStatus.archived;
+          return report.status == ReportStatus.selesai ||
+              report.status == ReportStatus.approved ||
+              report.status == ReportStatus.archived;
         case "Ditolak":
           return report.status == ReportStatus.ditolak;
         default:
@@ -118,7 +127,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
         children: [
           // Search and Filter Section
           _buildSearchAndFilter(),
-          
+
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -127,7 +136,10 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                     child: _filteredReports.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             itemCount: _filteredReports.length,
                             itemBuilder: (context, index) {
                               final report = _filteredReports[index];
@@ -140,10 +152,14 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                                   location: report.location,
                                   locationDetail: report.locationDetail,
                                   status: report.status,
-                                  elapsedTime: DateTime.now().difference(report.createdAt),
+                                  elapsedTime: DateTime.now().difference(
+                                    report.createdAt,
+                                  ),
                                   showStatus: true,
                                   compact: false,
-                                  onTap: () => context.push('/report-detail/${report.id}'),
+                                  onTap: () => context.push(
+                                    '/report-detail/${report.id}',
+                                  ),
                                 ),
                               );
                             },
@@ -181,19 +197,25 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                 onChanged: (val) => setState(() => _searchQuery = val),
                 decoration: InputDecoration(
                   hintText: 'Cari laporan atau lokasi...',
-                  hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
                   prefixIcon: const Icon(LucideIcons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty 
-                    ? IconButton(
-                        icon: const Icon(LucideIcons.xCircle, size: 20),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = "");
-                        },
-                      )
-                    : null,
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(LucideIcons.xCircle, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _searchQuery = "");
+                          },
+                        )
+                      : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ),
@@ -204,7 +226,9 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: _filters.map((filter) => _buildFilterChip(filter)).toList(),
+              children: _filters
+                  .map((filter) => _buildFilterChip(filter))
+                  .toList(),
             ),
           ),
         ],
@@ -256,9 +280,9 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              _searchQuery.isNotEmpty || _selectedFilter != "Semua" 
-                ? LucideIcons.searchX 
-                : LucideIcons.inbox,
+              _searchQuery.isNotEmpty || _selectedFilter != "Semua"
+                  ? LucideIcons.searchX
+                  : LucideIcons.inbox,
               size: 64,
               color: Colors.grey.shade400,
             ),

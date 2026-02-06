@@ -23,7 +23,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 role: staff.role,
                 specialization: staff.specialization,
                 isActive: staff.isActive,
-                managedBuilding: staff.managedBuilding,
+                managedLocation: staff.managedLocation,
                 createdAt: staff.createdAt,
             })
             .from(staff)
@@ -56,7 +56,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             password: hashedPassword,
             role: body.role,
             specialization: body.specialization,
-            managedBuilding: body.managedBuilding,
+            managedLocation: body.managedLocation,
             isActive: true,
         }).returning();
 
@@ -78,7 +78,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             password: t.String(),
             role: t.String(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
             specialization: t.Optional(t.String()),
-            managedBuilding: t.Optional(t.String()),
+            managedLocation: t.Optional(t.String()),
         }),
     })
 
@@ -135,7 +135,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             specialization: t.Optional(t.String()),
             isActive: t.Optional(t.Boolean()),
             password: t.Optional(t.String()),
-            managedBuilding: t.Optional(t.String()),
+            managedLocation: t.Optional(t.String()),
         }),
     })
 
@@ -211,10 +211,10 @@ export const adminController = new Elysia({ prefix: '/admin' })
             date: sql`DATE(${reports.createdAt})`,
             count: count()
         })
-        .from(reports)
-        .where(gte(reports.createdAt, sevenDaysAgo))
-        .groupBy(sql`DATE(${reports.createdAt})`)
-        .orderBy(sql`DATE(${reports.createdAt})`);
+            .from(reports)
+            .where(gte(reports.createdAt, sevenDaysAgo))
+            .groupBy(sql`DATE(${reports.createdAt})`)
+            .orderBy(sql`DATE(${reports.createdAt})`);
 
         const trendMap = weeklyTrendData.reduce((acc, curr) => {
             acc[new Date(curr.date as string).toDateString()] = Number(curr.count);
@@ -263,18 +263,18 @@ export const adminController = new Elysia({ prefix: '/admin' })
             date: sql`DATE(${users.createdAt})`,
             count: count()
         })
-        .from(users)
-        .where(sql`${users.createdAt} >= ${thirtyDaysAgo}`)
-        .groupBy(sql`DATE(${users.createdAt})`)
-        .orderBy(sql`DATE(${users.createdAt})`);
+            .from(users)
+            .where(gte(users.createdAt, thirtyDaysAgo))
+            .groupBy(sql`DATE(${users.createdAt})`)
+            .orderBy(sql`DATE(${users.createdAt})`);
 
         // 2. User Distribution by Role
         const roleDistributionStaff = await db.select({
             role: staff.role,
             count: count()
         })
-        .from(staff)
-        .groupBy(staff.role);
+            .from(staff)
+            .groupBy(staff.role);
 
         const totalPelapor = await db.select({ count: count() }).from(users);
 
@@ -292,24 +292,24 @@ export const adminController = new Elysia({ prefix: '/admin' })
             total: count(),
             done: sql`COUNT(CASE WHEN ${reports.status} = 'selesai' THEN 1 END)`
         })
-        .from(reports)
-        .leftJoin(categories, eq(reports.categoryId, categories.id))
-        .groupBy(categories.name)
-        .orderBy(desc(count()))
-        .limit(5);
+            .from(reports)
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .groupBy(categories.name)
+            .orderBy(desc(count()))
+            .limit(5);
 
         // 4. Activity Traffic (Last 7 Days)
         const trafficData = await db.select({
             date: sql`DATE(${reportLogs.timestamp})`,
             count: count()
         })
-        .from(reportLogs)
-        .where(and(
-            gte(reportLogs.timestamp, sevenDaysAgo),
-            or(eq(reportLogs.action, 'register'), eq(reportLogs.action, 'verify_email'))
-        ))
-        .groupBy(sql`DATE(${reportLogs.timestamp})`)
-        .orderBy(sql`DATE(${reportLogs.timestamp})`);
+            .from(reportLogs)
+            .where(and(
+                gte(reportLogs.timestamp, sevenDaysAgo),
+                or(eq(reportLogs.action, 'register'), eq(reportLogs.action, 'verify_email'))
+            ))
+            .groupBy(sql`DATE(${reportLogs.timestamp})`)
+            .orderBy(sql`DATE(${reportLogs.timestamp})`);
 
         const trafficMap = trafficData.reduce((acc, curr) => {
             acc[new Date(curr.date as string).toDateString()] = Number(curr.count);
@@ -363,8 +363,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 user: l.actorName,
                 details: l.reason || `Status changed from ${l.fromStatus} to ${l.toStatus}`,
                 time: l.timestamp,
-                type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action)) 
-                    ? 'Verifikasi' 
+                type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action))
+                    ? 'Verifikasi'
                     : (l.reportId === null || l.action === 'created') ? 'User' : 'Laporan'
             }))
         };
@@ -407,7 +407,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
         doc.end();
         const buffer = await new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
-        
+
         set.headers['Content-Type'] = 'application/pdf';
         set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.pdf';
         return buffer;

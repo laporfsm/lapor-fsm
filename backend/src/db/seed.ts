@@ -57,7 +57,7 @@ async function seed() {
     },
     {
       "id": 34,
-      "name": "Siska Mhs",
+      "name": "Sulhan Mhs",
       "email": "sulhanfuadi@students.undip.ac.id",
       "password": "$argon2id$v=19$m=65536,t=2,p=1$jdR5G6ttWvBNcXSxtmkUKPPstiq5PUfGqfEkteQ1kdQ$i5/XgvV/uJE1twk20ME+ozwIGIz5LPz24TTRGnUJwWU",
       "phone": "08123456781",

@@ -334,7 +334,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
     await Future.delayed(const Duration(milliseconds: 300));
 
     try {
-      final reports = await reportService.getPublicReports(
+      final response = await reportService.getPublicReports(
         status: _selectedStatuses.isNotEmpty
             ? _selectedStatuses.map((s) => s.name).join(',')
             : null,
@@ -344,6 +344,9 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
         startDate: _selectedDateRange?.start.toIso8601String(),
         endDate: _selectedDateRange?.end.toIso8601String(),
       );
+
+      final List<Map<String, dynamic>> reports =
+          List<Map<String, dynamic>>.from(response['data'] ?? []);
 
       if (mounted) {
         setState(() {
@@ -405,7 +408,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
 
     try {
       // Fetch full logic without limit
-      final reports = await reportService.getPublicReports(
+      final response = await reportService.getPublicReports(
         status: _selectedStatuses.isNotEmpty
             ? _selectedStatuses.map((s) => s.name).join(',')
             : null,
@@ -415,6 +418,9 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
         startDate: _selectedDateRange?.start.toIso8601String(),
         endDate: _selectedDateRange?.end.toIso8601String(),
       );
+
+      final List<Map<String, dynamic>> reports =
+          List<Map<String, dynamic>>.from(response['data'] ?? []);
 
       if (reports.isEmpty) {
         throw Exception('Tidak ada data yang sesuai filter');

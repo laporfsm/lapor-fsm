@@ -38,38 +38,15 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
           if (statsData != null) {
             _stats = {
               'menunggu': statsData['diproses'] ?? 0,
-              'ditangani':
-                  (statsData['penanganan'] ?? 0) +
-                  (statsData['onHold'] ?? 0) +
-                  (statsData['selesai'] ?? 0) +
-                  (statsData['recalled'] ?? 0),
-              'disetujui': 0, // Will be fetched separately
+              'ditangani': statsData['penanganan'] ?? 0,
+              'disetujui': statsData['approved'] ?? 0,
             };
-            // Fetch approved count separately
-            _fetchApprovedCount(int.tryParse(user['id'].toString()) ?? 0);
           }
           _isLoading = false;
         });
       }
     } else {
       if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _fetchApprovedCount(int staffId) async {
-    try {
-      final reports = await reportService.getStaffReports(
-        role: 'technician',
-        status: 'approved',
-        assignedTo: staffId,
-      );
-      if (mounted) {
-        setState(() {
-          _stats['disetujui'] = reports.length;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error fetching approved count: $e');
     }
   }
 

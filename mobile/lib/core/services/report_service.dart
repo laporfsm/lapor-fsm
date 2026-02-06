@@ -6,7 +6,7 @@ import '../../features/report_common/domain/entities/report.dart';
 
 class ReportService {
   // Get all public reports
-  Future<List<Map<String, dynamic>>> getPublicReports({
+  Future<Map<String, dynamic>> getPublicReports({
     String? category,
     String? location,
     String? status,
@@ -36,17 +36,20 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
   // Get user's own reports
-  Future<List<Map<String, dynamic>>> getMyReports(
+  Future<Map<String, dynamic>> getMyReports(
     String userId, {
     String? role,
   }) async {
@@ -57,12 +60,15 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching my reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
@@ -373,21 +379,22 @@ class ReportService {
   }
 
   // Get Non-Gedung Pending Reports (locations without PJ Gedung)
-  Future<List<Map<String, dynamic>>> getNonLokasiReports({
-    int limit = 20,
-  }) async {
+  Future<Map<String, dynamic>> getNonGedungReports({int limit = 20}) async {
     try {
       final response = await apiService.dio.get(
         '/supervisor/reports/non-gedung',
         queryParameters: {'limit': limit.toString()},
       );
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching non-gedung reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
@@ -410,7 +417,7 @@ class ReportService {
   }
 
   // Get Reports for Staff (with filtering)
-  Future<List<Map<String, dynamic>>> getStaffReports({
+  Future<Map<String, dynamic>> getStaffReports({
     required String role, // 'pj', 'supervisor', 'technician'
     String? status,
     bool? isEmergency,
@@ -421,6 +428,8 @@ class ReportService {
     int? assignedTo,
     String? startDate,
     String? endDate,
+    int? page,
+    int? limit,
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
@@ -436,16 +445,21 @@ class ReportService {
           if (assignedTo != null) 'assignedTo': assignedTo.toString(),
           if (startDate != null) 'startDate': startDate,
           if (endDate != null) 'endDate': endDate,
+          if (page != null) 'page': page.toString(),
+          if (limit != null) 'limit': limit.toString(),
         },
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching staff reports ($role): $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 

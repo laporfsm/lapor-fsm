@@ -266,7 +266,7 @@ class _SupervisorTechnicianListPageState
                           tech['role'] == 'PJ Gedung' ||
                               tech['role'] == 'PJ Lokasi' ||
                               tech['role'] == 'pj_gedung' ||
-                              tech['role'] == 'pj_location'
+                              tech['role'] == 'pj_gedung'
                           ? const Color(0xFFFFF7ED) // Orange-ish bg for PJ
                           : Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
@@ -275,7 +275,7 @@ class _SupervisorTechnicianListPageState
                             tech['role'] == 'PJ Gedung' ||
                                 tech['role'] == 'PJ Lokasi' ||
                                 tech['role'] == 'pj_gedung' ||
-                                tech['role'] == 'pj_location'
+                                tech['role'] == 'pj_gedung'
                             ? const Color(0xFFFDBA74)
                             : Colors.blue.shade100,
                       ),
@@ -287,7 +287,7 @@ class _SupervisorTechnicianListPageState
                           tech['role'] == 'PJ Gedung' ||
                                   tech['role'] == 'PJ Lokasi' ||
                                   tech['role'] == 'pj_gedung' ||
-                                  tech['role'] == 'pj_location'
+                                  tech['role'] == 'pj_gedung'
                               ? LucideIcons.mapPin
                               : LucideIcons.wrench,
                           size: 12,
@@ -295,7 +295,7 @@ class _SupervisorTechnicianListPageState
                               tech['role'] == 'PJ Gedung' ||
                                   tech['role'] == 'PJ Lokasi' ||
                                   tech['role'] == 'pj_gedung' ||
-                                  tech['role'] == 'pj_location'
+                                  tech['role'] == 'pj_gedung'
                               ? const Color(0xFFEA580C)
                               : Colors.blue.shade700,
                         ),
@@ -380,7 +380,7 @@ class _SupervisorTechnicianListPageState
   String _getRoleDisplayName(Map<String, dynamic> tech) {
     if (tech['role'] == 'pj_gedung' ||
         tech['role'] == 'PJ Gedung' ||
-        tech['role'] == 'pj_location' ||
+        tech['role'] == 'pj_gedung' ||
         tech['role'] == 'PJ Lokasi') {
       return 'PJ Gedung';
     }
@@ -391,7 +391,7 @@ class _SupervisorTechnicianListPageState
   Color _getRoleColor(Map<String, dynamic> tech) {
     if (tech['role'] == 'pj_gedung' ||
         tech['role'] == 'PJ Gedung' ||
-        tech['role'] == 'pj_location' ||
+        tech['role'] == 'pj_gedung' ||
         tech['role'] == 'PJ Lokasi') {
       return const Color(0xFFEA580C);
     }

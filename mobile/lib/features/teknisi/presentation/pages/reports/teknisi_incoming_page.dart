@@ -62,10 +62,17 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
 
         if (mounted) {
           setState(() {
-            _emergencyReports = results[0]
+            final emergencyData = List<Map<String, dynamic>>.from(
+              results[0]['data'] ?? [],
+            );
+            _emergencyReports = emergencyData
                 .map((json) => Report.fromJson(json))
                 .toList();
-            _regularReports = results[1]
+
+            final regularData = List<Map<String, dynamic>>.from(
+              results[1]['data'] ?? [],
+            );
+            _regularReports = regularData
                 .map((json) => Report.fromJson(json))
                 .toList();
           });
