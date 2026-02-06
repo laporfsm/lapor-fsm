@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
-import { reports, reportLogs, staff, users, categories } from '../../db/schema';
+import { reports, reportLogs, staff, users, categories, locations } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte, isNull, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
@@ -43,27 +43,27 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 sql`${reports.status} != 'approved'`
             ));
 
-        // Get all managed buildings (buildings that have a PJ Gedung)
-        const managedBuildings = await db
-            .select({ building: staff.managedBuilding })
+        // Get all managed locations (locations that have a PJ Gedung)
+        const managedLocations = await db
+            .select({ location: staff.managedLocation })
             .from(staff)
-            .where(sql`${staff.managedBuilding} IS NOT NULL AND ${staff.managedBuilding} != ''`);
+            .where(sql`${staff.managedLocation} IS NOT NULL AND ${staff.managedLocation} != ''`);
 
-        const managedBuildingList = managedBuildings.map(b => b.building).filter(Boolean) as string[];
+        const managedLocationList = managedLocations.map(l => l.location).filter(Boolean) as string[];
 
-        // Non-Gedung Pending: Reports with status 'pending' in buildings without a PJ Gedung
+        // Non-Gedung Pending: Reports with status 'pending' in locations without a PJ Gedung
         let nonGedungPendingCount = 0;
-        if (managedBuildingList.length > 0) {
+        if (managedLocationList.length > 0) {
             const nonGedungResult = await db
                 .select({ count: count() })
                 .from(reports)
                 .where(and(
                     eq(reports.status, 'pending'),
-                    sql`${reports.building} NOT IN (${sql.join(managedBuildingList.map(b => sql`${b}`), sql`, `)})`
+                    sql`${reports.location} NOT IN (${sql.join(managedLocationList.map(l => sql`${l}`), sql`, `)})`
                 ));
             nonGedungPendingCount = nonGedungResult[0]?.count || 0;
         } else {
-            // If no managed buildings, all pending reports are "non-gedung"
+            // If no managed locations, all pending reports are "non-gedung"
             nonGedungPendingCount = countsMap['pending'] || 0;
         }
 
@@ -106,7 +106,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
-        const { status, building, isEmergency, page = '1', limit = '20' } = query;
+        const { status, location, isEmergency, page = '1', limit = '20' } = query;
         console.log('[DEBUG] Supervisor /reports endpoint - status query:', status);
         const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
         const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
@@ -126,7 +126,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             }
         }
 
-        if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        if (location) conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
 
         // Hide child reports from main list
@@ -141,7 +141,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 mediaUrls: reports.mediaUrls,
                 isEmergency: reports.isEmergency,
@@ -180,26 +180,26 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         };
     })
 
-    // Get Non-Gedung pending reports (buildings without PJ Gedung)
+    // Get Non-Gedung pending reports (locations without PJ Gedung)
     .get('/reports/non-gedung', async ({ query }) => {
         const { limit = '20' } = query;
         const limitNum = isNaN(parseInt(limit)) ? 20 : parseInt(limit);
 
-        // Get all managed buildings
-        const managedBuildings = await db
-            .select({ building: staff.managedBuilding })
+        // Get all managed locations
+        const managedLocations = await db
+            .select({ location: staff.managedLocation })
             .from(staff)
-            .where(sql`${staff.managedBuilding} IS NOT NULL AND ${staff.managedBuilding} != ''`);
+            .where(sql`${staff.managedLocation} IS NOT NULL AND ${staff.managedLocation} != ''`);
 
-        const managedBuildingList = managedBuildings.map(b => b.building).filter(Boolean) as string[];
+        const managedLocationList = managedLocations.map(l => l.location).filter(Boolean) as string[];
 
         let conditions = [
             eq(reports.status, 'pending'),
             isNull(reports.parentId),
         ];
 
-        if (managedBuildingList.length > 0) {
-            conditions.push(sql`${reports.building} NOT IN (${sql.join(managedBuildingList.map(b => sql`${b}`), sql`, `)})`);
+        if (managedLocationList.length > 0) {
+            conditions.push(sql`${reports.location} NOT IN (${sql.join(managedLocationList.map(l => sql`${l}`), sql`, `)})`);
         }
 
         const result = await db
@@ -207,7 +207,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 mediaUrls: reports.mediaUrls,
                 isEmergency: reports.isEmergency,
@@ -486,13 +486,13 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         }
 
         // Validate: All reports must be from the same Building/Location
-        const firstBuilding = targets[0].building;
-        const differentBuilding = targets.find(r => r.building !== firstBuilding);
+        const firstLocation = targets[0].location;
+        const differentLocation = targets.find(r => r.location !== firstLocation);
 
-        if (differentBuilding) {
+        if (differentLocation) {
             return {
                 status: 'error',
-                message: 'Semua laporan harus berasal dari lokasi/gedung yang sama.'
+                message: 'Semua laporan harus berasal dari lokasi yang sama.'
             };
         }
 
@@ -561,11 +561,11 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
     // Export Reports to CSV
     .get('/reports/export', async ({ query }) => {
-        const { status, building } = query;
+        const { status, location } = query;
 
         let conditions = [];
         if (status && status !== 'all') conditions.push(eq(reports.status, status));
-        if (building) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        if (location) conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -575,7 +575,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 title: reports.title,
                 description: reports.description,
                 status: reports.status,
-                building: reports.building,
+                location: reports.location,
                 createdAt: reports.createdAt,
             })
             .from(reports)
@@ -583,9 +583,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             .orderBy(desc(reports.createdAt));
 
         // Create CSV
-        const header = "ID,Title,Status,Building,CreatedAt\n";
+        const header = "ID,Title,Status,Location,CreatedAt\n";
         const rows = result.map(r =>
-            `${r.id},"${r.title.replace(/"/g, '""')}","${r.status}","${r.building}","${r.createdAt?.toISOString()}"`
+            `${r.id},"${r.title.replace(/"/g, '""')}","${r.status}","${r.location}","${r.createdAt?.toISOString()}"`
         ).join("\n");
 
         return new Response(header + rows, {
@@ -626,18 +626,18 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 email: staff.email,
                 phone: staff.phone,
                 isActive: staff.isActive,
-                managedBuilding: staff.managedBuilding,
+                managedLocation: staff.managedLocation,
             })
             .from(staff)
             .where(eq(staff.role, 'pj_gedung'))
-            .orderBy(staff.managedBuilding);
+            .orderBy(staff.managedLocation);
 
         return {
             status: 'success',
             data: pjs.map(p => ({
                 ...p,
                 id: p.id.toString(),
-                location: p.managedBuilding,
+                location: p.managedLocation,
             })),
         };
     })
@@ -653,7 +653,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 phone: staff.phone,
                 role: staff.role,
                 isActive: staff.isActive,
-                managedBuilding: staff.managedBuilding,
+                managedLocation: staff.managedLocation,
                 createdAt: staff.createdAt,
             })
             .from(staff)
@@ -834,7 +834,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 email: body.email,
                 phone: body.phone,
                 role: 'pj_gedung',
-                managedBuilding: body.managedBuilding,
+                managedLocation: body.managedLocation,
                 password: hashedPassword,
                 isActive: true,
             }).returning();
@@ -853,7 +853,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             name: t.String({ minLength: 2 }),
             email: t.String(),
             phone: t.String(),
-            managedBuilding: t.String(),
+            managedLocation: t.String(),
             password: t.Optional(t.String()),
         })
     })
@@ -869,7 +869,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                     name: body.name,
                     email: body.email,
                     phone: body.phone,
-                    managedBuilding: body.managedBuilding,
+                    managedLocation: body.managedLocation,
                 })
                 .where(and(eq(staff.id, staffId), eq(staff.role, 'pj_gedung')))
                 .returning();
@@ -892,7 +892,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             name: t.String(),
             email: t.String(),
             phone: t.String(),
-            managedBuilding: t.String(),
+            managedLocation: t.String(),
         })
     })
 
@@ -1004,4 +1004,168 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         }
     }, {
         body: t.Object({ staffId: t.Number() })
+    })
+
+    // Get detailed statistics (for SupervisorStatisticsPage)
+    .get('/statistics', async () => {
+        // 1. Weekly Stats (Pending, Diproses, Selesai)
+        const startOfWeek = new Date();
+        startOfWeek.setDate(startOfWeek.getDate() - 7);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weeklyStats = await db.select({
+            status: reports.status,
+            count: count()
+        })
+            .from(reports)
+            .where(gte(reports.createdAt, startOfWeek))
+            .groupBy(reports.status);
+
+        const weeklyMap = weeklyStats.reduce((acc, curr) => {
+            acc[curr.status || 'unknown'] = curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+
+        // 2. Category Breakdown
+        const categoryStats = await db.select({
+            name: categories.name,
+            count: count()
+        })
+            .from(reports)
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .groupBy(categories.name);
+
+        const totalReports = categoryStats.reduce((sum, c) => sum + c.count, 0);
+        const categoriesData = categoryStats.map(c => ({
+            label: c.name || 'Lainnya',
+            count: c.count,
+            percentage: totalReports > 0 ? (c.count / totalReports) : 0
+        }));
+
+        // 3. Issues by Location
+        const locationStats = await db.select({
+            location: reports.location,
+            count: count()
+        })
+            .from(reports)
+            .where(and(
+                sql`${reports.location} IS NOT NULL`,
+                sql`${reports.location} != ''`
+            ))
+            .groupBy(reports.location)
+            .orderBy(desc(count()))
+            .limit(5);
+
+        // 4. Daily Trends (Last 7 Days)
+        const dailyRaw = await db.select({
+            dateStr: sql<string>`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`,
+            count: count()
+        })
+            .from(reports)
+            .where(gte(reports.createdAt, startOfWeek))
+            .groupBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`)
+            .orderBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`);
+
+        const dailyMap = dailyRaw.reduce((acc, curr) => {
+            acc[curr.dateStr] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        const dailyTrends = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            dailyTrends.push({
+                day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                value: dailyMap[dateStr] || 0
+            });
+        }
+
+        // 5. Technician Performance (Top based on completed reports)
+        const techStats = await db.select({
+            id: staff.id,
+            name: staff.name,
+            isActive: staff.isActive,
+            completedCount: count(reports.id)
+        })
+            .from(staff)
+            .leftJoin(reports, and(
+                eq(reports.assignedTo, staff.id),
+                sql`${reports.status} IN ('selesai', 'approved')`
+            ))
+            .where(eq(staff.role, 'teknisi'))
+            .groupBy(staff.id, staff.name, staff.isActive)
+            .orderBy(desc(count(reports.id)))
+            .limit(10);
+
+        const technicianPerformances = techStats.map(t => ({
+            id: t.id.toString(),
+            name: t.name,
+            status: t.isActive ? 'Bekerja' : 'Off',
+            completedCount: t.completedCount
+        }));
+
+        return {
+            status: 'success',
+            data: {
+                summary: [
+                    { label: 'Pending', value: weeklyMap['pending'] || 0, color: 'grey' },
+                    { label: 'Diproses', value: (weeklyMap['diproses'] || 0) + (weeklyMap['terverifikasi'] || 0) + (weeklyMap['penanganan'] || 0), color: 'blue' },
+                    { label: 'Selesai', value: (weeklyMap['selesai'] || 0) + (weeklyMap['approved'] || 0), color: 'green' },
+                ],
+                categories: categoriesData,
+                locations: locationStats.map(l => ({
+                    name: l.location,
+                    count: l.count
+                })),
+                dailyTrends,
+                technicians: technicianPerformances
+            }
+        };
+    })
+    // Get all locations with active report counts
+    .get('/locations', async () => {
+        // Get all locations from the master table
+        const allLocations = await db.select().from(locations);
+
+        // Count active reports per location
+        const activeReportCounts = await db
+            .select({
+                location: reports.location,
+                count: count(),
+            })
+            .from(reports)
+            .where(and(
+                sql`${reports.status} NOT IN ('selesai', 'approved', 'ditolak', 'archived', 'recalled')`
+            ))
+            .groupBy(reports.location);
+
+        const countsMap = activeReportCounts.reduce((acc, curr) => {
+            if (curr.location) acc[curr.location] = curr.count;
+            return acc;
+        }, {} as Record<string, number>);
+
+        const data = allLocations.map(l => ({
+            name: l.name,
+            reports: countsMap[l.name] || 0,
+            status: (countsMap[l.name] || 0) > 10 ? 'Critical' : (countsMap[l.name] || 0) > 5 ? 'Warning' : 'Safe'
+        }));
+
+        // Also add reports from locations not in the master table (if any)
+        const masterLocationNames = new Set(allLocations.map(l => l.name));
+        activeReportCounts.forEach(c => {
+            if (c.location && !masterLocationNames.has(c.location)) {
+                data.push({
+                    name: c.location,
+                    reports: c.count,
+                    status: c.count > 10 ? 'Critical' : c.count > 5 ? 'Warning' : 'Safe'
+                });
+            }
+        });
+
+        return {
+            status: 'success',
+            data: data.sort((a, b) => b.reports - a.reports)
+        };
     });

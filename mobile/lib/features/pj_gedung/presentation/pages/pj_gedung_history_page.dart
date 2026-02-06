@@ -11,7 +11,7 @@ import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/features/admin/services/export_service.dart';
 import 'package:intl/intl.dart';
 
-const Color _pjGedungColor = Color(0xFF059669); // Emerald green
+const Color _pjLokasiColor = Color(0xFF059669); // Emerald green
 
 class PJGedungHistoryPage extends StatefulWidget {
   final String initialFilter;
@@ -62,7 +62,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     try {
       final user = await authService.getCurrentUser();
       if (user != null) {
-        final building = user['department'];
+        final location = user['department'];
 
         // Prepare date filters
         String? startDate;
@@ -79,19 +79,23 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
               startDate = today.toIso8601String();
               break;
             case 'week':
-              startDate =
-                  today.subtract(const Duration(days: 7)).toIso8601String();
+              startDate = today
+                  .subtract(const Duration(days: 7))
+                  .toIso8601String();
               break;
             case 'month':
-              startDate =
-                  DateTime(now.year, now.month - 1, now.day).toIso8601String();
+              startDate = DateTime(
+                now.year,
+                now.month - 1,
+                now.day,
+              ).toIso8601String();
               break;
           }
         }
 
         final reportsData = await reportService.getStaffReports(
           role: 'pj',
-          building: building,
+          location: location,
           status: _activeFilter == 'all'
               ? 'pending,terverifikasi,ditolak'
               : _activeFilter,
@@ -135,7 +139,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           .where(
             (r) =>
                 r.title.toLowerCase().contains(query) ||
-                r.building.toLowerCase().contains(query) ||
+                r.location.toLowerCase().contains(query) ||
                 r.category.toLowerCase().contains(query),
           )
           .toList();
@@ -193,7 +197,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     final result = await CustomDateRangePickerDialog.show(
       context: context,
       initialRange: _customDateRange,
-      themeColor: _pjGedungColor,
+      themeColor: _pjLokasiColor,
       firstDate: DateTime(now.year - 1),
       lastDate: now,
     );
@@ -229,7 +233,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           'Riwayat',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: _pjGedungColor,
+        backgroundColor: _pjLokasiColor,
         elevation: 0,
         automaticallyImplyLeading: false,
         titleTextStyle: const TextStyle(
@@ -271,7 +275,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: _pjGedungColor),
+                        borderSide: const BorderSide(color: _pjLokasiColor),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -288,12 +292,12 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: _customDateRange != null
-                          ? _pjGedungColor
+                          ? _pjLokasiColor
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _customDateRange != null
-                            ? _pjGedungColor
+                            ? _pjLokasiColor
                             : Colors.grey.shade300,
                       ),
                     ),
@@ -316,7 +320,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: _activeFilter != 'all'
-                            ? _pjGedungColor
+                            ? _pjLokasiColor
                             : Colors.grey.shade300,
                         width: _activeFilter != 'all' ? 1.5 : 1.0,
                       ),
@@ -324,7 +328,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                     child: Icon(
                       LucideIcons.filter,
                       color: _activeFilter != 'all'
-                          ? _pjGedungColor
+                          ? _pjLokasiColor
                           : Colors.grey.shade600,
                     ),
                   ),
@@ -368,8 +372,8 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                           _activeFilter == 'pending'
                               ? 'Perlu Verifikasi'
                               : (_activeFilter == 'terverifikasi'
-                                  ? 'Terverifikasi'
-                                  : 'Ditolak'),
+                                    ? 'Terverifikasi'
+                                    : 'Ditolak'),
                           () {
                             setState(() {
                               _activeFilter = 'all';
@@ -392,55 +396,54 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _fetchReports,
-              color: _pjGedungColor,
+              color: _pjLokasiColor,
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : _filteredReports.isEmpty
-                      ? ListView(
-                          children: [
-                            SizedBox(
-                              height: MediaQuery.of(context).size.height * 0.6,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    LucideIcons.inbox,
-                                    size: 48,
-                                    color: Colors.grey.shade300,
-                                  ),
-                                  const Gap(16),
-                                  Text(
-                                    'Tidak ada laporan ditemukan',
-                                    style:
-                                        TextStyle(color: Colors.grey.shade500),
-                                  ),
-                                ],
+                  ? ListView(
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.inbox,
+                                size: 48,
+                                color: Colors.grey.shade300,
                               ),
-                            ),
-                          ],
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.all(16),
-                          itemCount: _filteredReports.length,
-                          separatorBuilder: (c, i) => const Gap(16),
-                          itemBuilder: (context, index) {
-                            final report = _filteredReports[index];
-                            return UniversalReportCard(
-                              id: report.id,
-                              title: report.title,
-                              location: report.building,
-                              category: report.category,
-                              status: report.status,
-                              isEmergency: report.isEmergency,
-                              elapsedTime: DateTime.now().difference(
-                                report.createdAt,
+                              const Gap(16),
+                              Text(
+                                'Tidak ada laporan ditemukan',
+                                style: TextStyle(color: Colors.grey.shade500),
                               ),
-                              showStatus: true,
-                              showTimer: true,
-                              onTap: () => _navigateToDetail(report),
-                            );
-                          },
+                            ],
+                          ),
                         ),
+                      ],
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _filteredReports.length,
+                      separatorBuilder: (c, i) => const Gap(16),
+                      itemBuilder: (context, index) {
+                        final report = _filteredReports[index];
+                        return UniversalReportCard(
+                          id: report.id,
+                          title: report.title,
+                          location: report.location,
+                          category: report.category,
+                          status: report.status,
+                          isEmergency: report.isEmergency,
+                          elapsedTime: DateTime.now().difference(
+                            report.createdAt,
+                          ),
+                          showStatus: true,
+                          showTimer: true,
+                          onTap: () => _navigateToDetail(report),
+                        );
+                      },
+                    ),
             ),
           ),
         ],
@@ -448,7 +451,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showExportOptions(context),
         backgroundColor: Colors.white,
-        child: const Icon(LucideIcons.download, color: _pjGedungColor),
+        child: const Icon(LucideIcons.download, color: _pjLokasiColor),
       ),
     );
   }
@@ -477,7 +480,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _pjGedungColor.withValues(alpha: 0.1),
+        color: _pjLokasiColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -486,7 +489,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           Text(
             label,
             style: const TextStyle(
-              color: _pjGedungColor,
+              color: _pjLokasiColor,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -494,7 +497,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           const Gap(4),
           GestureDetector(
             onTap: onRemove,
-            child: const Icon(LucideIcons.x, size: 14, color: _pjGedungColor),
+            child: const Icon(LucideIcons.x, size: 14, color: _pjLokasiColor),
           ),
         ],
       ),
@@ -509,7 +512,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: _pjGedungColor.withValues(alpha: 0.1),
+        color: _pjLokasiColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -518,7 +521,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           Text(
             '$start - $end',
             style: const TextStyle(
-              color: _pjGedungColor,
+              color: _pjLokasiColor,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -531,7 +534,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                 _applyFilters();
               });
             },
-            child: const Icon(LucideIcons.x, size: 14, color: _pjGedungColor),
+            child: const Icon(LucideIcons.x, size: 14, color: _pjLokasiColor),
           ),
         ],
       ),
@@ -627,11 +630,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                       'terverifikasi',
                       setModalState,
                     ),
-                    _buildStatusChip(
-                      'Ditolak',
-                      'ditolak',
-                      setModalState,
-                    ),
+                    _buildStatusChip('Ditolak', 'ditolak', setModalState),
                   ],
                 ),
                 const Gap(16),
@@ -663,7 +662,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
         ],
       ),
       selected: isActive,
-      selectedColor: _pjGedungColor,
+      selectedColor: _pjLokasiColor,
       backgroundColor: Colors.grey.shade100,
       labelStyle: TextStyle(
         color: isActive ? Colors.white : Colors.grey.shade700,
@@ -688,7 +687,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
     return ChoiceChip(
       label: Text(label),
       selected: isActive,
-      selectedColor: _pjGedungColor,
+      selectedColor: _pjLokasiColor,
       backgroundColor: Colors.grey.shade100,
       labelStyle: TextStyle(
         color: isActive ? Colors.white : Colors.grey.shade700,
@@ -769,7 +768,8 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
                     status: _activeFilter == 'all'
                         ? 'pending,terverifikasi,ditolak'
                         : _activeFilter,
-                    building: null, // Let server use its own auth or pass explicitly if filtered
+                    building:
+                        null, // Let server use its own auth or pass explicitly if filtered
                     startDate: startDate,
                     endDate: endDate,
                     search: _searchQuery.isNotEmpty ? _searchQuery : null,

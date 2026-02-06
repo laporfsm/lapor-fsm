@@ -26,6 +26,7 @@ class _SupervisorTechnicianFormPageState
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedRole;
   bool _isLoading = false;
@@ -71,6 +72,7 @@ class _SupervisorTechnicianFormPageState
           _nameController.text = technician['name'] ?? '';
           _emailController.text = technician['email'] ?? '';
           _phoneController.text = technician['phone'] ?? '';
+          _addressController.text = technician['address'] ?? '';
 
           // Map backend 'specialization' to UI dropdown
           // Note: technician['role'] is the system role ('teknisi'),
@@ -105,6 +107,7 @@ class _SupervisorTechnicianFormPageState
         'name': _nameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
+        'address': _addressController.text,
         'specialization': _selectedRole, // Correct key for backend
       };
 
@@ -210,6 +213,15 @@ class _SupervisorTechnicianFormPageState
                   return null;
                 },
               ),
+              const Gap(16),
+              _buildTextField(
+                label: 'Alamat',
+                controller: _addressController,
+                icon: LucideIcons.mapPin,
+                validator: (v) => null, // Optional
+                minLines: 2,
+                maxLines: 4,
+              ),
               const Gap(24),
               _buildSectionTitle('Peran & Akses'),
               const Gap(16),
@@ -305,12 +317,23 @@ class _SupervisorTechnicianFormPageState
     TextInputType? keyboardType,
     bool isPassword = false,
     String? Function(String?)? validator,
+    int? minLines,
+    int? maxLines,
   }) {
+    // Only technician itself can edit their personal info.
+    // Supervisor can only edit specialization or delete.
+    // So if isEditing is true, we disable these fields.
+    // Exception: Password field is hidden in edit mode anyway.
+    final bool isReadOnly = isEditing && !isPassword;
+
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       obscureText: isPassword,
       validator: validator,
+      minLines: minLines ?? 1,
+      maxLines: maxLines ?? 1,
+      readOnly: isReadOnly,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: Colors.grey),
@@ -324,7 +347,7 @@ class _SupervisorTechnicianFormPageState
           borderSide: const BorderSide(color: AppTheme.supervisorColor),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isReadOnly ? Colors.grey.shade100 : Colors.white,
       ),
     );
   }

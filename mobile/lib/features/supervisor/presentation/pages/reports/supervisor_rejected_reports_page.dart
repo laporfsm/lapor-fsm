@@ -240,7 +240,7 @@ class _SupervisorRejectedReportsPageState
                     ),
                     const Gap(4),
                     Text(
-                      getStr('building'),
+                      getStr('location'),
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,

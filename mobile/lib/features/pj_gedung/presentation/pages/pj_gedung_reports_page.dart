@@ -4,7 +4,7 @@ import 'package:mobile/features/report_common/presentation/pages/shared_all_repo
 import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_dashboard_page.dart';
 import 'package:go_router/go_router.dart';
 
-/// PJ Gedung Reports Page - wrapper for SharedAllReportsPage
+/// PJ Lokasi Reports Page - wrapper for SharedAllReportsPage
 class PJGedungReportsPage extends StatelessWidget {
   final Map<String, String> queryParams;
 
@@ -33,7 +33,7 @@ class PJGedungReportsPage extends StatelessWidget {
 
     return SharedAllReportsPage(
       appBarTitle: 'Semua Laporan',
-      appBarColor: pjGedungColor,
+      appBarColor: pjLokasiColor,
       appBarIconColor: Colors.white,
       appBarTitleStyle: const TextStyle(
         color: Colors.white,

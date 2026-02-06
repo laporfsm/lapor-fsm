@@ -77,7 +77,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
     return _myReports.where((report) {
       // 1. Search Filter
       final matchesSearch = report.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          report.building.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          report.location.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           (report.locationDetail?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
       
       if (!matchesSearch) return false;
@@ -137,7 +137,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                                   id: report.id,
                                   title: report.title,
                                   category: report.category,
-                                  location: report.building,
+                                  location: report.location,
                                   locationDetail: report.locationDetail,
                                   status: report.status,
                                   elapsedTime: DateTime.now().difference(report.createdAt),

@@ -201,7 +201,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         userId: currentUserId,
         title: _titleController.text,
         description: "LAPORAN DARURAT: ${_locationDetailController.text}",
-        building: _selectedBuilding ?? "Lokasi Darurat",
+        location: _selectedBuilding ?? "Lokasi Darurat",
         locationDetail: _locationDetailController.text,
         latitude: _latitude,
         longitude: _longitude,

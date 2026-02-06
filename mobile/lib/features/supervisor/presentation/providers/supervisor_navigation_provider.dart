@@ -33,12 +33,6 @@ class SupervisorNavigationNotifier extends Notifier<SupervisorNavigationState> {
   void setStaffTabIndex(int index) {
     state = state.copyWith(staffTabIndex: index);
   }
-
-  void navigateToActivityLog() {
-    // Index 1 = Staff, Tab 0 = Activity Log (assuming layout)
-    // Adjust logic if needed based on SupervisorTechnicianMainPage tabs
-    state = state.copyWith(bottomNavIndex: 1, staffTabIndex: 0);
-  }
 }
 
 final supervisorNavigationProvider =

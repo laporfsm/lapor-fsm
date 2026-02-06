@@ -121,13 +121,13 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Edit Profil'),
-        backgroundColor: AppTheme.teknisiColor,
-        foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          onPressed: () => context.pop(),
         ),
       ),
       body: SingleChildScrollView(
@@ -195,18 +195,6 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
                       label: 'Email',
                       value: _currentUser!['email'] ?? '-',
                       icon: LucideIcons.mail,
-                    ),
-                    const Gap(12),
-                    _ReadOnlyField(
-                      label: 'NIP',
-                      value: _currentUser!['nimNip'] ?? '-',
-                      icon: LucideIcons.hash,
-                    ),
-                    const Gap(12),
-                    _ReadOnlyField(
-                      label: 'Departemen',
-                      value: _currentUser!['department'] ?? 'Unit Pemeliharaan',
-                      icon: LucideIcons.building,
                     ),
                     const Gap(12),
                     _ReadOnlyField(

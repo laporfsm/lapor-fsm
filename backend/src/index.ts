@@ -11,7 +11,7 @@ import { pjController } from "./controllers/staff/pj.controller";
 import { adminController } from "./controllers/admin/admin.controller";
 import { notificationController } from "./controllers/notification.controller";
 import { categoryController } from "./controllers/admin/category.controller";
-import { buildingController } from "./controllers/supervisor/building.controller";
+import { locationController } from "./controllers/supervisor/location.controller";
 import { specializationController } from "./controllers/supervisor/specialization.controller";
 
 const app = new Elysia()
@@ -49,7 +49,7 @@ const app = new Elysia()
   .use(adminController)
   .use(notificationController)
   .use(categoryController)
-  .use(buildingController)
+  .use(locationController)
   .use(specializationController)
   .listen({
     port: 3000,

@@ -4,15 +4,15 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
 
-class SupervisorBuildingsView extends StatefulWidget {
-  const SupervisorBuildingsView({super.key});
+class SupervisorLocationsView extends StatefulWidget {
+  const SupervisorLocationsView({super.key});
 
   @override
-  State<SupervisorBuildingsView> createState() =>
-      _SupervisorBuildingsViewState();
+  State<SupervisorLocationsView> createState() =>
+      _SupervisorLocationsViewState();
 }
 
-class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
+class _SupervisorLocationsViewState extends State<SupervisorLocationsView> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _buildings = [];
   bool _isLoading = true;
@@ -25,7 +25,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
 
   Future<void> _fetchBuildings() async {
     setState(() => _isLoading = true);
-    final data = await reportService.getBuildings();
+    final data = await reportService.getLocations();
     if (mounted) {
       setState(() {
         _buildings = data;
@@ -67,7 +67,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                 controller: _searchController,
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
-                  hintText: 'Cari gedung...',
+                  hintText: 'Cari lokasi...',
                   hintStyle: TextStyle(color: Colors.grey.shade400),
                   prefixIcon: Icon(
                     LucideIcons.search,
@@ -148,7 +148,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
       for (final buildingName in _defaultBuildings) {
         // Check if exists first? strict optimization omitted for speed, API might handle duplicates or just add.
         // Assuming API allows duplicates or we don't care for this simple import.
-        final success = await reportService.createBuilding(buildingName);
+        final success = await reportService.createLocation(buildingName);
         if (success) successCount++;
       }
 
@@ -181,7 +181,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
           Icon(LucideIcons.building, size: 64, color: Colors.grey.shade300),
           const Gap(16),
           Text(
-            hasSearch ? 'Tidak ditemukan' : 'Belum ada data gedung',
+            hasSearch ? 'Tidak ditemukan' : 'Belum ada data lokasi',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -303,7 +303,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                   ),
                   const Gap(12),
                   Text(
-                    isEditing ? 'Edit Gedung' : 'Tambah Gedung',
+                    isEditing ? 'Edit Lokasi' : 'Tambah Lokasi',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -313,14 +313,14 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
               ),
               const Gap(24),
               const Text(
-                'Nama Gedung',
+                'Nama Lokasi',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
               ),
               const Gap(6),
               TextField(
                 controller: nameController,
                 decoration: InputDecoration(
-                  hintText: 'Contoh: Gedung E',
+                  hintText: 'Contoh: Gedung E / Taman',
                   hintStyle: TextStyle(color: Colors.grey.shade400),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),
@@ -354,12 +354,12 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
 
                         bool success;
                         if (isEditing) {
-                          success = await reportService.updateBuilding(
+                          success = await reportService.updateLocation(
                             int.parse(building['id'].toString()),
                             nameController.text.trim(),
                           );
                         } else {
-                          success = await reportService.createBuilding(
+                          success = await reportService.createLocation(
                             nameController.text.trim(),
                           );
                         }
@@ -370,8 +370,8 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                             SnackBar(
                               content: Text(
                                 isEditing
-                                    ? 'Gedung berhasil diupdate'
-                                    : 'Gedung berhasil ditambahkan',
+                                    ? 'Lokasi berhasil diupdate'
+                                    : 'Lokasi berhasil ditambahkan',
                               ),
                               backgroundColor: Colors.green,
                             ),
@@ -380,7 +380,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                         } else {
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Gagal menyimpan gedung'),
+                              content: Text('Gagal menyimpan lokasi'),
                               backgroundColor: Colors.red,
                             ),
                           );
@@ -417,7 +417,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                'Hapus Gedung?',
+                'Hapus Lokasi?',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -434,7 +434,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                     fontFamily: 'PlusJakartaSans',
                   ),
                   children: [
-                    const TextSpan(text: 'Yakin hapus gedung '),
+                    const TextSpan(text: 'Yakin hapus lokasi '),
                     TextSpan(
                       text: '"${building['name']}"',
                       style: const TextStyle(
@@ -468,7 +468,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
 
                         setState(() => _isLoading = true);
 
-                        final result = await reportService.deleteBuilding(
+                        final result = await reportService.deleteLocation(
                           int.parse(building['id'].toString()),
                         );
 
@@ -481,7 +481,7 @@ class _SupervisorBuildingsViewState extends State<SupervisorBuildingsView> {
                           });
                           messenger.showSnackBar(
                             const SnackBar(
-                              content: Text('Gedung berhasil dihapus'),
+                              content: Text('Lokasi berhasil dihapus'),
                               backgroundColor: Colors.green,
                             ),
                           );

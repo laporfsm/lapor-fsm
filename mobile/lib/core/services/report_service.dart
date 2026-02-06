@@ -8,7 +8,7 @@ class ReportService {
   // Get all public reports
   Future<List<Map<String, dynamic>>> getPublicReports({
     String? category,
-    String? building,
+    String? location,
     String? status,
     String? search,
     bool? isEmergency,
@@ -23,7 +23,7 @@ class ReportService {
         '/reports',
         queryParameters: {
           if (category != null) 'category': category,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
           if (status != null) 'status': status,
           if (search != null) 'search': search,
           if (isEmergency != null) 'isEmergency': isEmergency.toString(),
@@ -88,7 +88,7 @@ class ReportService {
     String? categoryId,
     required String title,
     required String description,
-    required String building,
+    required String location,
     double? latitude,
     double? longitude,
     String? imageUrl,
@@ -105,7 +105,7 @@ class ReportService {
         'categoryId': categoryId != null ? int.tryParse(categoryId) : null,
         'title': title,
         'description': description,
-        'building': building,
+        'location': location,
         'latitude': latitude,
         'longitude': longitude,
         'imageUrl': imageUrl,
@@ -229,11 +229,11 @@ class ReportService {
   // BUILDING MANAGEMENT
   // ===========================================================================
 
-  // Get Buildings
-  Future<List<Map<String, dynamic>>> getBuildings({String? search}) async {
+  // Get Locations
+  Future<List<Map<String, dynamic>>> getLocations({String? search}) async {
     try {
       final response = await apiService.dio.get(
-        '/buildings',
+        '/locations',
         queryParameters: {if (search != null) 'search': search},
       );
       if (response.data['status'] == 'success') {
@@ -241,51 +241,51 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      debugPrint('Error fetching buildings: $e');
+      debugPrint('Error fetching locations: $e');
       return [];
     }
   }
 
-  // Create Building
-  Future<bool> createBuilding(String name) async {
+  // Create Location
+  Future<bool> createLocation(String name) async {
     try {
       final response = await apiService.dio.post(
-        '/buildings',
+        '/locations',
         data: {'name': name},
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      debugPrint('Error creating building: $e');
+      debugPrint('Error creating location: $e');
       return false;
     }
   }
 
-  // Update Building
-  Future<bool> updateBuilding(int id, String name) async {
+  // Update Location
+  Future<bool> updateLocation(int id, String name) async {
     try {
       final response = await apiService.dio.put(
-        '/buildings/$id',
+        '/locations/$id',
         data: {'name': name},
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      debugPrint('Error updating building: $e');
+      debugPrint('Error updating location: $e');
       return false;
     }
   }
 
-  // Delete Building
-  Future<Map<String, dynamic>> deleteBuilding(int id) async {
+  // Delete Location
+  Future<Map<String, dynamic>> deleteLocation(int id) async {
     try {
-      final response = await apiService.dio.delete('/buildings/$id');
+      final response = await apiService.dio.delete('/locations/$id');
       if (response.data['status'] == 'success') {
         return {'success': true};
       } else {
         return {'success': false, 'message': response.data['message']};
       }
     } catch (e) {
-      debugPrint('Error deleting building: $e');
-      String msg = 'Gagal menghapus gedung.';
+      debugPrint('Error deleting location: $e');
+      String msg = 'Gagal menghapus lokasi.';
       if (e is DioException && e.response?.data != null) {
         msg = e.response?.data['message'] ?? msg;
       }
@@ -310,11 +310,11 @@ class ReportService {
   }
 
   // Get PJ Gedung Statistics
-  Future<Map<String, dynamic>?> getPJStatistics({String? buildingName}) async {
+  Future<Map<String, dynamic>?> getPJStatistics({String? locationName}) async {
     try {
       final response = await apiService.dio.get(
         '/pj-gedung/statistics',
-        queryParameters: {if (buildingName != null) 'building': buildingName},
+        queryParameters: {if (locationName != null) 'location': locationName},
       );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
@@ -344,8 +344,36 @@ class ReportService {
     }
   }
 
-  // Get Non-Gedung Pending Reports (buildings without PJ Gedung)
-  Future<List<Map<String, dynamic>>> getNonGedungReports({
+  // Get Supervisor Detailed Statistics
+  Future<Map<String, dynamic>?> getSupervisorStatistics() async {
+    try {
+      final response = await apiService.dio.get('/supervisor/statistics');
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching supervisor statistics: $e');
+      return null;
+    }
+  }
+
+  // Get Supervisor Locations with report counts
+  Future<List<Map<String, dynamic>>?> getSupervisorLocations() async {
+    try {
+      final response = await apiService.dio.get('/supervisor/locations');
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching supervisor locations: $e');
+      return null;
+    }
+  }
+
+  // Get Non-Gedung Pending Reports (locations without PJ Gedung)
+  Future<List<Map<String, dynamic>>> getNonLokasiReports({
     int limit = 20,
   }) async {
     try {
@@ -389,7 +417,7 @@ class ReportService {
     String? period,
     String? search,
     String? category,
-    String? building,
+    String? location,
     int? assignedTo,
     String? startDate,
     String? endDate,
@@ -404,7 +432,7 @@ class ReportService {
           if (period != null) 'period': period,
           if (search != null) 'search': search,
           if (category != null) 'category': category,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
           if (assignedTo != null) 'assignedTo': assignedTo.toString(),
           if (startDate != null) 'startDate': startDate,
           if (endDate != null) 'endDate': endDate,
@@ -698,13 +726,13 @@ class ReportService {
   }
 
   // Export reports (Returns bytes)
-  Future<List<int>?> exportReports({String? status, String? building}) async {
+  Future<List<int>?> exportReports({String? status, String? location}) async {
     try {
       final response = await apiService.dio.get(
         '/supervisor/reports/export',
         queryParameters: {
           if (status != null) 'status': status,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
         },
         options: Options(responseType: ResponseType.bytes),
       );

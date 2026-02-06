@@ -11,8 +11,8 @@ import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
-/// PJ Gedung theme color
-const Color pjGedungColor = Color(0xFF059669); // Emerald green
+/// PJ Lokasi theme color
+const Color pjLokasiColor = Color(0xFF059669); // Emerald green
 
 class PJGedungDashboardPage extends StatefulWidget {
   const PJGedungDashboardPage({super.key});
@@ -99,7 +99,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       floatingActionButton: const NotificationFab(
-        backgroundColor: AppTheme.pjGedungColor,
+        backgroundColor: AppTheme.pjLokasiColor,
       ),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -108,7 +108,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: pjGedungColor,
+              backgroundColor: pjLokasiColor,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
@@ -119,7 +119,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                       'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000',
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                          Container(color: pjGedungColor),
+                          Container(color: pjLokasiColor),
                     ),
                     // Gradient Overlay
                     Container(
@@ -128,8 +128,8 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            pjGedungColor.withValues(alpha: 0.85),
-                            pjGedungColor.withValues(alpha: 0.95),
+                            pjLokasiColor.withValues(alpha: 0.85),
+                            pjLokasiColor.withValues(alpha: 0.95),
                           ],
                         ),
                       ),
@@ -148,7 +148,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                                 child: const Icon(
-                                  LucideIcons.building2,
+                                  LucideIcons.mapPin,
                                   color: Colors.white,
                                   size: 26,
                                 ),
@@ -159,7 +159,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Dashboard PJ Gedung',
+                                    'Dashboard PJ Lokasi',
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 22,
@@ -168,7 +168,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                   ),
                                   Gap(2),
                                   Text(
-                                    'Verifikasi & Monitoring Gedung A',
+                                    'Verifikasi & Monitoring Lokasi A',
                                     style: TextStyle(
                                       color: Colors.white70,
                                       fontSize: 13,
@@ -216,11 +216,11 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: pjGedungColor.withValues(alpha: 0.3),
+                              color: pjLokasiColor.withValues(alpha: 0.3),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: pjGedungColor.withValues(alpha: 0.05),
+                                color: pjLokasiColor.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -233,7 +233,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                 children: [
                                   Icon(
                                     LucideIcons.barChart2,
-                                    color: pjGedungColor,
+                                    color: pjLokasiColor,
                                     size: 20,
                                   ),
                                   Gap(8),
@@ -241,7 +241,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                     'Lihat Statistik Lengkap',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: pjGedungColor,
+                                      color: pjLokasiColor,
                                     ),
                                   ),
                                 ],
@@ -249,7 +249,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                               Icon(
                                 LucideIcons.chevronRight,
                                 size: 16,
-                                color: pjGedungColor,
+                                color: pjLokasiColor,
                               ),
                             ],
                           ),
@@ -266,7 +266,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                         'Lihat Semua',
                         () => context.push('/pj-gedung/reports?status=pending'),
                         count: _stats['pending'],
-                        badgeColor: pjGedungColor,
+                        badgeColor: pjLokasiColor,
                       ),
                       const Gap(12),
                       _buildPendingList(context),
@@ -279,7 +279,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                           '/pj-gedung/reports?status=terverifikasi',
                         ),
                         count: _stats['verified'],
-                        badgeColor: pjGedungColor,
+                        badgeColor: pjLokasiColor,
                       ),
                       const Gap(12),
                       _buildVerifiedList(context),
@@ -535,18 +535,18 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: pjGedungColor.withValues(alpha: 0.3)),
+          border: Border.all(color: pjLokasiColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.layoutList, color: pjGedungColor),
+            Icon(LucideIcons.layoutList, color: pjLokasiColor),
             const Gap(10),
             const Text(
               'Semua Laporan',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: pjGedungColor,
+                color: pjLokasiColor,
                 fontSize: 15,
               ),
             ),
@@ -610,7 +610,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           child: UniversalReportCard(
             id: report.id,
             title: report.title,
-            location: report.building,
+            location: report.location,
             locationDetail: report.locationDetail,
             category: report.category,
             status: report.status,
@@ -641,7 +641,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
           child: UniversalReportCard(
             id: report.id,
             title: report.title,
-            location: report.building,
+            location: report.location,
             locationDetail: report.locationDetail,
             category: report.category,
             status: report.status,

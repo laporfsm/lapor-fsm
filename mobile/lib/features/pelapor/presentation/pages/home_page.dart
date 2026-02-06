@@ -573,7 +573,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         return UniversalReportCard(
           id: report.id,
           title: report.title,
-          location: report.building,
+          location: report.location,
           locationDetail: report.locationDetail,
           category: report.category,
           status: report.status,

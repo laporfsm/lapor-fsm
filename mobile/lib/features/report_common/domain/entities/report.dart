@@ -15,7 +15,7 @@ class Report {
   final String title;
   final String description;
   final String category;
-  final String building;
+  final String location;
   final String?
   locationDetail; // New field for specific location details (e.g., floor, room)
   final double? latitude;
@@ -32,9 +32,9 @@ class Report {
   final String? reporterEmail;
   final String? reporterPhone;
 
-  // PJ Gedung info (New)
-  final String? pjGedungId;
-  final String? pjGedungName;
+  // PJ Lokasi info (New)
+  final String? pjLocationId;
+  final String? pjLocationName;
   final DateTime? verifiedAt;
 
   // Handling Details
@@ -65,7 +65,7 @@ class Report {
     required this.title,
     required this.description,
     required this.category,
-    required this.building,
+    required this.location,
     this.locationDetail,
     this.latitude,
     this.longitude,
@@ -78,8 +78,8 @@ class Report {
     required this.reporterName,
     this.reporterEmail,
     this.reporterPhone,
-    this.pjGedungId,
-    this.pjGedungName,
+    this.pjLocationId,
+    this.pjLocationName,
     this.verifiedAt,
     this.handledBy,
     this.assignedTo,
@@ -143,7 +143,7 @@ class Report {
     String? title,
     String? description,
     String? category,
-    String? building,
+    String? location,
     String? locationDetail,
     double? latitude,
     double? longitude,
@@ -156,8 +156,8 @@ class Report {
     String? reporterName,
     String? reporterEmail,
     String? reporterPhone,
-    String? pjGedungId,
-    String? pjGedungName,
+    String? pjLocationId,
+    String? pjLocationName,
     DateTime? verifiedAt,
     List<String>? handledBy,
     String? assignedTo,
@@ -179,7 +179,7 @@ class Report {
       title: title ?? this.title,
       description: description ?? this.description,
       category: category ?? this.category,
-      building: building ?? this.building,
+      location: location ?? this.location,
       locationDetail: locationDetail ?? this.locationDetail,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
@@ -192,8 +192,8 @@ class Report {
       reporterName: reporterName ?? this.reporterName,
       reporterEmail: reporterEmail ?? this.reporterEmail,
       reporterPhone: reporterPhone ?? this.reporterPhone,
-      pjGedungId: pjGedungId ?? this.pjGedungId,
-      pjGedungName: pjGedungName ?? this.pjGedungName,
+      pjLocationId: pjLocationId ?? this.pjLocationId,
+      pjLocationName: pjLocationName ?? this.pjLocationName,
       verifiedAt: verifiedAt ?? this.verifiedAt,
       handledBy: handledBy ?? this.handledBy,
       assignedTo: assignedTo ?? this.assignedTo,
@@ -221,7 +221,7 @@ class Report {
       title: json['title'] as String,
       description: json['description'] as String,
       category: json['category'] as String,
-      building: json['building'] as String,
+      location: json['location'] as String,
       locationDetail: json['locationDetail'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
@@ -236,8 +236,8 @@ class Report {
       reporterName: json['reporterName'] as String,
       reporterEmail: json['reporterEmail'] as String?,
       reporterPhone: json['reporterPhone'] as String?,
-      pjGedungId: json['pjGedungId']?.toString(),
-      pjGedungName: json['pjGedungName'] as String?,
+      pjLocationId: json['pjLocationId']?.toString(),
+      pjLocationName: json['pjLocationName'] as String?,
       verifiedAt: json['verifiedAt'] != null
           ? DateTime.parse(json['verifiedAt'] as String)
           : null,
@@ -278,7 +278,7 @@ class Report {
       'title': title,
       'description': description,
       'category': category,
-      'building': building,
+      'location': location,
       'locationDetail': locationDetail,
       'latitude': latitude,
       'longitude': longitude,
@@ -291,8 +291,8 @@ class Report {
       'reporterName': reporterName,
       'reporterEmail': reporterEmail,
       'reporterPhone': reporterPhone,
-      'pjGedungId': pjGedungId,
-      'pjGedungName': pjGedungName,
+      'pjLocationId': pjLocationId,
+      'pjLocationName': pjLocationName,
       'verifiedAt': verifiedAt?.toIso8601String(),
       'handledBy': handledBy,
       'assignedTo': assignedTo,

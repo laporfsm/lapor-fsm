@@ -141,7 +141,7 @@ class ReportCard extends StatelessWidget {
                   const Gap(6),
                   Expanded(
                     child: Text(
-                      report.building, // Or full location if available
+                      report.location, // Or full location if available
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
