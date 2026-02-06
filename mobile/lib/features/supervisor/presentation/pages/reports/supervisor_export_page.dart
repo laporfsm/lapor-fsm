@@ -35,11 +35,11 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
   // Advanced Filters
   final Set<ReportStatus> _selectedStatuses = {};
   String? _selectedCategory;
-  String? _selectedBuilding;
+  String? _selectedLocation;
 
   // Data
   List<String> _categories = [];
-  List<String> _buildings = [];
+  List<String> _locations = [];
   List<Map<String, dynamic>> _previewData = [];
   bool _isLoadingPreview = true;
 
@@ -56,12 +56,12 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
 
     try {
       final cats = await reportService.getCategories();
-      final builds = await reportService.getBuildings();
+      final builds = await reportService.getLocations();
 
       if (mounted) {
         setState(() {
           _categories = cats.map((e) => e['name'] as String).toList();
-          _buildings = builds.map((e) => e['name'] as String).toList();
+          _locations = builds.map((e) => e['name'] as String).toList();
         });
         _fetchPreview();
       }
@@ -159,7 +159,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                             setModalState(() {
                               _selectedStatuses.clear();
                               _selectedCategory = null;
-                              _selectedBuilding = null;
+                              _selectedLocation = null;
                             });
                             setState(
                               () {},
@@ -283,7 +283,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                         ),
                         const Gap(20),
 
-                        // Lokasi (Gedung)
+                        // Lokasi (Lokasi)
                         const Text(
                           'Lokasi',
                           style: TextStyle(fontWeight: FontWeight.w600),
@@ -292,10 +292,10 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
-                          children: _buildings.map((building) {
-                            final isSelected = _selectedBuilding == building;
+                          children: _locations.map((location) {
+                            final isSelected = _selectedLocation == location;
                             return ChoiceChip(
-                              label: Text(building),
+                              label: Text(location),
                               selected: isSelected,
                               selectedColor: Colors.teal.withValues(alpha: 0.2),
                               labelStyle: TextStyle(
@@ -305,8 +305,8 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                               ),
                               onSelected: (selected) {
                                 setModalState(
-                                  () => _selectedBuilding = selected
-                                      ? building
+                                  () => _selectedLocation = selected
+                                      ? location
                                       : null,
                                 );
                                 setState(() {});
@@ -339,7 +339,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
             ? _selectedStatuses.map((s) => s.name).join(',')
             : null,
         category: _selectedCategory,
-        building: _selectedBuilding,
+        location: _selectedLocation,
         limit: 5,
         startDate: _selectedDateRange?.start.toIso8601String(),
         endDate: _selectedDateRange?.end.toIso8601String(),
@@ -370,12 +370,12 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
             final isEmergency = r['isEmergency'] == true;
 
             // Lokasi lengkap
-            final building = r['building'] ?? '-';
+            final location = r['location'] ?? '-';
             final locationDetail = r['locationDetail'];
             final fullLocation =
                 locationDetail != null && locationDetail.toString().isNotEmpty
-                ? '$building - $locationDetail'
-                : building.toString();
+                ? '$location - $locationDetail'
+                : location.toString();
 
             return {
               'date': date != null
@@ -410,7 +410,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
             ? _selectedStatuses.map((s) => s.name).join(',')
             : null,
         category: _selectedCategory,
-        building: _selectedBuilding,
+        location: _selectedLocation,
         limit: 2000,
         startDate: _selectedDateRange?.start.toIso8601String(),
         endDate: _selectedDateRange?.end.toIso8601String(),
@@ -531,7 +531,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
           '${escapeField(r['description'])},'
           '${escapeField(r['category'])},'
           '${escapeField(r['status'])},'
-          '${escapeField(r['building'])},'
+          '${escapeField(r['location'])},'
           '${escapeField(r['locationDetail'])},'
           '${escapeField(r['reporterName'])},'
           '${escapeField(r['reporterEmail'])},'
@@ -608,7 +608,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
         TextCellValue(r['description'] ?? '-'),
         TextCellValue(r['category'] ?? '-'),
         TextCellValue(r['status'] ?? '-'),
-        TextCellValue(r['building'] ?? '-'),
+        TextCellValue(r['location'] ?? '-'),
         TextCellValue(r['locationDetail'] ?? '-'),
         TextCellValue(r['reporterName'] ?? '-'),
         TextCellValue(r['reporterEmail'] ?? '-'),
@@ -694,7 +694,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                 truncate(r['title'], 25),
                 r['category'] ?? '-',
                 r['status'] ?? '-',
-                truncate(r['building'], 15),
+                truncate(r['location'], 15),
                 truncate(r['reporterName'], 12),
                 truncate(technician, 12),
                 duration,
@@ -875,7 +875,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                           color:
                               (_selectedStatuses.isNotEmpty ||
                                   _selectedCategory != null ||
-                                  _selectedBuilding != null)
+                                  _selectedLocation != null)
                               ? supervisorColor
                               : Colors.white,
                           borderRadius: BorderRadius.circular(8),
@@ -886,7 +886,7 @@ class _SupervisorExportPageState extends State<SupervisorExportPage> {
                           color:
                               (_selectedStatuses.isNotEmpty ||
                                   _selectedCategory != null ||
-                                  _selectedBuilding != null)
+                                  _selectedLocation != null)
                               ? Colors.white
                               : Colors.grey.shade700,
                         ),

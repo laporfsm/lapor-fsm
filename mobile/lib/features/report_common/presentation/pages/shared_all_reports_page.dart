@@ -123,11 +123,11 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     if (_selectedReportIds.isNotEmpty) {
       final firstId = _selectedReportIds.first;
       final firstReport = _reports.firstWhere((r) => r.id == firstId);
-      if (report.building != firstReport.building) {
+      if (report.location != firstReport.location) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Lokasi harus sama dengan laporan pertama (${firstReport.building})',
+              'Lokasi harus sama dengan laporan pertama (${firstReport.location})',
             ),
           ),
         );
@@ -282,7 +282,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   Future<void> _fetchBuildings() async {
     try {
-      final buildings = await reportService.getBuildings();
+      final buildings = await reportService.getLocations();
       if (mounted) {
         setState(() {
           _buildings = buildings.map((b) => b['name'] as String).toList();
@@ -324,7 +324,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           period: _selectedPeriod,
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           category: _selectedCategory,
-          building: _selectedBuilding,
+          location: _selectedBuilding,
           assignedTo: widget.assignedTo,
         );
       } else {
@@ -335,7 +335,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
           category: _selectedCategory,
-          building: _selectedBuilding,
+          location: _selectedBuilding,
           isEmergency: _emergencyOnly,
           period: _selectedPeriod,
           startDate: _selectedDateRange?.start.toIso8601String(),
@@ -637,7 +637,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                             return UniversalReportCard(
                               id: report.id,
                               title: report.title,
-                              location: report.building,
+                              location: report.location,
                               locationDetail: report.locationDetail,
                               category: report.category,
                               status: report.status,

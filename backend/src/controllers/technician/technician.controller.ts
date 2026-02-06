@@ -120,7 +120,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
@@ -135,6 +135,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
                 reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
                 categoryName: categories.name,
+                handlerName: staff.name,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -143,6 +144,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(whereClause)
             .orderBy(desc(reports.isEmergency), desc(reports.createdAt));
 
@@ -161,7 +163,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
@@ -174,10 +176,12 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: users.name,
                 reporterPhone: users.phone,
                 categoryName: categories.name,
+                handlerName: staff.name,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(
                 and(
                     isNull(reports.parentId),
@@ -220,6 +224,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .update(reports)
             .set({
                 status: 'penanganan',
+                assignedTo: staffId,
                 handlingStartedAt: new Date(),
                 updatedAt: new Date(),
             })
@@ -402,7 +407,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,

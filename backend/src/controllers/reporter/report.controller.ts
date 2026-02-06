@@ -29,7 +29,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
 
     if (categoryId) conditions.push(eq(reports.categoryId, parseInt(categoryId)));
     if (category) conditions.push(eq(categories.name, category));
-    if (building) conditions.push(eq(reports.building, building));
+    if (building) conditions.push(eq(reports.location, building));
 
     // Status Filter (Support comma-separated or single)
     if (status) {
@@ -94,7 +94,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         id: reports.id,
         title: reports.title,
         description: reports.description,
-        building: reports.building,
+        location: reports.location,
         locationDetail: reports.locationDetail,
         latitude: reports.latitude,
         longitude: reports.longitude,
@@ -140,7 +140,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
     query: t.Object({
       categoryId: t.Optional(t.String()),
       category: t.Optional(t.String()),
-      building: t.Optional(t.String()),
+      location: t.Optional(t.String()),
       status: t.Optional(t.String()),
       search: t.Optional(t.String()),
       isEmergency: t.Optional(t.String()),
@@ -175,7 +175,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         id: reports.id,
         title: reports.title,
         description: reports.description,
-        building: reports.building,
+        location: reports.location,
         locationDetail: reports.locationDetail,
         latitude: reports.latitude,
         longitude: reports.longitude,
@@ -235,7 +235,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         id: reports.id,
         title: reports.title,
         description: reports.description,
-        building: reports.building,
+        location: reports.location,
         locationDetail: reports.locationDetail,
         latitude: reports.latitude,
         longitude: reports.longitude,
@@ -298,7 +298,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       categoryId: body.categoryId,
       title: body.title,
       description: body.description,
-      building: body.building,
+      location: body.building,
       locationDetail: body.locationDetail,
       latitude: body.latitude,
       longitude: body.longitude,
@@ -355,7 +355,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         id: reports.id,
         title: reports.title,
         description: reports.description,
-        building: reports.building,
+        location: reports.location,
         locationDetail: reports.locationDetail,
         latitude: reports.latitude,
         longitude: reports.longitude,
@@ -387,7 +387,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       categoryId: t.Optional(t.Number()),
       title: t.String(),
       description: t.String(),
-      building: t.String(),
+      location: t.String(),
       locationDetail: t.Optional(t.String()),
       latitude: t.Optional(t.Number()),
       longitude: t.Optional(t.Number()),

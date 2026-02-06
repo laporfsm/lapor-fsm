@@ -211,21 +211,44 @@ class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _ActionButton(
-                      icon: LucideIcons.pencil,
-                      color: const Color(0xFF3B82F6),
-                      onTap: () => _showCategorySheet(category),
-                      tooltip: 'Edit',
-                    ),
-                    // Protect "Lainnya" from deletion
+                    // Protect "Lainnya" and "Darurat" from edition
                     if (category['name'].toString().toLowerCase() !=
-                        'lainnya') ...[
+                            'lainnya' &&
+                        category['name'].toString().toLowerCase() !=
+                            'darurat') ...[
+                      _ActionButton(
+                        icon: LucideIcons.pencil,
+                        color: const Color(0xFF3B82F6),
+                        onTap: () => _showCategorySheet(category),
+                        tooltip: 'Edit',
+                      ),
                       const Gap(4),
                       _ActionButton(
                         icon: LucideIcons.trash2,
                         color: const Color(0xFFEF4444),
                         onTap: () => _confirmDelete(category),
                         tooltip: 'Hapus',
+                      ),
+                    ] else ...[
+                      // Only show a disabled-looking info icon or just empty
+                      // to indicate these are system categories
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'Sistem',
+                          style: TextStyle(
+                            color: Colors.grey.shade400,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ],

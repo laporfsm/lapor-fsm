@@ -1,40 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/report_service.dart';
 
-class SupervisorBuildingListPage extends StatefulWidget {
-  const SupervisorBuildingListPage({super.key});
+class SupervisorLocationListPage extends ConsumerStatefulWidget {
+  const SupervisorLocationListPage({super.key});
 
   @override
-  State<SupervisorBuildingListPage> createState() =>
-      _SupervisorBuildingListPageState();
+  ConsumerState<SupervisorLocationListPage> createState() =>
+      _SupervisorLocationListPageState();
 }
 
-class _SupervisorBuildingListPageState
-    extends State<SupervisorBuildingListPage> {
+class _SupervisorLocationListPageState
+    extends ConsumerState<SupervisorLocationListPage> {
   final TextEditingController _searchController = TextEditingController();
-
-  // Mock data - in real app this comes from API
-  final List<Map<String, dynamic>> _buildings = [
-    {'name': 'Gedung A', 'reports': 15, 'status': 'Critical'},
-    {'name': 'Gedung B', 'reports': 8, 'status': 'Warning'},
-    {'name': 'Gedung C', 'reports': 5, 'status': 'Safe'},
-    {'name': 'Gedung D', 'reports': 2, 'status': 'Safe'},
-    {'name': 'Gedung E', 'reports': 1, 'status': 'Safe'},
-    {'name': 'Gedung F', 'reports': 0, 'status': 'Safe'},
-    {'name': 'Gedung G', 'reports': 0, 'status': 'Safe'},
-    {'name': 'Gedung H', 'reports': 0, 'status': 'Safe'},
-    {'name': 'Kantin', 'reports': 3, 'status': 'Safe'},
-  ];
-
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _buildings = [];
   List<Map<String, dynamic>> _filteredBuildings = [];
 
   @override
   void initState() {
     super.initState();
-    _filteredBuildings = _buildings;
+    _fetchBuildings();
     _searchController.addListener(_onSearchChanged);
   }
 
@@ -42,6 +32,18 @@ class _SupervisorBuildingListPageState
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchBuildings() async {
+    setState(() => _isLoading = true);
+    final data = await reportService.getSupervisorLocations();
+    if (mounted) {
+      setState(() {
+        _buildings = data ?? [];
+        _filteredBuildings = _buildings;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -61,7 +63,7 @@ class _SupervisorBuildingListPageState
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Daftar Gedung'),
+        title: const Text('Daftar Lokasi'),
         backgroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
@@ -75,39 +77,58 @@ class _SupervisorBuildingListPageState
           fontSize: 18,
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Cari gedung...',
-                prefixIcon: const Icon(LucideIcons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.grey.shade100,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+      body: RefreshIndicator(
+        onRefresh: _fetchBuildings,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    color: Colors.white,
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: InputDecoration(
+                        hintText: 'Cari lokasi...',
+                        prefixIcon: const Icon(
+                          LucideIcons.search,
+                          color: Colors.grey,
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey.shade100,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: _filteredBuildings.isEmpty
+                        ? const Center(
+                            child: SingleChildScrollView(
+                              physics: AlwaysScrollableScrollPhysics(),
+                              child: Padding(
+                                padding: EdgeInsets.all(32.0),
+                                child: Text('Tidak ada lokasi ditemukan'),
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            itemCount: _filteredBuildings.length,
+                            separatorBuilder: (context, index) => const Gap(12),
+                            itemBuilder: (context, index) {
+                              final building = _filteredBuildings[index];
+                              return _buildBuildingItem(context, building);
+                            },
+                          ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: _filteredBuildings.length,
-              separatorBuilder: (context, index) => const Gap(12),
-              itemBuilder: (context, index) {
-                final building = _filteredBuildings[index];
-                return _buildBuildingItem(context, building);
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

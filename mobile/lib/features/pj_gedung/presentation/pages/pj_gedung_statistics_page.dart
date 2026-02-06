@@ -7,9 +7,9 @@ import 'package:mobile/core/widgets/statistics_widgets.dart';
 import 'package:mobile/core/services/report_service.dart';
 
 class PJGedungStatisticsPage extends StatefulWidget {
-  final String? buildingName;
+  final String? locationName;
 
-  const PJGedungStatisticsPage({super.key, this.buildingName});
+  const PJGedungStatisticsPage({super.key, this.locationName});
 
   @override
   State<PJGedungStatisticsPage> createState() => _PJGedungStatisticsPageState();
@@ -28,7 +28,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final data = await reportService.getPJStatistics(
-      buildingName: widget.buildingName,
+      locationName: widget.locationName,
     );
     if (mounted) {
       setState(() {
@@ -44,9 +44,9 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(
-          widget.buildingName != null
-              ? 'Statistik ${widget.buildingName}'
-              : 'Statistik Gedung',
+          widget.locationName != null
+              ? 'Statistik ${widget.locationName}'
+              : 'Statistik Lokasi',
         ),
         backgroundColor: Colors.white,
         centerTitle: true,
@@ -121,7 +121,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
                 label: Text('$thisMonth Laporan'),
                 backgroundColor: const Color(0xFFD1FAE5),
                 labelStyle: const TextStyle(
-                  color: AppTheme.pjGedungColor,
+                  color: AppTheme.pjLokasiColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -146,7 +146,10 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('Belum ada data kategori', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'Belum ada data kategori',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
@@ -158,7 +161,14 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       if (count > maxCount) maxCount = count;
     }
 
-    final List<Color> colors = [Colors.blue, Colors.orange, Colors.red, Colors.green, Colors.purple, Colors.indigo];
+    final List<Color> colors = [
+      Colors.blue,
+      Colors.orange,
+      Colors.red,
+      Colors.green,
+      Colors.purple,
+      Colors.indigo,
+    ];
 
     return Column(
       children: List.generate(categoriesData.length, (index) {
@@ -180,7 +190,10 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('Belum ada data tren', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'Belum ada data tren',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
@@ -200,7 +213,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
         return StatsTrendBar(
           label: t['day'] ?? '',
           heightFactor: maxVal > 0 ? val / maxVal : 0.1,
-          activeColor: AppTheme.pjGedungColor,
+          activeColor: AppTheme.pjLokasiColor,
         );
       }).toList(),
     );
@@ -218,7 +231,6 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     final lastMonth = _stats?['lastMonth'] ?? 0;
     final isUp = (thisMonth as num) > (lastMonth as num);
 
-
     return Column(
       children: [
         Row(
@@ -230,11 +242,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
               isUp: false,
               emphasizeUpAsBad: true,
             ),
-            Container(
-              width: 1,
-              height: 40,
-              color: Colors.grey.shade200,
-            ),
+            Container(width: 1, height: 40, color: Colors.grey.shade200),
             StatsTrendInfo(
               label: 'Bulan Ini',
               value: '$thisMonth Laporan',
@@ -251,17 +259,29 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildSimpleBar(
-                  maxProg > 0 ? (monthlyProgress[0] as num).toInt() / maxProg : 0.05,
-                  'Minggu 1'),
+                maxProg > 0
+                    ? (monthlyProgress[0] as num).toInt() / maxProg
+                    : 0.05,
+                'Minggu 1',
+              ),
               _buildSimpleBar(
-                  maxProg > 0 ? (monthlyProgress[1] as num).toInt() / maxProg : 0.05,
-                  'Minggu 2'),
+                maxProg > 0
+                    ? (monthlyProgress[1] as num).toInt() / maxProg
+                    : 0.05,
+                'Minggu 2',
+              ),
               _buildSimpleBar(
-                  maxProg > 0 ? (monthlyProgress[2] as num).toInt() / maxProg : 0.05,
-                  'Minggu 3'),
+                maxProg > 0
+                    ? (monthlyProgress[2] as num).toInt() / maxProg
+                    : 0.05,
+                'Minggu 3',
+              ),
               _buildSimpleBar(
-                  maxProg > 0 ? (monthlyProgress[3] as num).toInt() / maxProg : 0.05,
-                  'Minggu 4+'),
+                maxProg > 0
+                    ? (monthlyProgress[3] as num).toInt() / maxProg
+                    : 0.05,
+                'Minggu 4+',
+              ),
             ],
           ),
         ),
@@ -278,14 +298,14 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
           height: 12,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: AppTheme.pjGedungColor, width: 3),
+            border: Border.all(color: AppTheme.pjLokasiColor, width: 3),
             shape: BoxShape.circle,
           ),
         ),
         Container(
           width: 2,
           height: 60 * heightFactor,
-          color: AppTheme.pjGedungColor.withValues(alpha: 0.5),
+          color: AppTheme.pjLokasiColor.withValues(alpha: 0.5),
         ),
         const Gap(8),
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),

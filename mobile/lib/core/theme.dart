@@ -12,9 +12,9 @@ class AppTheme {
     0xFF3730A3,
   ); // Indigo 800 (Supervisor Theme)
   static const Color adminColor = Color(0xFF9333EA); // Purple (Admin Theme)
-  static const Color pjGedungColor = Color(
+  static const Color pjLokasiColor = Color(
     0xFF059669,
-  ); // Emerald 600 (PJ Gedung Theme)
+  ); // Emerald 600 (PJ Lokasi Theme)
   static const Color teknisiColor = Color(
     0xFFF59E0B,
   ); // Amber (Teknisi/Secondary)
@@ -42,6 +42,7 @@ class AppTheme {
         return Colors.teal;
       case 'approved':
         return Colors.green;
+      case 'rejected':
       case 'ditolak':
         return Colors.red;
       case 'recalled':

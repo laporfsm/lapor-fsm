@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_view.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_buildings_view.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_categories_view.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_locations_view.dart';
 
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_specializations_view.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_specializations_view.dart';
 
 class SupervisorMasterDataPage extends StatelessWidget {
   const SupervisorMasterDataPage({super.key});
@@ -38,7 +38,7 @@ class SupervisorMasterDataPage extends StatelessWidget {
         body: const TabBarView(
           children: [
             SupervisorCategoriesView(),
-            SupervisorBuildingsView(),
+            SupervisorLocationsView(),
             SupervisorSpecializationsView(),
           ],
         ),

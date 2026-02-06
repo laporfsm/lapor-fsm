@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_main_page.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/stat_grid_card.dart';
 
@@ -15,7 +16,6 @@ import 'package:mobile/core/services/report_service.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
@@ -43,13 +43,13 @@ class _SupervisorDashboardPageState
     'approved': 0,
     'ditolak': 0,
     'emergency': 0,
-    'nonGedungPending': 0,
+    'nonLokasiPending': 0,
     'todayReports': 0,
     'weekReports': 0,
     'monthReports': 0,
   };
 
-  List<Report> _nonGedungReports = [];
+  List<Report> _nonLokasiReports = [];
   List<Report> _readyToProcessReports = [];
   List<Report> _pendingReviewReports = [];
 
@@ -83,7 +83,7 @@ class _SupervisorDashboardPageState
         // Fetch stats and lists
         final results = await Future.wait([
           reportService.getSupervisorDashboardStats(staffId),
-          reportService.getNonGedungReports(limit: 20), // Non-gedung pending
+          reportService.getNonLokasiReports(limit: 20), // Non-lokasi pending
           reportService.getStaffReports(
             role: 'supervisor',
             status: 'terverifikasi', // Only terverifikasi for "Siap Diproses"
@@ -108,21 +108,21 @@ class _SupervisorDashboardPageState
                 'approved': rawStats['approved'] ?? 0,
                 'ditolak': rawStats['ditolak'] ?? 0,
                 'emergency': rawStats['emergency'] ?? 0,
-                'nonGedungPending': rawStats['nonGedungPending'] ?? 0,
+                'nonLokasiPending': rawStats['nonLokasiPending'] ?? 0,
                 'todayReports': rawStats['todayReports'] ?? 0,
                 'weekReports': rawStats['weekReports'] ?? 0,
                 'monthReports': rawStats['monthReports'] ?? 0,
               };
             }
 
-            // Non-Gedung Reports
+            // Non-Lokasi Reports
             try {
-              _nonGedungReports = (results[1] as List)
+              _nonLokasiReports = (results[1] as List)
                   .map((json) => Report.fromJson(json as Map<String, dynamic>))
                   .toList();
             } catch (e) {
-              debugPrint('[DASHBOARD] Error converting non-gedung reports: $e');
-              _nonGedungReports = [];
+              debugPrint('[DASHBOARD] Error converting non-lokasi reports: $e');
+              _nonLokasiReports = [];
             }
 
             // Ready to Process (Terverifikasi only)
@@ -146,7 +146,7 @@ class _SupervisorDashboardPageState
             }
 
             debugPrint(
-              '[DASHBOARD] Final counts - Non-Gedung: ${_nonGedungReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
+              '[DASHBOARD] Final counts - Non-Lokasi: ${_nonLokasiReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
             );
             _isLoading = false;
           });
@@ -310,16 +310,16 @@ class _SupervisorDashboardPageState
                       _buildStatsSection(context),
                       const Gap(24),
 
-                      // Section: Non-Gedung (Pending reports from buildings without PJ)
+                      // Section: Non-Lokasi (Pending reports from locations without PJ)
                       _buildSectionHeader(
                         context,
-                        'Non-Gedung',
+                        'Non-Lokasi',
                         'Lihat Semua',
                         () => context.push('/supervisor/non-gedung'),
-                        count: _stats['nonGedungPending'] ?? 0,
+                        count: _stats['nonLokasiPending'] ?? 0,
                       ),
                       const Gap(12),
-                      _buildNonGedungList(context),
+                      _buildNonLokasiList(context),
                       const Gap(24),
 
                       // Section: Siap Diproses (Terverifikasi only)
@@ -362,10 +362,13 @@ class _SupervisorDashboardPageState
                         "Aktivitas & Log",
                         "Lihat Semua",
                         () {
-                          // Navigate to Staff tab (Index 1) -> Activity Log (Tab 0)
-                          ref
-                              .read(supervisorNavigationProvider.notifier)
-                              .navigateToActivityLog();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const SupervisorTechnicianMainPage(),
+                            ),
+                          );
                         },
                       ),
                       const Gap(12),
@@ -586,8 +589,8 @@ class _SupervisorDashboardPageState
     );
   }
 
-  Widget _buildNonGedungList(BuildContext context) {
-    if (_nonGedungReports.isEmpty) {
+  Widget _buildNonLokasiList(BuildContext context) {
+    if (_nonLokasiReports.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
@@ -597,14 +600,10 @@ class _SupervisorDashboardPageState
         child: Center(
           child: Column(
             children: [
-              Icon(
-                LucideIcons.building2,
-                size: 48,
-                color: Colors.grey.shade300,
-              ),
+              Icon(LucideIcons.mapPin, size: 48, color: Colors.grey.shade300),
               const Gap(8),
               Text(
-                'Tidak ada laporan non-gedung pending',
+                'Tidak ada laporan non-lokasi pending',
                 style: TextStyle(color: Colors.grey.shade500),
               ),
             ],
@@ -614,7 +613,7 @@ class _SupervisorDashboardPageState
     }
 
     // Show only first 3 reports
-    final displayReports = _nonGedungReports.take(3).toList();
+    final displayReports = _nonLokasiReports.take(3).toList();
 
     return Column(
       children: displayReports.map((report) {
@@ -623,7 +622,7 @@ class _SupervisorDashboardPageState
           child: UniversalReportCard(
             id: report.id,
             title: report.title,
-            location: report.building,
+            location: report.location,
             locationDetail: report.locationDetail,
             category: report.category,
             status: report.status,
@@ -682,7 +681,7 @@ class _SupervisorDashboardPageState
         return UniversalReportCard(
           id: r.id,
           title: r.title,
-          location: r.building,
+          location: r.location,
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,
@@ -698,7 +697,7 @@ class _SupervisorDashboardPageState
     );
   }
 
-  // MOCK: Ready to Process (Verified by PJ or Direct Non-Building)
+  // MOCK: Ready to Process (Verified by PJ or Direct Non-Location)
   Widget _buildReadyToProcessList(BuildContext context) {
     if (_readyToProcessReports.isEmpty) {
       return Container(
@@ -739,7 +738,7 @@ class _SupervisorDashboardPageState
         return UniversalReportCard(
           id: r.id,
           title: r.title,
-          location: r.building,
+          location: r.location,
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,
@@ -772,7 +771,7 @@ class _SupervisorDashboardPageState
           ),
           const Divider(),
           _buildLogItem(
-            'PJ Gedung A',
+            'PJ Lokasi A',
             'memverifikasi laporan',
             'Lampu Koridor',
             '15 menit lalu',

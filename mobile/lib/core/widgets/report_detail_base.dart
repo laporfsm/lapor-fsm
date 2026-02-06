@@ -273,9 +273,9 @@ class ReportDetailBase extends StatelessWidget {
                     accentColor: Colors.red,
                     children: [
                       _buildInfoRow(
-                        LucideIcons.building,
+                        LucideIcons.mapPin,
                         'Tempat',
-                        report.building,
+                        report.location,
                       ),
                       if (report.locationDetail != null &&
                           report.locationDetail!.isNotEmpty)
@@ -743,7 +743,7 @@ class ReportDetailBase extends StatelessWidget {
                     builder: (_) => FullscreenMapModal(
                       latitude: latitude,
                       longitude: longitude,
-                      locationName: report.building,
+                      locationName: report.location,
                     ),
                   );
                 },

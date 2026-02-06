@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_activity_log_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_staff_management_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_staff_management_page.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
@@ -45,20 +46,19 @@ class _SupervisorTechnicianMainPageState
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Menu Staff'),
-        backgroundColor: AppTheme.supervisorColor,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         centerTitle: true,
         elevation: 0,
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          onPressed: () => context.pop(),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
-          indicatorColor: Colors.white,
+          labelColor: AppTheme.supervisorColor,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: AppTheme.supervisorColor,
           indicatorWeight: 3,
           tabs: const [
             Tab(text: 'Log Aktivitas', icon: Icon(LucideIcons.activity)),

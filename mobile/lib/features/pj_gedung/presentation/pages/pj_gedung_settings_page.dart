@@ -39,11 +39,11 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
                 SettingsSwitchTile(
                   icon: LucideIcons.bell,
                   title: 'Notifikasi Laporan',
-                  subtitle: 'Terima info laporan baru di gedung Anda',
+                  subtitle: 'Terima info laporan baru di lokasi Anda',
                   value: _notificationsEnabled,
                   onChanged: (val) =>
                       setState(() => _notificationsEnabled = val),
-                  activeColor: AppTheme.pjGedungColor,
+                  activeColor: AppTheme.pjLokasiColor,
                 ),
               ],
             ),

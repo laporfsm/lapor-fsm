@@ -5,15 +5,15 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
 
-class PJGedungEditProfilePage extends StatefulWidget {
-  const PJGedungEditProfilePage({super.key});
+class SupervisorEditProfilePage extends StatefulWidget {
+  const SupervisorEditProfilePage({super.key});
 
   @override
-  State<PJGedungEditProfilePage> createState() =>
-      _PJGedungEditProfilePageState();
+  State<SupervisorEditProfilePage> createState() =>
+      _SupervisorEditProfilePageState();
 }
 
-class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
+class _SupervisorEditProfilePageState extends State<SupervisorEditProfilePage> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers - Editable fields only
@@ -42,7 +42,9 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
         });
       }
     } else {
-      if (mounted) setState(() => _isInitialLoading = false);
+      if (mounted) {
+        setState(() => _isInitialLoading = false);
+      }
     }
   }
 
@@ -53,11 +55,10 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
     setState(() => _isLoading = true);
 
     final result = await authService.updateProfile(
-      id: _currentUser!['id'],
-      role: _currentUser!['role'] ?? 'pj_location',
+      id: _currentUser!['id'].toString(),
+      role: _currentUser!['role'] ?? 'supervisor',
       phone: _phoneController.text,
       address: _addressController.text,
-      // Department/Faculty/Location are usually managed by Admin for staff, so we don't send them here to avoid accidental overrides
     );
 
     if (mounted) {
@@ -92,7 +93,10 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_currentUser == null) {
@@ -118,24 +122,13 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
       appBar: AppBar(
         title: const Text('Edit Profil'),
         backgroundColor: Colors.white,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'SIMPAN',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.pjLokasiColor,
-                    ),
-                  ),
-          ),
-        ],
+        foregroundColor: Colors.black,
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -151,13 +144,16 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppTheme.pjLokasiColor.withValues(alpha: 0.1),
-                    border: Border.all(color: AppTheme.pjLokasiColor, width: 3),
+                    color: AppTheme.supervisorColor.withValues(alpha: 0.1),
+                    border: Border.all(
+                      color: AppTheme.supervisorColor,
+                      width: 3,
+                    ),
                   ),
                   child: const Icon(
-                    LucideIcons.user,
+                    LucideIcons.shieldCheck,
                     size: 48,
-                    color: AppTheme.pjLokasiColor,
+                    color: AppTheme.supervisorColor,
                   ),
                 ),
               ),
@@ -182,7 +178,7 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                         ),
                         const Gap(8),
                         Text(
-                          'Data Akun (Hubungi Admin untuk mengubah)',
+                          'Data Akun (tidak dapat diubah)',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,
@@ -204,17 +200,6 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                       icon: LucideIcons.mail,
                     ),
                     const Gap(12),
-                    _ReadOnlyField(
-                      label: 'NIP',
-                      value: _currentUser!['nimNip'] ?? '-',
-                      icon: LucideIcons.hash,
-                    ),
-                    const Gap(12),
-                    _ReadOnlyField(
-                      label: 'Lokasi Ditugaskan',
-                      value: _currentUser!['managedLocation'] ?? '-',
-                      icon: LucideIcons.mapPin,
-                    ),
                   ],
                 ),
               ),
@@ -254,11 +239,13 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
               // Address
               TextFormField(
                 controller: _addressController,
-                maxLines: 2,
+                keyboardType: TextInputType.multiline,
+                maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Alamat',
-                  hintText: 'Alamat domisili',
+                  hintText: 'Masukkan alamat lengkap',
                   prefixIcon: Icon(LucideIcons.mapPin),
+                  alignLabelWithHint: true,
                 ),
               ),
               const Gap(32),
@@ -268,9 +255,6 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                 width: double.infinity,
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.pjLokasiColor,
-                  ),
                   icon: _isLoading
                       ? const SizedBox(
                           height: 20,
@@ -280,11 +264,8 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                             strokeWidth: 2,
                           ),
                         )
-                      : const Icon(LucideIcons.save, color: Colors.white),
-                  label: Text(
-                    _isLoading ? 'Menyimpan...' : 'SIMPAN PERUBAHAN',
-                    style: const TextStyle(color: Colors.white),
-                  ),
+                      : const Icon(LucideIcons.save),
+                  label: Text(_isLoading ? 'Menyimpan...' : 'SIMPAN PERUBAHAN'),
                 ),
               ),
               const Gap(16),

@@ -262,12 +262,20 @@ class _SupervisorTechnicianListPageState
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: tech['role'] == 'PJ Gedung'
+                      color:
+                          tech['role'] == 'PJ Gedung' ||
+                              tech['role'] == 'PJ Lokasi' ||
+                              tech['role'] == 'pj_gedung' ||
+                              tech['role'] == 'pj_location'
                           ? const Color(0xFFFFF7ED) // Orange-ish bg for PJ
                           : Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: tech['role'] == 'PJ Gedung'
+                        color:
+                            tech['role'] == 'PJ Gedung' ||
+                                tech['role'] == 'PJ Lokasi' ||
+                                tech['role'] == 'pj_gedung' ||
+                                tech['role'] == 'pj_location'
                             ? const Color(0xFFFDBA74)
                             : Colors.blue.shade100,
                       ),
@@ -276,11 +284,18 @@ class _SupervisorTechnicianListPageState
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          tech['role'] == 'PJ Gedung'
-                              ? LucideIcons.building
+                          tech['role'] == 'PJ Gedung' ||
+                                  tech['role'] == 'PJ Lokasi' ||
+                                  tech['role'] == 'pj_gedung' ||
+                                  tech['role'] == 'pj_location'
+                              ? LucideIcons.mapPin
                               : LucideIcons.wrench,
                           size: 12,
-                          color: tech['role'] == 'PJ Gedung'
+                          color:
+                              tech['role'] == 'PJ Gedung' ||
+                                  tech['role'] == 'PJ Lokasi' ||
+                                  tech['role'] == 'pj_gedung' ||
+                                  tech['role'] == 'pj_location'
                               ? const Color(0xFFEA580C)
                               : Colors.blue.shade700,
                         ),
@@ -363,7 +378,10 @@ class _SupervisorTechnicianListPageState
   }
 
   String _getRoleDisplayName(Map<String, dynamic> tech) {
-    if (tech['role'] == 'pj_gedung' || tech['role'] == 'PJ Gedung') {
+    if (tech['role'] == 'pj_gedung' ||
+        tech['role'] == 'PJ Gedung' ||
+        tech['role'] == 'pj_location' ||
+        tech['role'] == 'PJ Lokasi') {
       return 'PJ Gedung';
     }
     // For technicians, prefer 'specialization'
@@ -371,7 +389,10 @@ class _SupervisorTechnicianListPageState
   }
 
   Color _getRoleColor(Map<String, dynamic> tech) {
-    if (tech['role'] == 'pj_gedung' || tech['role'] == 'PJ Gedung') {
+    if (tech['role'] == 'pj_gedung' ||
+        tech['role'] == 'PJ Gedung' ||
+        tech['role'] == 'pj_location' ||
+        tech['role'] == 'PJ Lokasi') {
       return const Color(0xFFEA580C);
     }
     return Colors.blue.shade700;

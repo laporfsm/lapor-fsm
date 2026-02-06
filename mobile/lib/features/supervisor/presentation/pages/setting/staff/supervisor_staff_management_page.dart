@@ -310,91 +310,104 @@ class _SupervisorStaffManagementPageState
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+            child: GestureDetector(
+              onTap: () {
+                if (isTechnician) {
+                  _showTechnicianDetail(staff);
+                }
+              },
+              child: Container(
+                color: Colors.transparent, // Hit test behavior
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      staff['name'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    if (!isActive) ...[
-                      const Gap(8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          'Nonaktif',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
+                    Row(
+                      children: [
+                        Text(
+                          staff['name'],
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
                           ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
-                const Gap(4),
-                Text(
-                  staff['email'],
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                ),
-                const Gap(8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: !isTechnician
-                        ? const Color(0xFFFFF7ED) // Orange-ish bg for PJ
-                        : Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: !isTechnician
-                          ? const Color(0xFFFDBA74)
-                          : Colors.blue.shade100,
+                        if (!isActive) ...[
+                          const Gap(8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Nonaktif',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        !isTechnician
-                            ? LucideIcons.building
-                            : LucideIcons.wrench,
-                        size: 12,
-                        color: !isTechnician
-                            ? const Color(0xFFEA580C)
-                            : Colors.blue.shade700,
+                    const Gap(4),
+                    Text(
+                      staff['email'],
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 13,
                       ),
-                      const Gap(4),
-                      Text(
-                        isTechnician
-                            ? staff['specialization'] ?? 'Teknisi'
-                            : staff['location'] ?? 'Area Umum',
-                        style: TextStyle(
+                    ),
+                    const Gap(8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: !isTechnician
+                            ? const Color(0xFFFFF7ED) // Orange-ish bg for PJ
+                            : Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
                           color: !isTechnician
-                              ? const Color(0xFFEA580C)
-                              : Colors.blue.shade700,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                              ? const Color(0xFFFDBA74)
+                              : Colors.blue.shade100,
                         ),
                       ),
-                    ],
-                  ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            !isTechnician
+                                ? LucideIcons.building
+                                : LucideIcons.wrench,
+                            size: 12,
+                            color: !isTechnician
+                                ? const Color(0xFFEA580C)
+                                : Colors.blue.shade700,
+                          ),
+                          const Gap(4),
+                          Text(
+                            isTechnician
+                                ? staff['specialization'] ?? 'Teknisi'
+                                : staff['location'] ?? 'Area Umum',
+                            style: TextStyle(
+                              color: !isTechnician
+                                  ? const Color(0xFFEA580C)
+                                  : Colors.blue.shade700,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           // Action Buttons
@@ -473,6 +486,116 @@ class _SupervisorStaffManagementPageState
                 },
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTechnicianDetail(Map<String, dynamic> staff) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  border: Border.all(color: AppTheme.primaryColor, width: 2),
+                ),
+                child: const Icon(
+                  LucideIcons.user,
+                  size: 40,
+                  color: AppTheme.primaryColor,
+                ),
+              ),
+              const Gap(16),
+              Text(
+                staff['name'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const Gap(4),
+              Text(
+                staff['specialization'] ?? 'Teknisi',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const Gap(24),
+              _buildDetailRow(LucideIcons.mail, 'Email', staff['email'] ?? '-'),
+              _buildDetailRow(
+                LucideIcons.phone,
+                'Telepon',
+                staff['phone'] ?? '-',
+              ),
+              _buildDetailRow(
+                LucideIcons.mapPin,
+                'Alamat',
+                staff['address'] ?? '-',
+              ),
+              const Gap(24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+                const Gap(2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

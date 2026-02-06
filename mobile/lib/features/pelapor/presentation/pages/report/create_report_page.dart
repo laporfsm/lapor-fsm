@@ -59,7 +59,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   Future<void> _fetchBuildings() async {
     try {
-      final buildings = await reportService.getBuildings();
+      final buildings = await reportService.getLocations();
       if (mounted) {
         setState(() {
           _buildings = buildings.map((b) => b['name'] as String).toList();
@@ -239,7 +239,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
         categoryId: categoryId,
         title: _subjectController.text,
         description: _descController.text,
-        building: _selectedBuilding!,
+        location: _selectedBuilding!,
         locationDetail: _locationDetailController.text,
         latitude: _latitude,
         longitude: _longitude,

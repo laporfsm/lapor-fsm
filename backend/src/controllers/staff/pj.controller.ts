@@ -40,36 +40,36 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     .derive(async ({ userId }) => {
         if (!userId) {
             console.log('DEBUG: No userId found in token');
-            return { managedBuilding: undefined };
+            return { managedLocation: undefined };
         }
 
         try {
-            console.log(`DEBUG: Looking up Staff ID ${userId} for managedBuilding...`);
-            const user = await db.select({ managedBuilding: staff.managedBuilding })
+            console.log(`DEBUG: Looking up Staff ID ${userId} for managedLocation...`);
+            const user = await db.select({ managedLocation: staff.managedLocation })
                 .from(staff)
                 .where(eq(staff.id, userId))
                 .limit(1);
 
             console.log('DEBUG: DB Result:', user);
-            return { managedBuilding: user[0]?.managedBuilding };
+            return { managedLocation: user[0]?.managedLocation };
         } catch (e) {
             console.error('DEBUG: DB Lookup failed:', e);
-            return { managedBuilding: undefined };
+            return { managedLocation: undefined };
         }
     })
     // Dashboard statistics for PJ Gedung
-    .get('/dashboard', async ({ managedBuilding }) => {
-        if (!managedBuilding) {
+    .get('/dashboard', async ({ managedLocation }) => {
+        if (!managedLocation) {
             return {
                 status: 'error',
-                message: 'Akses ditolak: Anda belum ditugaskan ke gedung manapun atau token tidak valid.'
+                message: 'Akses ditolak: Anda belum ditugaskan ke lokasi manapun atau token tidak valid.'
             };
         }
 
         const startOfWeek = getStartOfWeek();
 
         // Strict Filter: Reports.building == Staff.managed_building
-        const whereClause = sql`${reports.building} = ${managedBuilding}`;
+        const whereClause = sql`${reports.location} = ${managedLocation}`;
 
         // Uses Database Timezone/Logic for consistency
         const todayReports = await db.select({ count: count() })
@@ -111,24 +111,24 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         };
     })
 
-    // Get reports for PJ Gedung (focused on their building if filter provided)
-    .get('/reports', async ({ query, managedBuilding }) => {
-        const { status, building, isEmergency, startDate, endDate, search, period } = query;
+    // Get reports for PJ Lokasi (focused on their location if filter provided)
+    .get('/reports', async ({ query, managedLocation }) => {
+        const { status, location, isEmergency, startDate, endDate, search, period } = query;
         let conditions = [];
 
-        if (!managedBuilding) {
+        if (!managedLocation) {
             return {
                 status: 'error',
-                message: 'Akses ditolak: Akun Anda tidak memiliki wilayah gedung yang ditetapkan.'
+                message: 'Akses ditolak: Akun Anda tidak memiliki wilayah lokasi yang ditetapkan.'
             };
         }
 
         // Apply strict scope filter: building column = managed_building from staff
-        conditions.push(sql`${reports.building} = ${managedBuilding}`);
+        conditions.push(sql`${reports.location} = ${managedLocation}`);
 
-        // Optional sub-filtering (e.g. searching for room number inside the building)
-        if (building) {
-            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        // Optional sub-filtering (e.g. searching for room number inside the location)
+        if (location) {
+            conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
         }
 
         // Support multiple statuses separated by comma (e.g., 'pending,terverifikasi')
@@ -144,7 +144,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
         if (search) conditions.push(or(
             sql`${reports.title} ILIKE ${'%' + search + '%'}`,
-            sql`${reports.locationDetail} ILIKE ${'%' + search + '%'}`, // Search locationDetail instead of building since building is fixed
+            sql`${reports.locationDetail} ILIKE ${'%' + search + '%'}`, // Search locationDetail instead of location since location is fixed
             sql`${categories.name} ILIKE ${'%' + search + '%'}`
         ));
 
@@ -173,13 +173,14 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 status: reports.status,
                 isEmergency: reports.isEmergency,
                 createdAt: reports.createdAt,
                 reporterName: users.name,
                 categoryName: categories.name,
+                handlerName: staff.name,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -187,6 +188,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(whereClause)
             .orderBy(desc(reports.createdAt));
 
@@ -234,21 +236,21 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         await db.insert(reportLogs).values({
             reportId,
             actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "PJ Gedung",
+            actorName: foundStaff[0]?.name || "PJ Lokasi",
             actorRole: foundStaff[0]?.role || "pj_gedung",
             action: 'verified',
             fromStatus: 'pending',
             toStatus: 'terverifikasi',
-            reason: body.notes || 'Laporan telah diverifikasi oleh PJ Gedung',
+            reason: body.notes || 'Laporan telah diverifikasi oleh PJ Lokasi',
         });
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Gedung.`);
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Lokasi.`);
         }
 
         // Notify Supervisor
-        await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].building} telah diverifikasi oleh PJ Gedung.`);
+        await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].location} telah diverifikasi oleh PJ Lokasi.`);
 
         return {
             status: 'success',
@@ -295,7 +297,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         await db.insert(reportLogs).values({
             reportId,
             actorId: staffId.toString(),
-            actorName: foundStaff[0]?.name || "PJ Gedung",
+            actorName: foundStaff[0]?.name || "PJ Lokasi",
             actorRole: foundStaff[0]?.role || "pj_gedung",
             action: 'rejected',
             fromStatus: 'pending',
@@ -308,19 +310,19 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         body: t.Object({ staffId: t.Number(), reason: t.String() })
     })
 
-    // Get statistics for PJ Gedung (Dynamic & Correctly Filtered)
-    .get('/statistics', async ({ query, managedBuilding }) => {
-        const { building } = query;
+    // Get statistics for PJ Lokasi (Dynamic & Correctly Filtered)
+    .get('/statistics', async ({ query, managedLocation }) => {
+        const { location } = query;
 
-        let buildingFilter = managedBuilding || building;
-        if (!buildingFilter) {
-            return { status: 'error', message: 'Membutuhkan filter gedung' };
+        let locationFilter = managedLocation || location;
+        if (!locationFilter) {
+            return { status: 'error', message: 'Membutuhkan filter lokasi' };
         }
 
         // Strict Match if managing, otherwise loose match for admin/general
-        let whereClause = managedBuilding
-            ? sql`${reports.building} = ${managedBuilding}`
-            : sql`${reports.building} ILIKE ${buildingFilter}`;
+        let whereClause = managedLocation
+            ? sql`${reports.location} = ${managedLocation}`
+            : sql`${reports.location} ILIKE ${locationFilter}`;
 
         // 1. Issue Categories
         const categoryStats = await db.select({
@@ -418,15 +420,15 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
     })
 
     // Export PDF
-    .get('/reports/export/pdf', async ({ query, set, managedBuilding }) => {
-        const { status, building, isEmergency, startDate, endDate, search } = query;
+    .get('/reports/export/pdf', async ({ query, set, managedLocation }) => {
+        const { status, location, isEmergency, startDate, endDate, search } = query;
         let conditions = [];
 
-        // Enforce building filtering from JWT if available
-        if (managedBuilding) {
-            conditions.push(sql`${reports.building} = ${managedBuilding}`);
-        } else if (building) {
-            conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`);
+        // Enforce location filtering from JWT if available
+        if (managedLocation) {
+            conditions.push(sql`${reports.location} = ${managedLocation}`);
+        } else if (location) {
+            conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
         }
         if (status) {
             const statusList = (status as string).split(',');
@@ -436,12 +438,12 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 conditions.push(eq(reports.status, status as string));
             }
         }
-        if (building && !managedBuilding) conditions.push(sql`${reports.building} ILIKE ${'%' + building + '%'}`); // Only add manual building filter if not scoped
+        if (location && !managedLocation) conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`); // Only add manual location filter if not scoped
 
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
         if (search) conditions.push(or(
             sql`${reports.title} ILIKE ${'%' + search + '%'}`,
-            sql`${reports.building} ILIKE ${'%' + search + '%'}`,
+            sql`${reports.location} ILIKE ${'%' + search + '%'}`,
             sql`${categories.name} ILIKE ${'%' + search + '%'}`
         ));
 
@@ -459,7 +461,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             .select({
                 id: reports.id,
                 title: reports.title,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 isEmergency: reports.isEmergency,
                 status: reports.status,
@@ -489,7 +491,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         // Metadata
         doc.fontSize(10).font('Helvetica');
         doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}`);
-        doc.text(`Gedung Utama (Tanggung Jawab): ${managedBuilding || 'Semua'}`);
+        doc.text(`Lokasi Utama (Tanggung Jawab): ${managedLocation || 'Semua'}`);
 
         const friendlyStatus = status ?
             (status as string).split(',').map(s => statusLabels[s] || s).join(', ') :
@@ -512,7 +514,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         doc.text('Tanggal', 60, tableTop);
         doc.text('Judul Laporan', 105, tableTop);
         doc.text('Kategori', 195, tableTop);
-        doc.text('Gedung', 255, tableTop);
+        doc.text('Lokasi', 255, tableTop);
         doc.text('Lokasi', 315, tableTop);
         doc.text('Pelapor', 385, tableTop);
         doc.text('Status', 455, tableTop);
@@ -532,7 +534,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 doc.text('Tanggal', 60, newPageY);
                 doc.text('Judul Laporan', 105, newPageY);
                 doc.text('Kategori', 195, newPageY);
-                doc.text('Gedung', 255, newPageY);
+                doc.text('Lokasi', 255, newPageY);
                 doc.text('Lokasi', 315, newPageY);
                 doc.text('Pelapor', 385, newPageY);
                 doc.text('Status', 455, newPageY);
@@ -552,7 +554,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             doc.text(formattedDate, 60, currentY, { width: 40 });
             doc.text(r.title || '-', 105, currentY, { width: 85, height: 12, ellipsis: true });
             doc.text(r.categoryName || '-', 195, currentY, { width: 55, height: 12, ellipsis: true });
-            doc.text(r.building || '-', 255, currentY, { width: 55, height: 12, ellipsis: true });
+            doc.text(r.location || '-', 255, currentY, { width: 55, height: 12, ellipsis: true });
             doc.text(r.locationDetail || '-', 315, currentY, { width: 65, height: 12, ellipsis: true });
             doc.text(r.reporterName || '-', 385, currentY, { width: 65, height: 12, ellipsis: true });
 

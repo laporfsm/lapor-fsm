@@ -25,7 +25,7 @@ class _SupervisorPJGedungFormPageState
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  String? _selectedBuilding;
+  String? _selectedLocation;
   bool _isLoading = false;
   List<String> _buildings = [];
 
@@ -38,29 +38,29 @@ class _SupervisorPJGedungFormPageState
   }
 
   Future<void> _initData() async {
-    await _fetchBuildings();
+    await _fetchLocations();
     if (isEditing) {
       _loadPJGedungData();
     }
   }
 
-  Future<void> _fetchBuildings() async {
+  Future<void> _fetchLocations() async {
     setState(() => _isLoading = true);
     try {
-      final data = await reportService.getBuildings();
+      final data = await reportService.getLocations();
       if (mounted) {
         setState(() {
           _buildings = data.map((e) => e['name'].toString()).toList();
           if (_buildings.isNotEmpty &&
-              _selectedBuilding == null &&
+              _selectedLocation == null &&
               !isEditing) {
-            _selectedBuilding = _buildings.first;
+            _selectedLocation = _buildings.first;
           }
           _isLoading = false;
         });
       }
     } catch (e) {
-      debugPrint('Error fetching buildings: $e');
+      debugPrint('Error fetching locations: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -77,9 +77,9 @@ class _SupervisorPJGedungFormPageState
           _emailController.text = pj['email'] ?? '';
           _phoneController.text = pj['phone'] ?? '';
 
-          final managedBy = pj['managedBuilding'] as String?;
+          final managedBy = pj['managedLocation'] as String?;
           if (managedBy != null && _buildings.contains(managedBy)) {
-            _selectedBuilding = managedBy;
+            _selectedLocation = managedBy;
           }
           _isLoading = false;
         });
@@ -107,7 +107,7 @@ class _SupervisorPJGedungFormPageState
         'name': _nameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
-        'managedBuilding': _selectedBuilding,
+        'managedLocation': _selectedLocation,
       };
 
       if (!isEditing) {
@@ -213,7 +213,7 @@ class _SupervisorPJGedungFormPageState
                       },
                     ),
                     const Gap(24),
-                    _buildSectionTitle('Gedung yang Dikelola'),
+                    _buildSectionTitle('Lokasi yang Dikelola'),
                     const Gap(16),
                     _buildDropdownField(),
                     const Gap(16),
@@ -311,9 +311,9 @@ class _SupervisorPJGedungFormPageState
 
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
-      initialValue: _selectedBuilding,
+      initialValue: _selectedLocation,
       decoration: InputDecoration(
-        labelText: 'Pilih Gedung',
+        labelText: 'Pilih Lokasi',
         prefixIcon: const Icon(LucideIcons.building, color: Colors.grey),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
@@ -322,8 +322,8 @@ class _SupervisorPJGedungFormPageState
       items: _buildings
           .map((b) => DropdownMenuItem(value: b, child: Text(b)))
           .toList(),
-      onChanged: (value) => setState(() => _selectedBuilding = value!),
-      validator: (v) => v == null ? 'Pilih gedung' : null,
+      onChanged: (value) => setState(() => _selectedLocation = value!),
+      validator: (v) => v == null ? 'Pilih lokasi' : null,
     );
   }
 }

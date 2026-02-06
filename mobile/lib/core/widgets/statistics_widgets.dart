@@ -136,18 +136,21 @@ class StatsBigStatItem extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
+  final IconData? icon;
 
   const StatsBigStatItem({
     super.key,
     required this.value,
     required this.label,
     required this.color,
+    this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
+        if (icon != null) ...[Icon(icon, color: color, size: 20), const Gap(4)],
         Text(
           value,
           style: TextStyle(

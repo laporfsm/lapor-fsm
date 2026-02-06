@@ -142,76 +142,136 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: AppTheme.secondaryColor,
+              backgroundColor: Colors.white,
               automaticallyImplyLeading: false,
+              elevation: 0,
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Dashboard Teknisi',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
+              centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Background Image
-                    Image.network(
-                      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(color: AppTheme.secondaryColor);
-                      },
-                    ),
-                    // Gradient Overlay
+                    // 1. Base Gradient Background (Amber for Teknisi)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            AppTheme.secondaryColor.withValues(alpha: 0.85),
-                            AppTheme.secondaryColor.withValues(alpha: 0.95),
+                            AppTheme.secondaryColor,
+                            AppTheme.secondaryColor.withRed(255).withGreen(180),
                           ],
+                        ),
+                      ),
+                    ),
+                    // 2. Decorative Slanted Slants (Pattern)
+                    Positioned(
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
+                      right: -50,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
                         ),
                       ),
                     ),
                     // Content
                     SafeArea(
                       child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.wrench,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-                              const Gap(14),
-                              const Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Dashboard Teknisi',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        child: Opacity(
+                          opacity:
+                              1.0 -
+                              (innerBoxIsScrolled
+                                  ? 1.0
+                                  : 0.0), // Fade out when scrolled
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(50),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  Gap(2),
-                                  Text(
-                                    'Kelola & Selesaikan Laporan',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 13,
-                                    ),
+                                  child: const Icon(
+                                    LucideIcons.wrench,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                const Gap(14),
+                                const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Dashboard Teknisi',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Gap(2),
+                                    Text(
+                                      'Kelola & Selesaikan Laporan',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -461,7 +521,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               return UniversalReportCard(
                 id: report.id,
                 title: report.title,
-                location: report.building,
+                location: report.location,
                 locationDetail: report.locationDetail,
                 category: report.category,
                 status: report.status,
@@ -502,7 +562,7 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               return UniversalReportCard(
                 id: report.id,
                 title: report.title,
-                location: report.building,
+                location: report.location,
                 locationDetail: report.locationDetail,
                 category: report.category,
                 status: report.status,
