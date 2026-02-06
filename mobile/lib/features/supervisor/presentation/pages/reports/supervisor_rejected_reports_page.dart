@@ -33,13 +33,15 @@ class _SupervisorRejectedReportsPageState
     setState(() => _isLoading = true);
     try {
       // Assuming 'ditolak' status for rejected reports
-      final reports = await reportService.getStaffReports(
+      final response = await reportService.getStaffReports(
         role: 'supervisor',
         status: 'ditolak',
       );
       if (mounted) {
         setState(() {
-          _rejectedReports = reports;
+          _rejectedReports = List<Map<String, dynamic>>.from(
+            response['data'] ?? [],
+          );
           _isLoading = false;
         });
       }

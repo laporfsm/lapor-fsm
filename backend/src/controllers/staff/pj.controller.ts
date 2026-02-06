@@ -6,7 +6,7 @@ import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
 import { jwt } from '@elysiajs/jwt';
 import PDFDocument from 'pdfkit';
-import { getStartOfWeek } from '../../utils/date.utils';
+import { getStartOfWeek, getStartOfMonth } from '../../utils/date.utils';
 
 const statusLabels: Record<string, string> = {
     'pending': 'Perlu Verifikasi',
@@ -68,8 +68,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         const startOfWeek = getStartOfWeek();
 
-        // Strict Filter: Reports.building == Staff.managed_building
-        const whereClause = sql`${reports.location} = ${managedLocation}`;
+        // Strict Filter: Reports.location == Staff.managed_location
+        const whereClause = eq(reports.location, managedLocation);
 
         // Uses Database Timezone/Logic for consistency
         const todayReports = await db.select({ count: count() })
@@ -78,11 +78,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         const weekReports = await db.select({ count: count() })
             .from(reports)
-            .where(and(sql`${reports.createdAt} >= ${startOfWeek}`, whereClause));
+            .where(and(gte(reports.createdAt, startOfWeek), whereClause));
 
         const monthReports = await db.select({ count: count() })
             .from(reports)
-            .where(and(sql`${reports.createdAt} >= DATE_TRUNC('month', NOW())`, whereClause));
+            .where(and(gte(reports.createdAt, getStartOfMonth()), whereClause));
 
         const statusCounts = await db
             .select({
@@ -123,8 +123,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             };
         }
 
-        // Apply strict scope filter: building column = managed_building from staff
-        conditions.push(sql`${reports.location} = ${managedLocation}`);
+        // Apply strict scope filter: location column = managedLocation from staff
+        conditions.push(eq(reports.location, managedLocation));
 
         // Optional sub-filtering (e.g. searching for room number inside the location)
         if (location) {
@@ -148,14 +148,13 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             sql`${categories.name} ILIKE ${'%' + search + '%'}`
         ));
 
-        // Date Filtering Logic (SQL-based)
+        // Date Filtering Logic (Drizzle-operator based for better type support with Date objects)
         if (period === 'today') {
             conditions.push(sql`DATE(${reports.createdAt}) = CURRENT_DATE`);
         } else if (period === 'week') {
-            const startOfWeek = getStartOfWeek();
-            conditions.push(sql`${reports.createdAt} >= ${startOfWeek}`);
+            conditions.push(gte(reports.createdAt, getStartOfWeek()));
         } else if (period === 'month') {
-            conditions.push(sql`${reports.createdAt} >= DATE_TRUNC('month', NOW())`);
+            conditions.push(gte(reports.createdAt, getStartOfMonth()));
         }
 
         // Explicit Date Range (if provided override or add to period)
@@ -321,7 +320,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         // Strict Match if managing, otherwise loose match for admin/general
         let whereClause = managedLocation
-            ? sql`${reports.location} = ${managedLocation}`
+            ? eq(reports.location, managedLocation)
             : sql`${reports.location} ILIKE ${locationFilter}`;
 
         // 1. Issue Categories
@@ -426,7 +425,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         // Enforce location filtering from JWT if available
         if (managedLocation) {
-            conditions.push(sql`${reports.location} = ${managedLocation}`);
+            conditions.push(eq(reports.location, managedLocation));
         } else if (location) {
             conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
         }

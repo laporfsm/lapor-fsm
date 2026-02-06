@@ -27,7 +27,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     console.log('[LOGIN] User found. Verifying password...');
     // Debug: Log first few chars of stored hash (safe to log hash header usually)
     console.log('[LOGIN] Stored hash start:', foundUser[0].password.substring(0, 10) + '...');
-    
+
     const isMatch = await Bun.password.verify(body.password, foundUser[0].password);
     console.log('[LOGIN] Password match result:', isMatch);
 
@@ -35,7 +35,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       set.status = 401;
       return { status: 'error', message: 'Email atau password salah' };
     }
-    
+
     console.log('[LOGIN] Checks passed. user.isActive:', foundUser[0].isActive);
     console.log('[LOGIN] Checks passed. user.isEmailVerified:', foundUser[0].isEmailVerified);
     console.log('[LOGIN] Checks passed. user.isVerified:', foundUser[0].isVerified);
@@ -52,11 +52,11 @@ export const authController = new Elysia({ prefix: '/auth' })
     }
 
     if (!foundUser[0].isVerified) {
-       // set.status = 403;
-       // return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
-       // FOR DEBUG: Allow unverified users to login temporarily if that's the blocker, 
-       // BUT let's keep it strict first and see the logs.
-       console.log('[LOGIN] User is not verified by admin yet.');
+      // set.status = 403;
+      // return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
+      // FOR DEBUG: Allow unverified users to login temporarily if that's the blocker, 
+      // BUT let's keep it strict first and see the logs.
+      console.log('[LOGIN] User is not verified by admin yet.');
     }
 
     if (!foundUser[0].isVerified) {
@@ -129,7 +129,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       }
 
       const hashedPassword = await Bun.password.hash(body.password);
-      
+
       // Use crypto for better randomness
       const crypto = require('crypto');
       const verificationToken = crypto.randomInt(100000, 999999).toString();
@@ -163,15 +163,15 @@ export const authController = new Elysia({ prefix: '/auth' })
         actorId: newUser[0].id.toString(),
         actorName: newUser[0].name,
         actorRole: 'user',
-        reason: isUndipEmail(body.email) 
-          ? 'User mendaftar (UNDIP Email)' 
+        reason: isUndipEmail(body.email)
+          ? 'User mendaftar (UNDIP Email)'
           : 'User mendaftar (Non-UNDIP, Menunggu Verifikasi KTP)',
       });
 
       // Notify Admins
       await NotificationService.notifyRole(
-        'admin', 
-        'Request Registrasi Baru', 
+        'admin',
+        'Request Registrasi Baru',
         `User baru ${newUser[0].name} (${body.email}) telah mendaftar.`
       );
 
@@ -259,8 +259,8 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     return {
       status: 'success',
-      message: user[0].isVerified 
-        ? 'Email berhasil diverifikasi. Akun Anda sudah aktif.' 
+      message: user[0].isVerified
+        ? 'Email berhasil diverifikasi. Akun Anda sudah aktif.'
         : 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
     };
   }, {
@@ -320,13 +320,13 @@ export const authController = new Elysia({ prefix: '/auth' })
   .post('/forgot-password', async ({ body, set }) => {
     const { email } = body;
     console.log('[FORGOT PASSWORD] Receiving request for:', email);
-    
+
     // Check in users table first
     let user = await db.select().from(users).where(eq(users.email, email)).limit(1);
     console.log('[FORGOT PASSWORD] User found in users table:', user.length > 0);
 
     let isStaff = false;
-    
+
     // If not found in users, check in staff table
     if (user.length === 0) {
       const staffUser = await db.select().from(staff).where(eq(staff.email, email)).limit(1);
@@ -437,7 +437,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         .returning();
 
       console.log('[RESET PASSWORD] Update result:', updateResult);
-      
+
       if (updateResult.length === 0) {
         console.error('[RESET PASSWORD] Failed to update password - no rows affected');
         set.status = 500;

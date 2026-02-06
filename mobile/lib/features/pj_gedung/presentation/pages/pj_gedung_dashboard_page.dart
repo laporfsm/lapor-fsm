@@ -75,13 +75,27 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
             if (results[0] != null) {
               _dashboardStats = Map<String, int>.from(results[0] as Map);
             }
-            _pendingReports = (results[1] as List)
+            final pendingResponse = results[1] as Map<String, dynamic>;
+            final pendingData = List<Map<String, dynamic>>.from(
+              pendingResponse['data'] ?? [],
+            );
+            _pendingReports = pendingData
                 .map((json) => Report.fromJson(json))
                 .toList();
-            _emergencyReports = (results[2] as List)
+
+            final emergencyResponse = results[2] as Map<String, dynamic>;
+            final emergencyData = List<Map<String, dynamic>>.from(
+              emergencyResponse['data'] ?? [],
+            );
+            _emergencyReports = emergencyData
                 .map((json) => Report.fromJson(json))
                 .toList();
-            _verifiedReports = (results[3] as List)
+
+            final verifiedResponse = results[3] as Map<String, dynamic>;
+            final verifiedData = List<Map<String, dynamic>>.from(
+              verifiedResponse['data'] ?? [],
+            );
+            _verifiedReports = verifiedData
                 .map((json) => Report.fromJson(json))
                 .toList();
           });

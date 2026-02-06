@@ -93,7 +93,7 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           }
         }
 
-        final reportsData = await reportService.getStaffReports(
+        final response = await reportService.getStaffReports(
           role: 'pj',
           location: location,
           status: _activeFilter == 'all'
@@ -104,6 +104,8 @@ class _PJGedungHistoryPageState extends State<PJGedungHistoryPage> {
           endDate: endDate,
         );
 
+        final List<Map<String, dynamic>> reportsData =
+            List<Map<String, dynamic>>.from(response['data'] ?? []);
         _allReports = reportsData.map((json) => Report.fromJson(json)).toList();
       }
     } catch (e) {

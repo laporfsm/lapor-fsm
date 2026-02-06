@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { db } from '../../db';
 import { reports, categories, reportLogs, users, staff } from '../../db/schema';
-import { eq, desc, and, or, sql, gte, lte, ilike } from 'drizzle-orm';
+import { eq, desc, and, or, sql, gte, lte, ilike, count, isNull } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
@@ -12,7 +12,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
     const {
       categoryId,
       category,
-      building,
+      location,
       status,
       search,
       isEmergency,
@@ -29,7 +29,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
 
     if (categoryId) conditions.push(eq(reports.categoryId, parseInt(categoryId)));
     if (category) conditions.push(eq(categories.name, category));
-    if (building) conditions.push(eq(reports.location, building));
+    if (location) conditions.push(eq(reports.location, location));
 
     // Status Filter (Support comma-separated or single)
     if (status) {
@@ -79,10 +79,18 @@ export const reportController = new Elysia({ prefix: '/reports' })
     }
 
     // Filter out Merged Child Reports (where parentId is not null) by default
-    // Unless we specifically want to see them (maybe add a query param for that later)
-    conditions.push(sql`${reports.parentId} IS NULL`);
+    conditions.push(isNull(reports.parentId));
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count for pagination
+    const totalResult = await db
+      .select({ count: count() })
+      .from(reports)
+      .leftJoin(categories, eq(reports.categoryId, categories.id))
+      .where(whereClause);
+
+    const totalCount = totalResult[0]?.count || 0;
 
     const reporterStaff = alias(staff, 'reporter_staff');
     const handlerStaff = alias(staff, 'handler_staff');
@@ -135,6 +143,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
     return {
       status: 'success',
       data: result.map(r => mapToMobileReport(r)),
+      total: totalCount
     };
   }, {
     query: t.Object({
@@ -298,7 +307,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
       categoryId: body.categoryId,
       title: body.title,
       description: body.description,
-      location: body.building,
+      location: body.location,
       locationDetail: body.locationDetail,
       latitude: body.latitude,
       longitude: body.longitude,
@@ -334,14 +343,14 @@ export const reportController = new Elysia({ prefix: '/reports' })
       if (body.isEmergency) {
         await NotificationService.broadcastEmergency(
           'LAPORAN DARURAT!',
-          `Ada laporan darurat di ${body.building}: ${body.title}`,
+          `Ada laporan darurat di ${body.location}: ${body.title}`,
           newReport[0].id
         );
       } else {
         // Notify Supervisors & PJ Gedung (General Info)
-        await NotificationService.notifyRole('supervisor', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`, 'info', newReport[0].id);
+        await NotificationService.notifyRole('supervisor', 'Laporan Baru', `Laporan baru di ${body.location}: ${body.title}`, 'info', newReport[0].id);
         // TODO: Ideally filter PJ by building
-        await NotificationService.notifyRole('pj_gedung', 'Laporan Baru', `Laporan baru di ${body.building}: ${body.title}`, 'info', newReport[0].id);
+        await NotificationService.notifyRole('pj_gedung', 'Laporan Baru', `Laporan baru di ${body.location}: ${body.title}`, 'info', newReport[0].id);
       }
     } catch (e) {
       console.error('Notification Trigger Failed:', e);

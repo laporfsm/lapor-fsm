@@ -47,7 +47,7 @@ import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_archive_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_rejected_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_export_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_non_location_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_non_gedung_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_detail_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/stats/supervisor_statistics_page.dart';
@@ -58,7 +58,7 @@ import 'package:mobile/features/supervisor/presentation/pages/setting/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_categories_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_location_list_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_pj_location_form_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_pj_gedung_form_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_edit_profile_page.dart';
 
 // Admin imports
@@ -109,7 +109,7 @@ final appRouter = GoRouter(
 
       if (role == 'teknisi') return '/teknisi';
       if (role == 'supervisor') return '/supervisor';
-      if (role == 'pj_location') return '/pj-gedung';
+      if (role == 'pj_gedung') return '/pj-gedung';
       if (role == 'admin') return '/admin/dashboard';
       return '/'; // Default for pelapor
     }
@@ -121,7 +121,7 @@ final appRouter = GoRouter(
 
       if (role == 'teknisi') return '/teknisi';
       if (role == 'supervisor') return '/supervisor';
-      if (role == 'pj_location') return '/pj-gedung';
+      if (role == 'pj_gedung') return '/pj-gedung';
       if (role == 'admin') return '/admin/dashboard';
       // role == 'pelapor' stays at '/'
     }
@@ -430,7 +430,7 @@ final appRouter = GoRouter(
     // Export Reports Page
     GoRoute(
       path: '/supervisor/non-gedung',
-      builder: (context, state) => const SupervisorNonLokasiPage(),
+      builder: (context, state) => const SupervisorNonGedungPage(),
     ),
     GoRoute(
       path: '/supervisor/export',
