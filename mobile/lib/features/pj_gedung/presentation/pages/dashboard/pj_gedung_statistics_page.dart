@@ -48,15 +48,15 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
               ? 'Statistik ${widget.locationName}'
               : 'Statistik Lokasi',
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.pjGedungColor,
         centerTitle: true,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
           onPressed: () => context.pop(),
         ),
         titleTextStyle: const TextStyle(
-          color: Colors.black,
+          color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 18,
         ),
@@ -121,7 +121,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
                 label: Text('$thisMonth Laporan'),
                 backgroundColor: const Color(0xFFD1FAE5),
                 labelStyle: const TextStyle(
-                  color: AppTheme.pjLokasiColor,
+                  color: AppTheme.pjGedungColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -213,7 +213,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
         return StatsTrendBar(
           label: t['day'] ?? '',
           heightFactor: maxVal > 0 ? val / maxVal : 0.1,
-          activeColor: AppTheme.pjLokasiColor,
+          activeColor: AppTheme.pjGedungColor,
         );
       }).toList(),
     );
@@ -298,14 +298,14 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
           height: 12,
           decoration: BoxDecoration(
             color: Colors.white,
-            border: Border.all(color: AppTheme.pjLokasiColor, width: 3),
+            border: Border.all(color: AppTheme.pjGedungColor, width: 3),
             shape: BoxShape.circle,
           ),
         ),
         Container(
           width: 2,
           height: 60 * heightFactor,
-          color: AppTheme.pjLokasiColor.withValues(alpha: 0.5),
+          color: AppTheme.pjGedungColor.withValues(alpha: 0.5),
         ),
         const Gap(8),
         Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),

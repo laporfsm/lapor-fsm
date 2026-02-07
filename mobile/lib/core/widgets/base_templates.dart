@@ -6,12 +6,16 @@ class BaseHelpPage extends StatelessWidget {
   final String title;
   final List<HelpTopic> topics;
   final Color? accentColor;
+  final Color? appBarColor;
+  final Color? appBarForegroundColor;
 
   const BaseHelpPage({
     super.key,
     required this.title,
     required this.topics,
     this.accentColor,
+    this.appBarColor,
+    this.appBarForegroundColor,
   });
 
   @override
@@ -22,8 +26,9 @@ class BaseHelpPage extends StatelessWidget {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        backgroundColor: appBarColor ?? Colors.white,
+        foregroundColor: appBarForegroundColor ?? Colors.black,
+        iconTheme: IconThemeData(color: appBarForegroundColor ?? Colors.black),
         elevation: 0,
       ),
       body: SingleChildScrollView(

@@ -31,14 +31,14 @@ import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_all_r
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_siap_dimulai_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_sedang_dikerjakan_page.dart';
 
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_reports_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_statistics_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_help_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_settings_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_edit_profile_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_home_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_history_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_reports_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_report_detail_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/dashboard/pj_gedung_statistics_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_help_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_settings_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_edit_profile_page.dart';
 
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
@@ -363,7 +363,7 @@ final appRouter = GoRouter(
     // ===============================================
     GoRoute(
       path: '/pj-gedung',
-      builder: (context, state) => const PJGedungMainPage(),
+      builder: (context, state) => const PJGedungHomePage(),
     ),
     GoRoute(
       path: '/pj-gedung/reports',
@@ -494,7 +494,7 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/pj-gedung/history',
       builder: (context, state) {
-        final filter = state.uri.queryParameters['filter'] ?? 'pending';
+        final filter = state.uri.queryParameters['filter'] ?? 'all';
         return PJGedungHistoryPage(initialFilter: filter);
       },
     ),

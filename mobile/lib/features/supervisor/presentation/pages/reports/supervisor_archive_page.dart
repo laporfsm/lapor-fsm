@@ -5,78 +5,20 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 
 // Shared Report features
-import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
-import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/features/supervisor/presentation/widgets/supervisor_report_list_body.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Now functions as "Riwayat" tab view
-class SupervisorArchivePage extends StatefulWidget {
+class SupervisorArchivePage extends ConsumerStatefulWidget {
   const SupervisorArchivePage({super.key});
 
   @override
-  State<SupervisorArchivePage> createState() => _SupervisorArchivePageState();
+  ConsumerState<SupervisorArchivePage> createState() =>
+      _SupervisorArchivePageState();
 }
 
-class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
+class _SupervisorArchivePageState extends ConsumerState<SupervisorArchivePage> {
   DateTimeRange? _dateRange;
-
-  // Mock data - Only "Approved"
-  // Note: User logic says Riwayat = Approved.
-  // I will also add one 'ditolak' just in case to verify filter if I wanted to, but for now strict Approved.
-  final List<Report> _archives = [
-    Report(
-      id: '1',
-      title: 'AC Mati di Lab Komputer',
-      description: 'Selesai diperbaiki',
-      category: 'Kelistrikan',
-      location: 'Lokasi G',
-      status: ReportStatus.approved,
-      createdAt: DateTime.now().subtract(const Duration(days: 1)),
-      isEmergency: false,
-      reporterId: 'user1',
-      reporterName: 'Ahmad Fauzi',
-      handledBy: ['Budi Teknisi'],
-    ),
-    Report(
-      id: '2',
-      title: 'Kebocoran Pipa Toilet',
-      description: 'Pipa diganti baru',
-      category: 'Sanitasi / Air',
-      location: 'Lokasi C',
-      status: ReportStatus.approved,
-      createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      isEmergency: false,
-      reporterId: 'user2',
-      reporterName: 'Siti Aminah',
-      handledBy: ['Andi Teknisi'],
-    ),
-    Report(
-      id: '3',
-      title: 'Lampu Koridor Mati',
-      description: 'Bohlam diganti',
-      category: 'Kelistrikan',
-      location: 'Lokasi A',
-      status: ReportStatus.approved,
-      createdAt: DateTime.now().subtract(const Duration(days: 3)),
-      isEmergency: false,
-      reporterId: 'user3',
-      reporterName: 'Citra Teknisi',
-      handledBy: ['Citra Teknisi'],
-    ),
-    Report(
-      id: '4',
-      title: 'Kerusakan Pintu Kelas',
-      description: 'Engsel diperbaiki',
-      category: 'Sipil & Bangunan',
-      location: 'Lokasi B',
-      status: ReportStatus.approved,
-      createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      isEmergency: false,
-      reporterId: 'user4',
-      reporterName: 'Budi Teknisi',
-      handledBy: ['Budi Teknisi'],
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -141,21 +83,6 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
                   ),
                 ),
                 const Gap(12),
-                IconButton(
-                  onPressed: _showExportDialog,
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey.shade100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  icon: const Icon(
-                    LucideIcons.download,
-                    size: 20,
-                    color: Colors.black87,
-                  ),
-                  tooltip: 'Export',
-                ),
               ],
             ),
           ),
@@ -164,26 +91,19 @@ class _SupervisorArchivePageState extends State<SupervisorArchivePage> {
 
           // Archive List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _archives.length,
-              itemBuilder: (context, index) {
-                // Determine if we need to filter by date logic here if _dateRange is set
-                // For now just showing all mocks
-                final report = _archives[index];
-                return UniversalReportCard(
-                  id: report.id,
-                  title: report.title,
-                  location: report.location,
-                  locationDetail: report.locationDetail,
-                  category: report.category,
-                  status: report.status,
-                  isEmergency: report.isEmergency,
-                  reporterName: report.reporterName,
-                  handledBy: report.handledBy?.join(', '),
-                  onTap: () => context.push('/supervisor/review/${report.id}'),
-                );
+            child: SupervisorReportListBody(
+              status: 'approved,ditolak',
+              startDate: _dateRange?.start,
+              endDate: _dateRange?.end,
+              showSearch: true,
+              onReportTap: (reportId, status) {
+                context.push('/supervisor/review/$reportId');
               },
+              floatingActionButton: FloatingActionButton(
+                onPressed: _showExportDialog,
+                backgroundColor: Colors.white,
+                child: const Icon(LucideIcons.download, color: Colors.green),
+              ),
             ),
           ),
         ],

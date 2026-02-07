@@ -12,7 +12,7 @@ import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
 /// PJ Lokasi theme color
-const Color pjLokasiColor = Color(0xFF059669); // Emerald green
+const Color pjGedungColor = Color(0xFF059669); // Emerald green
 
 class PJGedungDashboardPage extends StatefulWidget {
   const PJGedungDashboardPage({super.key});
@@ -113,7 +113,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       floatingActionButton: const NotificationFab(
-        backgroundColor: AppTheme.pjLokasiColor,
+        backgroundColor: AppTheme.pjGedungColor,
       ),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -122,75 +122,135 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: pjLokasiColor,
+              backgroundColor: pjGedungColor,
               automaticallyImplyLeading: false,
+              elevation: 0,
+              iconTheme: const IconThemeData(color: Colors.white),
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Dashboard PJ Lokasi',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
+              centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Background Image
-                    Image.network(
-                      'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&q=80&w=1000',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          Container(color: pjLokasiColor),
-                    ),
-                    // Gradient Overlay
+                    // 1. Base Gradient Background (Emerald Green for PJ)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            pjLokasiColor.withValues(alpha: 0.85),
-                            pjLokasiColor.withValues(alpha: 0.95),
+                            pjGedungColor,
+                            pjGedungColor
+                                .withRed(50)
+                                .withBlue(150), // Slight variation
                           ],
+                        ),
+                      ),
+                    ),
+                    // 2. Decorative Slants (Pattern)
+                    Positioned(
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
+                      right: -50,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
                         ),
                       ),
                     ),
                     // Content
                     SafeArea(
                       child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Icon(
-                                  LucideIcons.mapPin,
-                                  color: Colors.white,
-                                  size: 26,
-                                ),
-                              ),
-                              const Gap(14),
-                              const Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Dashboard PJ Lokasi',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                        child: Opacity(
+                          opacity: 1.0 - (innerBoxIsScrolled ? 1.0 : 0.0),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(50),
+                                    borderRadius: BorderRadius.circular(14),
                                   ),
-                                  Gap(2),
-                                  Text(
-                                    'Verifikasi & Monitoring Lokasi A',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      fontSize: 13,
-                                    ),
+                                  child: const Icon(
+                                    LucideIcons.mapPin,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                                const Gap(14),
+                                const Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Dashboard PJ Lokasi',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Gap(2),
+                                    Text(
+                                      'Verifikasi & Monitoring Lokasi A',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -230,11 +290,11 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: pjLokasiColor.withValues(alpha: 0.3),
+                              color: pjGedungColor.withValues(alpha: 0.3),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: pjLokasiColor.withValues(alpha: 0.05),
+                                color: pjGedungColor.withValues(alpha: 0.05),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -247,7 +307,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                 children: [
                                   Icon(
                                     LucideIcons.barChart2,
-                                    color: pjLokasiColor,
+                                    color: pjGedungColor,
                                     size: 20,
                                   ),
                                   Gap(8),
@@ -255,7 +315,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                     'Lihat Statistik Lengkap',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      color: pjLokasiColor,
+                                      color: pjGedungColor,
                                     ),
                                   ),
                                 ],
@@ -263,7 +323,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                               Icon(
                                 LucideIcons.chevronRight,
                                 size: 16,
-                                color: pjLokasiColor,
+                                color: pjGedungColor,
                               ),
                             ],
                           ),
@@ -280,7 +340,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                         'Lihat Semua',
                         () => context.push('/pj-gedung/reports?status=pending'),
                         count: _stats['pending'],
-                        badgeColor: pjLokasiColor,
+                        badgeColor: pjGedungColor,
                       ),
                       const Gap(12),
                       _buildPendingList(context),
@@ -293,7 +353,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                           '/pj-gedung/reports?status=terverifikasi',
                         ),
                         count: _stats['verified'],
-                        badgeColor: pjLokasiColor,
+                        badgeColor: pjGedungColor,
                       ),
                       const Gap(12),
                       _buildVerifiedList(context),
@@ -549,18 +609,18 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: pjLokasiColor.withValues(alpha: 0.3)),
+          border: Border.all(color: pjGedungColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.layoutList, color: pjLokasiColor),
+            Icon(LucideIcons.layoutList, color: pjGedungColor),
             const Gap(10),
             const Text(
               'Semua Laporan',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: pjLokasiColor,
+                color: pjGedungColor,
                 fontSize: 15,
               ),
             ),

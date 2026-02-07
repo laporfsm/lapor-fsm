@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/settings_widgets.dart';
+import 'package:mobile/core/widgets/profile_widgets.dart';
 
 class PJGedungSettingsPage extends StatefulWidget {
   const PJGedungSettingsPage({super.key});
@@ -21,11 +22,16 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Pengaturan'),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.pjGedungColor,
         centerTitle: true,
         elevation: 0,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -33,7 +39,7 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
         child: Column(
           children: [
             const Gap(16),
-            SettingsSection(
+            ProfileSection(
               title: 'Notifikasi',
               children: [
                 SettingsSwitchTile(
@@ -43,26 +49,25 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
                   value: _notificationsEnabled,
                   onChanged: (val) =>
                       setState(() => _notificationsEnabled = val),
-                  activeColor: AppTheme.pjLokasiColor,
+                  activeColor: AppTheme.pjGedungColor,
                 ),
               ],
             ),
             const Gap(24),
-            SettingsSection(
+            ProfileSection(
               title: 'Aplikasi',
               children: [
                 SettingsTile(
-                  icon: LucideIcons.languages,
-                  title: 'Bahasa',
-                  subtitle: 'Indonesia',
-                  onTap: () => _showSnackBar(
-                    'Pilihan bahasa lainnya akan segera hadir!',
-                  ),
+                  icon: LucideIcons.trash2,
+                  title: 'Hapus Cache Aplikasi',
+                  subtitle: 'Selesaikan masalah sinkronisasi data',
+                  onTap: () => _showSnackBar('Cache berhasil dibersihkan'),
+                  iconColor: Colors.red,
                 ),
                 const SettingsTile(
                   icon: LucideIcons.info,
-                  title: 'Versi Aplikasi',
-                  subtitle: '1.0.0',
+                  title: 'Tentang Aplikasi',
+                  subtitle: 'Versi 1.0.0',
                   trailing: SizedBox.shrink(),
                 ),
               ],

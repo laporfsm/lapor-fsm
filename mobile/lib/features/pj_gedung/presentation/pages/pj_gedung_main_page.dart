@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_profile_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_dashboard_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_profile_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/dashboard/pj_gedung_dashboard_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_history_page.dart';
 
 class PJGedungMainPage extends StatefulWidget {
   const PJGedungMainPage({super.key});
