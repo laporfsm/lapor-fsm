@@ -12,9 +12,9 @@ class AppTheme {
     0xFF3730A3,
   ); // Indigo 800 (Supervisor Theme)
   static const Color adminColor = Color(0xFF9333EA); // Purple (Admin Theme)
-  static const Color pjLokasiColor = Color(
+  static const Color pjGedungColor = Color(
     0xFF059669,
-  ); // Emerald 600 (PJ Lokasi Theme)
+  ); // Emerald 600 (PJ Gedung Theme)
   static const Color teknisiColor = Color(
     0xFFF59E0B,
   ); // Amber (Teknisi/Secondary)

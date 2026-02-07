@@ -117,7 +117,13 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Edit Profil'),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.pjGedungColor,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _saveProfile,
@@ -125,13 +131,16 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                 ? const SizedBox(
                     height: 20,
                     width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text(
                     'SIMPAN',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.pjLokasiColor,
+                      color: Colors.white,
                     ),
                   ),
           ),
@@ -151,13 +160,13 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                   height: 100,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppTheme.pjLokasiColor.withValues(alpha: 0.1),
-                    border: Border.all(color: AppTheme.pjLokasiColor, width: 3),
+                    color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
+                    border: Border.all(color: AppTheme.pjGedungColor, width: 3),
                   ),
                   child: const Icon(
                     LucideIcons.user,
                     size: 48,
-                    color: AppTheme.pjLokasiColor,
+                    color: AppTheme.pjGedungColor,
                   ),
                 ),
               ),
@@ -269,7 +278,7 @@ class _PJGedungEditProfilePageState extends State<PJGedungEditProfilePage> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.pjLokasiColor,
+                    backgroundColor: AppTheme.pjGedungColor,
                   ),
                   icon: _isLoading
                       ? const SizedBox(

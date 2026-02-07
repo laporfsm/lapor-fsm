@@ -10,7 +10,9 @@ class PJGedungHelpPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const BaseHelpPage(
       title: 'Bantuan PJ Lokasi',
-      accentColor: AppTheme.pjLokasiColor,
+      accentColor: AppTheme.pjGedungColor,
+      appBarColor: AppTheme.pjGedungColor,
+      appBarForegroundColor: Colors.white,
       topics: [
         HelpTopic(
           icon: LucideIcons.mapPin,

@@ -54,8 +54,14 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Profil Saya'),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.pjGedungColor,
         automaticallyImplyLeading: false,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -72,16 +78,16 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.pjLokasiColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       border: Border.all(
-                        color: AppTheme.pjLokasiColor,
+                        color: AppTheme.pjGedungColor,
                         width: 3,
                       ),
                     ),
                     child: const Icon(
                       LucideIcons.user,
                       size: 48,
-                      color: AppTheme.pjLokasiColor,
+                      color: AppTheme.pjGedungColor,
                     ),
                   ),
                   const Gap(16),
@@ -104,7 +110,7 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.pjLokasiColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -113,13 +119,13 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
                         Icon(
                           LucideIcons.mapPin,
                           size: 14,
-                          color: AppTheme.pjLokasiColor,
+                          color: AppTheme.pjGedungColor,
                         ),
                         Gap(4),
                         Text(
                           "PJ Lokasi",
                           style: TextStyle(
-                            color: AppTheme.pjLokasiColor,
+                            color: AppTheme.pjGedungColor,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -181,19 +187,19 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
                     icon: LucideIcons.userCog,
                     label: "Ubah Profil",
                     onTap: () => context.push('/pj-gedung/edit-profile'),
-                    color: AppTheme.pjLokasiColor,
+                    color: AppTheme.pjGedungColor,
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
                     label: "Pengaturan",
                     onTap: () => context.push('/pj-gedung/settings'),
-                    color: AppTheme.pjLokasiColor,
+                    color: AppTheme.pjGedungColor,
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.helpCircle,
                     label: "Bantuan",
                     onTap: () => context.push('/pj-gedung/help'),
-                    color: AppTheme.pjLokasiColor,
+                    color: AppTheme.pjGedungColor,
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.logOut,

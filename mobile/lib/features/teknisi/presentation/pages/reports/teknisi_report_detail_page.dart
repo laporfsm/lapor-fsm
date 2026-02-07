@@ -1,70 +1,88 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/auth_service.dart';
-import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/core/widgets/report_detail_wrapper.dart';
+import 'package:mobile/core/providers/auth_provider.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
+import 'package:mobile/features/report_common/presentation/providers/report_detail_provider.dart';
+import 'package:mobile/core/widgets/report_detail_base.dart';
 
-class TeknisiReportDetailPage extends StatefulWidget {
+class TeknisiReportDetailPage extends ConsumerWidget {
   final String reportId;
 
   const TeknisiReportDetailPage({super.key, required this.reportId});
 
   @override
-  State<TeknisiReportDetailPage> createState() =>
-      _TeknisiReportDetailPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detailState = ref.watch(reportDetailProvider(reportId));
+    final currentUser = ref.watch(currentUserProvider).value;
+    final currentStaffId = currentUser?['id']?.toString();
 
-class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
-  bool _isProcessing = false;
-  String? _currentStaffId;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUser();
-  }
-
-  Future<void> _loadUser() async {
-    final user = await authService.getCurrentUser();
-    if (mounted) {
-      setState(() => _currentStaffId = user?['id']?.toString());
+    if (detailState.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    return ReportDetailWrapper(
-      reportId: widget.reportId,
+    if (detailState.error != null || detailState.report == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Detail Laporan')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(detailState.error ?? 'Laporan tidak ditemukan'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => ref
+                    .read(reportDetailProvider(reportId).notifier)
+                    .fetchReport(),
+                child: const Text('Coba Lagi'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final report = detailState.report!;
+
+    return ReportDetailBase(
+      report: report,
       viewerRole: UserRole.teknisi,
-      actionButtonsBuilder: (report, refresh) =>
-          _buildActionButtons(context, report, refresh),
+      actionButtons: _buildActionButtons(
+        context,
+        ref,
+        report,
+        currentStaffId,
+        detailState.isProcessing,
+      ),
     );
   }
 
   List<Widget> _buildActionButtons(
     BuildContext context,
+    WidgetRef ref,
     Report report,
-    Future<void> Function() refresh,
+    String? currentStaffId,
+    bool isProcessing,
   ) {
-    // SECURITY: Only assigned technician can take actions
-    if (_currentStaffId == null || report.assignedTo != _currentStaffId) {
-      return []; // Read-only view
+    if (currentStaffId == null || report.assignedTo != currentStaffId) {
+      return [];
     }
 
-    // Status: diproses - Teknisi bisa mulai penanganan
+    final notifier = ref.read(reportDetailProvider(reportId).notifier);
+
     if (report.status == ReportStatus.diproses) {
       return [
         ElevatedButton.icon(
-          onPressed: _isProcessing
+          onPressed: isProcessing
               ? null
-              : () => _startHandling(context, report, refresh),
-          icon: _isProcessing
+              : () => _handleStart(context, notifier),
+          icon: isProcessing
               ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -74,7 +92,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                   ),
                 )
               : const Icon(LucideIcons.play),
-          label: Text(_isProcessing ? 'Memproses...' : 'Mulai Penanganan'),
+          label: Text(isProcessing ? 'Memproses...' : 'Mulai Penanganan'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -82,15 +100,12 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           ),
         ),
       ];
-    }
-    // Status: penanganan - Teknisi bisa pause atau selesaikan
-    else if (report.status == ReportStatus.penanganan) {
+    } else if (report.status == ReportStatus.penanganan) {
       return [
-        // Pause Button
         OutlinedButton.icon(
-          onPressed: _isProcessing
+          onPressed: isProcessing
               ? null
-              : () => _pauseReport(context, report, refresh),
+              : () => _handlePause(context, notifier, currentStaffId),
           icon: const Icon(LucideIcons.pauseCircle),
           label: const Text('Pause'),
           style: OutlinedButton.styleFrom(
@@ -99,10 +114,8 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
-        // Selesaikan Button
         ElevatedButton.icon(
-          onPressed: () =>
-              context.push('/teknisi/report/${widget.reportId}/complete'),
+          onPressed: () => context.push('/teknisi/report/$reportId/complete'),
           icon: const Icon(LucideIcons.checkCircle2),
           label: const Text('Selesaikan'),
           style: ElevatedButton.styleFrom(
@@ -115,10 +128,10 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     } else if (report.status == ReportStatus.onHold) {
       return [
         ElevatedButton.icon(
-          onPressed: _isProcessing
+          onPressed: isProcessing
               ? null
-              : () => _resumeReport(context, report, refresh),
-          icon: _isProcessing
+              : () => _handleResume(context, notifier),
+          icon: isProcessing
               ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -128,7 +141,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                   ),
                 )
               : const Icon(LucideIcons.playCircle),
-          label: Text(_isProcessing ? 'Memproses...' : 'Lanjutkan Pekerjaan'),
+          label: Text(isProcessing ? 'Memproses...' : 'Lanjutkan Pekerjaan'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -137,13 +150,12 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         ),
       ];
     } else if (report.status == ReportStatus.recalled) {
-      // Status: recalled - Supervisor minta revisi, teknisi bisa mulai kembali
       return [
         ElevatedButton.icon(
-          onPressed: _isProcessing
+          onPressed: isProcessing
               ? null
-              : () => _startHandling(context, report, refresh),
-          icon: _isProcessing
+              : () => _handleStart(context, notifier),
+          icon: isProcessing
               ? const SizedBox(
                   width: 20,
                   height: 20,
@@ -153,7 +165,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                   ),
                 )
               : const Icon(LucideIcons.rotateCcw),
-          label: Text(_isProcessing ? 'Memproses...' : 'Mulai Kembali'),
+          label: Text(isProcessing ? 'Memproses...' : 'Mulai Kembali'),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
@@ -165,19 +177,15 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     return [];
   }
 
-  void _startHandling(
+  Future<void> _handleStart(
     BuildContext context,
-    Report report,
-    Future<void> Function() refresh,
+    ReportDetailNotifier notifier,
   ) async {
-    setState(() => _isProcessing = true);
     try {
-      final user = await authService.getCurrentUser();
-      if (user != null) {
-        final staffId = int.parse(user['id'].toString());
-        await reportService.acceptTask(report.id, staffId);
-        await refresh();
-        if (!mounted || !context.mounted) return;
+      final staffId = await _getStaffId(notifier);
+      if (staffId != null) {
+        await notifier.acceptTask(staffId);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Penanganan dimulai'),
@@ -186,8 +194,7 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         );
       }
     } catch (e) {
-      debugPrint('Error accepting report: $e');
-      if (mounted && context.mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memulai penanganan: $e'),
@@ -195,16 +202,17 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
           ),
         );
       }
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
-  void _pauseReport(
+  Future<void> _handlePause(
     BuildContext context,
-    Report report,
-    Future<void> Function() refresh,
-  ) {
+    ReportDetailNotifier notifier,
+    String staffIdStr,
+  ) async {
+    final staffId = int.tryParse(staffIdStr);
+    if (staffId == null) return;
+
     showDialog(
       context: context,
       builder: (context) {
@@ -238,25 +246,17 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
                 final navigator = Navigator.of(context);
                 final messenger = ScaffoldMessenger.of(context);
                 navigator.pop();
-                setState(() => _isProcessing = true);
                 try {
-                  final user = await authService.getCurrentUser();
-                  if (user != null) {
-                    final staffId = int.parse(user['id'].toString());
-                    await reportService.pauseTask(report.id, staffId, reason);
-                    await refresh();
-                    if (!messenger.mounted) return;
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Pengerjaan ditunda (Pause)'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                  }
+                  await notifier.pauseTask(staffId, reason);
+                  if (!messenger.mounted) return;
+                  messenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Pengerjaan ditunda (Pause)'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
                 } catch (e) {
-                  debugPrint('Error pausing report: $e');
-                } finally {
-                  if (mounted) setState(() => _isProcessing = false);
+                  debugPrint('Error pausing task: $e');
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -271,19 +271,15 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
     );
   }
 
-  void _resumeReport(
+  Future<void> _handleResume(
     BuildContext context,
-    Report report,
-    Future<void> Function() refresh,
+    ReportDetailNotifier notifier,
   ) async {
-    setState(() => _isProcessing = true);
     try {
-      final user = await authService.getCurrentUser();
-      if (user != null) {
-        final staffId = int.parse(user['id'].toString());
-        await reportService.resumeTask(report.id, staffId);
-        await refresh();
-        if (!mounted || !context.mounted) return;
+      final staffId = await _getStaffId(notifier);
+      if (staffId != null) {
+        await notifier.resumeTask(staffId);
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Pengerjaan dilanjutkan'),
@@ -292,9 +288,12 @@ class _TeknisiReportDetailPageState extends State<TeknisiReportDetailPage> {
         );
       }
     } catch (e) {
-      debugPrint('Error resuming report: $e');
-    } finally {
-      if (mounted) setState(() => _isProcessing = false);
+      debugPrint('Error resuming task: $e');
     }
+  }
+
+  Future<int?> _getStaffId(ReportDetailNotifier notifier) async {
+    final user = await authService.getCurrentUser();
+    return user != null ? int.tryParse(user['id'].toString()) : null;
   }
 }
