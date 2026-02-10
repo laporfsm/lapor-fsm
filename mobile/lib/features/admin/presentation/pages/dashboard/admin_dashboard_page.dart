@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -9,6 +8,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
+import 'package:mobile/core/widgets/universal_report_card.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/features/report_common/domain/entities/report.dart';
+import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -19,7 +22,7 @@ class AdminDashboardPage extends ConsumerStatefulWidget {
 
 class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   Map<String, dynamic>? _stats;
-  List<Map<String, dynamic>> _recentReports = [];
+  List<Report> _recentReports = [];
   List<Map<String, dynamic>> _systemLogs = [];
   bool _isLoading = true;
   String _userName = 'Admin';
@@ -74,9 +77,10 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
             _stats = dashboardRes.data['data'];
           }
           if (recentRes.data['status'] == 'success') {
-            _recentReports = List<Map<String, dynamic>>.from(
+            final data = List<Map<String, dynamic>>.from(
               recentRes.data['data'],
             );
+            _recentReports = data.map((json) => Report.fromJson(json)).toList();
           }
           _isLoading = false;
         });
@@ -95,104 +99,136 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       floatingActionButton: const NotificationFab(
         backgroundColor: AppTheme.adminColor,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                return [
-                  SliverAppBar(
-                    expandedHeight: 140, // Restored height
-                    floating: false,
-                    pinned: true,
-                    backgroundColor: AppTheme.adminColor,
-                    automaticallyImplyLeading: false,
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Background Image
-                          Image.network(
-                            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800',
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(color: AppTheme.adminColor);
-                            },
-                          ),
-                          // Gradient Overlay
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  AppTheme.adminColor.withValues(alpha: 0.85),
-                                  AppTheme.adminColor.withValues(alpha: 0.95),
-                                ],
-                              ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 140,
+              floating: false,
+              pinned: true,
+              backgroundColor: AppTheme.adminColor,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Base Gradient Background
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.adminColor,
+                            AppTheme.adminColor.withRed(
+                              AppTheme.adminColor.red + 30,
                             ),
-                          ),
-                          // Content
-                          SafeArea(
-                            child: Center(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Decorative Circles (Pattern)
+                    Positioned(
+                      top: -50,
+                      right: -50,
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -30,
+                      left: -30,
+                      child: Container(
+                        width: 150,
+                        height: 150,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withValues(alpha: 0.05),
+                        ),
+                      ),
+                    ),
+                    // Gradient Overlay for text readability
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.2),
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Content
+                    SafeArea(
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.3),
+                                  ),
                                 ),
-                                child: Row(
+                                child: const Icon(
+                                  LucideIcons.shieldCheck,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                              const Gap(16),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(14),
-                                      ),
-                                      child: const Icon(
-                                        LucideIcons.shieldCheck,
+                                    Text(
+                                      'Halo, $_userName',
+                                      style: const TextStyle(
                                         color: Colors.white,
-                                        size: 26,
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const Gap(14),
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Halo, $_userName',
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          const Gap(2),
-                                          const Text(
-                                            'Administrator',
-                                            style: TextStyle(
-                                              color: Colors.white70,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ],
+                                    const Gap(4),
+                                    Text(
+                                      'Administrator',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.9,
+                                        ),
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ];
-              },
-              body: RefreshIndicator(
+                  ],
+                ),
+              ),
+            ),
+          ];
+        },
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : RefreshIndicator(
                 onRefresh: _loadData,
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -205,95 +241,8 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           _stats!['totalEmergency'] > 0)
                         const Gap(16),
 
-                      const Text(
-                        'Statistik Ringkas',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Gap(16),
-
-                      // Stats Row (Compact Single Line)
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _CompactStatItem(
-                              label: 'Laporan',
-                              value: _stats?['totalReports']?.toString() ?? '0',
-                              icon: LucideIcons.fileText,
-                              color: Colors.blue,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.grey.shade200,
-                            ),
-                            _CompactStatItem(
-                              label: 'User',
-                              value: _stats?['totalUsers']?.toString() ?? '0',
-                              icon: LucideIcons.users,
-                              color: Colors.purple,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.grey.shade200,
-                            ),
-                            _CompactStatItem(
-                              label: 'Handling',
-                              value: '${_stats?['avgHandlingMinutes'] ?? 0}m',
-                              icon: LucideIcons.clock,
-                              color: Colors.orange,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.grey.shade200,
-                            ),
-                            const _CompactStatItem(
-                              label: 'Server',
-                              value: 'Online',
-                              icon: LucideIcons.server,
-                              color: Colors.green,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(16),
-
-                      // Full Stats Link
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push('/admin/statistics'),
-                          icon: const Icon(LucideIcons.barChart2, size: 18),
-                          label: const Text('Lihat Statistik Lengkap'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.adminColor,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: BorderSide(
-                              color: AppTheme.adminColor.withValues(alpha: 0.5),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ),
+                      // Statistics Section
+                      _buildStatsSection(context),
                       const Gap(24),
 
                       // Quick Actions
@@ -306,142 +255,27 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                       ),
                       const Gap(12),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Better spacing
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _QuickActionButton(
                             label: 'Verifikasi User',
                             icon: LucideIcons.userCheck,
                             color: Colors.orange,
-                            onTap: () => context.go(
-                              '/admin/users?tab=1',
-                            ),
+                            onTap: () => context.go('/admin/users?tab=1'),
                           ),
                           _QuickActionButton(
                             label: 'Kelola Staff',
                             icon: LucideIcons.users,
                             color: Colors.green,
-                            onTap: () => context.go(
-                              '/admin/users?tab=2',
-                            ), 
+                            onTap: () => context.go('/admin/users?tab=2'),
                           ),
                           _QuickActionButton(
-                             label: 'Semua Laporan',
-                             icon: LucideIcons.fileText,
-                             color: Colors.blue,
-                             onTap: () => context.go('/admin/reports'),
+                            label: 'Semua Laporan',
+                            icon: LucideIcons.fileText,
+                            color: Colors.blue,
+                            onTap: () => context.go('/admin/reports'),
                           ),
                         ],
-                      ),
-                      const Gap(24),
-
-                      // Periodic Stats (Mock Chart)
-                      const Text(
-                        'Grafik Mingguan',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Gap(12),
-                      Container(
-                        height: 240,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Tren Laporan (7 Hari Terakhir)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Gap(20),
-                            Expanded(
-                              child: _stats?['weeklyTrend'] == null
-                                  ? const Center(
-                                      child: Text(
-                                        'Belum ada data grafik',
-                                        style: TextStyle(color: Colors.grey),
-                                      ),
-                                    )
-                                  : BarChart(
-                                      BarChartData(
-                                        alignment: BarChartAlignment.spaceEvenly,
-                                        maxY: 50, // Static max for now or calc dynamic
-                                        barTouchData: BarTouchData(
-                                          touchTooltipData: BarTouchTooltipData(
-                                            getTooltipColor: (_) => Colors.white,
-                                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                                              return BarTooltipItem(
-                                                '${rod.toY.toInt()}',
-                                                TextStyle(
-                                                  color: rod.color ?? Colors.blue,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              );
-                                            },
-                                          ),
-                                        ),
-                                        titlesData: FlTitlesData(
-                                          show: true,
-                                          bottomTitles: AxisTitles(
-                                            sideTitles: SideTitles(
-                                              showTitles: true,
-                                              getTitlesWidget: (value, meta) {
-                                                final list = _stats?['weeklyTrend'] as List?;
-                                                if (list != null && value >= 0 && value < list.length) {
-                                                  return Padding(
-                                                    padding: const EdgeInsets.only(top: 8.0),
-                                                    child: Text(
-                                                      list[value.toInt()]['day'].toString().substring(0, 3),
-                                                      style: TextStyle(
-                                                        color: Colors.grey.shade400,
-                                                        fontSize: 10,
-                                                      ),
-                                                    ),
-                                                  );
-                                                }
-                                                return const Text('');
-                                              },
-                                            ),
-                                          ),
-                                          leftTitles: const AxisTitles(
-                                            sideTitles: SideTitles(showTitles: false),
-                                          ),
-                                          topTitles: const AxisTitles(
-                                            sideTitles: SideTitles(showTitles: false),
-                                          ),
-                                          rightTitles: const AxisTitles(
-                                            sideTitles: SideTitles(showTitles: false),
-                                          ),
-                                        ),
-                                        gridData: const FlGridData(show: false),
-                                        borderData: FlBorderData(show: false),
-                                        barGroups: (_stats?['weeklyTrend'] as List? ?? []).asMap().entries.map((e) {
-                                          final val = (e.value['value'] as num? ?? 0).toDouble();
-                                          return BarChartGroupData(
-                                            x: e.key,
-                                            barRods: [
-                                              BarChartRodData(
-                                                toY: val,
-                                                color: AppTheme.adminColor,
-                                                width: 16,
-                                                borderRadius: BorderRadius.circular(4),
-                                              ),
-                                            ],
-                                          );
-                                        }).toList(),
-                                      ),
-                                    ),
-                            ),
-                          ],
-                        ),
                       ),
                       const Gap(24),
 
@@ -462,12 +296,30 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           ),
                         ],
                       ),
+                      const Gap(12),
 
                       if (_recentReports.isEmpty)
-                        const Center(
-                          child: Text(
-                            'Belum ada laporan',
-                            style: TextStyle(color: Colors.grey),
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Column(
+                              children: [
+                                Icon(
+                                  LucideIcons.fileText,
+                                  size: 48,
+                                  color: Colors.grey.shade300,
+                                ),
+                                const Gap(8),
+                                Text(
+                                  'Belum ada laporan',
+                                  style: TextStyle(color: Colors.grey.shade500),
+                                ),
+                              ],
+                            ),
                           ),
                         )
                       else
@@ -476,16 +328,29 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _recentReports.length > 3
                               ? 3
-                              : _recentReports.length, // Limit to 3
+                              : _recentReports.length,
                           separatorBuilder: (_, __) => const Gap(12),
                           itemBuilder: (context, index) {
                             final report = _recentReports[index];
-                            return _ReportListItem(report: report);
+                            return UniversalReportCard(
+                              id: report.id,
+                              title: report.title,
+                              location: report.location,
+                              locationDetail: report.locationDetail,
+                              category: report.category,
+                              status: report.status,
+                              isEmergency: report.isEmergency,
+                              reporterName: report.reporterName,
+                              showStatus: true,
+                              onTap: () {
+                                context.push('/admin/reports/${report.id}');
+                              },
+                            );
                           },
                         ),
                       const Gap(24),
 
-                      // System Logs (New List)
+                      // System Logs
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -503,45 +368,214 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                         ],
                       ),
                       const Gap(12),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _systemLogs.length > 3 ? 3 : _systemLogs.length,
-                        separatorBuilder: (_, __) => const Gap(12),
-                        itemBuilder: (context, index) {
-                          final log = _systemLogs[index];
-                          IconData icon = LucideIcons.activity;
-                          Color color = Colors.grey;
-
-                          if (log['action']?.toString().toLowerCase().contains('created') == true) {
-                            icon = LucideIcons.filePlus;
-                            color = Colors.blue;
-                          } else if (log['action']?.toString().toLowerCase().contains('verify') == true) {
-                            icon = LucideIcons.userCheck;
-                            color = Colors.green;
-                          }
-
-                          return _ActivityItem(
-                            text: '${log['user']}: ${log['action']}',
-                            time: _formatTimeAgo(log['time']),
-                            icon: icon,
-                            color: color,
-                          );
-                        },
-                      ),
+                      _buildSystemLogsSection(),
 
                       const Gap(80), // Bottom padding for FAB
                     ],
                   ),
                 ),
               ),
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Statistik Ringkas',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Gap(16),
+
+        // Stats Grid
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            childAspectRatio: 1.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              _StatCard(
+                label: 'Total Laporan',
+                value: _stats?['totalReports']?.toString() ?? '0',
+                icon: LucideIcons.fileText,
+                color: Colors.blue,
+              ),
+              _StatCard(
+                label: 'Total User',
+                value: _stats?['totalUsers']?.toString() ?? '0',
+                icon: LucideIcons.users,
+                color: Colors.purple,
+              ),
+              _StatCard(
+                label: 'Rata-rata Penanganan',
+                value: '${_stats?['avgHandlingMinutes'] ?? 0}m',
+                icon: LucideIcons.clock,
+                color: Colors.orange,
+              ),
+              _StatCard(
+                label: 'Status Server',
+                value: 'Online',
+                icon: LucideIcons.server,
+                color: Colors.green,
+              ),
+            ],
+          ),
+        ),
+        const Gap(12),
+
+        // Full Stats Link with BouncingButton
+        BouncingButton(
+          onTap: () => context.push('/admin/statistics'),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppTheme.adminColor.withValues(alpha: 0.3),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.adminColor.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      LucideIcons.barChart2,
+                      color: AppTheme.adminColor,
+                      size: 20,
+                    ),
+                    const Gap(8),
+                    Text(
+                      'Lihat Statistik Lengkap',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.adminColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Icon(
+                  LucideIcons.chevronRight,
+                  size: 16,
+                  color: AppTheme.adminColor,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSystemLogsSection() {
+    if (_systemLogs.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                LucideIcons.activity,
+                size: 48,
+                color: Colors.grey.shade300,
+              ),
+              const Gap(8),
+              Text(
+                'Belum ada log sistem',
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _systemLogs.length > 3 ? 3 : _systemLogs.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final log = _systemLogs[index];
+          IconData icon = LucideIcons.activity;
+          Color color = Colors.grey;
+
+          final action = log['action']?.toString().toLowerCase() ?? '';
+          if (action.contains('created') || action.contains('create')) {
+            icon = LucideIcons.filePlus;
+            color = Colors.blue;
+          } else if (action.contains('verify')) {
+            icon = LucideIcons.userCheck;
+            color = Colors.green;
+          } else if (action.contains('delete')) {
+            icon = LucideIcons.trash2;
+            color = Colors.red;
+          } else if (action.contains('update')) {
+            icon = LucideIcons.edit;
+            color = Colors.orange;
+          }
+
+          return _LogListTile(
+            title: '${log['user'] ?? 'System'}',
+            subtitle: log['action'] ?? 'Unknown action',
+            time: _formatTimeAgo(log['time']),
+            icon: icon,
+            color: color,
+          );
+        },
+      ),
     );
   }
 
   String _formatTimeAgo(dynamic time) {
     if (time == null) return '-';
-    final DateTime dateTime = time is DateTime ? time : DateTime.parse(time.toString());
+    final DateTime dateTime =
+        time is DateTime ? time : DateTime.parse(time.toString());
     final diff = DateTime.now().difference(dateTime);
 
     if (diff.inMinutes < 60) return '${diff.inMinutes}m lalu';
@@ -550,15 +584,14 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   }
 
   Widget _buildEmergencyAlert(BuildContext context) {
-    // Check if 'totalEmergency' is in stats, otherwise assume 0
     final emergencyCount = _stats?['totalEmergency'] ?? 0;
 
     if (emergencyCount == 0) return const SizedBox.shrink();
 
-    return GestureDetector(
+    return BouncingButton(
       onTap: () {
-        // Todo: Navigate to report list filtered by emergency
-        // context.push('/admin/reports?isEmergency=true');
+        // Navigate to reports filtered by emergency
+        context.go('/admin/reports');
       },
       child: Container(
         width: double.infinity,
@@ -621,77 +654,15 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
   }
 }
 
-class _ReportListItem extends StatelessWidget {
-  final Map<String, dynamic> report;
-
-  const _ReportListItem({required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    Color statusColor = Colors.grey;
-    String status = report['status'] ?? 'Unknown';
-
-    if (status == 'Menunggu') statusColor = Colors.orange;
-    if (status == 'Diproses') statusColor = Colors.blue;
-    if (status == 'Selesai') statusColor = Colors.green;
-    if (status == 'Ditolak') statusColor = Colors.red;
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: statusColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(LucideIcons.fileText, color: statusColor, size: 20),
-          ),
-          const Gap(12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  report['title'] ?? 'Laporan Tanpa Judul',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                Text(
-                  '${report['building']} • $status',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          const Gap(8),
-          Icon(LucideIcons.chevronRight, size: 16, color: Colors.grey.shade400),
-        ],
-      ),
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final String text;
-  final String time;
+class _StatCard extends StatelessWidget {
+  final String label;
+  final String value;
   final IconData icon;
   final Color color;
 
-  const _ActivityItem({
-    required this.text,
-    required this.time,
+  const _StatCard({
+    required this.label,
+    required this.value,
     required this.icon,
     required this.color,
   });
@@ -701,18 +672,70 @@ class _ActivityItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+        ),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const Spacer(),
+              Text(
+                value,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+          const Gap(8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LogListTile extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String time;
+  final IconData icon;
+  final Color color;
+
+  const _LogListTile({
+    required this.title,
+    required this.subtitle,
+    required this.time,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 20),
           ),
@@ -722,20 +745,28 @@ class _ActivityItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  text,
+                  title,
                   style: const TextStyle(
+                    fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const Gap(4),
+                const Gap(2),
                 Text(
-                  time,
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 12,
+                  ),
                 ),
               ],
+            ),
+          ),
+          Text(
+            time,
+            style: TextStyle(
+              color: Colors.grey.shade500,
+              fontSize: 12,
             ),
           ),
         ],
@@ -759,59 +790,31 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return BouncingButton(
       onTap: onTap,
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: color.withValues(alpha: 0.2),
+              ),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Icon(icon, color: color, size: 28),
           ),
           const Gap(8),
           Text(
             label,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
-    );
-  }
-}
-
-
-class _CompactStatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _CompactStatItem({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 20),
-        const Gap(4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 10),
-        ),
-      ],
     );
   }
 }
