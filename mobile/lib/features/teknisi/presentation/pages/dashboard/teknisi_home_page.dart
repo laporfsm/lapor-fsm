@@ -5,7 +5,7 @@ import 'package:mobile/features/teknisi/presentation/pages/dashboard/teknisi_das
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_incoming_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_active_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_history_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart';
 
 /// Teknisi Shell Page with bottom navigation
 class TeknisiHomePage extends StatefulWidget {
@@ -23,7 +23,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
     TeknisiIncomingPage(),
     TeknisiActivePage(),
     TeknisiHistoryPage(),
-    TeknisiProfilePage(),
+    TeknisiSettingMainPage(),
   ];
 
   @override
@@ -51,7 +51,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
                 _buildNavItem(1, LucideIcons.inbox, 'Masuk'),
                 _buildNavItem(2, LucideIcons.hammer, 'Aktif'),
                 _buildNavItem(3, LucideIcons.history, 'Riwayat'),
-                _buildNavItem(4, LucideIcons.user, 'Profil'),
+                _buildNavItem(4, LucideIcons.settings, 'Setting'),
               ],
             ),
           ),
@@ -68,7 +68,7 @@ class _TeknisiHomePageState extends State<TeknisiHomePage> {
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         decoration: isSelected
             ? BoxDecoration(
                 color: AppTheme.secondaryColor.withValues(alpha: 0.1),

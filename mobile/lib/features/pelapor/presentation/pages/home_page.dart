@@ -57,7 +57,10 @@ class _HomePageState extends ConsumerState<HomePage> {
     if (!mounted) return;
 
     try {
-      final reportsData = await reportService.getPublicReports();
+      final response = await reportService.getPublicReports();
+      final List<Map<String, dynamic>> reportsData =
+          List<Map<String, dynamic>>.from(response['data'] ?? []);
+
       if (mounted) {
         setState(() {
           _recentReports = reportsData
@@ -573,7 +576,7 @@ class _HomePageState extends ConsumerState<HomePage> {
         return UniversalReportCard(
           id: report.id,
           title: report.title,
-          location: report.building,
+          location: report.location,
           locationDetail: report.locationDetail,
           category: report.category,
           status: report.status,

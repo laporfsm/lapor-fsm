@@ -7,8 +7,10 @@ import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/location_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/widgets/media_viewer_modal.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class CreateReportPage extends StatefulWidget {
@@ -59,7 +61,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
   Future<void> _fetchBuildings() async {
     try {
-      final buildings = await reportService.getBuildings();
+      final buildings = await reportService.getLocations();
       if (mounted) {
         setState(() {
           _buildings = buildings.map((b) => b['name'] as String).toList();
@@ -73,15 +75,20 @@ class _CreateReportPageState extends State<CreateReportPage> {
   Future<void> _fetchCurrentLocation() async {
     setState(() => _isFetchingLocation = true);
 
-    // Simulate GPS fetch (real implementation uses geolocator)
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (mounted) {
-      setState(() {
-        _latitude = -6.998576; // Mock: FSM Undip coordinates
-        _longitude = 110.423188;
-        _isFetchingLocation = false;
-      });
+    try {
+      final position = await locationService.getCurrentPosition();
+      if (mounted && position != null) {
+        setState(() {
+          _latitude = position.latitude;
+          _longitude = position.longitude;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching location: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isFetchingLocation = false);
+      }
     }
   }
 
@@ -98,6 +105,16 @@ class _CreateReportPageState extends State<CreateReportPage> {
           for (var image in images) {
             if (_selectedImages.length >= 3) break;
             final bytes = await image.readAsBytes();
+            if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Ukuran file ${image.name} melebihi 100MB'),
+                  ),
+                );
+              }
+              continue;
+            }
             setState(() {
               _selectedImages.add(image);
               _selectedImagesBytes.add(bytes);
@@ -113,6 +130,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
         );
         if (image != null) {
           final bytes = await image.readAsBytes();
+          if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Ukuran file melebihi 100MB')),
+              );
+            }
+            return;
+          }
           setState(() {
             _selectedImages.add(image);
             _selectedImagesBytes.add(bytes);
@@ -121,6 +146,32 @@ class _CreateReportPageState extends State<CreateReportPage> {
       }
     } catch (e) {
       debugPrint('Error picking image: $e');
+    }
+  }
+
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 2),
+      );
+      if (video != null) {
+        final bytes = await video.readAsBytes();
+        if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ukuran video melebihi 100MB')),
+            );
+          }
+          return;
+        }
+        setState(() {
+          _selectedImages.add(video);
+          _selectedImagesBytes.add(bytes);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking video: $e');
     }
   }
 
@@ -135,7 +186,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
     if (_selectedImages.length >= 3) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Maksimal 3 foto')));
+      ).showSnackBar(const SnackBar(content: Text('Maksimal 3 foto/video')));
       return;
     }
 
@@ -154,11 +205,27 @@ class _CreateReportPageState extends State<CreateReportPage> {
               },
             ),
             ListTile(
+              leading: const Icon(LucideIcons.video),
+              title: const Text('Rekam Video'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.camera);
+              },
+            ),
+            ListTile(
               leading: const Icon(LucideIcons.image),
-              title: const Text('Pilih dari Galeri'),
+              title: const Text('Pilih Foto dari Galeri'),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.video),
+              title: const Text('Pilih Video dari Galeri'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickVideo(ImageSource.gallery);
               },
             ),
           ],
@@ -239,7 +306,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
         categoryId: categoryId,
         title: _subjectController.text,
         description: _descController.text,
-        building: _selectedBuilding!,
+        location: _selectedBuilding!,
         locationDetail: _locationDetailController.text,
         latitude: _latitude,
         longitude: _longitude,
@@ -322,7 +389,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const Text(
-                "Maksimal 3 foto",
+                "Maksimal 3 foto/video (video Maks 100MB)",
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Gap(8),
@@ -377,11 +444,46 @@ class _CreateReportPageState extends State<CreateReportPage> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.memory(
-                            _selectedImagesBytes[index],
-                            width: 120,
-                            height: 120,
-                            fit: BoxFit.cover,
+                          child: GestureDetector(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                useSafeArea: true,
+                                backgroundColor: Colors.black,
+                                builder: (context) => MediaViewerModal(
+                                  mediaUrls: _selectedImages
+                                      .map((e) => e.path)
+                                      .toList(),
+                                  initialIndex: index,
+                                ),
+                              );
+                            },
+                            child:
+                                _selectedImages[index].name
+                                        .toLowerCase()
+                                        .endsWith('.mp4') ||
+                                    _selectedImages[index].name
+                                        .toLowerCase()
+                                        .endsWith('.mov')
+                                ? Container(
+                                    width: 120,
+                                    height: 120,
+                                    color: Colors.black,
+                                    child: const Center(
+                                      child: Icon(
+                                        LucideIcons.playCircle,
+                                        color: Colors.white,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  )
+                                : Image.memory(
+                                    _selectedImagesBytes[index],
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
                         ),
                         Positioned(

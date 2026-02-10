@@ -6,9 +6,9 @@ import '../../features/report_common/domain/entities/report.dart';
 
 class ReportService {
   // Get all public reports
-  Future<List<Map<String, dynamic>>> getPublicReports({
+  Future<Map<String, dynamic>> getPublicReports({
     String? category,
-    String? building,
+    String? location,
     String? status,
     String? search,
     bool? isEmergency,
@@ -23,7 +23,7 @@ class ReportService {
         '/reports',
         queryParameters: {
           if (category != null) 'category': category,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
           if (status != null) 'status': status,
           if (search != null) 'search': search,
           if (isEmergency != null) 'isEmergency': isEmergency.toString(),
@@ -36,17 +36,20 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
   // Get user's own reports
-  Future<List<Map<String, dynamic>>> getMyReports(
+  Future<Map<String, dynamic>> getMyReports(
     String userId, {
     String? role,
   }) async {
@@ -57,12 +60,15 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching my reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
@@ -88,7 +94,7 @@ class ReportService {
     String? categoryId,
     required String title,
     required String description,
-    required String building,
+    required String location,
     double? latitude,
     double? longitude,
     String? imageUrl,
@@ -105,7 +111,7 @@ class ReportService {
         'categoryId': categoryId != null ? int.tryParse(categoryId) : null,
         'title': title,
         'description': description,
-        'building': building,
+        'location': location,
         'latitude': latitude,
         'longitude': longitude,
         'imageUrl': imageUrl,
@@ -229,11 +235,11 @@ class ReportService {
   // BUILDING MANAGEMENT
   // ===========================================================================
 
-  // Get Buildings
-  Future<List<Map<String, dynamic>>> getBuildings({String? search}) async {
+  // Get Locations
+  Future<List<Map<String, dynamic>>> getLocations({String? search}) async {
     try {
       final response = await apiService.dio.get(
-        '/buildings',
+        '/locations',
         queryParameters: {if (search != null) 'search': search},
       );
       if (response.data['status'] == 'success') {
@@ -241,51 +247,51 @@ class ReportService {
       }
       return [];
     } catch (e) {
-      debugPrint('Error fetching buildings: $e');
+      debugPrint('Error fetching locations: $e');
       return [];
     }
   }
 
-  // Create Building
-  Future<bool> createBuilding(String name) async {
+  // Create Location
+  Future<bool> createLocation(String name) async {
     try {
       final response = await apiService.dio.post(
-        '/buildings',
+        '/locations',
         data: {'name': name},
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      debugPrint('Error creating building: $e');
+      debugPrint('Error creating location: $e');
       return false;
     }
   }
 
-  // Update Building
-  Future<bool> updateBuilding(int id, String name) async {
+  // Update Location
+  Future<bool> updateLocation(int id, String name) async {
     try {
       final response = await apiService.dio.put(
-        '/buildings/$id',
+        '/locations/$id',
         data: {'name': name},
       );
       return response.data['status'] == 'success';
     } catch (e) {
-      debugPrint('Error updating building: $e');
+      debugPrint('Error updating location: $e');
       return false;
     }
   }
 
-  // Delete Building
-  Future<Map<String, dynamic>> deleteBuilding(int id) async {
+  // Delete Location
+  Future<Map<String, dynamic>> deleteLocation(int id) async {
     try {
-      final response = await apiService.dio.delete('/buildings/$id');
+      final response = await apiService.dio.delete('/locations/$id');
       if (response.data['status'] == 'success') {
         return {'success': true};
       } else {
         return {'success': false, 'message': response.data['message']};
       }
     } catch (e) {
-      debugPrint('Error deleting building: $e');
-      String msg = 'Gagal menghapus gedung.';
+      debugPrint('Error deleting location: $e');
+      String msg = 'Gagal menghapus lokasi.';
       if (e is DioException && e.response?.data != null) {
         msg = e.response?.data['message'] ?? msg;
       }
@@ -310,11 +316,11 @@ class ReportService {
   }
 
   // Get PJ Gedung Statistics
-  Future<Map<String, dynamic>?> getPJStatistics({String? buildingName}) async {
+  Future<Map<String, dynamic>?> getPJStatistics({String? locationName}) async {
     try {
       final response = await apiService.dio.get(
         '/pj-gedung/statistics',
-        queryParameters: {if (buildingName != null) 'building': buildingName},
+        queryParameters: {if (locationName != null) 'location': locationName},
       );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
@@ -344,22 +350,51 @@ class ReportService {
     }
   }
 
-  // Get Non-Gedung Pending Reports (buildings without PJ Gedung)
-  Future<List<Map<String, dynamic>>> getNonGedungReports({
-    int limit = 20,
-  }) async {
+  // Get Supervisor Detailed Statistics
+  Future<Map<String, dynamic>?> getSupervisorStatistics() async {
+    try {
+      final response = await apiService.dio.get('/supervisor/statistics');
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching supervisor statistics: $e');
+      return null;
+    }
+  }
+
+  // Get Supervisor Locations with report counts
+  Future<List<Map<String, dynamic>>?> getSupervisorLocations() async {
+    try {
+      final response = await apiService.dio.get('/supervisor/locations');
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching supervisor locations: $e');
+      return null;
+    }
+  }
+
+  // Get Non-Gedung Pending Reports (locations without PJ Gedung)
+  Future<Map<String, dynamic>> getNonGedungReports({int limit = 20}) async {
     try {
       final response = await apiService.dio.get(
         '/supervisor/reports/non-gedung',
         queryParameters: {'limit': limit.toString()},
       );
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching non-gedung reports: $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
@@ -382,17 +417,19 @@ class ReportService {
   }
 
   // Get Reports for Staff (with filtering)
-  Future<List<Map<String, dynamic>>> getStaffReports({
+  Future<Map<String, dynamic>> getStaffReports({
     required String role, // 'pj', 'supervisor', 'technician'
     String? status,
     bool? isEmergency,
     String? period,
     String? search,
     String? category,
-    String? building,
+    String? location,
     int? assignedTo,
     String? startDate,
     String? endDate,
+    int? page,
+    int? limit,
   }) async {
     try {
       final prefix = role == 'pj' ? 'pj-gedung' : role;
@@ -404,20 +441,25 @@ class ReportService {
           if (period != null) 'period': period,
           if (search != null) 'search': search,
           if (category != null) 'category': category,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
           if (assignedTo != null) 'assignedTo': assignedTo.toString(),
           if (startDate != null) 'startDate': startDate,
           if (endDate != null) 'endDate': endDate,
+          if (page != null) 'page': page.toString(),
+          if (limit != null) 'limit': limit.toString(),
         },
       );
 
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        return {
+          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'total': response.data['total'] ?? 0,
+        };
       }
-      return [];
+      return {'data': [], 'total': 0};
     } catch (e) {
       debugPrint('Error fetching staff reports ($role): $e');
-      return [];
+      return {'data': [], 'total': 0};
     }
   }
 
@@ -666,14 +708,45 @@ class ReportService {
     }
   }
 
+  // ===========================================================================
+  // REJECTED REPORTS MANAGEMENT
+
+  /// Archive rejected report (Supervisor)
+  Future<bool> archiveRejectedReport(String reportId, int staffId) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/archive',
+        data: {'staffId': staffId},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error archiving report: $e');
+      return false;
+    }
+  }
+
+  /// Return rejected report to queue (Supervisor)
+  Future<bool> returnReportToQueue(String reportId, int staffId) async {
+    try {
+      final response = await apiService.dio.post(
+        '/supervisor/reports/$reportId/return-to-queue',
+        data: {'staffId': staffId},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error returning report to queue: $e');
+      return false;
+    }
+  }
+
   // Export reports (Returns bytes)
-  Future<List<int>?> exportReports({String? status, String? building}) async {
+  Future<List<int>?> exportReports({String? status, String? location}) async {
     try {
       final response = await apiService.dio.get(
         '/supervisor/reports/export',
         queryParameters: {
           if (status != null) 'status': status,
-          if (building != null) 'building': building,
+          if (location != null) 'location': location,
         },
         options: Options(responseType: ResponseType.bytes),
       );
@@ -681,6 +754,85 @@ class ReportService {
     } catch (e) {
       debugPrint('Error exporting reports: $e');
       return null;
+    }
+  }
+
+  // ===========================================================================
+  // SPECIALIZATION MANAGEMENT
+  // ===========================================================================
+
+  // Get Specializations
+  Future<List<Map<String, dynamic>>> getSpecializations({
+    String? search,
+  }) async {
+    try {
+      final response = await apiService.dio.get(
+        '/specializations',
+        queryParameters: {if (search != null) 'search': search},
+      );
+      if (response.data['status'] == 'success') {
+        return List<Map<String, dynamic>>.from(response.data['data']);
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching specializations: $e');
+      return [];
+    }
+  }
+
+  // Create Specialization
+  Future<bool> createSpecialization(
+    String name,
+    String icon,
+    String? description,
+  ) async {
+    try {
+      final response = await apiService.dio.post(
+        '/specializations',
+        data: {'name': name, 'icon': icon, 'description': description},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error creating specialization: $e');
+      return false;
+    }
+  }
+
+  // Update Specialization
+  Future<bool> updateSpecialization(
+    int id,
+    String name,
+    String icon,
+    String? description,
+  ) async {
+    try {
+      final response = await apiService.dio.put(
+        '/specializations/$id',
+        data: {'name': name, 'icon': icon, 'description': description},
+      );
+      return response.data['status'] == 'success';
+    } catch (e) {
+      debugPrint('Error updating specialization: $e');
+      return false;
+    }
+  }
+
+  // Delete Specialization
+  Future<Map<String, dynamic>> deleteSpecialization(int id) async {
+    try {
+      final response = await apiService.dio.delete('/specializations/$id');
+      if (response.data['status'] == 'success') {
+        return {'success': true};
+      } else {
+        return {'success': false, 'message': response.data['message']};
+      }
+    } catch (e) {
+      debugPrint('Error deleting specialization: $e');
+      String msg = 'Gagal menghapus spesialisasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 }

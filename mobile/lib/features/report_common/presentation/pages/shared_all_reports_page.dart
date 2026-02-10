@@ -9,6 +9,7 @@ import 'package:mobile/core/theme.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 /// A shared page for displaying a list of reports with filters and search.
 /// Can be used by both Supervisor and Technician.
@@ -61,6 +62,12 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   List<Report> _reports = [];
   bool _isLoading = true;
+  bool _isFetchingMore = false;
+  int _currentPage = 1;
+  int _totalReports = 0;
+  bool _hasMore = true;
+  final int _limit = 50;
+  final ScrollController _scrollController = ScrollController();
 
   Set<ReportStatus> _selectedStatuses = {};
   String? _selectedCategory;
@@ -77,6 +84,20 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   void _toggleSelectionMode(String reportId) {
     if (widget.role != 'supervisor') return;
+
+    // Validation: Only allow if initial report is valid
+    final report = _reports.firstWhere((r) => r.id == reportId);
+    if (!_isReportMergeable(report)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Laporan ini tidak dapat digabungkan (Status harus Menunggu Verifikasi/Terverifikasi)',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isSelectionMode = true;
       _selectedReportIds.add(reportId);
@@ -84,16 +105,54 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   }
 
   void _toggleSelection(String reportId) {
-    setState(() {
-      if (_selectedReportIds.contains(reportId)) {
+    final report = _reports.firstWhere((r) => r.id == reportId);
+
+    if (_selectedReportIds.contains(reportId)) {
+      setState(() {
         _selectedReportIds.remove(reportId);
         if (_selectedReportIds.isEmpty) {
           _isSelectionMode = false;
         }
-      } else {
-        _selectedReportIds.add(reportId);
+      });
+      return;
+    }
+
+    // Validation: Check Status
+    if (!_isReportMergeable(report)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Status laporan tidak valid untuk digabungkan'),
+        ),
+      );
+      return;
+    }
+
+    // Validation: Check Building match
+    if (_selectedReportIds.isNotEmpty) {
+      final firstId = _selectedReportIds.first;
+      final firstReport = _reports.firstWhere((r) => r.id == firstId);
+      if (report.location != firstReport.location) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Lokasi harus sama dengan laporan pertama (${firstReport.location})',
+            ),
+          ),
+        );
+        return;
       }
+    }
+
+    setState(() {
+      _selectedReportIds.add(reportId);
     });
+  }
+
+  bool _isReportMergeable(Report report) {
+    // Only allow merging if status is Pending or Verified (Not assigned yet)
+    return report.status == ReportStatus.pending ||
+        report.status == ReportStatus.terverifikasi ||
+        report.status == ReportStatus.verifikasi;
   }
 
   void _exitSelectionMode() {
@@ -120,29 +179,51 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
         title: const Text('Gabungkan Laporan'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Anda akan menggabungkan ${_selectedReportIds.length} laporan menjadi satu group.',
+              style: const TextStyle(fontSize: 14),
             ),
-            const SizedBox(height: 12),
+            const Gap(16),
             TextField(
               controller: notesController,
               decoration: const InputDecoration(
-                labelText: 'Catatan Penggabungan (Opsional)',
+                labelText: 'Catatan Penggabungan',
+                hintText: 'Opsional',
                 border: OutlineInputBorder(),
+                alignLabelWithHint: true,
               ),
-              maxLines: 2,
+              maxLines: 3,
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Gabungkan'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              const Gap(8),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.supervisorColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                ),
+                child: const Text('Gabungkan'),
+              ),
+            ],
           ),
         ],
       ),
@@ -150,9 +231,21 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
     if (result == true) {
       try {
+        final authService = AuthService();
+        final user = await authService.getCurrentUser();
+
+        if (user == null || user['id'] == null) {
+          throw Exception('Gagal mendapatkan identitas pengguna');
+        }
+
+        final staffId = int.tryParse(user['id'].toString()) ?? 0;
+        if (staffId == 0) {
+          throw Exception('ID Pengguna tidak valid');
+        }
+
         await reportService.groupReports(
           _selectedReportIds.toList(),
-          1, // TODO: Get actual Staff ID (from Auth Provider/Storage)
+          staffId,
           notes: notesController.text,
         );
         if (!mounted || !context.mounted) return;
@@ -174,7 +267,18 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   void initState() {
     super.initState();
     _initFilters();
+    _scrollController.addListener(_onScroll);
     _fetchData();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.9 &&
+        !_isFetchingMore &&
+        _hasMore &&
+        !_isLoading) {
+      _fetchMoreReports();
+    }
   }
 
   void _initFilters() {
@@ -197,7 +301,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
   Future<void> _fetchBuildings() async {
     try {
-      final buildings = await reportService.getBuildings();
+      final buildings = await reportService.getLocations();
       if (mounted) {
         setState(() {
           _buildings = buildings.map((b) => b['name'] as String).toList();
@@ -222,52 +326,67 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     }
   }
 
-  Future<void> _fetchReports() async {
+  Future<void> _fetchReports({bool isRefresh = true}) async {
+    if (isRefresh) {
+      setState(() {
+        _currentPage = 1;
+        _hasMore = true;
+      });
+    }
+
     try {
-      List<Map<String, dynamic>> reportsData;
+      Map<String, dynamic> response;
 
       if (widget.role != null) {
         // Fetch Staff-specific reports
-        reportsData = await reportService.getStaffReports(
+        response = await reportService.getStaffReports(
           role: widget.role!,
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
-          isEmergency: _emergencyOnly
-              ? true
-              : null, // Only filter when true, null = include all
+          isEmergency: _emergencyOnly ? true : null,
           period: _selectedPeriod,
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           category: _selectedCategory,
-          building: _selectedBuilding,
+          location: _selectedBuilding,
           assignedTo: widget.assignedTo,
+          page: _currentPage,
+          limit: _limit,
         );
       } else {
         // Fetch Public reports
-        reportsData = await reportService.getPublicReports(
+        response = await reportService.getPublicReports(
           search: _searchQuery.isNotEmpty ? _searchQuery : null,
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
           category: _selectedCategory,
-          building: _selectedBuilding,
+          location: _selectedBuilding,
           isEmergency: _emergencyOnly,
           period: _selectedPeriod,
           startDate: _selectedDateRange?.start.toIso8601String(),
           endDate: _selectedDateRange?.end.toIso8601String(),
+          limit: _limit,
+          offset: (_currentPage - 1) * _limit,
         );
       }
 
-      debugPrint(
-        'Fetched ${reportsData.length} reports from API (Role: ${widget.role})',
-      );
+      final List<Map<String, dynamic>> reportsData =
+          List<Map<String, dynamic>>.from(response['data'] ?? []);
+      final int total = response['total'] ?? 0;
 
       if (mounted) {
         setState(() {
-          _reports = reportsData.map((json) {
-            final r = Report.fromJson(json);
-            return r;
-          }).toList();
+          final newReports = reportsData
+              .map((json) => Report.fromJson(json))
+              .toList();
+          if (isRefresh) {
+            _reports = newReports;
+          } else {
+            _reports.addAll(newReports);
+          }
+          _totalReports = total;
+          _hasMore = _reports.length < _totalReports;
         });
       }
     } catch (e) {
@@ -275,9 +394,17 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     }
   }
 
+  Future<void> _fetchMoreReports() async {
+    setState(() => _isFetchingMore = true);
+    _currentPage++;
+    await _fetchReports(isRefresh: false);
+    if (mounted) setState(() => _isFetchingMore = false);
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -512,7 +639,7 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           alignment: Alignment.centerLeft,
           child: Text(
-            '${_reports.length} laporan ditemukan',
+            '$_totalReports laporan ditemukan',
             style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
           ),
         ),
@@ -545,14 +672,53 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                           ),
                         )
                       : ListView.builder(
+                          controller: _scrollController,
                           padding: const EdgeInsets.all(16),
-                          itemCount: _reports.length,
+                          itemCount: _reports.length + 1,
                           itemBuilder: (context, index) {
+                            if (index == _reports.length) {
+                              if (_hasMore) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              } else if (_reports.isNotEmpty) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      children: [
+                                        Icon(
+                                          LucideIcons.checkCircle2,
+                                          size: 20,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                        const Gap(8),
+                                        Text(
+                                          'Semua laporan telah dimuat',
+                                          style: TextStyle(
+                                            color: Colors.grey.shade500,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return const SizedBox.shrink();
+                              }
+                            }
                             final report = _reports[index];
                             return UniversalReportCard(
                               id: report.id,
                               title: report.title,
-                              location: report.building,
+                              location: report.location,
                               locationDetail: report.locationDetail,
                               category: report.category,
                               status: report.status,
@@ -584,41 +750,87 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
         ),
         if (_isSelectionMode)
           Container(
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                TextButton(
-                  onPressed: _exitSelectionMode,
-                  child: const Text('Batal'),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
                 ),
-                const Spacer(),
-                Text(
-                  '${_selectedReportIds.length} terpilih',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${_selectedReportIds.length} terpilih',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          'Ketuk untuk memilih',
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: _exitSelectionMode,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey.shade600,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: const Text(
+                        'Batal',
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    const Gap(8),
+                    ElevatedButton.icon(
+                      onPressed: _selectedReportIds.length >= 2
+                          ? _groupSelectedReports
+                          : null,
+                      icon: const Icon(LucideIcons.combine, size: 18),
+                      label: const Text(
+                        'Gabungkan',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: widget.appBarColor,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const Gap(16),
-                ElevatedButton.icon(
-                  onPressed: _selectedReportIds.length >= 2
-                      ? _groupSelectedReports
-                      : null,
-                  icon: const Icon(LucideIcons.combine, size: 16),
-                  label: const Text('Gabungkan'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.appBarColor,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
       ],
@@ -650,13 +862,17 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           actions: widget.appBarActions,
         ),
         body: content,
-        floatingActionButton: widget.floatingActionButton,
+        floatingActionButton: _isSelectionMode
+            ? null
+            : widget.floatingActionButton,
       );
     } else {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
         body: content, // No AppBar
-        floatingActionButton: widget.floatingActionButton,
+        floatingActionButton: _isSelectionMode
+            ? null
+            : widget.floatingActionButton,
       );
     }
   }

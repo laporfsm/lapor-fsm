@@ -21,6 +21,7 @@ class AuthService {
   static const String _userEmergencyPhoneKey = 'user_emergency_phone';
   static const String _userIsVerifiedKey = 'user_is_verified';
   static const String _userManagedBuildingKey = 'user_managed_building';
+  static const String _userSpecializationKey = 'user_specialization';
 
   // Login for Pelapor (Email & Password)
   Future<Map<String, dynamic>> login({
@@ -89,7 +90,8 @@ class AuthService {
         return {
           'success': true,
           'needsApproval': response.data['data']['needsAdminApproval'] ?? false,
-          'needsEmailVerification': response.data['data']['needsEmailVerification'] ?? false,
+          'needsEmailVerification':
+              response.data['data']['needsEmailVerification'] ?? false,
           'message': response.data['message'],
         };
       }
@@ -114,10 +116,7 @@ class AuthService {
       );
 
       if (response.data['status'] == 'success') {
-        return {
-          'success': true,
-          'message': response.data['message'],
-        };
+        return {'success': true, 'message': response.data['message']};
       }
       return {
         'success': false,
@@ -146,10 +145,7 @@ class AuthService {
       );
 
       if (response.data['status'] == 'success') {
-        return {
-          'success': true,
-          'message': response.data['message'],
-        };
+        return {'success': true, 'message': response.data['message']};
       }
       return {
         'success': false,
@@ -233,6 +229,9 @@ class AuthService {
     if (user['managedBuilding'] != null) {
       await prefs.setString(_userManagedBuildingKey, user['managedBuilding']);
     }
+    if (user['specialization'] != null) {
+      await prefs.setString(_userSpecializationKey, user['specialization']);
+    }
 
     apiService.setAuthToken(token);
   }
@@ -258,6 +257,7 @@ class AuthService {
       'emergencyPhone': prefs.getString(_userEmergencyPhoneKey),
       'isVerified': prefs.getBool(_userIsVerifiedKey),
       'managedBuilding': prefs.getString(_userManagedBuildingKey),
+      'specialization': prefs.getString(_userSpecializationKey),
     };
   }
 
@@ -334,6 +334,9 @@ class AuthService {
     if (user['emergencyPhone'] != null) {
       await prefs.setString(_userEmergencyPhoneKey, user['emergencyPhone']);
     }
+    if (user['specialization'] != null) {
+      await prefs.setString(_userSpecializationKey, user['specialization']);
+    }
   }
 
   // Register phone number / Update Profile (Legacy)
@@ -369,27 +372,23 @@ class AuthService {
       );
 
       if (response.data['status'] == 'success') {
-        return {
-          'success': true,
-          'message': response.data['message'],
-        };
+        return {'success': true, 'message': response.data['message']};
       }
 
       return {
         'success': false,
-        'message': response.data['message'] ?? 'Gagal mengirim link reset password',
+        'message':
+            response.data['message'] ?? 'Gagal mengirim link reset password',
       };
     } catch (e) {
       if (e is DioException && e.response != null) {
         return {
           'success': false,
-          'message': e.response?.data['message'] ?? 'Terjadi kesalahan pada request',
+          'message':
+              e.response?.data['message'] ?? 'Terjadi kesalahan pada request',
         };
       }
-      return {
-        'success': false,
-        'message': 'Terjadi kesalahan koneksi: $e',
-      };
+      return {'success': false, 'message': 'Terjadi kesalahan koneksi: $e'};
     }
   }
 
@@ -402,18 +401,11 @@ class AuthService {
     try {
       final response = await apiService.dio.post(
         '/auth/reset-password',
-        data: {
-          'email': email,
-          'token': token,
-          'newPassword': newPassword,
-        },
+        data: {'email': email, 'token': token, 'newPassword': newPassword},
       );
 
       if (response.data['status'] == 'success') {
-        return {
-          'success': true,
-          'message': response.data['message'],
-        };
+        return {'success': true, 'message': response.data['message']};
       }
 
       return {
@@ -427,10 +419,7 @@ class AuthService {
           'message': e.response?.data['message'] ?? 'Terjadi kesalahan sistem',
         };
       }
-      return {
-        'success': false,
-        'message': 'Gagal mereset password: $e',
-      };
+      return {'success': false, 'message': 'Gagal mereset password: $e'};
     }
   }
 }

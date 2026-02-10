@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_main_page.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/stat_grid_card.dart';
 
@@ -15,7 +16,6 @@ import 'package:mobile/core/services/report_service.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
@@ -117,8 +117,11 @@ class _SupervisorDashboardPageState
 
             // Non-Gedung Reports
             try {
-              _nonGedungReports = (results[1] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[1] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _nonGedungReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
               debugPrint('[DASHBOARD] Error converting non-gedung reports: $e');
@@ -127,8 +130,11 @@ class _SupervisorDashboardPageState
 
             // Ready to Process (Terverifikasi only)
             try {
-              _readyToProcessReports = (results[2] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[2] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _readyToProcessReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
               debugPrint('[DASHBOARD] Error converting ready reports: $e');
@@ -137,8 +143,11 @@ class _SupervisorDashboardPageState
 
             // Pending Review (Selesai)
             try {
-              _pendingReviewReports = (results[3] as List)
-                  .map((json) => Report.fromJson(json as Map<String, dynamic>))
+              final response = results[3] as Map<String, dynamic>;
+              final List<Map<String, dynamic>> data =
+                  List<Map<String, dynamic>>.from(response['data'] ?? []);
+              _pendingReviewReports = data
+                  .map((json) => Report.fromJson(json))
                   .toList();
             } catch (e) {
               debugPrint('[DASHBOARD] Error converting review reports: $e');
@@ -310,7 +319,7 @@ class _SupervisorDashboardPageState
                       _buildStatsSection(context),
                       const Gap(24),
 
-                      // Section: Non-Gedung (Pending reports from buildings without PJ)
+                      // Section: Non-Gedung (Pending reports from locations without PJ)
                       _buildSectionHeader(
                         context,
                         'Non-Gedung',
@@ -362,10 +371,13 @@ class _SupervisorDashboardPageState
                         "Aktivitas & Log",
                         "Lihat Semua",
                         () {
-                          // Navigate to Staff tab (Index 1) -> Activity Log (Tab 0)
-                          ref
-                              .read(supervisorNavigationProvider.notifier)
-                              .navigateToActivityLog();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  const SupervisorTechnicianMainPage(),
+                            ),
+                          );
                         },
                       ),
                       const Gap(12),
@@ -597,11 +609,7 @@ class _SupervisorDashboardPageState
         child: Center(
           child: Column(
             children: [
-              Icon(
-                LucideIcons.building2,
-                size: 48,
-                color: Colors.grey.shade300,
-              ),
+              Icon(LucideIcons.mapPin, size: 48, color: Colors.grey.shade300),
               const Gap(8),
               Text(
                 'Tidak ada laporan non-gedung pending',
@@ -623,7 +631,7 @@ class _SupervisorDashboardPageState
           child: UniversalReportCard(
             id: report.id,
             title: report.title,
-            location: report.building,
+            location: report.location,
             locationDetail: report.locationDetail,
             category: report.category,
             status: report.status,
@@ -682,7 +690,7 @@ class _SupervisorDashboardPageState
         return UniversalReportCard(
           id: r.id,
           title: r.title,
-          location: r.building,
+          location: r.location,
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,
@@ -698,7 +706,7 @@ class _SupervisorDashboardPageState
     );
   }
 
-  // MOCK: Ready to Process (Verified by PJ or Direct Non-Building)
+  // MOCK: Ready to Process (Verified by PJ or Direct Non-Location)
   Widget _buildReadyToProcessList(BuildContext context) {
     if (_readyToProcessReports.isEmpty) {
       return Container(
@@ -739,7 +747,7 @@ class _SupervisorDashboardPageState
         return UniversalReportCard(
           id: r.id,
           title: r.title,
-          location: r.building,
+          location: r.location,
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,

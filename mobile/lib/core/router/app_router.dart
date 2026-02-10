@@ -23,23 +23,22 @@ import 'package:mobile/features/teknisi/presentation/pages/dashboard/teknisi_hom
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_report_detail_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_complete_report_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_map_view_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_settings_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_help_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_edit_profile_page.dart';
-import 'package:mobile/features/teknisi/presentation/pages/profile/teknisi_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_edit_profile_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_settings_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_help_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_all_reports_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_siap_dimulai_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_sedang_dikerjakan_page.dart';
 
-// PJ Gedung imports
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_main_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_history_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_reports_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_report_detail_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_statistics_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_help_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_settings_page.dart';
-import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_edit_profile_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/pj_gedung_home_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_history_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_reports_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/reports/pj_gedung_report_detail_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/dashboard/pj_gedung_statistics_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_help_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_settings_page.dart';
+import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_edit_profile_page.dart';
 
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
@@ -49,16 +48,18 @@ import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_rejected_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_export_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_non_gedung_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_list_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_detail_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_statistics_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_technician_form_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_settings_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_help_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_profile_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_categories_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_activity_log_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/management/supervisor_building_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_detail_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/stats/supervisor_statistics_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_form_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/supervisor_account_settings_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/support/supervisor_help_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_categories_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_location_list_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_pj_gedung_form_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_edit_profile_page.dart';
 
 // Admin imports
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
@@ -307,10 +308,6 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/teknisi/profile',
-      builder: (context, state) => const TeknisiProfilePage(),
-    ),
-    GoRoute(
       path: '/teknisi/map',
       builder: (context, state) {
         final extra = state.extra as Map<String, dynamic>? ?? {};
@@ -328,6 +325,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/teknisi/help',
       builder: (context, state) => const TeknisiHelpPage(),
+    ),
+    GoRoute(
+      path: '/teknisi/setting',
+      builder: (context, state) => const TeknisiSettingMainPage(),
     ),
     GoRoute(
       path: '/teknisi/edit-profile',
@@ -358,11 +359,11 @@ final appRouter = GoRouter(
     ),
 
     // ===============================================
-    // PJ GEDUNG ROUTES
+    // PJ LOKASI ROUTES
     // ===============================================
     GoRoute(
       path: '/pj-gedung',
-      builder: (context, state) => const PJGedungMainPage(),
+      builder: (context, state) => const PJGedungHomePage(),
     ),
     GoRoute(
       path: '/pj-gedung/reports',
@@ -377,8 +378,8 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/pj-gedung/statistics',
       builder: (context, state) {
-        final buildingName = state.uri.queryParameters['buildingName'];
-        return PJGedungStatisticsPage(buildingName: buildingName);
+        final locationName = state.uri.queryParameters['locationName'];
+        return PJGedungStatisticsPage(locationName: locationName);
       },
     ),
 
@@ -418,8 +419,8 @@ final appRouter = GoRouter(
       builder: (context, state) => const SupervisorArchivePage(),
     ),
     GoRoute(
-      path: '/supervisor/profile',
-      builder: (context, state) => const SupervisorProfilePage(),
+      path: '/supervisor/setting',
+      builder: (context, state) => const SupervisorSettingMainPage(),
     ),
     // Rejected reports review page
     GoRoute(
@@ -457,8 +458,17 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
+      path: '/supervisor/pj-gedung/add',
+      builder: (context, state) => const SupervisorPJGedungFormPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/pj-gedung/edit/:id',
+      builder: (context, state) =>
+          SupervisorPJGedungFormPage(pjGedungId: state.pathParameters['id']),
+    ),
+    GoRoute(
       path: '/supervisor/settings',
-      builder: (context, state) => const SupervisorSettingsPage(),
+      builder: (context, state) => const SupervisorAccountSettingsPage(),
     ),
     GoRoute(
       path: '/supervisor/help',
@@ -473,14 +483,18 @@ final appRouter = GoRouter(
       builder: (context, state) => const SupervisorActivityLogPage(),
     ),
     GoRoute(
-      path: '/supervisor/buildings',
-      builder: (context, state) => const SupervisorBuildingListPage(),
+      path: '/supervisor/locations',
+      builder: (context, state) => const SupervisorLocationListPage(),
+    ),
+    GoRoute(
+      path: '/supervisor/edit-profile',
+      builder: (context, state) => const SupervisorEditProfilePage(),
     ),
 
     GoRoute(
       path: '/pj-gedung/history',
       builder: (context, state) {
-        final filter = state.uri.queryParameters['filter'] ?? 'pending';
+        final filter = state.uri.queryParameters['filter'] ?? 'all';
         return PJGedungHistoryPage(initialFilter: filter);
       },
     ),

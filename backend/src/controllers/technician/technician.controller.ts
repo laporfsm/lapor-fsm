@@ -30,11 +30,20 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             return acc;
         }, {} as Record<string, number>);
 
-        // Waiting for technician to accept (Personal)
+        // Waiting for technician to accept (Original Logic: Only Assigned)
+        // New Logic: Pool (Unassigned) + Personal (Assigned to me) with status 'diproses'
         const diprosesCount = await db
             .select({ count: count() })
             .from(reports)
-            .where(and(eq(reports.assignedTo, staffId), eq(reports.status, 'diproses')));
+            .where(
+                and(
+                    eq(reports.status, 'diproses'),
+                    or(
+                        eq(reports.assignedTo, staffId),
+                        isNull(reports.assignedTo) // Include pool
+                    )
+                )
+            );
 
         // Time based counts - using handlingStartedAt for when technician started working
         const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfDay)));
@@ -57,10 +66,11 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             status: 'success',
             data: {
                 diproses: Number(diprosesCount[0]?.count || 0),
-                penanganan: Number(countsMap['penanganan'] || 0),
+                penanganan: (Number(countsMap['penanganan'] || 0) + Number(countsMap['onHold'] || 0) + Number(countsMap['recalled'] || 0) + Number(countsMap['selesai'] || 0)),
+                approved: Number(countsMap['approved'] || 0), // Explicitly return approved count
                 onHold: Number(countsMap['onHold'] || 0),
                 selesai: Number(countsMap['selesai'] || 0),
-                recalled: Number(recalledCount[0]?.count || 0),
+                recalled: Number(countsMap['recalled'] || 0),
                 todayReports: Number(todayReports[0]?.count || 0),
                 weekReports: Number(weekReports[0]?.count || 0),
                 monthReports: Number(monthReports[0]?.count || 0),
@@ -71,7 +81,10 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
     // Get reports for technician with query parameters (consistent with other roles)
     .get('/reports', async ({ query }) => {
-        const { status, isEmergency } = query;
+        const { status, isEmergency, page = '1', limit = '50' } = query;
+        const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
+        const limitNum = isNaN(parseInt(limit)) ? 50 : parseInt(limit);
+        const offsetNum = (pageNum - 1) * limitNum;
 
         let conditions = [];
         conditions.push(isNull(reports.parentId));
@@ -113,6 +126,15 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         }
 
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        // Get total count for pagination
+        const totalResult = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(whereClause);
+
+        const totalCount = totalResult[0]?.count || 0;
+
         const reporterStaff = alias(staff, 'reporter_staff');
 
         const reportsList = await db
@@ -120,7 +142,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
@@ -135,6 +157,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
                 reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
                 categoryName: categories.name,
+                handlerName: staff.name,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -143,12 +166,16 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(whereClause)
-            .orderBy(desc(reports.isEmergency), desc(reports.createdAt));
+            .orderBy(desc(reports.isEmergency), desc(reports.createdAt))
+            .limit(limitNum)
+            .offset(offsetNum);
 
         return {
             status: 'success',
             data: reportsList.map(r => mapToMobileReport(r)),
+            total: totalCount,
         };
     })
 
@@ -161,7 +188,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,
@@ -174,10 +201,12 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: users.name,
                 reporterPhone: users.phone,
                 categoryName: categories.name,
+                handlerName: staff.name,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(
                 and(
                     isNull(reports.parentId),
@@ -220,6 +249,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .update(reports)
             .set({
                 status: 'penanganan',
+                assignedTo: staffId,
                 handlingStartedAt: new Date(),
                 updatedAt: new Date(),
             })
@@ -402,7 +432,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 id: reports.id,
                 title: reports.title,
                 description: reports.description,
-                building: reports.building,
+                location: reports.location,
                 locationDetail: reports.locationDetail,
                 latitude: reports.latitude,
                 longitude: reports.longitude,

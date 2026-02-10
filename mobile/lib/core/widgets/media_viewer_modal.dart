@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:mobile/core/widgets/video_player_widget.dart';
+import 'package:mobile/core/services/api_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 /// Fullscreen modal for viewing media with swipe navigation
@@ -48,60 +51,58 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
               itemCount: widget.mediaUrls.length,
               onPageChanged: (index) => setState(() => _currentIndex = index),
               itemBuilder: (context, index) {
+                final rawUrl = widget.mediaUrls[index];
+                final url = _getSanitizedUrl(rawUrl);
+                final isVideo =
+                    url.toLowerCase().endsWith('.mp4') ||
+                    url.toLowerCase().endsWith('.mov') ||
+                    url.toLowerCase().endsWith('.avi') ||
+                    url.toLowerCase().endsWith('.mkv');
+
+                if (isVideo) {
+                  return VideoPlayerWidget(url: url);
+                }
+
+                final isNetwork = url.startsWith('http');
+
                 return InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,
                   child: Center(
-                    child: Image.network(
-                      widget.mediaUrls[index],
-                      fit: BoxFit.contain,
-                      loadingBuilder: (_, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Center(
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: Colors.white,
+                    child: isNetwork
+                        ? Image.network(
+                            url,
+                            fit: BoxFit.contain,
+                            loadingBuilder: (_, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                  color: Colors.white,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              debugPrint(
+                                'Error loading media viewer image: $url - $error',
+                              );
+                              return _buildErrorWidget(context, url);
+                            },
+                          )
+                        : Image.file(
+                            File(url),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              debugPrint(
+                                'Error loading local media viewer image: $url - $error',
+                              );
+                              return _buildErrorWidget(context, url);
+                            },
                           ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        debugPrint(
-                            'Error loading media viewer image: ${widget.mediaUrls[index]} - $error');
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              LucideIcons.imageOff,
-                              color: Colors.white54,
-                              size: 64,
-                            ),
-                            const Gap(16),
-                            Text(
-                              'Gagal memuat media',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(color: Colors.white54),
-                            ),
-                            const Gap(8),
-                            Text(
-                              widget.mediaUrls[index],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Colors.white30,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        );
-                      },
-                    ),
                   ),
                 );
               },
@@ -176,6 +177,41 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
           ],
         ),
       ),
+    );
+  }
+
+  String _getSanitizedUrl(String url) {
+    if (url.contains('localhost') || url.contains('127.0.0.1')) {
+      final actualBaseUrl = ApiService.baseUrl;
+      return url
+          .replaceFirst('http://localhost:3000', actualBaseUrl)
+          .replaceFirst('http://127.0.0.1:3000', actualBaseUrl);
+    }
+    return url;
+  }
+
+  Widget _buildErrorWidget(BuildContext context, String url) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(LucideIcons.imageOff, color: Colors.white54, size: 64),
+        const Gap(16),
+        Text(
+          'Gagal memuat media',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Colors.white54),
+        ),
+        const Gap(8),
+        Text(
+          url,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.white30,
+            overflow: TextOverflow.ellipsis,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

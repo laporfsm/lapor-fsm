@@ -27,7 +27,7 @@ extension UserRoleX on UserRole {
   bool get canViewAllReports =>
       this == UserRole.teknisi || this == UserRole.supervisor;
 
-  // PJ Gedung specific
+  // PJ Location specific
   bool get canVerifyReport => this == UserRole.pjGedung;
 
   bool get canHandleReport => this == UserRole.teknisi;

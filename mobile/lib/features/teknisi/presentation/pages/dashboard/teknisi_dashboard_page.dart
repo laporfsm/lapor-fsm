@@ -7,129 +7,31 @@ import 'package:mobile/core/widgets/stat_grid_card.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/core/services/auth_service.dart';
-import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'dart:async';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/features/teknisi/presentation/providers/teknisi_dashboard_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Dashboard page for Teknisi
-class TeknisiDashboardPage extends StatefulWidget {
+class TeknisiDashboardPage extends ConsumerStatefulWidget {
   const TeknisiDashboardPage({super.key});
 
   @override
-  State<TeknisiDashboardPage> createState() => _TeknisiDashboardPageState();
+  ConsumerState<TeknisiDashboardPage> createState() =>
+      _TeknisiDashboardPageState();
 }
 
-class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
-  bool _isLoading = true;
-  Timer? _refreshTimer;
-
-  Map<String, int> _dashboardStats = {
-    'diproses': 0,
-    'penanganan': 0,
-    'onHold': 0,
-    'selesai': 0,
-    'recalled': 0,
-    'todayReports': 0,
-    'weekReports': 0,
-    'monthReports': 0,
-    'emergency': 0,
-  };
-
-  List<Report> _readyReports = [];
-  List<Report> _activeReports = [];
-
-  int? _currentStaffId; // Added this line
-
-  Map<String, int> get _stats => _dashboardStats;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (mounted) _loadData(silent: true);
-    });
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _loadData({bool silent = false}) async {
-    if (!silent) setState(() => _isLoading = true);
-
-    try {
-      final user = await authService.getCurrentUser();
-      if (user != null) {
-        final staffIdStr = user['id'].toString();
-        final staffId = int.tryParse(staffIdStr) ?? 0;
-
-        if (mounted) {
-          setState(() => _currentStaffId = staffId);
-        }
-
-        // Fetch stats and lists
-        final results = await Future.wait([
-          reportService.getTechnicianDashboardStats(staffIdStr),
-          // Siap Dimulai: Personal Diproses + Personal Recalled
-          reportService.getStaffReports(
-            role: 'technician',
-            status: 'diproses',
-            assignedTo: staffId,
-          ),
-          reportService.getStaffReports(
-            role: 'technician',
-            status: 'recalled',
-            assignedTo: staffId,
-          ),
-          // Sedang Dikerjakan: Personal Penanganan
-          reportService.getStaffReports(
-            role: 'technician',
-            status: 'penanganan',
-            assignedTo: staffId,
-          ),
-        ]);
-
-        if (mounted) {
-          setState(() {
-            if (results[0] != null) {
-              _dashboardStats = Map<String, int>.from(results[0] as Map);
-            }
-
-            final diproses = (results[1] as List)
-                .map((json) => Report.fromJson(json))
-                .toList();
-            final recalled = (results[2] as List)
-                .map((json) => Report.fromJson(json))
-                .toList();
-
-            // Merge and sort by date descending
-            _readyReports = [...recalled, ...diproses]
-              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-            _activeReports =
-                (results[3] as List)
-                    .map((json) => Report.fromJson(json))
-                    .toList()
-                  ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-            _isLoading = false;
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint('Error loading Technician dashboard data: $e');
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
+class _TeknisiDashboardPageState extends ConsumerState<TeknisiDashboardPage> {
   @override
   Widget build(BuildContext context) {
+    final dashboardState = ref.watch(teknisiDashboardProvider);
+    final stats = dashboardState.stats;
+    final isLoading = dashboardState.isLoading;
+    final currentStaffId = dashboardState.currentStaffId;
+    final readyReports = dashboardState.readyReports;
+    final activeReports = dashboardState.activeReports;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       floatingActionButton: const NotificationFab(
@@ -142,45 +44,114 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: AppTheme.secondaryColor,
+              backgroundColor: Colors.white,
               automaticallyImplyLeading: false,
+              elevation: 0,
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Dashboard Teknisi',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
+              centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Background Image
-                    Image.network(
-                      'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(color: AppTheme.secondaryColor);
-                      },
-                    ),
-                    // Gradient Overlay
+                    // 1. Base Gradient Background (Amber for Teknisi)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: [
-                            AppTheme.secondaryColor.withValues(alpha: 0.85),
-                            AppTheme.secondaryColor.withValues(alpha: 0.95),
+                            AppTheme.secondaryColor,
+                            AppTheme.secondaryColor.withRed(255).withGreen(180),
                           ],
                         ),
                       ),
                     ),
-                    // Content
+                    // 2. Decorative Slanted Slants (Pattern)
+                    Positioned(
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
+                      right: -50,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 40,
+                      right: -30,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 400,
+                          height: 60,
+                          color: Colors.white.withAlpha(15),
+                        ),
+                      ),
+                    ),
+                    // 3. Content
                     SafeArea(
-                      child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Center(
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.white.withAlpha(51),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(76),
+                                    width: 1.5,
+                                  ),
                                 ),
                                 child: const Icon(
                                   LucideIcons.wrench,
@@ -222,31 +193,32 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
             ),
           ];
         },
-        body: _isLoading
+        body: isLoading
             ? const Center(child: CircularProgressIndicator())
             : RefreshIndicator(
-                onRefresh: () => _loadData(), // Changed to explicit call
+                onRefresh: () =>
+                    ref.read(teknisiDashboardProvider.notifier).refresh(),
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Emergency Alert
-                      _buildEmergencyAlert(context),
+                      _buildEmergencyAlert(context, stats),
 
                       // Period Stats
                       const Gap(16),
                       PeriodStatsRow(
-                        todayCount: _stats['todayReports'] ?? 0,
-                        weekCount: _stats['weekReports'] ?? 0,
-                        monthCount: _stats['monthReports'] ?? 0,
+                        todayCount: stats['todayReports'] ?? 0,
+                        weekCount: stats['weekReports'] ?? 0,
+                        monthCount: stats['monthReports'] ?? 0,
                         onTap: (period) => context.push(
                           Uri(
                             path: '/teknisi/all-reports',
                             queryParameters: {
                               'period': period,
-                              if (_currentStaffId != null)
-                                'assignedTo': _currentStaffId.toString(),
+                              if (currentStaffId != null)
+                                'assignedTo': currentStaffId.toString(),
                             },
                           ).toString(),
                         ),
@@ -255,18 +227,18 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
                       // Status Stats
                       const Gap(12),
                       StatusStatsRow(
-                        diprosesCount: _stats['diproses'] ?? 0,
-                        penangananCount: _stats['penanganan'] ?? 0,
-                        onHoldCount: _stats['onHold'] ?? 0,
-                        selesaiCount: _stats['selesai'] ?? 0,
-                        recalledCount: _stats['recalled'] ?? 0,
+                        diprosesCount: stats['diproses'] ?? 0,
+                        penangananCount: stats['penanganan'] ?? 0,
+                        onHoldCount: stats['onHold'] ?? 0,
+                        selesaiCount: stats['selesai'] ?? 0,
+                        recalledCount: stats['recalled'] ?? 0,
                         onTap: (status) => context.push(
                           Uri(
                             path: '/teknisi/all-reports',
                             queryParameters: {
                               'status': status,
-                              if (_currentStaffId != null)
-                                'assignedTo': _currentStaffId.toString(),
+                              if (currentStaffId != null)
+                                'assignedTo': currentStaffId.toString(),
                             },
                           ).toString(),
                         ),
@@ -278,11 +250,11 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
 
                       // Ready to Start Section
                       const Gap(24),
-                      _buildReadyToStartSection(context),
+                      _buildReadyToStartSection(context, stats, readyReports),
 
                       // Active Reports Section
                       const Gap(24),
-                      _buildActiveWorkSection(context),
+                      _buildActiveWorkSection(context, stats, activeReports),
 
                       const Gap(32),
                     ],
@@ -293,8 +265,8 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     );
   }
 
-  Widget _buildEmergencyAlert(BuildContext context) {
-    final emergencyCount = _stats['emergency'] ?? 0;
+  Widget _buildEmergencyAlert(BuildContext context, Map<String, int> stats) {
+    final emergencyCount = stats['emergency'] ?? 0;
     if (emergencyCount == 0) return const SizedBox.shrink();
 
     return BouncingButton(
@@ -433,10 +405,13 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     );
   }
 
-  Widget _buildReadyToStartSection(BuildContext context) {
+  Widget _buildReadyToStartSection(
+    BuildContext context,
+    Map<String, int> stats,
+    List<Report> readyReports,
+  ) {
     // Count is sum of Diproses (Global) + Recalled (Personal)
-    final count =
-        (_dashboardStats['diproses'] ?? 0) + (_dashboardStats['recalled'] ?? 0);
+    final count = (stats['diproses'] ?? 0) + (stats['recalled'] ?? 0);
 
     return Column(
       children: [
@@ -448,20 +423,20 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
           count: count,
         ),
         const Gap(12),
-        if (_readyReports.isEmpty)
+        if (readyReports.isEmpty)
           _buildEmptyState('Belum ada laporan yang perlu ditangani')
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _readyReports.length > 3 ? 3 : _readyReports.length,
+            itemCount: readyReports.length > 3 ? 3 : readyReports.length,
             separatorBuilder: (context, index) => const Gap(12),
             itemBuilder: (context, index) {
-              final report = _readyReports[index];
+              final report = readyReports[index];
               return UniversalReportCard(
                 id: report.id,
                 title: report.title,
-                location: report.building,
+                location: report.location,
                 locationDetail: report.locationDetail,
                 category: report.category,
                 status: report.status,
@@ -480,8 +455,12 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
     );
   }
 
-  Widget _buildActiveWorkSection(BuildContext context) {
-    final count = _dashboardStats['penanganan'] ?? 0;
+  Widget _buildActiveWorkSection(
+    BuildContext context,
+    Map<String, int> stats,
+    List<Report> activeReports,
+  ) {
+    final count = stats['penanganan'] ?? 0;
 
     return Column(
       children: [
@@ -489,20 +468,20 @@ class _TeknisiDashboardPageState extends State<TeknisiDashboardPage> {
           context.push('/teknisi/sedang-dikerjakan');
         }, count: count),
         const Gap(12),
-        if (_activeReports.isEmpty)
+        if (activeReports.isEmpty)
           _buildEmptyState('Tidak ada laporan yang sedang dikerjakan')
         else
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: _activeReports.length > 3 ? 3 : _activeReports.length,
+            itemCount: activeReports.length > 3 ? 3 : activeReports.length,
             separatorBuilder: (context, index) => const Gap(12),
             itemBuilder: (context, index) {
-              final report = _activeReports[index];
+              final report = activeReports[index];
               return UniversalReportCard(
                 id: report.id,
                 title: report.title,
-                location: report.building,
+                location: report.location,
                 locationDetail: report.locationDetail,
                 category: report.category,
                 status: report.status,

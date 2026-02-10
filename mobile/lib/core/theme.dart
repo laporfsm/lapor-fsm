@@ -42,6 +42,7 @@ class AppTheme {
         return Colors.teal;
       case 'approved':
         return Colors.green;
+      case 'rejected':
       case 'ditolak':
         return Colors.red;
       case 'recalled':

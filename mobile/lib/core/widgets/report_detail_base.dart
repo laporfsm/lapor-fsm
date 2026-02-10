@@ -1,9 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/location_service.dart';
+import 'package:mobile/core/services/websocket_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
@@ -15,7 +20,7 @@ import 'package:mobile/features/report_common/domain/entities/report_log.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ReportDetailBase extends StatelessWidget {
+class ReportDetailBase extends StatefulWidget {
   final Report report;
   final UserRole viewerRole;
   final List<Widget>? actionButtons;
@@ -28,6 +33,100 @@ class ReportDetailBase extends StatelessWidget {
     this.actionButtons,
     this.appBarColor,
   });
+
+  @override
+  State<ReportDetailBase> createState() => _ReportDetailBaseState();
+}
+
+class _ReportDetailBaseState extends State<ReportDetailBase> {
+  LatLng? _liveLatLng;
+  StreamSubscription? _wsSubscription;
+  Timer? _locationBroadcastTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupTracking();
+  }
+
+  @override
+  void dispose() {
+    _wsSubscription?.cancel();
+    _locationBroadcastTimer?.cancel();
+    if (widget.report.isEmergency) {
+      webSocketService.disconnect();
+    }
+    super.dispose();
+  }
+
+  void _setupTracking() {
+    if (!widget.report.isEmergency) {
+      return;
+    }
+
+    // Don't track if finished
+    if (widget.report.status == ReportStatus.selesai ||
+        widget.report.status == ReportStatus.ditolak) {
+      return;
+    }
+
+    // 1. Connect WS
+    webSocketService.connect(widget.report.id);
+
+    // 2. Listen for updates
+    _wsSubscription = webSocketService.stream?.listen((event) {
+      try {
+        final data = jsonDecode(event);
+        if (data['action'] == 'location_update') {
+          setState(() {
+            _liveLatLng = LatLng(
+              data['latitude'] as double,
+              data['longitude'] as double,
+            );
+          });
+          debugPrint('[TRACKING] Received update: $_liveLatLng');
+        }
+      } catch (e) {
+        debugPrint('[TRACKING] Error parsing WS message: $e');
+      }
+    });
+
+    // 3. If I am the reporter, broadcast my location
+    if (widget.viewerRole == UserRole.pelapor) {
+      _startSelfBroadcasting();
+    }
+  }
+
+  Future<void> _startSelfBroadcasting() async {
+    _locationBroadcastTimer = Timer.periodic(const Duration(seconds: 5), (
+      timer,
+    ) async {
+      try {
+        final position = await locationService.getCurrentPosition();
+
+        if (position != null) {
+          final user = await authService.getCurrentUser();
+          final name = user?['name'] ?? 'Pelapor';
+
+          webSocketService.sendLocation(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            role: 'pelapor',
+            senderName: name,
+          );
+
+          // Update local UI immediately too
+          if (mounted) {
+            setState(() {
+              _liveLatLng = LatLng(position.latitude, position.longitude);
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('[TRACKING] Failed to broadcast location: $e');
+      }
+    });
+  }
 
   /// Get category-specific header image
 
@@ -84,12 +183,12 @@ class ReportDetailBase extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Timer (Pelapor Style) - Only if not finished
-                  if (report.status != ReportStatus.selesai &&
-                      report.status != ReportStatus.ditolak &&
-                      report.status != ReportStatus.approved) ...[
+                  if (widget.report.status != ReportStatus.selesai &&
+                      widget.report.status != ReportStatus.ditolak &&
+                      widget.report.status != ReportStatus.approved) ...[
                     ReportTimerCard(
-                      createdAt: report.createdAt,
-                      isEmergency: report.isEmergency,
+                      createdAt: widget.report.createdAt,
+                      isEmergency: widget.report.isEmergency,
                     ),
                     const Gap(16),
                   ],
@@ -101,9 +200,9 @@ class ReportDetailBase extends StatelessWidget {
                   // Media Evidence Gallery (Always show logic)
                   MediaGalleryWidget(
                     mediaUrls:
-                        (report.mediaUrls != null &&
-                            report.mediaUrls!.isNotEmpty)
-                        ? report.mediaUrls!
+                        (widget.report.mediaUrls != null &&
+                            widget.report.mediaUrls!.isNotEmpty)
+                        ? widget.report.mediaUrls!
                         : const [
                             'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&q=80',
                           ],
@@ -119,33 +218,34 @@ class ReportDetailBase extends StatelessWidget {
                       _buildInfoRow(
                         LucideIcons.user,
                         'Nama',
-                        report.reporterName,
+                        widget.report.reporterName,
                       ),
-                      if (report.reporterEmail != null)
+                      if (widget.report.reporterEmail != null)
                         _buildInfoRow(
                           LucideIcons.mail,
                           'Email',
-                          report.reporterEmail!,
+                          widget.report.reporterEmail!,
                         ),
-                      if (report.reporterPhone != null)
+                      if (widget.report.reporterPhone != null)
                         _buildInfoRowWithAction(
                           LucideIcons.phone,
                           'Telepon',
-                          report.reporterPhone!,
-                          onTap: () => _launchPhone(report.reporterPhone),
+                          widget.report.reporterPhone!,
+                          onTap: () =>
+                              _launchPhone(widget.report.reporterPhone),
                         ),
                     ],
                   ),
                   const Gap(16),
 
                   // Handled By (Visible to Everyone if assigned)
-                  if (report.handledBy != null &&
-                      report.handledBy!.isNotEmpty) ...[
+                  if (widget.report.handledBy != null &&
+                      widget.report.handledBy!.isNotEmpty) ...[
                     _buildInfoCard(
                       title: 'Ditangani Oleh',
                       icon: LucideIcons.wrench,
                       accentColor: AppTheme.secondaryColor,
-                      children: report.handledBy!
+                      children: widget.report.handledBy!
                           .map(
                             (tech) => Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
@@ -178,7 +278,7 @@ class ReportDetailBase extends StatelessWidget {
                   ],
 
                   // Supervisor (Visible if supervised)
-                  if (report.supervisorName != null) ...[
+                  if (widget.report.supervisorName != null) ...[
                     _buildInfoCard(
                       title: 'Diverifikasi Oleh',
                       icon: LucideIcons.checkCircle2,
@@ -197,7 +297,7 @@ class ReportDetailBase extends StatelessWidget {
                             const Gap(12),
                             Expanded(
                               child: Text(
-                                report.supervisorName!,
+                                widget.report.supervisorName!,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -211,8 +311,8 @@ class ReportDetailBase extends StatelessWidget {
                   ],
 
                   // Time Breakdown (for completed/approved reports)
-                  if (report.handlingStartedAt != null &&
-                      report.completedAt != null) ...[
+                  if (widget.report.handlingStartedAt != null &&
+                      widget.report.completedAt != null) ...[
                     _buildInfoCard(
                       title: 'Waktu Penanganan',
                       icon: LucideIcons.timer,
@@ -220,11 +320,10 @@ class ReportDetailBase extends StatelessWidget {
                       children: [
                         // Total handling time
                         () {
-                          final totalTime = report.completedAt!.difference(
-                            report.handlingStartedAt!,
-                          );
+                          final totalTime = widget.report.completedAt!
+                              .difference(widget.report.handlingStartedAt!);
                           final holdDuration = Duration(
-                            seconds: report.totalPausedDurationSeconds,
+                            seconds: widget.report.totalPausedDurationSeconds,
                           );
                           final actualTime = totalTime - holdDuration;
 
@@ -250,13 +349,15 @@ class ReportDetailBase extends StatelessWidget {
                               _buildInfoRow(
                                 LucideIcons.play,
                                 'Mulai Dikerjakan',
-                                _formatDateTime(report.handlingStartedAt!),
+                                _formatDateTime(
+                                  widget.report.handlingStartedAt!,
+                                ),
                               ),
                               // Completed At
                               _buildInfoRow(
                                 LucideIcons.checkCircle2,
                                 'Selesai Dikerjakan',
-                                _formatDateTime(report.completedAt!),
+                                _formatDateTime(widget.report.completedAt!),
                               ),
                             ],
                           );
@@ -273,22 +374,28 @@ class ReportDetailBase extends StatelessWidget {
                     accentColor: Colors.red,
                     children: [
                       _buildInfoRow(
-                        LucideIcons.building,
+                        LucideIcons.mapPin,
                         'Tempat',
-                        report.building,
+                        widget.report.location,
                       ),
-                      if (report.locationDetail != null &&
-                          report.locationDetail!.isNotEmpty)
+                      if (widget.report.locationDetail != null &&
+                          widget.report.locationDetail!.isNotEmpty)
                         _buildInfoRow(
                           LucideIcons.mapPin,
                           'Detail Lokasi',
-                          report.locationDetail!,
+                          widget.report.locationDetail!,
                         ),
                       const Gap(12),
                       _buildMapPreview(
                         context,
-                        latitude: report.latitude ?? -6.998576,
-                        longitude: report.longitude ?? 110.423188,
+                        latitude:
+                            _liveLatLng?.latitude ??
+                            widget.report.latitude ??
+                            -6.998576,
+                        longitude:
+                            _liveLatLng?.longitude ??
+                            widget.report.longitude ??
+                            110.423188,
                       ),
                     ],
                   ),
@@ -301,7 +408,7 @@ class ReportDetailBase extends StatelessWidget {
                     accentColor: Colors.grey,
                     children: [
                       Text(
-                        report.description,
+                        widget.report.description,
                         style: TextStyle(
                           color: Colors.grey.shade700,
                           height: 1.5,
@@ -320,7 +427,9 @@ class ReportDetailBase extends StatelessWidget {
                       ReportTimeline(
                         logs: () {
                           // Create a mutable copy of logs
-                          final allLogs = List<ReportLog>.from(report.logs);
+                          final allLogs = List<ReportLog>.from(
+                            widget.report.logs,
+                          );
 
                           // Check if "created" action already exists
                           final hasCreatedLog = allLogs.any(
@@ -331,14 +440,14 @@ class ReportDetailBase extends StatelessWidget {
                           if (!hasCreatedLog) {
                             allLogs.add(
                               ReportLog(
-                                id: 'created_${report.id}',
+                                id: 'created_${widget.report.id}',
                                 fromStatus: ReportStatus.pending,
                                 toStatus: ReportStatus.pending,
                                 action: ReportAction.created,
-                                actorId: report.reporterId,
-                                actorName: report.reporterName,
+                                actorId: widget.report.reporterId,
+                                actorName: widget.report.reporterName,
                                 actorRole: 'Pelapor',
-                                timestamp: report.createdAt,
+                                timestamp: widget.report.createdAt,
                               ),
                             );
                           }
@@ -361,7 +470,7 @@ class ReportDetailBase extends StatelessWidget {
           ),
         ],
       ),
-      bottomNavigationBar: actionButtons != null
+      bottomNavigationBar: widget.actionButtons != null
           ? Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -375,7 +484,7 @@ class ReportDetailBase extends StatelessWidget {
                 ],
               ),
               child: Row(
-                children: actionButtons!
+                children: widget.actionButtons!
                     .map(
                       (btn) => Expanded(
                         child: Padding(
@@ -392,7 +501,7 @@ class ReportDetailBase extends StatelessWidget {
   }
 
   Widget _buildSliverAppBar(BuildContext context) {
-    final statusColor = AppTheme.getStatusColor(report.status.name);
+    final statusColor = AppTheme.getStatusColor(widget.report.status.name);
 
     return SliverAppBar(
       expandedHeight: 200,
@@ -434,7 +543,7 @@ class ReportDetailBase extends StatelessWidget {
               child: Transform.rotate(
                 angle: -0.2,
                 child: Icon(
-                  AppTheme.getStatusIcon(report.status.name),
+                  AppTheme.getStatusIcon(widget.report.status.name),
                   size: 180,
                   color: Colors.white.withValues(alpha: 0.15),
                 ),
@@ -461,7 +570,7 @@ class ReportDetailBase extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Badge: Emergency OR Category
-                  if (report.isEmergency)
+                  if (widget.report.isEmergency)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -506,7 +615,7 @@ class ReportDetailBase extends StatelessWidget {
                         ),
                       ),
                       child: Text(
-                        report.category,
+                        widget.report.category,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -516,7 +625,7 @@ class ReportDetailBase extends StatelessWidget {
                     ),
                   const Gap(12),
                   Text(
-                    report.title,
+                    widget.report.title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
@@ -534,8 +643,8 @@ class ReportDetailBase extends StatelessWidget {
   }
 
   Widget _buildStatusCard() {
-    final statusColor = AppTheme.getStatusColor(report.status.name);
-    final statusIcon = AppTheme.getStatusIcon(report.status.name);
+    final statusColor = AppTheme.getStatusColor(widget.report.status.name);
+    final statusIcon = AppTheme.getStatusIcon(widget.report.status.name);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -567,7 +676,7 @@ class ReportDetailBase extends StatelessWidget {
               ),
               const Gap(4),
               Text(
-                report.status.label,
+                widget.report.status.label,
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.bold,
@@ -743,7 +852,7 @@ class ReportDetailBase extends StatelessWidget {
                     builder: (_) => FullscreenMapModal(
                       latitude: latitude,
                       longitude: longitude,
-                      locationName: report.building,
+                      locationName: widget.report.location,
                     ),
                   );
                 },

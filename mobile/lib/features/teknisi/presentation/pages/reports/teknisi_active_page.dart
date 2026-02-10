@@ -42,10 +42,17 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
 
         if (mounted) {
           setState(() {
-            final processing = results[0]
+            final processingData = List<Map<String, dynamic>>.from(
+              results[0]['data'] ?? [],
+            );
+            final processing = processingData
                 .map((json) => Report.fromJson(json))
                 .toList();
-            final onHold = results[1]
+
+            final onHoldData = List<Map<String, dynamic>>.from(
+              results[1]['data'] ?? [],
+            );
+            final onHold = onHoldData
                 .map((json) => Report.fromJson(json))
                 .toList();
 
@@ -158,7 +165,7 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                   return UniversalReportCard(
                     id: report.id,
                     title: report.title,
-                    location: report.building,
+                    location: report.location,
                     locationDetail: report.locationDetail,
                     category: report.category,
                     status: report.status,

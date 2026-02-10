@@ -36,17 +36,23 @@ export const staff = pgTable('staff', {
   password: text('password').notNull(), // Hashed password
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
-  fcmToken: text('fcm_token'), // Firebase Cloud Messaging token for push notifications
   isActive: boolean('is_active').default(true),
-  managedBuilding: text('managed_building'), // Specific for PJ Gedung
+  managedLocation: text('managed_location'), // Specific for PJ Gedung
   createdAt: timestamp('created_at').defaultNow(),
 });
 
-// Buildings table
-export const buildings = pgTable('buildings', {
+// Locations table
+export const locations = pgTable('locations', {
   id: serial('id').primaryKey(),
   name: text('name').notNull().unique(),
   createdAt: timestamp('created_at').defaultNow(),
+});
+
+export const specializations = pgTable('specializations', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  icon: text('icon').notNull().default('wrench'),
+  description: text('description'),
 });
 
 // Categories table
@@ -67,7 +73,7 @@ export const reports = pgTable('reports', {
   categoryId: integer('category_id').references(() => categories.id),
   title: text('title').notNull(),
   description: text('description').notNull(),
-  building: text('building').notNull(),
+  location: text('location').notNull(),
   locationDetail: text('location_detail'),
   latitude: doublePrecision('latitude'),
   longitude: doublePrecision('longitude'),
@@ -148,6 +154,6 @@ export type ReportLog = typeof reportLogs.$inferSelect;
 export type NewReportLog = typeof reportLogs.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
-export type Building = typeof buildings.$inferSelect;
-export type NewBuilding = typeof buildings.$inferInsert;
+export type Location = typeof locations.$inferSelect;
+export type NewLocation = typeof locations.$inferInsert;
 

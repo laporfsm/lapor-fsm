@@ -8,7 +8,7 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 
 /// Page to display all non-gedung pending reports
-/// (Reports from buildings that don't have a PJ Gedung)
+/// (Reports from locations that don't have a PJ Gedung)
 class SupervisorNonGedungPage extends StatefulWidget {
   const SupervisorNonGedungPage({super.key});
 
@@ -35,8 +35,11 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
     });
 
     try {
-      final data = await reportService.getNonGedungReports(limit: 100);
+      final response = await reportService.getNonGedungReports(limit: 100);
       setState(() {
+        final List<Map<String, dynamic>> data = List<Map<String, dynamic>>.from(
+          response['data'] ?? [],
+        );
         _reports = data.map((json) => Report.fromJson(json)).toList();
         _isLoading = false;
       });
@@ -100,7 +103,7 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.building2, size: 64, color: Colors.grey.shade300),
+            Icon(LucideIcons.mapPin, size: 64, color: Colors.grey.shade300),
             const Gap(16),
             Text(
               'Tidak ada laporan non-gedung',
@@ -108,7 +111,7 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
             ),
             const Gap(8),
             Text(
-              'Laporan dari gedung tanpa PJ\nakan muncul di sini',
+              'Laporan dari lokasi tanpa PJ Gedung\nakan muncul di sini',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey.shade400, fontSize: 14),
             ),
@@ -145,7 +148,7 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
                     const Gap(12),
                     Expanded(
                       child: Text(
-                        '${_reports.length} laporan dari gedung tanpa PJ Gedung',
+                        '${_reports.length} laporan dari lokasi tanpa PJ Gedung',
                         style: TextStyle(
                           color: AppTheme.supervisorColor,
                           fontWeight: FontWeight.w500,
@@ -164,7 +167,7 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
             child: UniversalReportCard(
               id: report.id,
               title: report.title,
-              location: report.building,
+              location: report.location,
               locationDetail: report.locationDetail,
               category: report.category,
               status: report.status,
