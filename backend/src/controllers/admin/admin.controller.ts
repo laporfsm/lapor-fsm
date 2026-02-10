@@ -891,6 +891,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
         set.headers['Content-Type'] = 'application/pdf';
         set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.pdf';
         return buffer;
+        } catch (e) {
+            console.error('Error generating Logs PDF:', e);
+            set.status = 500;
+            return { error: 'Failed to generate PDF', details: String(e) };
+        }
     })
 
     // Export Logs Excel
