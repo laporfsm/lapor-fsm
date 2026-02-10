@@ -11,7 +11,7 @@ import 'package:mobile/features/admin/services/admin_service.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
-import 'package:mobile/features/report_common/domain/enums/report_status.dart';
+
 
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
@@ -121,7 +121,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           colors: [
                             AppTheme.adminColor,
                             AppTheme.adminColor.withRed(
-                              AppTheme.adminColor.red + 30,
+                              (AppTheme.adminColor.r * 255).round() + 30,
                             ),
                           ],
                         ),
