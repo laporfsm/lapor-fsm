@@ -163,6 +163,8 @@ class _AdminPendingRegistrationsPageState
   }
 
   Widget _buildRegistrationCard(Map<String, dynamic> registration) {
+    final String? idCardUrl = registration['idCardUrl'];
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -250,6 +252,65 @@ class _AdminPendingRegistrationsPageState
                     ),
                   ],
                 ),
+                
+                // ID Card Section
+                if (idCardUrl != null && idCardUrl.isNotEmpty) ...[
+                  const Gap(12),
+                  GestureDetector(
+                    onTap: () => _showIdCardDialog(context, idCardUrl),
+                    child: Container(
+                      width: double.infinity,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          idCardUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(LucideIcons.imageOff, color: Colors.grey.shade400, size: 32),
+                                  const Gap(4),
+                                  Text(
+                                    'Gagal memuat gambar',
+                                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    'Kartu Identitas (KTP/KTM) - Tap untuk memperbesar',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 10,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -353,6 +414,41 @@ class _AdminPendingRegistrationsPageState
             child: const Text('Ya, Tolak', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showIdCardDialog(BuildContext context, String idCardUrl) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              maxWidth: MediaQuery.of(context).size.width * 0.9,
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                idCardUrl,
+                fit: BoxFit.contain,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

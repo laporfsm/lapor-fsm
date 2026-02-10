@@ -1074,14 +1074,70 @@ export const adminController = new Elysia({ prefix: '/admin' })
     })
 
     .post('/users/:id/verify', async ({ params }) => {
-        const updated = await db.update(users).set({ isVerified: true }).where(eq(users.id, parseInt(params.id))).returning();
-        if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
-        await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin.');
+        const userId = parseInt(params.id);
+        
+        // Get user details first
+        const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+        if (user.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
+        
+        const userData = user[0];
+        
+        // Check if it's an external user (non-UNDIP)
+        const isUndipEmail = (email: string) => {
+            const lowerEmail = email.toLowerCase();
+            return lowerEmail.endsWith('@undip.ac.id') ||
+                   lowerEmail.endsWith('@students.undip.ac.id') ||
+                   lowerEmail.endsWith('@live.undip.ac.id') ||
+                   lowerEmail.endsWith('@lecturer.undip.ac.id') ||
+                   lowerEmail.endsWith('@staff.undip.ac.id');
+        };
+        
+        const isExternal = !isUndipEmail(userData.email);
+        
+        // Update user as verified
+        const updated = await db.update(users).set({ isVerified: true }).where(eq(users.id, userId)).returning();
+        
+        // For external users, generate activation token and send email
+        if (isExternal) {
+            const crypto = require('crypto');
+            const activationToken = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+            
+            // Store token in database
+            await db.update(users)
+                .set({ 
+                    emailVerificationToken: activationToken,
+                    emailVerificationExpiresAt: expiresAt
+                })
+                .where(eq(users.id, userId));
+            
+            // Send activation email
+            const apiUrl = process.env.API_URL || 'http://localhost:3000';
+            const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(userData.email)}`;
+            
+            console.log(`[ADMIN VERIFY] Activation token for ${userData.email}: ${activationToken}`);
+            try {
+                // Import EmailService
+                const { EmailService } = await import('../../services/email.service');
+                await EmailService.sendActivationEmail(userData.email, userData.name, activationLink, false);
+            } catch (err) {
+                console.error('[ADMIN VERIFY] Failed to send activation email:', err);
+            }
+        } else {
+            // For UNDIP users, just send notification
+            await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin.');
+        }
+        
         await db.insert(reportLogs).values({
             action: 'verified', actorId: 'admin', actorName: 'Admin System', actorRole: 'admin',
-            reason: `Admin memverifikasi user: ${updated[0].name}`,
+            reason: `Admin memverifikasi user: ${updated[0].name}${isExternal ? ' (External - Activation email sent)' : ''}`,
         });
-        return { status: 'success', message: 'User berhasil diverifikasi', data: mapToMobileUser(updated[0]) };
+        
+        return { 
+            status: 'success', 
+            message: isExternal ? 'User berhasil diverifikasi dan email aktivasi telah dikirim' : 'User berhasil diverifikasi', 
+            data: mapToMobileUser(updated[0]) 
+        };
     })
 
     .put('/users/:id/suspend', async ({ params, body }) => {

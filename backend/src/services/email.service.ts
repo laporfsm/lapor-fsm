@@ -72,7 +72,7 @@ export class EmailService {
                             </a>
                         </div>
                         <p style="margin-top: 20px;"><strong>Link ini akan kedaluwarsa dalam 24 jam.</strong></p>
-                        ${!isUndip ? '<p style="color: #d32f2f;"><strong>Catatan:</strong> Setelah aktivasi, akun Anda masih perlu disetujui oleh admin sebelum dapat digunakan.</p>' : ''}
+                        ${!isUndip ? '<p style="color: #2e7d32;"><strong>Selamat!</strong> Akun Anda telah disetujui oleh admin. Silakan klik tombol di atas untuk mengaktifkan akun dan mulai menggunakan aplikasi.</p>' : ''}
                         <p>Jika Anda tidak merasa mendaftar, abaikan email ini.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                         <p style="font-size: 12px; color: #888;">Lapor FSM - Fakultas Sains dan Matematika Universitas Diponegoro</p>

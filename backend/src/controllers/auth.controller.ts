@@ -147,7 +147,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
         idCardUrl: body.idCardUrl,
-        isVerified: false, // Not verified until activation
+        isVerified: isUndip, // UNDIP users are auto-verified, External users need admin approval
         isEmailVerified: false,
         emailVerificationToken: activationToken,
         emailVerificationExpiresAt: expiresAt,
@@ -225,12 +225,121 @@ export const authController = new Elysia({ prefix: '/auth' })
     console.log(`[ACTIVATE] Activation attempt for email: ${email}`);
     console.log(`[ACTIVATE] Token received: ${token?.substring(0, 20)}...`);
     
+    const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
+    const loginUrl = `${frontendUrl}/#/login`;
+    
+    // Helper function to generate HTML response
+    const generateHtmlResponse = (title: string, message: string, isError: boolean = false, showButton: boolean = true) => {
+      const iconColor = isError ? '#ef4444' : '#10b981';
+      const iconSvg = isError 
+        ? '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>'
+        : '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+      
+      return `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${isError ? 'Error' : 'Sukses'} - Lapor FSM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: ${iconColor};
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        .icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            ${iconSvg}
+        </div>
+        <h1>${title}</h1>
+        <p>${message}</p>
+        ${showButton ? `<a href="${loginUrl}" class="btn">Kembali ke Login</a>` : ''}
+        <div class="footer">
+            Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro
+        </div>
+    </div>
+</body>
+</html>`;
+    };
+    
     const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (user.length === 0) {
       console.log(`[ACTIVATE] User not found: ${email}`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 404;
-      return { status: 'error', message: 'User tidak ditemukan' };
+      return generateHtmlResponse(
+        'Akun Tidak Ditemukan',
+        'Maaf, akun dengan email tersebut tidak ditemukan dalam sistem kami. Silakan periksa kembali email Anda atau daftar terlebih dahulu.',
+        true
+      );
     }
 
     console.log(`[ACTIVATE] User found: ${user[0].id}, isEmailVerified: ${user[0].isEmailVerified}`);
@@ -238,19 +347,34 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     if (user[0].isEmailVerified) {
       console.log(`[ACTIVATE] User already activated`);
-      return { status: 'success', message: 'Akun Anda sudah aktif. Silakan login.' };
+      set.headers['Content-Type'] = 'text/html';
+      return generateHtmlResponse(
+        'Akun Sudah Aktif',
+        'Akun Anda sudah aktif sebelumnya. Silakan login untuk menggunakan aplikasi.',
+        false
+      );
     }
 
     if (user[0].emailVerificationToken !== token) {
       console.log(`[ACTIVATE] Token mismatch!`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return { status: 'error', message: 'Token aktivasi tidak valid' };
+      return generateHtmlResponse(
+        'Token Tidak Valid',
+        'Link aktivasi tidak valid. Pastikan Anda menggunakan link yang benar dari email.',
+        true
+      );
     }
 
     if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
       console.log(`[ACTIVATE] Token expired`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return { status: 'error', message: 'Token aktivasi telah kedaluwarsa. Silakan minta yang baru.' };
+      return generateHtmlResponse(
+        'Link Kadaluwarsa',
+        'Link aktivasi telah kedaluwarsa. Silakan hubungi admin untuk mendapatkan link aktivasi baru.',
+        true
+      );
     }
 
     // For both UNDIP and External (after admin approval): activate immediately when clicking link
@@ -261,6 +385,31 @@ export const authController = new Elysia({ prefix: '/auth' })
         emailVerificationToken: null,
         emailVerificationExpiresAt: null
       })
+      .where(eq(users.id, user[0].id));
+
+    console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
+
+    // Log activation
+    await db.insert(reportLogs).values({
+      action: 'activate_account',
+      actorId: user[0].id.toString(),
+      actorName: user[0].name,
+      actorRole: 'user',
+      reason: 'User mengaktifkan akun melalui link email',
+    });
+
+    set.headers['Content-Type'] = 'text/html';
+    return generateHtmlResponse(
+      'Akun Anda Telah Aktif!',
+      'Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.',
+      false
+    );
+  }, {
+    query: t.Object({
+      token: t.String(),
+      email: t.String(),
+    })
+  })
       .where(eq(users.id, user[0].id));
 
     console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
