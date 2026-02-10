@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/api_service.dart';
 import 'media_viewer_modal.dart';
 
 /// A gallery widget that displays media thumbnails and opens fullscreen viewer on tap
@@ -79,6 +80,24 @@ class MediaGalleryWidget extends StatelessWidget {
     );
   }
 
+  bool _isVideo(String url) {
+    final lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.mp4') ||
+        lowerUrl.endsWith('.mov') ||
+        lowerUrl.endsWith('.avi') ||
+        lowerUrl.endsWith('.mkv');
+  }
+
+  String _getSanitizedUrl(String url) {
+    if (url.contains('localhost') || url.contains('127.0.0.1')) {
+      final actualBaseUrl = ApiService.baseUrl;
+      return url
+          .replaceFirst('http://localhost:3000', actualBaseUrl)
+          .replaceFirst('http://127.0.0.1:3000', actualBaseUrl);
+    }
+    return url;
+  }
+
   Widget _buildThumbnail(BuildContext context, int index, int? extraCount) {
     return GestureDetector(
       onTap: () => _openViewer(context, index),
@@ -87,43 +106,59 @@ class MediaGalleryWidget extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              mediaUrls[index],
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Container(
-                  color: Colors.grey.shade100,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                debugPrint('Error loading image: $mediaUrls[$index] - $error');
-                return Container(
-                  color: Colors.grey.shade200,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(LucideIcons.imageOff,
-                          color: Colors.grey.shade400, size: 24),
-                      const SizedBox(height: 4),
-                      Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Text(
-                          'Gagal muat',
-                          style: TextStyle(
-                              color: Colors.grey.shade500, fontSize: 10),
-                          textAlign: TextAlign.center,
-                        ),
+            _isVideo(mediaUrls[index])
+                ? Container(
+                    color: Colors.grey.shade900,
+                    child: const Center(
+                      child: Icon(
+                        LucideIcons.playCircle,
+                        color: Colors.white,
+                        size: 32,
                       ),
-                    ],
+                    ),
+                  )
+                : Image.network(
+                    _getSanitizedUrl(mediaUrls[index]),
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.grey.shade100,
+                        child: const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      final sanitizedUrl = _getSanitizedUrl(mediaUrls[index]);
+                      debugPrint('Error loading image: $sanitizedUrl - $error');
+                      return Container(
+                        color: Colors.grey.shade200,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.imageOff,
+                              color: Colors.grey.shade400,
+                              size: 24,
+                            ),
+                            const SizedBox(height: 4),
+                            Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Text(
+                                'Gagal muat',
+                                style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 10,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
-            // Overlay for extra count
             if (extraCount != null)
               Container(
                 color: Colors.black.withValues(alpha: 0.6),
@@ -137,7 +172,9 @@ class MediaGalleryWidget extends StatelessWidget {
                     ),
                   ),
                 ),
-              ),
+              )
+            else if (_isVideo(mediaUrls[index]))
+              const SizedBox.shrink(), // Play icon is already in the placeholder
           ],
         ),
       ),
@@ -145,12 +182,18 @@ class MediaGalleryWidget extends StatelessWidget {
   }
 
   void _openViewer(BuildContext context, int initialIndex) {
+    // Sanitize all URLs before passing to viewer
+    final sanitizedUrls = mediaUrls
+        .map((url) => _getSanitizedUrl(url))
+        .toList();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) =>
-          MediaViewerModal(mediaUrls: mediaUrls, initialIndex: initialIndex),
+      builder: (_) => MediaViewerModal(
+        mediaUrls: sanitizedUrls,
+        initialIndex: initialIndex,
+      ),
     );
   }
 }

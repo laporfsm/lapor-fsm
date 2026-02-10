@@ -13,6 +13,7 @@ import { notificationController } from "./controllers/notification.controller";
 import { categoryController } from "./controllers/admin/category.controller";
 import { locationController } from "./controllers/supervisor/location.controller";
 import { specializationController } from "./controllers/supervisor/specialization.controller";
+import { trackingController } from "./controllers/emergency/tracking.controller";
 
 const app = new Elysia()
   .onError(({ code, error, set }) => {
@@ -51,6 +52,7 @@ const app = new Elysia()
   .use(categoryController)
   .use(locationController)
   .use(specializationController)
+  .use(trackingController)
   .listen({
     port: 3000,
     hostname: '0.0.0.0'

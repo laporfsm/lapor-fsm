@@ -15,9 +15,9 @@ class ApiService {
     if (Platform.isAndroid) {
       // Change this to your computer's IP if using physical device
       // e.g., 'http://192.168.1.100:3000'
-      return 'http://192.168.18.195:3000';
+      return 'http://10.137.166.83:3000';
     }
-    return 'http://192.168.18.195:3000'; // Match updated IP for other platforms if needed
+    return 'http://10.137.166.83:3000'; // Match updated IP for other platforms if needed
   }
 
   late final Dio _dio;
