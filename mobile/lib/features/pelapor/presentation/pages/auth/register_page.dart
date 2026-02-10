@@ -353,26 +353,28 @@ class _RegisterPageState extends State<RegisterPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
+                color: isUndip 
+                  ? Colors.blue.withValues(alpha: 0.1)
+                  : Colors.orange.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                LucideIcons.mail,
+              child: Icon(
+                isUndip ? LucideIcons.mail : LucideIcons.clock,
                 size: 48,
-                color: Colors.blue,
+                color: isUndip ? Colors.blue : Colors.orange,
               ),
             ),
             const Gap(20),
-            const Text(
-              'Aktivasi Akun Diperlukan',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              isUndip ? 'Cek Email Anda' : 'Menunggu Persetujuan',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const Gap(12),
             Text(
               isUndip
                 ? 'Silakan cek email Anda dan klik link aktivasi untuk mengaktifkan akun. Setelah aktivasi, Anda dapat langsung login.'
-                : 'Silakan cek email Anda dan klik link aktivasi untuk verifikasi email. Setelah itu, akun Anda akan menunggu persetujuan admin.',
+                : 'Akun Anda sedang menunggu persetujuan admin. Setelah disetujui, Anda akan menerima email aktivasi.',
               style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
