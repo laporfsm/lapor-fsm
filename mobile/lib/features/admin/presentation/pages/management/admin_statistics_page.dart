@@ -248,6 +248,13 @@ class _AdminStatisticsPageState extends State<AdminStatisticsPage> {
   Widget _buildAppUsageChart() {
     final List data = _data?['appUsage'] ?? [];
 
+    // Check if data is empty or all values are zero
+    final hasActivity = data.isNotEmpty && data.any((item) {
+      final val = item['value'];
+      final double value = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
+      return value > 0;
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -256,78 +263,102 @@ class _AdminStatisticsPageState extends State<AdminStatisticsPage> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
         ),
         const Gap(20),
-        SizedBox(
-          height: 180,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: 60,
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipColor: (_) => Colors.white,
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    return BarTooltipItem(
-                      '${rod.toY.toInt()}',
-                      TextStyle(
-                        color: rod.color ?? Colors.purple,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    );
-                  },
+        if (!hasActivity)
+          Container(
+            height: 180,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  LucideIcons.barChart2,
+                  size: 48,
+                  color: Colors.grey.shade300,
                 ),
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value >= 0 && value < data.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            data[value.toInt()]['day'],
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
-                              fontSize: 10,
-                            ),
-                          ),
-                        );
-                      }
-                      return const Text('');
+                const Gap(12),
+                Text(
+                  'Belum ada aktivitas minggu ini',
+                  style: TextStyle(
+                    color: Colors.grey.shade500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          SizedBox(
+            height: 180,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: 60,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => Colors.white,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${rod.toY.toInt()}',
+                        TextStyle(
+                          color: rod.color ?? Colors.purple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
                     },
                   ),
                 ),
-                leftTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                topTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-                rightTitles: const AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
-              ),
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              barGroups: data.asMap().entries.map((e) {
-                final val = e.value['value'];
-                final double y = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
-                return BarChartGroupData(
-                  x: e.key,
-                  barRods: [
-                    BarChartRodData(
-                      toY: y,
-                      color: Colors.purple.shade300,
-                      width: 16,
-                      borderRadius: BorderRadius.circular(4),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value >= 0 && value < data.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              data[value.toInt()]['day'],
+                              style: TextStyle(
+                                color: Colors.grey.shade400,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        }
+                        return const Text('');
+                      },
                     ),
-                  ],
-                );
-              }).toList(),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barGroups: data.asMap().entries.map((e) {
+                  final val = e.value['value'];
+                  final double y = (val is num ? val : double.tryParse(val.toString()) ?? 0).toDouble();
+                  return BarChartGroupData(
+                    x: e.key,
+                    barRods: [
+                      BarChartRodData(
+                        toY: y,
+                        color: Colors.purple.shade300,
+                        width: 16,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
-        ),
       ],
     );
   }

@@ -75,8 +75,28 @@ class _AdminUsersPageState extends State<AdminUsersPage>
         foregroundColor: Colors.white,
         automaticallyImplyLeading: false,
         actions: [
+          // Add Staff button - only show on Staff tab (index 2)
+          if (_tabController.index == 2)
+            IconButton(
+              icon: const Icon(LucideIcons.userPlus, color: Colors.white),
+              tooltip: 'Tambah Staff',
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => const AddStaffBottomSheet(),
+                ).then((value) {
+                  if (value == true) {
+                    setState(() {
+                      _staffRefreshKey++; // Force reload
+                    });
+                  }
+                });
+              },
+            ),
           IconButton(
-            icon: const Icon(LucideIcons.download),
+            icon: const Icon(LucideIcons.download, color: Colors.white),
             tooltip: 'Export Data',
             onPressed: () {
               final titles = ['Data User', 'Data User Pending', 'Data Staff'];
@@ -175,27 +195,6 @@ class _AdminUsersPageState extends State<AdminUsersPage>
           ),
         ],
       ),
-      floatingActionButton: _tabController.index == 2
-          ? FloatingActionButton.extended(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => const AddStaffBottomSheet(),
-                ).then((value) {
-                  if (value == true) {
-                    setState(() {
-                      _staffRefreshKey++; // Force reload
-                    });
-                  }
-                });
-              },
-              backgroundColor: AppTheme.adminColor,
-              icon: const Icon(LucideIcons.plus),
-              label: const Text('Tambah Staff'),
-            )
-          : null,
     );
   }
 

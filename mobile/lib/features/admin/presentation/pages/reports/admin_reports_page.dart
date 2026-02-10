@@ -23,13 +23,13 @@ class AdminReportsPage extends StatelessWidget {
       onReportTap: (reportId, status) {
         context.push('/admin/reports/$reportId');
       },
-      floatingActionButton: FloatingActionButton(
-        onPressed: () =>
-            ExportService.exportData(context, 'Laporan', 'laporan', primaryColor: AppTheme.adminColor),
-        backgroundColor: AppTheme.adminColor,
-        tooltip: 'Export Laporan',
-        child: const Icon(LucideIcons.download, color: Colors.white),
-      ),
+      appBarActions: [
+        IconButton(
+          icon: const Icon(LucideIcons.download, color: Colors.white),
+          tooltip: 'Export Laporan',
+          onPressed: () => ExportService.exportData(context, 'Laporan', 'laporan', primaryColor: AppTheme.adminColor),
+        ),
+      ],
     );
   }
 }

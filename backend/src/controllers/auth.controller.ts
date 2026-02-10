@@ -46,22 +46,13 @@ export const authController = new Elysia({ prefix: '/auth' })
     }
 
     if (!foundUser[0].isEmailVerified) {
-      // NOTE: For debugging, we might want to temporarily bypass this if verification flow is broken
       set.status = 403;
-      return { status: 'error', message: 'Email belum diverifikasi. Silakan verifikasi email Anda terlebih dahulu.' };
-    }
-
-    if (!foundUser[0].isVerified) {
-      // set.status = 403;
-      // return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
-      // FOR DEBUG: Allow unverified users to login temporarily if that's the blocker, 
-      // BUT let's keep it strict first and see the logs.
-      console.log('[LOGIN] User is not verified by admin yet.');
+      return { status: 'error', message: 'Akun Anda belum diaktivasi. Silakan cek email Anda dan klik link aktivasi.' };
     }
 
     if (!foundUser[0].isVerified) {
       set.status = 403;
-      return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
+      return { status: 'error', message: 'Akun Anda sedang menunggu persetujuan admin.' };
     }
 
     // Sign JWT
@@ -130,12 +121,19 @@ export const authController = new Elysia({ prefix: '/auth' })
 
       const hashedPassword = await Bun.password.hash(body.password);
 
-      // Use crypto for better randomness
+      const isUndip = isUndipEmail(body.email);
+      
       const crypto = require('crypto');
-      const verificationToken = crypto.randomInt(100000, 999999).toString();
 
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+      let activationToken = null;
+      let expiresAt = null;
+
+      // For UNDIP: generate token for email activation
+      // For External: no token yet, will be generated after admin approval
+      if (isUndip) {
+        activationToken = crypto.randomBytes(32).toString('hex');
+        expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      }
 
       const newUser = await db.insert(users).values({
         name: body.name,
@@ -149,11 +147,9 @@ export const authController = new Elysia({ prefix: '/auth' })
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
         idCardUrl: body.idCardUrl,
-        isVerified: isUndipEmail(body.email), // Auto-verify if UNDIP? Actually user request said "registrasi apakah aman sudahan", usually UNDIP is trusted, but let's keep it safe.
-        // Actually, let's allow auto-verify for UNDIP emails for better UX, but require admin approval for others?
-        // Wait, the mobile app says "@undip.ac.id will be directly verified". Let's follow that.
+        isVerified: isUndip, // UNDIP users are auto-verified, External users need admin approval
         isEmailVerified: false,
-        emailVerificationToken: verificationToken,
+        emailVerificationToken: activationToken,
         emailVerificationExpiresAt: expiresAt,
       }).returning();
 
@@ -163,35 +159,43 @@ export const authController = new Elysia({ prefix: '/auth' })
         actorId: newUser[0].id.toString(),
         actorName: newUser[0].name,
         actorRole: 'user',
-        reason: isUndipEmail(body.email)
-          ? 'User mendaftar (UNDIP Email)'
-          : 'User mendaftar (Non-UNDIP, Menunggu Verifikasi KTP)',
+        reason: isUndip
+          ? 'User mendaftar (UNDIP Email - Menunggu Aktivasi)'
+          : 'User mendaftar (Non-UNDIP, Menunggu Approval Admin)',
       });
 
-      // Notify Admins
-      await NotificationService.notifyRole(
-        'admin',
-        'Request Registrasi Baru',
-        `User baru ${newUser[0].name} (${body.email}) telah mendaftar.`
-      );
+      // Notify Admins for non-UNDIP
+      if (!isUndip) {
+        await NotificationService.notifyRole(
+          'admin',
+          'Request Registrasi Baru',
+          `User baru ${newUser[0].name} (${body.email}) telah mendaftar dan menunggu approval.`
+        );
+      }
 
-      // In-memory log for dev
-      console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
-
-      // Send Real Email
-      try {
-        EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
-      } catch (err) {
-        console.error('[AUTH] Background email send failed:', err);
+      // Send activation email only for UNDIP users
+      if (isUndip) {
+        const apiUrl = process.env.API_URL || 'http://localhost:3000';
+        const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(body.email)}`;
+        
+        console.log(`[AUTH] Activation token for ${body.email}: ${activationToken}`);
+        try {
+          EmailService.sendActivationEmail(body.email, body.name, activationLink, isUndip);
+        } catch (err) {
+          console.error('[AUTH] Background activation email send failed:', err);
+        }
       }
 
       return {
         status: 'success',
-        message: 'Registrasi berhasil. Kode verifikasi telah dikirim ke email Anda.',
+        message: isUndip 
+          ? 'Registrasi berhasil. Silakan cek email Anda untuk mengaktifkan akun.'
+          : 'Registrasi berhasil. Akun Anda sedang menunggu persetujuan admin.',
         data: {
           user: mapToMobileUser(newUser[0]),
-          needsEmailVerification: true,
-          needsAdminApproval: !isUndipEmail(body.email)
+          needsEmailVerification: isUndip,
+          needsAdminApproval: !isUndip,
+          isUndip: isUndip
         }
       };
     } catch (error: any) {
@@ -210,63 +214,326 @@ export const authController = new Elysia({ prefix: '/auth' })
       address: t.Optional(t.String()),
       emergencyName: t.Optional(t.String()),
       emergencyPhone: t.Optional(t.String()),
-      idCardUrl: t.Optional(t.String()),
+      idCardUrl: t.Optional(t.Nullable(t.String())),
     })
   })
 
-  // Verify Email
-  .post('/verify-email', async ({ body, set }) => {
-    const { email, token } = body;
+  // Activate Account (for both UNDIP and External after approval)
+  .get('/activate', async ({ query, set }) => {
+    const { token, email } = query;
+    
+    console.log(`[ACTIVATE] Activation attempt for email: ${email}`);
+    console.log(`[ACTIVATE] Token received: ${token?.substring(0, 20)}...`);
+    
+    const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
+    const loginUrl = `${frontendUrl}/#/login`;
+    
+    // Helper function to generate HTML response
+    const generateHtmlResponse = (title: string, message: string, isError: boolean = false, showButton: boolean = true) => {
+      const iconColor = isError ? '#ef4444' : '#10b981';
+      const iconSvg = isError 
+        ? '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>'
+        : '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
+      
+      return `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${isError ? 'Error' : 'Sukses'} - Lapor FSM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: ${iconColor};
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        .icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            ${iconSvg}
+        </div>
+        <h1>${title}</h1>
+        <p>${message}</p>
+        ${showButton ? `<a href="${loginUrl}" class="btn">Kembali ke Login</a>` : ''}
+        <div class="footer">
+            Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro
+        </div>
+    </div>
+</body>
+</html>`;
+    };
+    
     const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (user.length === 0) {
+      console.log(`[ACTIVATE] User not found: ${email}`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 404;
-      return { status: 'error', message: 'User tidak ditemukan' };
+      return generateHtmlResponse(
+        'Akun Tidak Ditemukan',
+        'Maaf, akun dengan email tersebut tidak ditemukan dalam sistem kami. Silakan periksa kembali email Anda atau daftar terlebih dahulu.',
+        true
+      );
     }
 
-    // ... existing logic ...
+    console.log(`[ACTIVATE] User found: ${user[0].id}, isEmailVerified: ${user[0].isEmailVerified}`);
+    console.log(`[ACTIVATE] Stored token: ${user[0].emailVerificationToken?.substring(0, 20)}...`);
 
-    // (Optimization: cleaned up for brevity in tool call, sticking to adding new endpoint below)
     if (user[0].isEmailVerified) {
-      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+      console.log(`[ACTIVATE] User already activated`);
+      set.headers['Content-Type'] = 'text/html';
+      return generateHtmlResponse(
+        'Akun Sudah Aktif',
+        'Akun Anda sudah aktif sebelumnya. Silakan login untuk menggunakan aplikasi.',
+        false
+      );
     }
 
     if (user[0].emailVerificationToken !== token) {
+      console.log(`[ACTIVATE] Token mismatch!`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return { status: 'error', message: 'Kode verifikasi tidak valid' };
+      return generateHtmlResponse(
+        'Token Tidak Valid',
+        'Link aktivasi tidak valid. Pastikan Anda menggunakan link yang benar dari email.',
+        true
+      );
     }
 
     if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
+      console.log(`[ACTIVATE] Token expired`);
+      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan minta kode baru.' };
+      return generateHtmlResponse(
+        'Link Kadaluwarsa',
+        'Link aktivasi telah kedaluwarsa. Silakan hubungi admin untuk mendapatkan link aktivasi baru.',
+        true
+      );
     }
 
+    // For both UNDIP and External (after admin approval): activate immediately when clicking link
+    // Mark email as verified and clear token
     await db.update(users)
-      .set({ isEmailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
+      .set({
+        isEmailVerified: true,
+        emailVerificationToken: null,
+        emailVerificationExpiresAt: null
+      })
       .where(eq(users.id, user[0].id));
 
-    // Log email verification
+    console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
+
+    // Log activation
     await db.insert(reportLogs).values({
-      action: 'verify_email',
+      action: 'activate_account',
       actorId: user[0].id.toString(),
       actorName: user[0].name,
       actorRole: 'user',
-      reason: 'User memverifikasi email',
+      reason: 'User mengaktifkan akun melalui link email',
     });
 
-    // Notify Admins for Approval
-    await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} telah memverifikasi email dan menunggu persetujuan admin.`);
-
-    return {
-      status: 'success',
-      message: user[0].isVerified
-        ? 'Email berhasil diverifikasi. Akun Anda sudah aktif.'
-        : 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
-    };
+    set.headers['Content-Type'] = 'text/html';
+    return generateHtmlResponse(
+      'Akun Anda Telah Aktif!',
+      'Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.',
+      false
+    );
   }, {
-    body: t.Object({
-      email: t.String(),
+    query: t.Object({
       token: t.String(),
+      email: t.String(),
+    })
+  })
+      .where(eq(users.id, user[0].id));
+
+    console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
+
+    // Log activation
+    await db.insert(reportLogs).values({
+      action: 'activate_account',
+      actorId: user[0].id.toString(),
+      actorName: user[0].name,
+      actorRole: 'user',
+      reason: isUndip ? 'User UNDIP mengaktifkan akun' : 'User External verifikasi email',
+    });
+
+    // Notify admin for non-UNDIP
+    if (!isUndip) {
+      await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} (${user[0].email}) telah verifikasi email dan menunggu persetujuan admin.`);
+    }
+
+    const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
+    const loginUrl = `${frontendUrl}/#/login`;
+    
+    // Return HTML page instead of JSON for better UX
+    const htmlResponse = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aktivasi Akun - Lapor FSM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+        .icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+        h1 {
+            color: #1f2937;
+            font-size: 24px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+        p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .btn {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .footer {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h1>Akun Anda Telah Aktif!</h1>
+        <p>
+            Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.
+        </p>
+        <a href="${loginUrl}" class="btn">Login Sekarang</a>
+        <div class="footer">
+            Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro
+        </div>
+    </div>
+</body>
+</html>`;
+    
+    set.headers['Content-Type'] = 'text/html';
+    return htmlResponse;
+  }, {
+    query: t.Object({
+      token: t.String(),
+      email: t.String(),
     })
   })
 
@@ -614,6 +881,70 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       data: payload
     };
+  })
+
+  // Admin: Approve User (for external users - sends activation email)
+  .post('/admin/approve-user', async ({ body, set }) => {
+    const { userId } = body;
+    
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (user.length === 0) {
+      set.status = 404;
+      return { status: 'error', message: 'User tidak ditemukan' };
+    }
+
+    if (user[0].isVerified) {
+      return { status: 'success', message: 'User sudah diverifikasi sebelumnya' };
+    }
+
+    // Generate activation token for external user
+    const crypto = require('crypto');
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Set isVerified = true and store activation token
+    await db.update(users)
+      .set({ 
+        isVerified: true,
+        emailVerificationToken: activationToken,
+        emailVerificationExpiresAt: expiresAt
+      })
+      .where(eq(users.id, userId));
+
+    // Log approval
+    await db.insert(reportLogs).values({
+      action: 'admin_approve_user',
+      actorId: userId.toString(),
+      actorName: user[0].name,
+      actorRole: 'user',
+      reason: 'Admin menyetujui user external',
+    });
+
+    // Send activation email to external user
+    const apiUrl = process.env.API_URL || 'http://localhost:3000';
+    const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(user[0].email)}`;
+    
+    console.log(`[ADMIN] Activation token for ${user[0].email}: ${activationToken}`);
+    try {
+      EmailService.sendActivationEmail(user[0].email, user[0].name, activationLink, false);
+    } catch (err) {
+      console.error('[ADMIN] Failed to send activation email:', err);
+    }
+
+    return {
+      status: 'success',
+      message: 'User berhasil disetujui dan email aktivasi telah dikirim',
+      data: {
+        userId: userId,
+        email: user[0].email,
+        name: user[0].name
+      }
+    };
+  }, {
+    body: t.Object({
+      userId: t.Number(),
+    })
   })
 
   // Change Password (Common for both User and Staff)

@@ -251,21 +251,12 @@ class _RegisterPageState extends State<RegisterPage> {
 
       if (mounted) {
         if (result['success']) {
-          if (result['needsEmailVerification'] == true) {
-             context.go(
-               '/email-verification?email=${Uri.encodeComponent(_emailController.text)}',
-             );
-          } else if (result['needsApproval'] == true) {
-            _showPendingApprovalDialog();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Registrasi berhasil! Silakan login.'),
-                backgroundColor: Colors.green,
-              ),
-            );
-            context.go('/login');
-          }
+          // All users need to check email and activate account
+          // Show activation required dialog
+          _showActivationRequiredDialog(
+            result['isUndip'] == true,
+            result['needsAdminApproval'] == true,
+          );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -322,6 +313,68 @@ class _RegisterPageState extends State<RegisterPage> {
             Text(
               'Akun Anda sedang dalam proses verifikasi oleh Admin. '
               'Anda akan menerima notifikasi setelah akun diaktifkan.',
+              style: TextStyle(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/login');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Kembali ke Login'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showActivationRequiredDialog(bool isUndip, bool needsAdminApproval) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: isUndip 
+                  ? Colors.blue.withValues(alpha: 0.1)
+                  : Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isUndip ? LucideIcons.mail : LucideIcons.clock,
+                size: 48,
+                color: isUndip ? Colors.blue : Colors.orange,
+              ),
+            ),
+            const Gap(20),
+            Text(
+              isUndip ? 'Cek Email Anda' : 'Menunggu Persetujuan',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(12),
+            Text(
+              isUndip
+                ? 'Silakan cek email Anda dan klik link aktivasi untuk mengaktifkan akun. Setelah aktivasi, Anda dapat langsung login.'
+                : 'Akun Anda sedang menunggu persetujuan admin. Setelah disetujui, Anda akan menerima email aktivasi.',
               style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
@@ -693,6 +746,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildUserDataStep() {
     return Form(
       key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

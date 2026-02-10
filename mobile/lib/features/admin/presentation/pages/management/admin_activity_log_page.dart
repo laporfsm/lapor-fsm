@@ -77,8 +77,13 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         elevation: 0,
         actions: [
           IconButton(
-            onPressed: () => _showExportOptions(context),
-            icon: const Icon(LucideIcons.download),
+            onPressed: () => ExportService.exportData(
+              context,
+              'Log Aktivitas Sistem',
+              'logs',
+              primaryColor: AppTheme.adminColor,
+            ),
+            icon: const Icon(LucideIcons.download, color: Colors.white),
             tooltip: 'Export Log',
           ),
           const SizedBox(width: 8),
@@ -90,7 +95,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
           labelColor: Colors.white,
           unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
           tabs: const [
-            Tab(text: 'Aktivitas User'),
+            Tab(text: 'Riwayat Admin'),
             Tab(text: 'Verifikasi User'),
             Tab(text: 'Logs Laporan'),
           ],
@@ -132,7 +137,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
                 : TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildLogList('User'),
+                      _buildLogList('Admin'),
                       _buildLogList('Verifikasi'),
                       _buildLogList('Laporan'),
                     ],
@@ -179,9 +184,9 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         icon = LucideIcons.fileText;
         color = Colors.blue;
         break;
-      case 'User':
-        icon = LucideIcons.user;
-        color = Colors.orange;
+      case 'Admin':
+        icon = LucideIcons.userCog;
+        color = Colors.indigo;
         break;
       case 'Verifikasi':
         icon = LucideIcons.userCheck;
@@ -246,77 +251,6 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
           ),
         ],
       ),
-    );
-  }
-
-  void _showExportOptions(BuildContext context) {
-    String currentType;
-    String displayType;
-    
-    switch (_tabController.index) {
-      case 0:
-        currentType = 'User';
-        displayType = 'Aktivitas User';
-        break;
-      case 1:
-        currentType = 'Verifikasi';
-        displayType = 'Verifikasi User';
-        break;
-      default:
-        currentType = 'Laporan';
-        displayType = 'Update Laporan';
-    }
-    
-    final currentLogs = _getFilteredLogs(currentType);
-
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Export Log $displayType',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const Gap(20),
-              ListTile(
-                leading: const Icon(LucideIcons.fileSpreadsheet, color: Colors.green),
-                title: const Text('Export ke Excel (.xlsx)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ExportService.exportLogsExcel(
-                    context,
-                    currentLogs,
-                    title: 'Log $displayType',
-                    primaryColor: AppTheme.adminColor,
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(LucideIcons.fileText, color: Colors.red),
-                title: const Text('Export ke PDF (.pdf)'),
-                onTap: () {
-                  Navigator.pop(context);
-                  ExportService.generateAdminLogsPdf(
-                    context: context,
-                    logs: currentLogs,
-                    title: 'Log $displayType',
-                    primaryColor: AppTheme.adminColor,
-                    brandingSuffix: 'Admin Dashboard',
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
