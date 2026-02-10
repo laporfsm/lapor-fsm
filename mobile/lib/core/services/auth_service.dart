@@ -92,6 +92,7 @@ class AuthService {
           'needsApproval': response.data['data']['needsAdminApproval'] ?? false,
           'needsEmailVerification':
               response.data['data']['needsEmailVerification'] ?? false,
+          'isUndip': response.data['data']['isUndip'] ?? false,
           'message': response.data['message'],
         };
       }

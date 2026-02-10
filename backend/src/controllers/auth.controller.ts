@@ -46,22 +46,13 @@ export const authController = new Elysia({ prefix: '/auth' })
     }
 
     if (!foundUser[0].isEmailVerified) {
-      // NOTE: For debugging, we might want to temporarily bypass this if verification flow is broken
       set.status = 403;
-      return { status: 'error', message: 'Email belum diverifikasi. Silakan verifikasi email Anda terlebih dahulu.' };
-    }
-
-    if (!foundUser[0].isVerified) {
-      // set.status = 403;
-      // return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
-      // FOR DEBUG: Allow unverified users to login temporarily if that's the blocker, 
-      // BUT let's keep it strict first and see the logs.
-      console.log('[LOGIN] User is not verified by admin yet.');
+      return { status: 'error', message: 'Akun Anda belum diaktivasi. Silakan cek email Anda dan klik link aktivasi.' };
     }
 
     if (!foundUser[0].isVerified) {
       set.status = 403;
-      return { status: 'error', message: 'Akun Anda sedang menunggu verifikasi oleh admin.' };
+      return { status: 'error', message: 'Akun Anda sedang menunggu persetujuan admin.' };
     }
 
     // Sign JWT
@@ -130,12 +121,12 @@ export const authController = new Elysia({ prefix: '/auth' })
 
       const hashedPassword = await Bun.password.hash(body.password);
 
-      // Use crypto for better randomness
+      const isUndip = isUndipEmail(body.email);
+      
+      // Generate activation token for all users (both UNDIP and External)
       const crypto = require('crypto');
-      const verificationToken = crypto.randomInt(100000, 999999).toString();
-
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
       const newUser = await db.insert(users).values({
         name: body.name,
@@ -149,11 +140,9 @@ export const authController = new Elysia({ prefix: '/auth' })
         emergencyName: body.emergencyName,
         emergencyPhone: body.emergencyPhone,
         idCardUrl: body.idCardUrl,
-        isVerified: isUndipEmail(body.email), // Auto-verify if UNDIP? Actually user request said "registrasi apakah aman sudahan", usually UNDIP is trusted, but let's keep it safe.
-        // Actually, let's allow auto-verify for UNDIP emails for better UX, but require admin approval for others?
-        // Wait, the mobile app says "@undip.ac.id will be directly verified". Let's follow that.
+        isVerified: false, // Not verified until activation
         isEmailVerified: false,
-        emailVerificationToken: verificationToken,
+        emailVerificationToken: activationToken,
         emailVerificationExpiresAt: expiresAt,
       }).returning();
 
@@ -163,35 +152,39 @@ export const authController = new Elysia({ prefix: '/auth' })
         actorId: newUser[0].id.toString(),
         actorName: newUser[0].name,
         actorRole: 'user',
-        reason: isUndipEmail(body.email)
-          ? 'User mendaftar (UNDIP Email)'
-          : 'User mendaftar (Non-UNDIP, Menunggu Verifikasi KTP)',
+        reason: isUndip
+          ? 'User mendaftar (UNDIP Email - Menunggu Aktivasi)'
+          : 'User mendaftar (Non-UNDIP, Menunggu Verifikasi & Approval)',
       });
 
-      // Notify Admins
-      await NotificationService.notifyRole(
-        'admin',
-        'Request Registrasi Baru',
-        `User baru ${newUser[0].name} (${body.email}) telah mendaftar.`
-      );
+      // Notify Admins for non-UNDIP
+      if (!isUndip) {
+        await NotificationService.notifyRole(
+          'admin',
+          'Request Registrasi Baru',
+          `User baru ${newUser[0].name} (${body.email}) telah mendaftar dan menunggu verifikasi.`
+        );
+      }
 
-      // In-memory log for dev
-      console.log(`[AUTH] Verification token for ${body.email}: ${verificationToken}`);
-
-      // Send Real Email
+      // Send activation email to all users
+      const appUrl = process.env.APP_URL || 'http://localhost:8080';
+      const activationLink = `${appUrl}/#/activate?token=${activationToken}&email=${encodeURIComponent(body.email)}`;
+      
+      console.log(`[AUTH] Activation token for ${body.email}: ${activationToken}`);
       try {
-        EmailService.sendVerificationEmail(body.email, body.name, verificationToken);
+        EmailService.sendActivationEmail(body.email, body.name, activationLink, isUndip);
       } catch (err) {
-        console.error('[AUTH] Background email send failed:', err);
+        console.error('[AUTH] Background activation email send failed:', err);
       }
 
       return {
         status: 'success',
-        message: 'Registrasi berhasil. Kode verifikasi telah dikirim ke email Anda.',
+        message: 'Registrasi berhasil. Silakan cek email Anda untuk mengaktifkan akun.',
         data: {
           user: mapToMobileUser(newUser[0]),
           needsEmailVerification: true,
-          needsAdminApproval: !isUndipEmail(body.email)
+          needsAdminApproval: !isUndip,
+          isUndip: isUndip
         }
       };
     } catch (error: any) {
@@ -210,13 +203,14 @@ export const authController = new Elysia({ prefix: '/auth' })
       address: t.Optional(t.String()),
       emergencyName: t.Optional(t.String()),
       emergencyPhone: t.Optional(t.String()),
-      idCardUrl: t.Optional(t.String()),
+      idCardUrl: t.Optional(t.Nullable(t.String())),
     })
   })
 
-  // Verify Email
-  .post('/verify-email', async ({ body, set }) => {
-    const { email, token } = body;
+  // Activate Account (for both UNDIP and External after approval)
+  .get('/activate', async ({ query, set }) => {
+    const { token, email } = query;
+    
     const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (user.length === 0) {
@@ -224,49 +218,65 @@ export const authController = new Elysia({ prefix: '/auth' })
       return { status: 'error', message: 'User tidak ditemukan' };
     }
 
-    // ... existing logic ...
-
-    // (Optimization: cleaned up for brevity in tool call, sticking to adding new endpoint below)
     if (user[0].isEmailVerified) {
-      return { status: 'success', message: 'Email sudah diverifikasi sebelumnya.' };
+      return { status: 'success', message: 'Akun Anda sudah aktif. Silakan login.' };
     }
 
     if (user[0].emailVerificationToken !== token) {
       set.status = 400;
-      return { status: 'error', message: 'Kode verifikasi tidak valid' };
+      return { status: 'error', message: 'Token aktivasi tidak valid' };
     }
 
     if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
       set.status = 400;
-      return { status: 'error', message: 'Kode verifikasi telah kedaluwarsa. Silakan minta kode baru.' };
+      return { status: 'error', message: 'Token aktivasi telah kedaluwarsa. Silakan minta yang baru.' };
+    }
+
+    const isUndip = user[0].email.toLowerCase().endsWith('@students.undip.ac.id') ||
+                   user[0].email.toLowerCase().endsWith('@undip.ac.id') ||
+                   user[0].email.toLowerCase().endsWith('@lecturer.undip.ac.id') ||
+                   user[0].email.toLowerCase().endsWith('@staff.undip.ac.id');
+
+    // For UNDIP: activate immediately
+    // For External: just mark email as verified, still need admin approval
+    const updateData: any = { 
+      isEmailVerified: true, 
+      emailVerificationToken: null, 
+      emailVerificationExpiresAt: null 
+    };
+    
+    if (isUndip) {
+      updateData.isVerified = true;
     }
 
     await db.update(users)
-      .set({ isEmailVerified: true, emailVerificationToken: null, emailVerificationExpiresAt: null })
+      .set(updateData)
       .where(eq(users.id, user[0].id));
 
-    // Log email verification
+    // Log activation
     await db.insert(reportLogs).values({
-      action: 'verify_email',
+      action: 'activate_account',
       actorId: user[0].id.toString(),
       actorName: user[0].name,
       actorRole: 'user',
-      reason: 'User memverifikasi email',
+      reason: isUndip ? 'User UNDIP mengaktifkan akun' : 'User External verifikasi email',
     });
 
-    // Notify Admins for Approval
-    await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} telah memverifikasi email dan menunggu persetujuan admin.`);
+    // Notify admin for non-UNDIP
+    if (!isUndip) {
+      await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} (${user[0].email}) telah verifikasi email dan menunggu persetujuan admin.`);
+    }
 
     return {
       status: 'success',
-      message: user[0].isVerified
-        ? 'Email berhasil diverifikasi. Akun Anda sudah aktif.'
-        : 'Email berhasil diverifikasi. Silakan tunggu persetujuan admin.'
+      message: isUndip 
+        ? 'Akun Anda berhasil diaktifkan! Silakan login.'
+        : 'Email berhasil diverifikasi. Akun Anda sedang menunggu persetujuan admin.'
     };
   }, {
-    body: t.Object({
-      email: t.String(),
+    query: t.Object({
       token: t.String(),
+      email: t.String(),
     })
   })
 
@@ -614,6 +624,61 @@ export const authController = new Elysia({ prefix: '/auth' })
       status: 'success',
       data: payload
     };
+  })
+
+  // Admin: Approve User (for external users after email verification)
+  .post('/admin/approve-user', async ({ body, set }) => {
+    const { userId } = body;
+    
+    const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    
+    if (user.length === 0) {
+      set.status = 404;
+      return { status: 'error', message: 'User tidak ditemukan' };
+    }
+
+    if (!user[0].isEmailVerified) {
+      set.status = 400;
+      return { status: 'error', message: 'User belum verifikasi email' };
+    }
+
+    if (user[0].isVerified) {
+      return { status: 'success', message: 'User sudah diverifikasi sebelumnya' };
+    }
+
+    await db.update(users)
+      .set({ isVerified: true })
+      .where(eq(users.id, userId));
+
+    // Log approval
+    await db.insert(reportLogs).values({
+      action: 'admin_approve_user',
+      actorId: userId.toString(),
+      actorName: user[0].name,
+      actorRole: 'user',
+      reason: 'Admin menyetujui user',
+    });
+
+    // Send approval notification email
+    try {
+      EmailService.sendApprovalNotificationEmail(user[0].email, user[0].name);
+    } catch (err) {
+      console.error('[AUTH] Failed to send approval notification:', err);
+    }
+
+    return {
+      status: 'success',
+      message: 'User berhasil disetujui',
+      data: {
+        userId: userId,
+        email: user[0].email,
+        name: user[0].name
+      }
+    };
+  }, {
+    body: t.Object({
+      userId: t.Number(),
+    })
   })
 
   // Change Password (Common for both User and Staff)

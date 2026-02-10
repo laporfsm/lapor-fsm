@@ -48,6 +48,82 @@ export class EmailService {
     }
 
     /**
+     * Send an account activation email to the user
+     * @param to User's email address
+     * @param name User's name
+     * @param activationLink Activation link
+     * @param isUndip Whether user has UNDIP email
+     */
+    static async sendActivationEmail(to: string, name: string, activationLink: string, isUndip: boolean) {
+        try {
+            const info = await this.transporter.sendMail({
+                from: `"Lapor FSM" <${process.env.SMTP_USER}>`,
+                to: to,
+                subject: 'Aktivasi Akun Lapor FSM Anda',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #0d47a1;">Aktivasi Akun Anda</h2>
+                        <p>Halo <strong>${name}</strong>,</p>
+                        <p>Terima kasih telah mendaftar di aplikasi <strong>Lapor FSM</strong>.</p>
+                        <p>Klik tombol di bawah ini untuk mengaktifkan akun Anda:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${activationLink}" style="background-color: #0d47a1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Aktifkan Akun
+                            </a>
+                        </div>
+                        <p style="margin-top: 20px;"><strong>Link ini akan kedaluwarsa dalam 24 jam.</strong></p>
+                        ${!isUndip ? '<p style="color: #d32f2f;"><strong>Catatan:</strong> Setelah aktivasi, akun Anda masih perlu disetujui oleh admin sebelum dapat digunakan.</p>' : ''}
+                        <p>Jika Anda tidak merasa mendaftar, abaikan email ini.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #888;">Lapor FSM - Fakultas Sains dan Matematika Universitas Diponegoro</p>
+                    </div>
+                `
+            });
+            console.log(`[EMAIL] Activation email sent to ${to}: ${info.messageId}`);
+            return true;
+        } catch (error) {
+            console.error('[EMAIL] Failed to send activation email:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Send approval notification email after admin approves external user
+     * @param to User's email address
+     * @param name User's name
+     */
+    static async sendApprovalNotificationEmail(to: string, name: string) {
+        try {
+            const info = await this.transporter.sendMail({
+                from: `"Lapor FSM" <${process.env.SMTP_USER}>`,
+                to: to,
+                subject: 'Akun Lapor FSM Anda Telah Disetujui',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #0d47a1;">Selamat! Akun Anda Aktif</h2>
+                        <p>Halo <strong>${name}</strong>,</p>
+                        <p>Akun Anda di aplikasi <strong>Lapor FSM</strong> telah <strong>disetujui oleh admin</strong>.</p>
+                        <p>Anda sekarang dapat login dan mulai menggunakan aplikasi.</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${process.env.APP_URL || 'http://localhost:8080'}/#/login" style="background-color: #0d47a1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                                Login Sekarang
+                            </a>
+                        </div>
+                        <p>Terima kasih telah bergabung dengan Lapor FSM!</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="font-size: 12px; color: #888;">Lapor FSM - Fakultas Sains dan Matematika Universitas Diponegoro</p>
+                    </div>
+                `
+            });
+            console.log(`[EMAIL] Approval notification sent to ${to}: ${info.messageId}`);
+            return true;
+        } catch (error) {
+            console.error('[EMAIL] Failed to send approval notification:', error);
+            return false;
+        }
+    }
+
+    /**
      * Send a password reset email to the user
      * @param to User's email address
      * @param name User's name
