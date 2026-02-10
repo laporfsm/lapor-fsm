@@ -316,7 +316,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             const trafficMap = trafficData.reduce((acc, curr) => {
                 if (curr.date) {
-                    acc[new Date(curr.date).toDateString()] = Number(curr.count);
+                    acc[new Date(curr.date as any).toDateString()] = Number(curr.count);
                 }
                 return acc;
             }, {} as Record<string, number>);
@@ -336,7 +336,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 status: 'success',
                 data: {
                     userGrowth: growthData.map(g => {
-                        const date = g.date ? new Date(g.date) : new Date();
+                        const date = g.date ? new Date(g.date as any) : new Date();
                         return {
                             date: date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
                             value: Number(g.count)
@@ -387,8 +387,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             // --- STYLING CONSTANTS ---
             const colors = {
-                primary: '#059669', // Emerald 600
-                secondary: '#10B981', // Emerald 500
+                primary: '#7C3AED', // Admin Purple 600
+                secondary: '#8B5CF6', // Admin Purple 500
                 text: '#1F2937',
                 textLight: '#6B7280',
                 border: '#E5E7EB',
@@ -492,7 +492,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             staffList.forEach((s, i) => {
                 const roleStr = s.role ? s.role.toUpperCase() : '-';
-                const locStr = s.managedBuilding || s.specialization || '';
+                const locStr = s.managedLocation || s.specialization || '';
                 drawTableRow([
                     (i + 1).toString(),
                     s.name,
@@ -586,7 +586,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     phone: s.phone,
                     role: s.role,
                     specialization: s.specialization,
-                    building: s.managedBuilding,
+                    building: s.managedLocation,
                     is_active: s.isActive ? 'AKTIF' : 'NONAKTIF',
                     created_at: s.createdAt
                 });
@@ -611,7 +611,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     id: reports.id,
                     title: reports.title,
                     status: reports.status,
-                    building: reports.building,
+                    building: reports.location,
                     isEmergency: reports.isEmergency,
                     createdAt: reports.createdAt,
                     reporterName: users.name,
@@ -641,7 +641,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             // --- STYLING CONSTANTS ---
             const colors = {
-                primary: '#059669', // Emerald 600
+                primary: '#7C3AED', // Admin Purple 600
                 text: '#1F2937',
                 textLight: '#6B7280',
                 border: '#E5E7EB',
@@ -772,7 +772,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                     title: reports.title,
                     description: reports.description,
                     status: reports.status,
-                    building: reports.building,
+                    building: reports.location,
                     location: reports.locationDetail,
                     isEmergency: reports.isEmergency,
                     createdAt: reports.createdAt,
@@ -844,7 +844,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 time: l.timestamp,
                 type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action))
                     ? 'Verifikasi'
-                    : (l.reportId === null || l.action === 'created') ? 'User' : 'Laporan'
+                    : (l.reportId === null || l.action === 'created') ? 'Admin' : 'Laporan'
             }))
         };
     })
@@ -857,40 +857,137 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 .from(reportLogs)
                 .orderBy(desc(reportLogs.timestamp));
 
-        const doc = new PDFDocument({ margin: 40 });
-        const chunks: Buffer[] = [];
-        doc.on('data', chunks.push.bind(chunks));
+            const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape', bufferPages: true });
+            const chunks: Buffer[] = [];
+            
+            // Promise wrapper to handle stream completion and errors
+            const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
+                doc.on('data', (chunk) => chunks.push(chunk));
+                doc.on('end', () => resolve(Buffer.concat(chunks)));
+                doc.on('error', (err) => reject(err));
+            });
 
-        doc.fontSize(18).text('LOG SISTEM - KATEGORI USER', { align: 'center' });
-        doc.fontSize(10).text(`Dicetak pada: ${new Date().toLocaleString()}`, { align: 'center' });
-        doc.moveDown();
+            // Helper to sanitize text for standard PDF fonts (removes emojis/unsupported chars)
+            const safeText = (str: string | null | undefined): string => {
+                if (!str) return '-';
+                return str.replace(/[^\x20-\x7E\xA0-\xFF\n\r\t]/g, '').trim() || '-';
+            };
 
-        // Table headers
-        let y = doc.y;
-        doc.fontSize(10).font('Helvetica-Bold');
-        doc.text('Waktu', 40, y);
-        doc.text('User', 140, y);
-        doc.text('Aksi', 240, y);
-        doc.text('Detail', 340, y);
-        doc.moveDown();
-        doc.font('Helvetica').fontSize(9);
+            // --- STYLING CONSTANTS ---
+            const colors = {
+                primary: '#7C3AED', // Admin Purple 600
+                secondary: '#8B5CF6', // Admin Purple 500
+                text: '#1F2937',
+                textLight: '#6B7280',
+                border: '#E5E7EB',
+                rowOdd: '#F9FAFB',
+                white: '#FFFFFF'
+            };
 
-        logs.forEach(l => {
-            if (doc.y > 700) doc.addPage();
-            y = doc.y;
-            doc.text(new Date(l.timestamp!).toLocaleString(), 40, y, { width: 90 });
-            doc.text(l.actorName || '-', 140, y, { width: 90 });
-            doc.text(l.action, 240, y, { width: 90 });
-            doc.text(l.reason || '-', 340, y, { width: 220 });
-            doc.moveDown();
-        });
+            // --- HEADER ---
+            doc.font('Helvetica-Bold').fontSize(24).fillColor(colors.primary).text('Lapor FSM!', 30, 30);
+            doc.fontSize(10).fillColor(colors.textLight).text('Sistem Informasi Pelaporan Fasilitas FSM Undip', 30, 55);
 
-        doc.end();
-        const buffer = await new Promise<Buffer>(resolve => doc.on('end', () => resolve(Buffer.concat(chunks))));
+            doc.fontSize(14).fillColor(colors.text).text('LOG AKTIVITAS SISTEM', 400, 30, { align: 'right', width: 410 });
+            doc.fontSize(9).fillColor(colors.textLight).text('Rekam Jejak Aktivitas User & Admin', 400, 50, { align: 'right', width: 410 });
+            doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 62, { align: 'right', width: 410 });
+            
+            doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
-        set.headers['Content-Type'] = 'application/pdf';
-        set.headers['Content-Disposition'] = 'attachment; filename=log_sistem_user.pdf';
-        return buffer;
+            // --- SUMMARY STATISTICS ---
+            const summaryY = 90;
+            doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
+            
+            const totalLogs = logs.length;
+            const adminActions = logs.filter(l => l.actorRole === 'admin').length;
+            const userActions = logs.filter(l => l.actorRole === 'user' || l.actorRole === 'pelapor').length;
+            const verifications = logs.filter(l => l.action === 'verified').length;
+
+            const drawSummaryItem = (label: string, value: string, x: number) => {
+                doc.fillColor(colors.textLight).fontSize(9).text(safeText(label), x, summaryY + 10, { align: 'center', width: 150 });
+                doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(14).text(safeText(value), x, summaryY + 25, { align: 'center', width: 150 });
+            };
+
+            drawSummaryItem('Total Log', totalLogs.toString(), 30);
+            drawSummaryItem('Admin Actions', adminActions.toString(), 220);
+            drawSummaryItem('User Actions', userActions.toString(), 410);
+            drawSummaryItem('Verifications', verifications.toString(), 600);
+
+            // --- TABLE ---
+            let currentY = 160;
+            const colWidths = [130, 150, 120, 382]; // Total 782
+            const headers = ['Waktu', 'Aktor (Nama & Role)', 'Aksi', 'Detail / Alasan'];
+
+            // Draw Header
+            const drawHeader = () => {
+                doc.rect(30, currentY, 782, 25).fill(colors.primary);
+                let currentX = 30;
+                doc.fillColor(colors.white).font('Helvetica-Bold').fontSize(9);
+                headers.forEach((header, i) => {
+                    doc.text(safeText(header), currentX + 5, currentY + 7, { width: colWidths[i] - 10, align: 'left' });
+                    currentX += colWidths[i];
+                });
+                currentY += 25;
+            };
+
+            drawHeader();
+
+            // Draw Data
+            doc.font('Helvetica').fontSize(9).fillColor(colors.text);
+
+            logs.forEach((l, i) => {
+                const rowHeight = 30;
+                if (currentY + rowHeight > 550) {
+                    doc.addPage({ margin: 30, size: 'A4', layout: 'landscape' });
+                    currentY = 30;
+                    drawHeader();
+                }
+                if (i % 2 === 1) {
+                    doc.rect(30, currentY, 782, rowHeight).fill(colors.rowOdd);
+                }
+                let currentX = 30;
+                doc.fillColor(colors.text);
+                const drawCell = (text: string, colIndex: number, bold: boolean = false) => {
+                    if (bold) doc.font('Helvetica-Bold'); else doc.font('Helvetica');
+                    doc.text(safeText(text), currentX + 5, currentY + 8, { 
+                        width: colWidths[colIndex] - 10, 
+                        height: rowHeight - 16,
+                        lineBreak: false, 
+                        ellipsis: true 
+                    });
+                    currentX += colWidths[colIndex];
+                };
+                const timeStr = l.timestamp ? new Date(l.timestamp).toLocaleString('id-ID') : '-';
+                const actorStr = `${l.actorName || 'Unknown'} (${l.actorRole || 'unknown'})`;
+                const actionStr = l.action ? l.action.toUpperCase() : '-';
+                const detailStr = l.reason || (l.fromStatus && l.toStatus ? `${l.fromStatus} → ${l.toStatus}` : '-');
+                
+                drawCell(timeStr, 0);
+                drawCell(actorStr, 1, true);
+                drawCell(actionStr, 2);
+                drawCell(detailStr, 3);
+                currentY += rowHeight;
+            });
+
+            // --- FOOTER ---
+            const range = doc.bufferedPageRange();
+            for (let i = 0; i < range.count; i++) {
+                doc.switchToPage(i);
+                doc.fontSize(8).fillColor(colors.textLight).text(
+                    `Halaman ${i + 1} dari ${range.count} - Log Aktivitas Sistem`, 
+                    30, 
+                    570, 
+                    { align: 'right', width: 782 }
+                );
+                doc.moveTo(30, 565).lineTo(812, 565).lineWidth(0.5).stroke(colors.border);
+            }
+
+            doc.end();
+            const buffer = await pdfBufferPromise;
+            
+            set.headers['Content-Type'] = 'application/pdf';
+            set.headers['Content-Disposition'] = 'attachment; filename=log_aktivitas_sistem.pdf';
+            return buffer;
         } catch (e) {
             console.error('Error generating Logs PDF:', e);
             set.status = 500;
