@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Aplikasi membutuhkan izin lokasi untuk melampirkan koordinat pada laporan Anda.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Aplikasi membutuhkan izin lokasi untuk fitur pelacakan darurat.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Aplikasi membutuhkan izin lokasi untuk melampirkan koordinat pada laporan Anda.</string>
 </dict>
 </plist>

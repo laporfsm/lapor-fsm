@@ -357,7 +357,9 @@ http://localhost:3000
 ## 📱 Fitur Per Role
 
 ### Pelapor (Reporter)
-- ✅ Login dengan SSO Undip
+- ✅ Login & Registrasi Terintegrasi
+- ✅ Verifikasi Email Otomatis (Undip Domain)
+- ✅ Verifikasi Admin Manual (Non-Undip)
 - ✅ Home Page dengan Panic Button
 - ✅ Form Laporan (Camera, GPS, Gedung)
 - ✅ Public Feed dengan Filter
