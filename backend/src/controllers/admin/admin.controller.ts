@@ -301,7 +301,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             .orderBy(desc(count()))
             .limit(5);
 
-        // 4. Activity Traffic (Last 7 Days)
+        // 4. Activity Traffic (Last 7 Days) - Includes user registrations, verifications, and report creations
         const trafficData = await db.select({
             date: sql`DATE(${reportLogs.timestamp})`,
             count: count()
@@ -309,7 +309,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
             .from(reportLogs)
             .where(and(
                 gte(reportLogs.timestamp, sevenDaysAgo),
-                or(eq(reportLogs.action, 'register'), eq(reportLogs.action, 'verify_email'))
+                or(
+                    eq(reportLogs.action, 'register'),
+                    eq(reportLogs.action, 'verify_email'),
+                    eq(reportLogs.action, 'created')
+                )
             ))
             .groupBy(sql`DATE(${reportLogs.timestamp})`)
             .orderBy(sql`DATE(${reportLogs.timestamp})`);
