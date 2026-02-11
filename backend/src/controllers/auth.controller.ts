@@ -342,6 +342,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     })
   })
 
+
   // Resend Verification Code
   .post('/resend-verification', async ({ body, set }) => {
     const { email } = body;
