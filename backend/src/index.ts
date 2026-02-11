@@ -54,7 +54,7 @@ const app = new Elysia()
   .use(specializationController)
   .use(trackingController)
   .listen({
-    port: process.env.PORT || 3000,
+    port: process.env.PORT || 8000,
     hostname: '0.0.0.0'
   });
 

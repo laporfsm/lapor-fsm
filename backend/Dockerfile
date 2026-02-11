@@ -14,10 +14,10 @@ RUN bun install
 COPY . .
 
 # Set Environment Variable untuk Port (Koyeb injects PORT, but good to have default)
-ENV PORT=3000
+ENV PORT=8000
 
 # Expose port
-EXPOSE 3000
+EXPOSE 8000
 
 # Jalankan aplikasi
 CMD ["bun", "run", "start"]
