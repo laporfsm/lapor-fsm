@@ -9,15 +9,18 @@ Write-Host "API Test Script"
 Write-Host "URL: $url"
 Write-Host "================================"
 
+$timestamp = Get-Date -Format "yyyyMMddHHmmss"
+
 if ($cmd -eq "undip") {
     Write-Host "Test 1: UNDIP Student Registration"
-    Write-Host "Email: sulhanfuadi@students.undip.ac.id"
+    $testEmail = "test_$timestamp@students.undip.ac.id"
+    Write-Host "Email: $testEmail"
     Write-Host "--------------------------------"
     
     $json = @"
     {
         "name": "Sulhan Fuadi",
-        "email": "sulhanfuadi@students.undip.ac.id",
+        "email": "$testEmail",
         "password": "password123",
         "phone": "081234567890",
         "nimNip": "24060122130001",
@@ -43,13 +46,14 @@ if ($cmd -eq "undip") {
 }
 elseif ($cmd -eq "nonundip") {
     Write-Host "Test 2: Non-UNDIP Registration"
-    Write-Host "Email: sulhanfuadi.dev@gmail.com"
+    $testEmail = "test_$timestamp@gmail.com"
+    Write-Host "Email: $testEmail"
     Write-Host "--------------------------------"
     
     $json = @"
     {
         "name": "Sulhan Fuadi Dev",
-        "email": "sulhanfuadi.dev@gmail.com",
+        "email": "$testEmail",
         "password": "password123",
         "phone": "081234567890",
         "nimNip": "EXTERNAL001",

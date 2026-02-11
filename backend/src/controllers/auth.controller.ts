@@ -122,7 +122,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       const hashedPassword = await Bun.password.hash(body.password);
 
       const isUndip = isUndipEmail(body.email);
-      
+
       const crypto = require('crypto');
 
       let activationToken = null;
@@ -177,7 +177,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       if (isUndip) {
         const apiUrl = process.env.API_URL || 'http://localhost:3000';
         const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(body.email)}`;
-        
+
         console.log(`[AUTH] Activation token for ${body.email}: ${activationToken}`);
         try {
           EmailService.sendActivationEmail(body.email, body.name, activationLink, isUndip);
@@ -188,7 +188,7 @@ export const authController = new Elysia({ prefix: '/auth' })
 
       return {
         status: 'success',
-        message: isUndip 
+        message: isUndip
           ? 'Registrasi berhasil. Silakan cek email Anda untuk mengaktifkan akun.'
           : 'Registrasi berhasil. Akun Anda sedang menunggu persetujuan admin.',
         data: {
@@ -221,164 +221,56 @@ export const authController = new Elysia({ prefix: '/auth' })
   // Activate Account (for both UNDIP and External after approval)
   .get('/activate', async ({ query, set }) => {
     const { token, email } = query;
-    
+
     console.log(`[ACTIVATE] Activation attempt for email: ${email}`);
-    console.log(`[ACTIVATE] Token received: ${token?.substring(0, 20)}...`);
-    
-    const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
-    const loginUrl = `${frontendUrl}/#/login`;
-    
-    // Helper function to generate HTML response
-    const generateHtmlResponse = (title: string, message: string, isError: boolean = false, showButton: boolean = true) => {
-      const iconColor = isError ? '#ef4444' : '#10b981';
-      const iconSvg = isError 
-        ? '<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>'
-        : '<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
-      
-      return `<!DOCTYPE html>
+
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+    if (user.length === 0) {
+      set.status = 404;
+      return '<html><body><h1>Akun Tidak Ditemukan</h1><p>Email tidak terdaftar.</p></body></html>';
+    }
+
+    if (user[0].isEmailVerified) {
+      set.headers['Content-Type'] = 'text/html';
+      return `
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${isError ? 'Error' : 'Sukses'} - Lapor FSM</title>
+    <title>Akun Sudah Aktif - Lapor FSM</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .icon {
-            width: 80px;
-            height: 80px;
-            background: ${iconColor};
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-        .icon svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-        h1 {
-            color: #1f2937;
-            font-size: 24px;
-            margin-bottom: 16px;
-            font-weight: 700;
-        }
-        p {
-            color: #6b7280;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-        .btn {
-            display: inline-block;
-            background: #3b82f6;
-            color: white;
-            text-decoration: none;
-            padding: 14px 32px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        .btn:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-        .footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e7eb;
-            color: #9ca3af;
-            font-size: 14px;
-        }
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6; }
+        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
+        h1 { color: #111827; }
+        p { color: #4b5563; margin: 1rem 0; }
+        .btn { display: inline-block; background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="icon">
-            ${iconSvg}
-        </div>
-        <h1>${title}</h1>
-        <p>${message}</p>
-        ${showButton ? `<a href="${loginUrl}" class="btn">Kembali ke Login</a>` : ''}
-        <div class="footer">
-            Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro
-        </div>
+    <div class="card">
+        <h1>Akun Sudah Aktif</h1>
+        <p>Akun Anda sudah aktif sebelumnya. Silakan login untuk menggunakan aplikasi.</p>
+        <a href="${process.env.APP_URL || 'http://localhost:8080'}/#/login" class="btn">Login Sekarang</a>
     </div>
 </body>
 </html>`;
-    };
-    
-    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
-
-    if (user.length === 0) {
-      console.log(`[ACTIVATE] User not found: ${email}`);
-      set.headers['Content-Type'] = 'text/html';
-      set.status = 404;
-      return generateHtmlResponse(
-        'Akun Tidak Ditemukan',
-        'Maaf, akun dengan email tersebut tidak ditemukan dalam sistem kami. Silakan periksa kembali email Anda atau daftar terlebih dahulu.',
-        true
-      );
-    }
-
-    console.log(`[ACTIVATE] User found: ${user[0].id}, isEmailVerified: ${user[0].isEmailVerified}`);
-    console.log(`[ACTIVATE] Stored token: ${user[0].emailVerificationToken?.substring(0, 20)}...`);
-
-    if (user[0].isEmailVerified) {
-      console.log(`[ACTIVATE] User already activated`);
-      set.headers['Content-Type'] = 'text/html';
-      return generateHtmlResponse(
-        'Akun Sudah Aktif',
-        'Akun Anda sudah aktif sebelumnya. Silakan login untuk menggunakan aplikasi.',
-        false
-      );
     }
 
     if (user[0].emailVerificationToken !== token) {
-      console.log(`[ACTIVATE] Token mismatch!`);
-      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return generateHtmlResponse(
-        'Token Tidak Valid',
-        'Link aktivasi tidak valid. Pastikan Anda menggunakan link yang benar dari email.',
-        true
-      );
+      return '<html><body><h1>Token Tidak Valid</h1><p>Link aktivasi tidak valid.</p></body></html>';
     }
 
     if (user[0].emailVerificationExpiresAt && new Date() > new Date(user[0].emailVerificationExpiresAt)) {
-      console.log(`[ACTIVATE] Token expired`);
-      set.headers['Content-Type'] = 'text/html';
       set.status = 400;
-      return generateHtmlResponse(
-        'Link Kadaluwarsa',
-        'Link aktivasi telah kedaluwarsa. Silakan hubungi admin untuk mendapatkan link aktivasi baru.',
-        true
-      );
+      return '<html><body><h1>Link Kadaluwarsa</h1><p>Link aktivasi telah kedaluwarsa.</p></body></html>';
     }
 
-    // For both UNDIP and External (after admin approval): activate immediately when clicking link
-    // Mark email as verified and clear token
+    const isUndip = email.endsWith('@students.undip.ac.id') || email.endsWith('@lecturers.undip.ac.id') || email.endsWith('@staff.undip.ac.id');
+
+    // Activate immediately
     await db.update(users)
       .set({
         isEmailVerified: true,
@@ -395,44 +287,23 @@ export const authController = new Elysia({ prefix: '/auth' })
       actorId: user[0].id.toString(),
       actorName: user[0].name,
       actorRole: 'user',
-      reason: 'User mengaktifkan akun melalui link email',
-    });
-
-    set.headers['Content-Type'] = 'text/html';
-    return generateHtmlResponse(
-      'Akun Anda Telah Aktif!',
-      'Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.',
-      false
-    );
-  }, {
-    query: t.Object({
-      token: t.String(),
-      email: t.String(),
-    })
-  })
-      .where(eq(users.id, user[0].id));
-
-    console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
-
-    // Log activation
-    await db.insert(reportLogs).values({
-      action: 'activate_account',
-      actorId: user[0].id.toString(),
-      actorName: user[0].name,
-      actorRole: 'user',
       reason: isUndip ? 'User UNDIP mengaktifkan akun' : 'User External verifikasi email',
     });
 
     // Notify admin for non-UNDIP
     if (!isUndip) {
-      await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} (${user[0].email}) telah verifikasi email dan menunggu persetujuan admin.`);
+      try {
+        await NotificationService.notifyRole('admin', 'User Siap Diverifikasi', `User ${user[0].name} (${user[0].email}) telah verifikasi email dan menunggu persetujuan admin.`);
+      } catch (err) {
+        console.error('[ACTIVATE] Failed to notify admin:', err);
+      }
     }
 
     const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
     const loginUrl = `${frontendUrl}/#/login`;
-    
-    // Return HTML page instead of JSON for better UX
-    const htmlResponse = `
+
+    set.headers['Content-Type'] = 'text/html';
+    return `
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -441,74 +312,15 @@ export const authController = new Elysia({ prefix: '/auth' })
     <title>Aktivasi Akun - Lapor FSM</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        .icon {
-            width: 80px;
-            height: 80px;
-            background: #10b981;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 24px;
-        }
-        .icon svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-        h1 {
-            color: #1f2937;
-            font-size: 24px;
-            margin-bottom: 16px;
-            font-weight: 700;
-        }
-        p {
-            color: #6b7280;
-            font-size: 16px;
-            line-height: 1.6;
-            margin-bottom: 24px;
-        }
-        .btn {
-            display: inline-block;
-            background: #3b82f6;
-            color: white;
-            text-decoration: none;
-            padding: 14px 32px;
-            border-radius: 10px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s;
-        }
-        .btn:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        }
-        .footer {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid #e5e7eb;
-            color: #9ca3af;
-            font-size: 14px;
-        }
+        body { font-family: sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .icon { width: 80px; height: 80px; background: #10b981; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+        .icon svg { width: 40px; height: 40px; fill: white; }
+        h1 { color: #1f2937; font-size: 24px; margin-bottom: 16px; font-weight: 700; }
+        p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
+        .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; transition: all 0.3s; }
+        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -517,19 +329,12 @@ export const authController = new Elysia({ prefix: '/auth' })
             <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
         <h1>Akun Anda Telah Aktif!</h1>
-        <p>
-            Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.
-        </p>
+        <p>Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.</p>
         <a href="${loginUrl}" class="btn">Login Sekarang</a>
-        <div class="footer">
-            Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro
-        </div>
+        <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
 </body>
 </html>`;
-    
-    set.headers['Content-Type'] = 'text/html';
-    return htmlResponse;
   }, {
     query: t.Object({
       token: t.String(),
@@ -766,7 +571,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       id: foundStaff[0].id,
       role: foundStaff[0].role,
       email: foundStaff[0].email,
-      managedBuilding: foundStaff[0].managedBuilding,
+      managedLocation: foundStaff[0].managedLocation,
     });
 
     return {
@@ -886,9 +691,9 @@ export const authController = new Elysia({ prefix: '/auth' })
   // Admin: Approve User (for external users - sends activation email)
   .post('/admin/approve-user', async ({ body, set }) => {
     const { userId } = body;
-    
+
     const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-    
+
     if (user.length === 0) {
       set.status = 404;
       return { status: 'error', message: 'User tidak ditemukan' };
@@ -905,7 +710,7 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     // Set isVerified = true and store activation token
     await db.update(users)
-      .set({ 
+      .set({
         isVerified: true,
         emailVerificationToken: activationToken,
         emailVerificationExpiresAt: expiresAt
@@ -924,7 +729,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     // Send activation email to external user
     const apiUrl = process.env.API_URL || 'http://localhost:3000';
     const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(user[0].email)}`;
-    
+
     console.log(`[ADMIN] Activation token for ${user[0].email}: ${activationToken}`);
     try {
       EmailService.sendActivationEmail(user[0].email, user[0].name, activationLink, false);
