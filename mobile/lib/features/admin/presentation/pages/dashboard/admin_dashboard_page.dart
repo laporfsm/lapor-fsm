@@ -12,7 +12,6 @@ import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 
-
 class AdminDashboardPage extends ConsumerStatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -61,10 +60,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         apiService.dio.get('/admin/dashboard'),
         apiService.dio.get(
           '/reports',
-          queryParameters: {
-            'limit': 5,
-            'sort': 'desc',
-          },
+          queryParameters: {'limit': 5, 'sort': 'desc'},
         ),
       ]);
 
@@ -121,7 +117,8 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           colors: [
                             AppTheme.adminColor,
                             AppTheme.adminColor.withRed(
-                              (AppTheme.adminColor.r * 255).round() + 30,
+                              ((AppTheme.adminColor.r * 255).round() + 30)
+                                  .clamp(0, 255),
                             ),
                           ],
                         ),
@@ -385,10 +382,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
       children: [
         const Text(
           'Statistik Ringkas',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const Gap(16),
 
@@ -507,11 +501,7 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
         child: Center(
           child: Column(
             children: [
-              Icon(
-                LucideIcons.activity,
-                size: 48,
-                color: Colors.grey.shade300,
-              ),
+              Icon(LucideIcons.activity, size: 48, color: Colors.grey.shade300),
               const Gap(8),
               Text(
                 'Belum ada log sistem',
@@ -574,8 +564,9 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
 
   String _formatTimeAgo(dynamic time) {
     if (time == null) return '-';
-    final DateTime dateTime =
-        time is DateTime ? time : DateTime.parse(time.toString());
+    final DateTime dateTime = time is DateTime
+        ? time
+        : DateTime.parse(time.toString());
     final diff = DateTime.now().difference(dateTime);
 
     if (diff.inMinutes < 60) return '${diff.inMinutes}m lalu';
@@ -674,9 +665,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -699,10 +688,7 @@ class _StatCard extends StatelessWidget {
           const Gap(8),
           Text(
             label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
           ),
         ],
       ),
@@ -754,20 +740,14 @@ class _LogListTile extends StatelessWidget {
                 const Gap(2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                 ),
               ],
             ),
           ),
           Text(
             time,
-            style: TextStyle(
-              color: Colors.grey.shade500,
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
           ),
         ],
       ),
@@ -799,19 +779,14 @@ class _QuickActionButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: color.withValues(alpha: 0.2),
-              ),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
             ),
             child: Icon(icon, color: color, size: 28),
           ),
           const Gap(8),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
           ),
         ],
       ),

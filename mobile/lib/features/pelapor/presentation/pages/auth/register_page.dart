@@ -210,7 +210,7 @@ class _RegisterPageState extends State<RegisterPage> {
     }
 
     setState(() => _isLoading = true);
-    
+
     String? idCardUrl;
 
     try {
@@ -221,13 +221,13 @@ class _RegisterPageState extends State<RegisterPage> {
         // For simplicity, let's use XFile.fromData but that's not always available for all versions.
         // Better: Use a helper or just use the bytes directly if we can.
         // Looking at report_service.dart, uploadImage takes XFile.
-        
+
         // Since we already have the path from pickImage (if not on web), but on web we have bytes.
-        // Let's assume we can use XFile.fromData for all cases if needed, but since we have _idCardBytes 
+        // Let's assume we can use XFile.fromData for all cases if needed, but since we have _idCardBytes
         // and we want to be safe across platforms:
         final xFile = XFile.fromData(_idCardBytes!, name: 'id_card.jpg');
         idCardUrl = await reportService.uploadImage(xFile);
-        
+
         if (idCardUrl == null) {
           throw 'Gagal mengunggah kartu identitas. Silakan coba lagi.';
         }
@@ -247,7 +247,6 @@ class _RegisterPageState extends State<RegisterPage> {
         emergencyPhone: _emergencyPhoneController.text,
         idCardUrl: idCardUrl,
       );
-
 
       if (mounted) {
         if (result['success']) {
@@ -282,65 +281,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  void _showPendingApprovalDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                LucideIcons.clock,
-                size: 48,
-                color: Colors.orange,
-              ),
-            ),
-            const Gap(20),
-            const Text(
-              'Menunggu Verifikasi',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(12),
-            Text(
-              'Akun Anda sedang dalam proses verifikasi oleh Admin. '
-              'Anda akan menerima notifikasi setelah akun diaktifkan.',
-              style: TextStyle(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-            const Gap(24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.go('/login');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Kembali ke Login'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showActivationRequiredDialog(bool isUndip, bool needsAdminApproval) {
     showDialog(
       context: context,
@@ -353,9 +293,9 @@ class _RegisterPageState extends State<RegisterPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isUndip 
-                  ? Colors.blue.withValues(alpha: 0.1)
-                  : Colors.orange.withValues(alpha: 0.1),
+                color: isUndip
+                    ? Colors.blue.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -373,8 +313,8 @@ class _RegisterPageState extends State<RegisterPage> {
             const Gap(12),
             Text(
               isUndip
-                ? 'Silakan cek email Anda dan klik link aktivasi untuk mengaktifkan akun. Setelah aktivasi, Anda dapat langsung login.'
-                : 'Akun Anda sedang menunggu persetujuan admin. Setelah disetujui, Anda akan menerima email aktivasi.',
+                  ? 'Silakan cek email Anda dan klik link aktivasi untuk mengaktifkan akun. Setelah aktivasi, Anda dapat langsung login.'
+                  : 'Akun Anda sedang menunggu persetujuan admin. Setelah disetujui, Anda akan menerima email aktivasi.',
               style: TextStyle(color: Colors.grey.shade600),
               textAlign: TextAlign.center,
             ),
@@ -862,10 +802,7 @@ class _RegisterPageState extends State<RegisterPage> {
             // ignore: deprecated_member_use
             value: _selectedDepartment,
             items: _departments.map((dept) {
-              return DropdownMenuItem(
-                value: dept,
-                child: Text(dept),
-              );
+              return DropdownMenuItem(value: dept, child: Text(dept));
             }).toList(),
             onChanged: (value) {
               setState(() {
@@ -882,10 +819,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const Gap(20),
 
           // Faculty (Read-only)
-          const Text(
-            'Fakultas',
-            style: TextStyle(fontWeight: FontWeight.w600),
-          ),
+          const Text('Fakultas', style: TextStyle(fontWeight: FontWeight.w600)),
           const Gap(8),
           Container(
             padding: const EdgeInsets.all(12),

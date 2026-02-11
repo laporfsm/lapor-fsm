@@ -6,18 +6,28 @@ import { readFileSync } from 'fs';
 
 // Initialize Firebase Admin
 try {
-    // Check if file exists to prevent crash in dev environments without the key
-    if (require('fs').existsSync('service-account.json')) {
-        const serviceAccount = JSON.parse(
+    let serviceAccount: any;
+
+    // 1. Try loading from Environment Variable (Best for Railway/Production)
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    }
+    // 2. Try loading from local file (Best for Local Dev)
+    else if (require('fs').existsSync('service-account.json')) {
+        serviceAccount = JSON.parse(
             readFileSync('service-account.json', 'utf-8')
         );
+    }
 
+    if (serviceAccount) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
+            // Default bucket name format: project-id.appspot.com
+            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
         });
-        console.log('🔥 Firebase Admin Initialized');
+        console.log('🔥 Firebase Admin Initialized with Storage');
     } else {
-        console.warn('⚠️ service-account.json not found. FCM will not be initialized.');
+        console.warn('⚠️ No Firebase credentials found. FCM & Storage will not work.');
     }
 } catch (error) {
     console.error('❌ Failed to initialize Firebase Admin:', error);
