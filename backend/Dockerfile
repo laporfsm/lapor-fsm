@@ -7,8 +7,8 @@ WORKDIR /app
 # Copy package files (untuk cache dependencies)
 COPY package.json bun.lock ./
 
-# Install dependencies (production mode)
-RUN bun install --production
+# Install dependencies
+RUN bun install
 
 # Copy sisa source code
 COPY . .
