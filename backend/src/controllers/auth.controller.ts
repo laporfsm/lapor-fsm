@@ -83,11 +83,9 @@ export const authController = new Elysia({ prefix: '/auth' })
     try {
       const isUndipEmail = (email: string) => {
         const lowerEmail = email.toLowerCase();
-        return lowerEmail.endsWith('@undip.ac.id') ||
-          lowerEmail.endsWith('@students.undip.ac.id') ||
-          lowerEmail.endsWith('@live.undip.ac.id') ||
-          lowerEmail.endsWith('@lecturer.undip.ac.id') ||
-          lowerEmail.endsWith('@staff.undip.ac.id');
+        // Only @students.undip.ac.id gets auto-verified flow
+        // @live.undip.ac.id and other emails go to external email flow (require ID card and admin approval)
+        return lowerEmail.endsWith('@students.undip.ac.id');
       };
 
       // Validation

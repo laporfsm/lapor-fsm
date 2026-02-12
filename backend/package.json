@@ -6,7 +6,8 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "seed": "bun run src/db/seed.ts",
-    "build": "bun build ./src/index.ts --outdir ./dist --target bun"
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
     "@elysiajs/cors": "^1.4.1",

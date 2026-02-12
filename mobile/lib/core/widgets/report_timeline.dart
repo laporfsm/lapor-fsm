@@ -212,9 +212,9 @@ extension ReportActionLabel on ReportAction {
       case ReportAction.verified:
         return 'Diverifikasi';
       case ReportAction.handling:
-        return 'Penanganan';
+        return 'Alokasi ke Teknisi';
       case ReportAction.completed:
-        return 'Selesai';
+        return 'Selesai oleh Teknisi + Peninjauan Ulang oleh Supervisor';
       case ReportAction.rejected:
         return 'Ditolak';
       case ReportAction.approved:

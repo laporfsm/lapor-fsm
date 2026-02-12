@@ -37,9 +37,9 @@ class ReportLog {
       case ReportAction.verified:
         return 'Laporan diverifikasi oleh $actor';
       case ReportAction.handling:
-        return 'Penanganan dimulai oleh $actor';
+        return 'Laporan dialokasikan ke teknisi oleh $actor';
       case ReportAction.completed:
-        return 'Laporan diselesaikan oleh $actor$reasonText';
+        return 'Laporan diselesaikan oleh teknisi $actor dan menunggu peninjauan ulang oleh supervisor$reasonText';
       case ReportAction.rejected:
         return 'Laporan ditolak oleh $actor$reasonText';
       case ReportAction.approved:

@@ -415,4 +415,58 @@ export const reportController = new Elysia({ prefix: '/reports' })
       status: 'success',
       data: result,
     };
+  })
+
+  // SSE endpoint for real-time report logs
+  .get('/:id/logs/stream', async ({ params, request }) => {
+    const reportId = parseInt(params.id);
+    
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send initial connection message
+        const initialData = `data: ${JSON.stringify({ type: 'connected', reportId })}\n\n`;
+        controller.enqueue(new TextEncoder().encode(initialData));
+
+        // Set up interval to check for new logs every 2 seconds
+        const interval = setInterval(async () => {
+          try {
+            const logs = await db
+              .select()
+              .from(reportLogs)
+              .where(eq(reportLogs.reportId, reportId))
+              .orderBy(desc(reportLogs.timestamp));
+
+            const data = `data: ${JSON.stringify({ 
+              type: 'logs', 
+              reportId, 
+              logs,
+              timestamp: new Date().toISOString()
+            })}\n\n`;
+            
+            controller.enqueue(new TextEncoder().encode(data));
+          } catch (error) {
+            console.error('[SSE] Error fetching logs:', error);
+            const errorData = `data: ${JSON.stringify({ 
+              type: 'error', 
+              message: 'Failed to fetch logs' 
+            })}\n\n`;
+            controller.enqueue(new TextEncoder().encode(errorData));
+          }
+        }, 2000);
+
+        // Clean up on close
+        request.signal.addEventListener('abort', () => {
+          clearInterval(interval);
+          controller.close();
+        });
+      }
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
   });
