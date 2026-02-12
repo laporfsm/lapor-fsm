@@ -384,9 +384,26 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.reason,
             });
 
+            // Notify Pelapor (Reporter) about recall
+            if (current[0].userId) {
+                await NotificationService.notifyUser(
+                    current[0].userId, 
+                    'Laporan Ditarik Kembali', 
+                    `Laporan "${current[0].title}" sedang ditinjau ulang oleh Supervisor. Mohon menunggu hasil peninjauan.`, 
+                    'warning', 
+                    reportId
+                );
+            }
+
             // Notify Technician (if assigned)
             if (current[0].assignedTo) {
-                await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`, 'warning', reportId);
+                await NotificationService.notifyStaff(
+                    current[0].assignedTo, 
+                    'Tugas Dibatalkan/Direvisi', 
+                    `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`, 
+                    'warning', 
+                    reportId
+                );
             }
 
             return { status: 'success', data: mapToMobileReport(updated[0]) };

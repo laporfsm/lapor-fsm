@@ -1,10 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'dart:ui';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter/material.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  
+  static GlobalKey<NavigatorState>? _navigatorKey;
+  
+  static void setNavigatorKey(GlobalKey<NavigatorState> key) {
+    _navigatorKey = key;
+  }
 
   static Future<void> init() async {
     if (kIsWeb) return;
@@ -28,10 +36,27 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap if needed
+        // Handle notification tap - navigate to report detail
         debugPrint('Notification tapped: ${response.payload}');
+        _handleNotificationTap(response.payload);
       },
     );
+  }
+  
+  static void _handleNotificationTap(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    
+    try {
+      // Parse payload to get reportId
+      final reportId = int.tryParse(payload);
+      if (reportId != null && _navigatorKey?.currentContext != null) {
+        final context = _navigatorKey!.currentContext!;
+        // Navigate to report detail page
+        context.push('/report-detail/$reportId');
+      }
+    } catch (e) {
+      debugPrint('Error handling notification tap: $e');
+    }
   }
 
   static Future<void> showNotification({

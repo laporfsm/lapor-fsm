@@ -9,6 +9,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/location_service.dart';
 import 'package:mobile/core/services/websocket_service.dart';
+import 'package:mobile/core/services/sse_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
@@ -41,32 +42,49 @@ class ReportDetailBase extends StatefulWidget {
 class _ReportDetailBaseState extends State<ReportDetailBase> {
   LatLng? _liveLatLng;
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _sseSubscription;
   Timer? _locationBroadcastTimer;
+  List<ReportLog> _logs = [];
 
   @override
   void initState() {
     super.initState();
+    _logs = widget.report.logs;
     _setupTracking();
+    _setupSSE();
   }
 
   @override
   void dispose() {
     _wsSubscription?.cancel();
+    _sseSubscription?.cancel();
     _locationBroadcastTimer?.cancel();
+    sseService.disconnect();
     if (widget.report.isEmergency) {
       webSocketService.disconnect();
     }
     super.dispose();
   }
+  
+  void _setupSSE() {
+    // Connect to SSE for real-time logs
+    sseService.connect(widget.report.id);
+    
+    // Listen to SSE stream
+    _sseSubscription = sseService.logsStream.listen((logs) {
+      if (mounted && logs.isNotEmpty) {
+        setState(() {
+          _logs = logs;
+        });
+      }
+    });
+  }
 
   void _setupTracking() {
-    if (!widget.report.isEmergency) {
-      return;
-    }
-
     // Don't track if finished
     if (widget.report.status == ReportStatus.selesai ||
-        widget.report.status == ReportStatus.ditolak) {
+        widget.report.status == ReportStatus.ditolak ||
+        widget.report.status == ReportStatus.approved) {
       return;
     }
 
@@ -94,6 +112,12 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     // 3. If I am the reporter, broadcast my location
     if (widget.viewerRole == UserRole.pelapor) {
       _startSelfBroadcasting();
+    }
+    
+    // 4. If I am the assigned technician and status is penanganan, broadcast my location
+    if (widget.viewerRole == UserRole.teknisi && 
+        widget.report.status == ReportStatus.penanganan) {
+      _startTechnicianBroadcasting();
     }
   }
 
@@ -124,6 +148,43 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
         }
       } catch (e) {
         debugPrint('[TRACKING] Failed to broadcast location: $e');
+      }
+    });
+  }
+  
+  Future<void> _startTechnicianBroadcasting() async {
+    _locationBroadcastTimer = Timer.periodic(const Duration(seconds: 10), (
+      timer,
+    ) async {
+      try {
+        final position = await locationService.getCurrentPosition();
+
+        if (position != null) {
+          final user = await authService.getCurrentUser();
+          final name = user?['name'] ?? 'Teknisi';
+          final userId = user?['id']?.toString();
+          
+          // Only broadcast if this technician is assigned to the report
+          if (userId != null && widget.report.assignedTo == userId) {
+            webSocketService.sendLocation(
+              latitude: position.latitude,
+              longitude: position.longitude,
+              role: 'teknisi',
+              senderName: name,
+            );
+
+            debugPrint('[TRACKING] Technician location broadcast: ${position.latitude}, ${position.longitude}');
+
+            // Update local UI immediately too
+            if (mounted) {
+              setState(() {
+                _liveLatLng = LatLng(position.latitude, position.longitude);
+              });
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[TRACKING] Failed to broadcast technician location: $e');
       }
     });
   }
@@ -427,9 +488,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                       ReportTimeline(
                         logs: () {
                           // Create a mutable copy of logs
-                          final allLogs = List<ReportLog>.from(
-                            widget.report.logs,
-                          );
+                          final allLogs = List<ReportLog>.from(_logs);
 
                           // Check if "created" action already exists
                           final hasCreatedLog = allLogs.any(

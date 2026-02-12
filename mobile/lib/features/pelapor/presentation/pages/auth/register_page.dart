@@ -66,11 +66,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isUndipEmail(String email) {
     final lowerEmail = email.toLowerCase();
-    return lowerEmail.endsWith('@undip.ac.id') ||
-        lowerEmail.endsWith('@students.undip.ac.id') ||
-        lowerEmail.endsWith('@live.undip.ac.id') ||
-        lowerEmail.endsWith('@lecturer.undip.ac.id') ||
-        lowerEmail.endsWith('@staff.undip.ac.id');
+    // Only @students.undip.ac.id gets auto-verified flow
+    // @live.undip.ac.id and other emails go to external email flow (require ID card and admin approval)
+    return lowerEmail.endsWith('@students.undip.ac.id');
   }
 
   void _validateEmail() {
@@ -508,7 +506,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const Gap(12),
               Expanded(
                 child: Text(
-                  'Email UNDIP yang valid:\n• @undip.ac.id\n• @students.undip.ac.id\n• @live.undip.ac.id',
+                  'Email yang mendapatkan verifikasi otomatis:\n• @students.undip.ac.id\n\nEmail lain (termasuk @live.undip.ac.id) memerlukan upload kartu identitas dan approval admin.',
                   style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                 ),
               ),
