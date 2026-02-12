@@ -1,18 +1,13 @@
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
+import 'package:mobile/core/router/app_router.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
-  
-  static GlobalKey<NavigatorState>? _navigatorKey;
-  
-  static void setNavigatorKey(GlobalKey<NavigatorState> key) {
-    _navigatorKey = key;
-  }
 
   static Future<void> init() async {
     if (kIsWeb) return;
@@ -42,18 +37,31 @@ class NotificationService {
       },
     );
   }
-  
-  static void _handleNotificationTap(String? payload) {
+
+  static void _handleNotificationTap(String? payload) async {
     if (payload == null || payload.isEmpty) return;
-    
+
     try {
-      // Parse payload to get reportId
-      final reportId = int.tryParse(payload);
-      if (reportId != null && _navigatorKey?.currentContext != null) {
-        final context = _navigatorKey!.currentContext!;
-        // Navigate to report detail page
-        context.push('/report-detail/$reportId');
+      final reportId = payload;
+      final user = await authService.getCurrentUser();
+      final role = user?['role'];
+
+      String route;
+      switch (role) {
+        case 'teknisi':
+          route = '/teknisi/report/$reportId';
+        case 'supervisor':
+          route = '/supervisor/review/$reportId';
+        case 'pj_gedung':
+          route = '/pj-gedung/report/$reportId';
+        case 'admin':
+          route = '/admin/reports/$reportId';
+        default:
+          route = '/report-detail/$reportId';
       }
+
+      debugPrint('NotificationService navigating to: $route');
+      appRouter.push(route);
     } catch (e) {
       debugPrint('Error handling notification tap: $e');
     }

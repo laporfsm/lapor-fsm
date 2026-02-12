@@ -38,8 +38,12 @@ class ReportLog {
         return 'Laporan diverifikasi oleh $actor';
       case ReportAction.handling:
         return 'Laporan dialokasikan ke teknisi oleh $actor';
+      case ReportAction.accepted:
+        return 'Laporan sedang dikerjakan oleh $actor';
       case ReportAction.completed:
-        return 'Laporan diselesaikan oleh teknisi $actor dan menunggu peninjauan ulang oleh supervisor$reasonText';
+        return 'Laporan diselesaikan oleh teknisi $actor$reasonText';
+      case ReportAction.reviewing:
+        return 'Menunggu peninjauan ulang oleh supervisor';
       case ReportAction.rejected:
         return 'Laporan ditolak oleh $actor$reasonText';
       case ReportAction.approved:
@@ -99,7 +103,9 @@ enum ReportAction {
   created,
   verified,
   handling,
+  accepted,
   completed,
+  reviewing,
   rejected,
   approved,
   recalled,

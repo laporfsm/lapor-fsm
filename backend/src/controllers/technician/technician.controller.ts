@@ -267,7 +267,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             actorId: staffId.toString(),
             actorName: foundStaff[0].name,
             actorRole: foundStaff[0].role,
-            action: 'handling',
+            action: 'accepted',
             fromStatus: fromStatus,
             toStatus: 'penanganan',
             reason: actionReason,
@@ -394,6 +394,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
         if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
+        // Log 1: Selesai oleh Teknisi
         await db.insert(reportLogs).values({
             reportId,
             actorId: staffId.toString(),
@@ -404,6 +405,18 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             toStatus: 'selesai',
             reason: body.notes,
             mediaUrls: body.mediaUrls || [],
+        });
+
+        // Log 2: Peninjauan Ulang oleh Supervisor
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Technician",
+            actorRole: foundStaff[0]?.role || "teknisi",
+            action: 'reviewing',
+            fromStatus: 'selesai',
+            toStatus: 'selesai',
+            reason: 'Menunggu peninjauan ulang oleh supervisor',
         });
 
         // Notify Supervisor
