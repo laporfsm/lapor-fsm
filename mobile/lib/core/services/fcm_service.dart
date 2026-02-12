@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:mobile/core/router/app_router.dart';
 
 // Setup background handler
 @pragma('vm:entry-point')
@@ -21,11 +22,8 @@ class FCMService {
   static Future<void> init() async {
     try {
       // 1. Request Permissions
-      NotificationSettings settings = await _firebaseMessaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      NotificationSettings settings = await _firebaseMessaging
+          .requestPermission(alert: true, badge: true, sound: true);
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
         debugPrint('User granted permission');
@@ -35,7 +33,9 @@ class FCMService {
       }
 
       // 2. Setup Background Handler (Mobile only usually, but handled by package)
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
       // 3. Setup Local Notifications Channel (Android)
       await _setupLocalNotifications();
@@ -52,6 +52,25 @@ class FCMService {
           _showLocalNotification(message);
         }
       });
+
+      // 4b. Handle notification tap when app is in background
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('Notification tapped (background): ${message.data}');
+        _handleMessageTap(message.data);
+      });
+
+      // 4c. Handle notification tap when app was terminated
+      RemoteMessage? initialMessage = await _firebaseMessaging
+          .getInitialMessage();
+      if (initialMessage != null) {
+        debugPrint(
+          'App opened from terminated via notification: ${initialMessage.data}',
+        );
+        // Delay to ensure router is ready
+        Future.delayed(const Duration(milliseconds: 800), () {
+          _handleMessageTap(initialMessage.data);
+        });
+      }
 
       // 5. Get Token & Save
       // On Web, this might fail with AbortError if push service is unavailable
@@ -155,7 +174,41 @@ class FCMService {
                 : null,
           ),
         ),
+        payload: message.data['reportId']?.toString(),
       );
+    }
+  }
+
+  /// Handle notification tap — navigate to report detail based on user role
+  static void _handleMessageTap(Map<String, dynamic> data) async {
+    final reportId = data['reportId'];
+    if (reportId == null) {
+      debugPrint('No reportId in notification data, skipping navigation');
+      return;
+    }
+
+    try {
+      final user = await authService.getCurrentUser();
+      final role = user?['role'];
+
+      String route;
+      switch (role) {
+        case 'teknisi':
+          route = '/teknisi/report/$reportId';
+        case 'supervisor':
+          route = '/supervisor/review/$reportId';
+        case 'pj_gedung':
+          route = '/pj-gedung/report/$reportId';
+        case 'admin':
+          route = '/admin/reports/$reportId';
+        default:
+          route = '/report-detail/$reportId';
+      }
+
+      debugPrint('Navigating to: $route');
+      appRouter.push(route);
+    } catch (e) {
+      debugPrint('Error handling notification tap: $e');
     }
   }
 
