@@ -22,8 +22,8 @@ class TeknisiCompleteReportPage extends StatefulWidget {
 class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
   final TextEditingController _notesController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  XFile? _proofImage;
-  Uint8List? _proofImageBytes; // For web compatibility
+  final List<XFile> _selectedMedia = [];
+  final List<Uint8List> _selectedMediaBytes = []; // For web compatibility
   bool _isSubmitting = false;
 
   @override
@@ -41,11 +41,18 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
         imageQuality: 70,
       );
       if (image != null) {
-        // Read bytes for web compatibility
+        if (_selectedMedia.length >= 3) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Maksimal 3 foto/video')),
+            );
+          }
+          return;
+        }
         final bytes = await image.readAsBytes();
         setState(() {
-          _proofImage = image;
-          _proofImageBytes = bytes;
+          _selectedMedia.add(image);
+          _selectedMediaBytes.add(bytes);
         });
       }
     } catch (e) {
@@ -60,7 +67,48 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
     }
   }
 
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final XFile? video = await _picker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (video != null) {
+        if (_selectedMedia.length >= 3) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Maksimal 3 foto/video')),
+            );
+          }
+          return;
+        }
+        final bytes = await video.readAsBytes();
+        if (bytes.lengthInBytes > 50 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ukuran video melebihi 50MB')),
+            );
+          }
+          return;
+        }
+        setState(() {
+          _selectedMedia.add(video);
+          _selectedMediaBytes.add(bytes);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking video: $e');
+    }
+  }
+
   void _showImageSourceDialog() {
+    if (_selectedMedia.length >= 3) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Maksimal 3 foto/video')));
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -81,7 +129,7 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
             ),
             const Gap(20),
             const Text(
-              'Pilih Sumber Gambar',
+              'Tambah Bukti Penanganan',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const Gap(20),
@@ -90,7 +138,7 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
                 Expanded(
                   child: _buildImageSourceOption(
                     icon: LucideIcons.camera,
-                    label: 'Kamera',
+                    label: 'Foto',
                     onTap: () {
                       Navigator.pop(context);
                       _pickImage(ImageSource.camera);
@@ -100,11 +148,37 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
                 const Gap(16),
                 Expanded(
                   child: _buildImageSourceOption(
+                    icon: LucideIcons.video,
+                    label: 'Video',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickVideo(ImageSource.camera);
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const Gap(16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildImageSourceOption(
                     icon: LucideIcons.image,
-                    label: 'Galeri',
+                    label: 'Galeri Foto',
                     onTap: () {
                       Navigator.pop(context);
                       _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                ),
+                const Gap(16),
+                Expanded(
+                  child: _buildImageSourceOption(
+                    icon: LucideIcons.film,
+                    label: 'Galeri Video',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _pickVideo(ImageSource.gallery);
                     },
                   ),
                 ),
@@ -148,10 +222,10 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
   }
 
   Future<void> _submitCompletion() async {
-    if (_proofImage == null) {
+    if (_selectedMedia.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Foto bukti penanganan wajib disertakan'),
+          content: Text('Foto/video bukti penanganan wajib disertakan'),
           backgroundColor: Colors.red,
         ),
       );
@@ -167,19 +241,25 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
       if (user != null) {
         final staffId = int.parse(user['id'].toString());
 
-        // 1. Upload Image
-        String? imageUrl;
-        if (_proofImage != null) {
-          imageUrl = await reportService.uploadImage(_proofImage!);
+        // 1. Upload Media Files
+        final List<String> uploadedUrls = [];
+        for (var mediaFile in _selectedMedia) {
+          final url = await reportService.uploadMedia(mediaFile);
+          if (url != null) {
+            uploadedUrls.add(url);
+          }
         }
 
-        // 2. Complete Report
+        if (uploadedUrls.isEmpty) {
+          throw Exception('Gagal mengunggah bukti penanganan');
+        }
+
         // 2. Complete Report
         await reportService.completeTask(
           widget.reportId,
           staffId,
           _notesController.text,
-          imageUrl != null ? [imageUrl] : [],
+          uploadedUrls,
         );
 
         if (mounted) {
@@ -304,137 +384,113 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const Gap(12),
-            GestureDetector(
-              onTap: _showImageSourceDialog,
-              child: Container(
-                height: 200,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: _proofImage != null
-                        ? Colors.green.shade300
-                        : Colors.grey.shade300,
-                    width: 2,
-                    style: BorderStyle.solid,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: _proofImageBytes != null
-                    ? Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
-                            child: Image.memory(
-                              _proofImageBytes!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+            SizedBox(
+              height: 120,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _selectedMediaBytes.length < 3
+                    ? _selectedMediaBytes.length + 1
+                    : _selectedMediaBytes.length,
+                separatorBuilder: (context, index) => const Gap(12),
+                itemBuilder: (context, index) {
+                  // Add Button
+                  if (index == _selectedMediaBytes.length) {
+                    return GestureDetector(
+                      onTap: _showImageSourceDialog,
+                      child: Container(
+                        width: 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.grey.shade300,
+                            width: 2,
+                            style: BorderStyle.solid,
                           ),
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _proofImage = null;
-                                  _proofImageBytes = null;
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  LucideIcons.x,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              LucideIcons.plus,
+                              size: 32,
+                              color: Colors.grey.shade400,
+                            ),
+                            const Gap(8),
+                            Text(
+                              "Tambah",
+                              style: TextStyle(
+                                color: Colors.grey.shade500,
+                                fontSize: 12,
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  // Media Thumbnail
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          width: 120,
+                          height: 120,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
-                          Positioned(
-                            bottom: 8,
-                            right: 8,
-                            child: GestureDetector(
-                              onTap: _showImageSourceDialog,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
+                          child:
+                              _selectedMedia[index].name.toLowerCase().endsWith(
+                                    '.mp4',
+                                  ) ||
+                                  _selectedMedia[index].name
+                                      .toLowerCase()
+                                      .endsWith('.mov')
+                              ? const Center(
+                                  child: Icon(
+                                    LucideIcons.playCircle,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                )
+                              : Image.memory(
+                                  _selectedMediaBytes[index],
+                                  width: 120,
+                                  height: 120,
+                                  fit: BoxFit.cover,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.6),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      LucideIcons.camera,
-                                      color: Colors.white,
-                                      size: 14,
-                                    ),
-                                    Gap(4),
-                                    Text(
-                                      'Ganti',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(
-                                alpha: 0.1,
-                              ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedMedia.removeAt(index);
+                              _selectedMediaBytes.removeAt(index);
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
-                              LucideIcons.camera,
-                              color: AppTheme.primaryColor,
-                              size: 32,
+                              LucideIcons.x,
+                              color: Colors.white,
+                              size: 12,
                             ),
                           ),
-                          const Gap(12),
-                          const Text(
-                            'Tap untuk mengambil foto',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                          const Gap(4),
-                          Text(
-                            'Ambil dari kamera atau galeri',
-                            style: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
+                    ],
+                  );
+                },
               ),
             ),
             const Gap(24),
