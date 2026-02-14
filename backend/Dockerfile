@@ -13,6 +13,9 @@ RUN bun install
 # Copy sisa source code
 COPY . .
 
+# Ensure uploads directory exists (used as temp buffer for file uploads)
+RUN mkdir -p /app/uploads
+
 # Set Environment Variable untuk Port (Koyeb injects PORT, but good to have default)
 ENV PORT=3000
 
