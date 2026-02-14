@@ -420,12 +420,14 @@ export const reportController = new Elysia({ prefix: '/reports' })
   // SSE endpoint for real-time report logs
   .get('/:id/logs/stream', async ({ params, request }) => {
     const reportId = parseInt(params.id);
-    
+
     const stream = new ReadableStream({
       start(controller) {
         // Send initial connection message
         const initialData = `data: ${JSON.stringify({ type: 'connected', reportId })}\n\n`;
         controller.enqueue(new TextEncoder().encode(initialData));
+
+        let lastDataHash = "";
 
         // Set up interval to check for new logs every 2 seconds
         const interval = setInterval(async () => {
@@ -436,19 +438,25 @@ export const reportController = new Elysia({ prefix: '/reports' })
               .where(eq(reportLogs.reportId, reportId))
               .orderBy(desc(reportLogs.timestamp));
 
-            const data = `data: ${JSON.stringify({ 
-              type: 'logs', 
-              reportId, 
-              logs,
-              timestamp: new Date().toISOString()
-            })}\n\n`;
-            
-            controller.enqueue(new TextEncoder().encode(data));
+            const currentDataString = JSON.stringify(logs);
+
+            // Only send if data has changed
+            if (currentDataString !== lastDataHash) {
+              lastDataHash = currentDataString;
+              const data = `data: ${JSON.stringify({
+                type: 'logs',
+                reportId,
+                logs,
+                timestamp: new Date().toISOString()
+              })}\n\n`;
+
+              controller.enqueue(new TextEncoder().encode(data));
+            }
           } catch (error) {
             console.error('[SSE] Error fetching logs:', error);
-            const errorData = `data: ${JSON.stringify({ 
-              type: 'error', 
-              message: 'Failed to fetch logs' 
+            const errorData = `data: ${JSON.stringify({
+              type: 'error',
+              message: 'Failed to fetch logs'
             })}\n\n`;
             controller.enqueue(new TextEncoder().encode(errorData));
           }
