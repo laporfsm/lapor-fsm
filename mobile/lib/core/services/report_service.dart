@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -138,17 +137,29 @@ class ReportService {
     }
   }
 
-  // Upload image
-  Future<String?> uploadImage(XFile xfile) async {
+  // Upload media (image or video)
+  Future<String?> uploadMedia(XFile xfile) async {
     try {
-      final bytes = await xfile.readAsBytes();
-      final base64String = base64Encode(bytes);
-      final mimeType = xfile.mimeType ?? 'image/jpeg';
-      return 'data:$mimeType;base64,$base64String';
+      final fileName = xfile.name;
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(xfile.path, filename: fileName),
+      });
+
+      final response = await apiService.dio.post('/upload', data: formData);
+
+      if (response.data['status'] == 'success') {
+        return response.data['data']['url'];
+      }
+      return null;
     } catch (e) {
-      debugPrint('Error converting image to base64: $e');
+      debugPrint('Error uploading media: $e');
       return null;
     }
+  }
+
+  // Deprecated: Use uploadMedia instead
+  Future<String?> uploadImage(XFile xfile) async {
+    return uploadMedia(xfile);
   }
 
   // Get categories

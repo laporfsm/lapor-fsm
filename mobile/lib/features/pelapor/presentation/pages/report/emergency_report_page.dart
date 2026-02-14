@@ -96,11 +96,11 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
           for (var image in images) {
             if (_selectedImages.length >= 3) break;
             final bytes = await image.readAsBytes();
-            if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+            if (bytes.lengthInBytes > 50 * 1024 * 1024) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Ukuran file ${image.name} melebihi 100MB'),
+                    content: Text('Ukuran file ${image.name} melebihi 50MB'),
                   ),
                 );
               }
@@ -121,10 +121,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
         );
         if (image != null) {
           final bytes = await image.readAsBytes();
-          if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+          if (bytes.lengthInBytes > 50 * 1024 * 1024) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Ukuran file melebihi 100MB')),
+                const SnackBar(content: Text('Ukuran file melebihi 50MB')),
               );
             }
             return;
@@ -147,29 +147,30 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     });
   }
 
-  void _showVideoComingSoon() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(LucideIcons.video, color: Color(0xFFDC2626)),
-            Gap(12),
-            Text('Segera Hadir'),
-          ],
-        ),
-        content: const Text(
-          'Fitur unggah video saat ini sedang dalam pengembangan dan akan segera tersedia. Untuk saat ini, silakan gunakan fitur foto untuk laporan darurat Anda.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Mengerti'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _pickVideo(ImageSource source) async {
+    try {
+      final XFile? video = await _imagePicker.pickVideo(
+        source: source,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (video != null) {
+        final bytes = await video.readAsBytes();
+        if (bytes.lengthInBytes > 50 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Ukuran video melebihi 50MB')),
+            );
+          }
+          return;
+        }
+        setState(() {
+          _selectedImages.add(video);
+          _selectedImagesBytes.add(bytes);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error picking video: $e');
+    }
   }
 
   void _showImageSourceDialog() {
@@ -195,14 +196,11 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.video, color: Colors.grey),
-              title: const Text(
-                'Rekam Video (Segera Hadir)',
-                style: TextStyle(color: Colors.grey),
-              ),
+              leading: const Icon(LucideIcons.video),
+              title: const Text('Rekam Video'),
               onTap: () {
                 Navigator.pop(context);
-                _showVideoComingSoon();
+                _pickVideo(ImageSource.camera);
               },
             ),
             ListTile(
@@ -214,14 +212,11 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.video, color: Colors.grey),
-              title: const Text(
-                'Pilih Video dari Galeri (Segera Hadir)',
-                style: TextStyle(color: Colors.grey),
-              ),
+              leading: const Icon(LucideIcons.film),
+              title: const Text('Pilih Video dari Galeri'),
               onTap: () {
                 Navigator.pop(context);
-                _showVideoComingSoon();
+                _pickVideo(ImageSource.gallery);
               },
             ),
           ],
@@ -402,7 +397,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         ),
                       ),
                       const Text(
-                        "Maksimal 3 foto/video (video Maks 100MB)",
+                        "Maksimal 3 foto/video (video Maks 50MB)",
                         style: TextStyle(fontSize: 12, color: Colors.grey),
                       ),
                       const Gap(8),

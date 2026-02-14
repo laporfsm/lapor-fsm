@@ -2,18 +2,21 @@ import { Elysia, t } from 'elysia';
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
-import admin from 'firebase-admin';
+import { supabase } from '../lib/supabase';
 
 // Ensure uploads directory exists (for temporary storage before cloud upload)
 const UPLOAD_DIR = './uploads';
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
 
-// Allowed file types and max size (10MB)
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// Allowed file types and max size (50MB for video support)
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif',
+  'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/mpeg'
+];
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const uploadController = new Elysia({ prefix: '/upload' })
-  // Upload Image
+  // Upload Media (Image/Video)
   .post('/', async ({ body, set }) => {
     try {
       const file = body.file;
@@ -23,7 +26,7 @@ export const uploadController = new Elysia({ prefix: '/upload' })
         set.status = 400;
         return {
           status: 'error',
-          message: 'Invalid file type. Only JPEG, PNG, WebP, and GIF images are allowed.',
+          message: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF, and MP4/QuickTime videos.',
         };
       }
 
@@ -41,9 +44,8 @@ export const uploadController = new Elysia({ prefix: '/upload' })
       await mkdir(UPLOAD_DIR, { recursive: true });
 
       // Generate unique filename with proper extension
-      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const sanitizedExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext) ? ext : 'jpg';
-      const filename = `${randomUUID()}.${sanitizedExt}`;
+      const originalExt = file.name.split('.').pop()?.toLowerCase() || '';
+      const filename = `${randomUUID()}${originalExt ? `.${originalExt}` : ''}`;
       const filepath = join(UPLOAD_DIR, filename);
 
       // 4. Write file to local temp
@@ -51,32 +53,38 @@ export const uploadController = new Elysia({ prefix: '/upload' })
 
       let url = `${API_BASE_URL}/uploads/${filename}`;
 
-      // 5. Try Upload to Cloud Storage (Firebase) if Initialized
-      if (admin.apps.length > 0) {
-        try {
-          const bucket = admin.storage().bucket();
-          const [fileApi] = await bucket.upload(filepath, {
-            destination: `uploads/${filename}`,
-            public: true, // Make file public readable
-            metadata: {
-              contentType: file.type,
-              cacheControl: 'public, max-age=31536000', // Cache for 1 year
-            }
+      // 5. Try Upload to Supabase Storage
+      try {
+        const bucketName = 'media'; // Make sure this bucket exists in Supabase
+        const folder = file.type.startsWith('image/') ? 'images' : 'videos';
+        const storagePath = `${folder}/${filename}`;
+
+        const { data, error } = await supabase.storage
+          .from(bucketName)
+          .upload(storagePath, Buffer.from(buffer), {
+            contentType: file.type,
+            upsert: false
           });
 
-          // Get public URL
-          // Format: https://storage.googleapis.com/BUCKET_NAME/uploads/FILENAME
-          url = fileApi.publicUrl();
-          console.log(`☁️ Uploaded to Firebase: ${url}`);
-
-          // Remove local temp file after successful cloud upload
-          await unlink(filepath).catch((err) => {
-            console.warn('⚠️ Failed to remove local temp file:', err);
-          });
-        } catch (storageError) {
-          console.error('⚠️ Firebase Storage upload failed, falling back to local:', storageError);
-          // Keep local file as fallback
+        if (error) {
+          throw error;
         }
+
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(storagePath);
+
+        url = publicUrl;
+        console.log(`☁️ Uploaded to Supabase Storage: ${url}`);
+
+        // Remove local temp file after successful cloud upload
+        await unlink(filepath).catch((err) => {
+          console.warn('⚠️ Failed to remove local temp file:', err);
+        });
+      } catch (storageError) {
+        console.error('⚠️ Supabase Storage upload failed, falling back to local:', storageError);
+        // Keep local file as fallback if cloud upload fails
       }
 
       // Return URL (Cloud or Local)
@@ -104,3 +112,4 @@ export const uploadController = new Elysia({ prefix: '/upload' })
       file: t.File(),
     }),
   });
+
