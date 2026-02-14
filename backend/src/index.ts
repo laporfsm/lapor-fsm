@@ -1,6 +1,10 @@
 import { Elysia } from "elysia";
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
+import { mkdirSync } from 'fs';
+
+// Ensure uploads directory exists before static plugin tries to access it
+mkdirSync('uploads', { recursive: true });
 import { reportController } from "./controllers/reporter/report.controller";
 import { authController } from "./controllers/auth.controller";
 import { uploadController } from "./controllers/upload.controller";
