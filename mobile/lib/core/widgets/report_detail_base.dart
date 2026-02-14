@@ -26,6 +26,7 @@ class ReportDetailBase extends StatefulWidget {
   final UserRole viewerRole;
   final List<Widget>? actionButtons;
   final Color? appBarColor;
+  final VoidCallback? onReportChanged;
 
   const ReportDetailBase({
     super.key,
@@ -33,6 +34,7 @@ class ReportDetailBase extends StatefulWidget {
     required this.viewerRole,
     this.actionButtons,
     this.appBarColor,
+    this.onReportChanged,
   });
 
   @override
@@ -65,17 +67,30 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     }
     super.dispose();
   }
-  
+
   void _setupSSE() {
     // Connect to SSE for real-time logs
     sseService.connect(widget.report.id);
-    
+
     // Listen to SSE stream
     _sseSubscription = sseService.logsStream.listen((logs) {
       if (mounted && logs.isNotEmpty) {
+        // Check if the latest log indicates a status change
+        final latestLog = logs.first; // logs are ordered desc by timestamp
+        final currentStatus = widget.report.status.name;
+        final newStatus = latestLog.toStatus.name;
+
         setState(() {
           _logs = logs;
         });
+
+        // If status changed, trigger full report re-fetch
+        if (newStatus != currentStatus && widget.onReportChanged != null) {
+          debugPrint(
+            '[SSE] Status change detected: $currentStatus -> $newStatus, triggering refresh',
+          );
+          widget.onReportChanged!();
+        }
       }
     });
   }
@@ -113,9 +128,9 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     if (widget.viewerRole == UserRole.pelapor) {
       _startSelfBroadcasting();
     }
-    
+
     // 4. If I am the assigned technician and status is penanganan, broadcast my location
-    if (widget.viewerRole == UserRole.teknisi && 
+    if (widget.viewerRole == UserRole.teknisi &&
         widget.report.status == ReportStatus.penanganan) {
       _startTechnicianBroadcasting();
     }
@@ -151,7 +166,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
       }
     });
   }
-  
+
   Future<void> _startTechnicianBroadcasting() async {
     _locationBroadcastTimer = Timer.periodic(const Duration(seconds: 10), (
       timer,
@@ -163,7 +178,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           final user = await authService.getCurrentUser();
           final name = user?['name'] ?? 'Teknisi';
           final userId = user?['id']?.toString();
-          
+
           // Only broadcast if this technician is assigned to the report
           if (userId != null && widget.report.assignedTo == userId) {
             webSocketService.sendLocation(
@@ -173,7 +188,9 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
               senderName: name,
             );
 
-            debugPrint('[TRACKING] Technician location broadcast: ${position.latitude}, ${position.longitude}');
+            debugPrint(
+              '[TRACKING] Technician location broadcast: ${position.latitude}, ${position.longitude}',
+            );
 
             // Update local UI immediately too
             if (mounted) {

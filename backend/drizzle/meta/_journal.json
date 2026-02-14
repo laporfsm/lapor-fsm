@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1769764416692,
-      "tag": "0000_add_managed_building",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1769931369869,
-      "tag": "0001_thin_serpent_society",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770019074012,
-      "tag": "0002_add_password_reset_fields",
+      "when": 1770975481274,
+      "tag": "0000_first_shadow_king",
       "breakpoints": true
     }
   ]

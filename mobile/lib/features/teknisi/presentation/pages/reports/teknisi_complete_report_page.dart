@@ -36,9 +36,9 @@ class _TeknisiCompleteReportPageState extends State<TeknisiCompleteReportPage> {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 70,
       );
       if (image != null) {
         // Read bytes for web compatibility

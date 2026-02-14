@@ -6,6 +6,13 @@ CREATE TABLE "categories" (
 	"description" text
 );
 --> statement-breakpoint
+CREATE TABLE "locations" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"created_at" timestamp DEFAULT now(),
+	CONSTRAINT "locations_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
 CREATE TABLE "notifications" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer,
@@ -20,7 +27,7 @@ CREATE TABLE "notifications" (
 --> statement-breakpoint
 CREATE TABLE "report_logs" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"report_id" integer NOT NULL,
+	"report_id" integer,
 	"from_status" text,
 	"to_status" text,
 	"action" text NOT NULL,
@@ -40,7 +47,7 @@ CREATE TABLE "reports" (
 	"category_id" integer,
 	"title" text NOT NULL,
 	"description" text NOT NULL,
-	"building" text NOT NULL,
+	"location" text NOT NULL,
 	"location_detail" text,
 	"latitude" double precision,
 	"longitude" double precision,
@@ -65,16 +72,25 @@ CREATE TABLE "reports" (
 	"updated_at" timestamp DEFAULT now()
 );
 --> statement-breakpoint
+CREATE TABLE "specializations" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"icon" text DEFAULT 'wrench' NOT NULL,
+	"description" text
+);
+--> statement-breakpoint
 CREATE TABLE "staff" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"email" text NOT NULL,
 	"phone" text,
+	"address" text,
+	"fcm_token" text,
 	"password" text NOT NULL,
 	"role" text NOT NULL,
 	"specialization" text,
 	"is_active" boolean DEFAULT true,
-	"managed_building" text,
+	"managed_location" text,
 	"created_at" timestamp DEFAULT now(),
 	CONSTRAINT "staff_email_unique" UNIQUE("email")
 );
@@ -92,7 +108,13 @@ CREATE TABLE "users" (
 	"emergency_name" text,
 	"emergency_phone" text,
 	"id_card_url" text,
+	"fcm_token" text,
 	"is_verified" boolean DEFAULT false,
+	"is_email_verified" boolean DEFAULT false,
+	"email_verification_token" text,
+	"email_verification_expires_at" timestamp,
+	"password_reset_token" text,
+	"password_reset_expires_at" timestamp,
 	"is_active" boolean DEFAULT true,
 	"created_at" timestamp DEFAULT now(),
 	CONSTRAINT "users_email_unique" UNIQUE("email")

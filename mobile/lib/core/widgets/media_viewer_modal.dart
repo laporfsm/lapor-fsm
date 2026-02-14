@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:mobile/core/widgets/video_player_widget.dart';
@@ -63,13 +64,16 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
                   return VideoPlayerWidget(url: url);
                 }
 
+                final isBase64 = url.startsWith('data:image');
                 final isNetwork = url.startsWith('http');
 
                 return InteractiveViewer(
                   minScale: 0.5,
                   maxScale: 4.0,
                   child: Center(
-                    child: isNetwork
+                    child: isBase64
+                        ? _buildBase64Image(url)
+                        : isNetwork
                         ? Image.network(
                             url,
                             fit: BoxFit.contain,
@@ -178,6 +182,20 @@ class _MediaViewerModalState extends State<MediaViewerModal> {
         ),
       ),
     );
+  }
+
+  Widget _buildBase64Image(String url) {
+    try {
+      final base64Content = url.split(',').last;
+      return Image.memory(
+        base64Decode(base64Content),
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) =>
+            _buildErrorWidget(context, "Mime: ${url.split(';').first}"),
+      );
+    } catch (e) {
+      return _buildErrorWidget(context, "Base64 Error");
+    }
   }
 
   String _getSanitizedUrl(String url) {

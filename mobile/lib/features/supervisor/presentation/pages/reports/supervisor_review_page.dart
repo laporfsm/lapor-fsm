@@ -63,6 +63,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       viewerRole: UserRole.supervisor,
       appBarColor: AppTheme.supervisorColor,
       actionButtons: _buildActionButtons(),
+      onReportChanged: _loadReport,
     );
   }
 

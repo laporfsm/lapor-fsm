@@ -17,7 +17,7 @@ export const uploadController = new Elysia({ prefix: '/upload' })
   .post('/', async ({ body, set }) => {
     try {
       const file = body.file;
-      
+
       // 1. Validate file type
       if (!ALLOWED_MIME_TYPES.includes(file.type)) {
         set.status = 400;

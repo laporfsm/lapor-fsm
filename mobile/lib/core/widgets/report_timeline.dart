@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -67,7 +68,7 @@ class ReportTimeline extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        log.action.label,
+                        _getActionLabel(log),
                         style: TextStyle(
                           fontWeight: isFirst
                               ? FontWeight.bold
@@ -160,21 +161,7 @@ class ReportTimeline extends StatelessWidget {
                             },
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                log.mediaUrls![index],
-                                height: 70,
-                                width: 70,
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  height: 70,
-                                  width: 70,
-                                  color: Colors.grey.shade200,
-                                  child: const Icon(
-                                    LucideIcons.image,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
+                              child: _buildTimelineImage(log.mediaUrls![index]),
                             ),
                           );
                         },
@@ -190,6 +177,15 @@ class ReportTimeline extends StatelessWidget {
     );
   }
 
+  /// Get the display label for a log action, differentiating
+  /// technician-initiated 'handling' as 'Penanganan'
+  String _getActionLabel(ReportLog log) {
+    if (log.action == ReportAction.handling && log.actorRole == 'teknisi') {
+      return 'Penanganan';
+    }
+    return log.action.label;
+  }
+
   String _formatDateTime(DateTime dt) {
     final now = DateTime.now();
     final diff = now.difference(dt);
@@ -201,6 +197,40 @@ class ReportTimeline extends StatelessWidget {
     } else {
       return '${dt.day}/${dt.month}/${dt.year}';
     }
+  }
+
+  Widget _buildTimelineImage(String url) {
+    if (url.startsWith('data:image')) {
+      try {
+        final base64Content = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Content),
+          height: 70,
+          width: 70,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildErrorImage(),
+        );
+      } catch (e) {
+        return _buildErrorImage();
+      }
+    }
+
+    return Image.network(
+      url,
+      height: 70,
+      width: 70,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => _buildErrorImage(),
+    );
+  }
+
+  Widget _buildErrorImage() {
+    return Container(
+      height: 70,
+      width: 70,
+      color: Colors.grey.shade200,
+      child: const Icon(LucideIcons.image, color: Colors.grey),
+    );
   }
 }
 
@@ -214,7 +244,7 @@ extension ReportActionLabel on ReportAction {
       case ReportAction.handling:
         return 'Alokasi ke Teknisi';
       case ReportAction.accepted:
-        return 'Sedang Dikerjakan';
+        return 'Penanganan';
       case ReportAction.completed:
         return 'Selesai oleh Teknisi';
       case ReportAction.reviewing:

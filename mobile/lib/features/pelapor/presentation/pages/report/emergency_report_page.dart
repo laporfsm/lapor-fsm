@@ -87,9 +87,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     try {
       if (source == ImageSource.gallery) {
         final List<XFile> images = await _imagePicker.pickMultiImage(
-          maxWidth: 1920,
-          maxHeight: 1080,
-          imageQuality: 80,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 70,
         );
 
         if (images.isNotEmpty) {
@@ -115,9 +115,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
       } else {
         final XFile? image = await _imagePicker.pickImage(
           source: source,
-          maxWidth: 1920,
-          maxHeight: 1080,
-          imageQuality: 80,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 70,
         );
         if (image != null) {
           final bytes = await image.readAsBytes();
@@ -140,37 +140,36 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     }
   }
 
-  Future<void> _pickVideo(ImageSource source) async {
-    try {
-      final XFile? video = await _imagePicker.pickVideo(
-        source: source,
-        maxDuration: const Duration(minutes: 2),
-      );
-      if (video != null) {
-        final bytes = await video.readAsBytes();
-        if (bytes.lengthInBytes > 100 * 1024 * 1024) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ukuran video melebihi 100MB')),
-            );
-          }
-          return;
-        }
-        setState(() {
-          _selectedImages.add(video);
-          _selectedImagesBytes.add(bytes);
-        });
-      }
-    } catch (e) {
-      debugPrint('Error picking video: $e');
-    }
-  }
-
   void _removeImage(int index) {
     setState(() {
       _selectedImages.removeAt(index);
       _selectedImagesBytes.removeAt(index);
     });
+  }
+
+  void _showVideoComingSoon() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(LucideIcons.video, color: Color(0xFFDC2626)),
+            Gap(12),
+            Text('Segera Hadir'),
+          ],
+        ),
+        content: const Text(
+          'Fitur unggah video saat ini sedang dalam pengembangan dan akan segera tersedia. Untuk saat ini, silakan gunakan fitur foto untuk laporan darurat Anda.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Mengerti'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showImageSourceDialog() {
@@ -196,11 +195,14 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.video),
-              title: const Text('Rekam Video'),
+              leading: const Icon(LucideIcons.video, color: Colors.grey),
+              title: const Text(
+                'Rekam Video (Segera Hadir)',
+                style: TextStyle(color: Colors.grey),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                _pickVideo(ImageSource.camera);
+                _showVideoComingSoon();
               },
             ),
             ListTile(
@@ -212,11 +214,14 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.video),
-              title: const Text('Pilih Video dari Galeri'),
+              leading: const Icon(LucideIcons.video, color: Colors.grey),
+              title: const Text(
+                'Pilih Video dari Galeri (Segera Hadir)',
+                style: TextStyle(color: Colors.grey),
+              ),
               onTap: () {
                 Navigator.pop(context);
-                _pickVideo(ImageSource.gallery);
+                _showVideoComingSoon();
               },
             ),
           ],

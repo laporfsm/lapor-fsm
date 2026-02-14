@@ -129,6 +129,7 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
     return ReportDetailBase(
       report: _report!,
       viewerRole: UserRole.admin,
+      onReportChanged: _fetchReport,
       actionButtons: canForceClose
           ? [
               ElevatedButton(

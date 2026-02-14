@@ -53,6 +53,8 @@ class TeknisiReportDetailPage extends ConsumerWidget {
     return ReportDetailBase(
       report: report,
       viewerRole: UserRole.teknisi,
+      onReportChanged: () =>
+          ref.read(reportDetailProvider(reportId).notifier).fetchReport(),
       actionButtons: _buildActionButtons(
         context,
         ref,
