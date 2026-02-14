@@ -14,6 +14,8 @@ class SSEService {
   String get _baseUrl => ApiService.baseUrl;
 
   StreamSubscription? _sseSubscription;
+  http.Client? _activeClient;
+  bool _isManualDisconnect = false;
   final _logsController = StreamController<List<ReportLog>>.broadcast();
 
   Stream<List<ReportLog>> get logsStream => _logsController.stream;
@@ -22,6 +24,9 @@ class SSEService {
 
   /// Connect to SSE endpoint for a specific report
   void connect(String reportId) {
+    // Reset manual disconnect flag on new connection
+    _isManualDisconnect = false;
+
     if (_sseSubscription != null) {
       disconnect();
     }
@@ -30,12 +35,16 @@ class SSEService {
       final url = '$_baseUrl/reports/$reportId/logs/stream';
       debugPrint('[SSE] Connecting to $url');
 
-      final client = http.Client();
+      _activeClient = http.Client();
       final request = http.Request('GET', Uri.parse(url));
       request.headers['Accept'] = 'text/event-stream';
       request.headers['Cache-Control'] = 'no-cache';
+      final token = ApiService.token;
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
 
-      client
+      _activeClient!
           .send(request)
           .then((response) {
             if (response.statusCode == 200) {
@@ -51,26 +60,37 @@ class SSEService {
                       _reconnect(reportId);
                     },
                     onDone: () {
-                      debugPrint('[SSE] Stream closed');
+                      debugPrint('[SSE] Stream closed by server');
                       _reconnect(reportId);
                     },
+                    cancelOnError: true,
                   );
             } else {
-              debugPrint('[SSE] Connection failed: ${response.statusCode}');
+              debugPrint(
+                '[SSE] Connection failed with status: ${response.statusCode}',
+              );
+              _reconnect(reportId);
             }
           })
           .catchError((error) {
-            debugPrint('[SSE] Connection error: $error');
+            debugPrint('[SSE] Connection request error: $error');
+            _reconnect(reportId);
           });
     } catch (e) {
-      debugPrint('[SSE] Error: $e');
+      debugPrint('[SSE] Exception in connect: $e');
+      _reconnect(reportId);
     }
   }
 
   void _handleSSELine(String line) {
+    if (line.isEmpty) return;
+
     if (line.startsWith('data: ')) {
       try {
-        final jsonData = jsonDecode(line.substring(6));
+        final dataStr = line.substring(6).trim();
+        if (dataStr.isEmpty) return;
+
+        final jsonData = jsonDecode(dataStr);
 
         if (jsonData['type'] == 'logs' && jsonData['logs'] != null) {
           final logsList = (jsonData['logs'] as List)
@@ -78,26 +98,43 @@ class SSEService {
               .toList();
 
           _logsController.add(logsList);
+        } else if (jsonData['type'] == 'connected') {
+          debugPrint(
+            '[SSE] Confirmed connected for report: ${jsonData['reportId']}',
+          );
         }
       } catch (e) {
-        debugPrint('[SSE] Error parsing data: $e');
+        debugPrint('[SSE] Error parsing SSE line: $e. Line: $line');
       }
     }
   }
 
   void _reconnect(String reportId) {
-    disconnect();
-    // Reconnect after 5 seconds
+    if (_isManualDisconnect) {
+      debugPrint('[SSE] Skipping reconnect: manual disconnect');
+      return;
+    }
+
+    debugPrint('[SSE] Scheduling reconnect in 5 seconds...');
     Future.delayed(const Duration(seconds: 5), () {
-      connect(reportId);
+      if (!_isManualDisconnect) {
+        connect(reportId);
+      } else {
+        debugPrint(
+          '[SSE] Reconnect aborted: manual disconnect occurred during wait',
+        );
+      }
     });
   }
 
   /// Disconnect from SSE
   void disconnect() {
+    _isManualDisconnect = true;
     _sseSubscription?.cancel();
     _sseSubscription = null;
-    debugPrint('[SSE] Disconnected');
+    _activeClient?.close();
+    _activeClient = null;
+    debugPrint('[SSE] Disconnected manually');
   }
 
   /// Dispose the service

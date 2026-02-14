@@ -5,8 +5,16 @@ import { eq, desc, and, or, sql, gte, lte, ilike, count, isNull } from 'drizzle-
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { jwt } from '@elysiajs/jwt';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 
 export const reportController = new Elysia({ prefix: '/reports' })
+  .use(
+    jwt({
+      name: 'jwt',
+      secret: process.env.JWT_SECRET || 'lapor-fsm-secret-key-change-in-production'
+    })
+  )
   // Get All Reports (Public Feed with database filtering)
   .get('/', async ({ query }) => {
     const {
@@ -338,6 +346,8 @@ export const reportController = new Elysia({ prefix: '/reports' })
       reason: body.notes || 'Laporan baru dibuat',
     });
 
+    logEventEmitter.emit(LOG_EVENTS.NEW_LOG, newReport[0].id);
+
     // --- NOTIFICATION TRIGGER ---
     try {
       if (body.isEmergency) {
@@ -418,17 +428,31 @@ export const reportController = new Elysia({ prefix: '/reports' })
   })
 
   // SSE endpoint for real-time report logs
-  .get('/:id/logs/stream', async ({ params, request }) => {
+  .get('/:id/logs/stream', async ({ params, request, jwt, headers, set }) => {
+    // Authentication Check
+    const authHeader = headers['authorization'];
+    if (!authHeader?.startsWith('Bearer ')) {
+      set.status = 401;
+      return { status: 'error', message: 'Unauthorized' };
+    }
+
+    const token = authHeader.split(' ')[1];
+    const payload = await jwt.verify(token);
+    if (!payload) {
+      set.status = 401;
+      return { status: 'error', message: 'Invalid or expired token' };
+    }
+
     const reportId = parseInt(params.id);
-    
+
     const stream = new ReadableStream({
-      start(controller) {
+      async start(controller) {
         // Send initial connection message
         const initialData = `data: ${JSON.stringify({ type: 'connected', reportId })}\n\n`;
         controller.enqueue(new TextEncoder().encode(initialData));
 
-        // Set up interval to check for new logs every 2 seconds
-        const interval = setInterval(async () => {
+        // Function to fetch and send logs
+        const sendLogs = async () => {
           try {
             const logs = await db
               .select()
@@ -436,27 +460,34 @@ export const reportController = new Elysia({ prefix: '/reports' })
               .where(eq(reportLogs.reportId, reportId))
               .orderBy(desc(reportLogs.timestamp));
 
-            const data = `data: ${JSON.stringify({ 
-              type: 'logs', 
-              reportId, 
+            const data = `data: ${JSON.stringify({
+              type: 'logs',
+              reportId,
               logs,
               timestamp: new Date().toISOString()
             })}\n\n`;
-            
+
             controller.enqueue(new TextEncoder().encode(data));
           } catch (error) {
             console.error('[SSE] Error fetching logs:', error);
-            const errorData = `data: ${JSON.stringify({ 
-              type: 'error', 
-              message: 'Failed to fetch logs' 
-            })}\n\n`;
-            controller.enqueue(new TextEncoder().encode(errorData));
           }
-        }, 2000);
+        };
+
+        // Send initial logs
+        await sendLogs();
+
+        // Listen for log updates
+        const logListener = (id: number) => {
+          if (id === reportId) {
+            sendLogs();
+          }
+        };
+
+        logEventEmitter.on(LOG_EVENTS.NEW_LOG, logListener);
 
         // Clean up on close
         request.signal.addEventListener('abort', () => {
-          clearInterval(interval);
+          logEventEmitter.off(LOG_EVENTS.NEW_LOG, logListener);
           controller.close();
         });
       }

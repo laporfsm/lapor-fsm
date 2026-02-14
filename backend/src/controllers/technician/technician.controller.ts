@@ -5,6 +5,7 @@ import { eq, desc, and, or, sql, isNull, gte, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 
 import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
 
@@ -273,6 +274,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: actionReason,
         });
 
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
         // Notify User
         if (updated[0].userId) {
             await NotificationService.notifyUser(updated[0].userId, 'Laporan Sedang Dikerjakan', `Teknisi ${foundStaff[0].name} sedang mengerjakan laporan Anda.`, 'info', reportId);
@@ -315,6 +318,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: body.reason,
             mediaUrls: body.photoUrl ? [body.photoUrl] : [],
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify User
         if (updated[0].userId) {
@@ -362,6 +367,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             toStatus: 'penanganan',
             reason: 'Pengerjaan dilanjutkan',
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify User
         if (updated[0].userId) {
@@ -418,6 +425,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             toStatus: 'selesai',
             reason: 'Menunggu peninjauan ulang oleh supervisor',
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify Supervisor
         await NotificationService.notifyRole('supervisor', 'Pengerjaan Selesai', `Teknisi ${foundStaff[0]?.name || ''} telah menyelesaikan laporan: ${updated[0].title}`, 'info', reportId);

@@ -18,7 +18,9 @@ class WebSocketService {
   void connect(String reportId) {
     if (_isConnected) return;
 
-    final url = '$_wsBaseUrl/ws/tracking/$reportId';
+    final token = ApiService.token;
+    final url =
+        '$_wsBaseUrl/ws/tracking/$reportId${token != null ? "?token=$token" : ""}';
     debugPrint('[WS-SERVICE] Connecting to $url');
 
     try {
