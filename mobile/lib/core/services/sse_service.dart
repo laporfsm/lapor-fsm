@@ -39,6 +39,10 @@ class SSEService {
       final request = http.Request('GET', Uri.parse(url));
       request.headers['Accept'] = 'text/event-stream';
       request.headers['Cache-Control'] = 'no-cache';
+      final token = ApiService.token;
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
 
       _activeClient!
           .send(request)

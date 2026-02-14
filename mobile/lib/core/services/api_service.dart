@@ -37,6 +37,15 @@ class ApiService {
 
   Dio get dio => _dio;
 
+  // Get auth token
+  static String? get token {
+    final auth = apiService.dio.options.headers['Authorization'] as String?;
+    if (auth != null && auth.startsWith('Bearer ')) {
+      return auth.substring(7);
+    }
+    return null;
+  }
+
   // Set auth token
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';

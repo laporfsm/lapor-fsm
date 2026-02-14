@@ -5,6 +5,7 @@ import { eq, desc, and, or, sql, count, gte, lte, isNull, inArray } from 'drizzl
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 
 import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
 
@@ -275,6 +276,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.notes || 'Laporan telah diverifikasi',
             });
 
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
             // Notify User
             if (updated[0].userId) {
                 await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
@@ -326,6 +329,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 toStatus: 'diproses',
                 reason: `Laporan ditugaskan ke teknisi`,
             });
+
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
             // Notify Technician
             await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
@@ -384,13 +389,15 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.reason,
             });
 
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
             // Notify Pelapor (Reporter) about recall
             if (current[0].userId) {
                 await NotificationService.notifyUser(
-                    current[0].userId, 
-                    'Laporan Ditarik Kembali', 
-                    `Laporan "${current[0].title}" sedang ditinjau ulang oleh Supervisor. Mohon menunggu hasil peninjauan.`, 
-                    'warning', 
+                    current[0].userId,
+                    'Laporan Ditarik Kembali',
+                    `Laporan "${current[0].title}" sedang ditinjau ulang oleh Supervisor. Mohon menunggu hasil peninjauan.`,
+                    'warning',
                     reportId
                 );
             }
@@ -398,10 +405,10 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             // Notify Technician (if assigned)
             if (current[0].assignedTo) {
                 await NotificationService.notifyStaff(
-                    current[0].assignedTo, 
-                    'Tugas Dibatalkan/Direvisi', 
-                    `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`, 
-                    'warning', 
+                    current[0].assignedTo,
+                    'Tugas Dibatalkan/Direvisi',
+                    `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`,
+                    'warning',
                     reportId
                 );
             }
@@ -451,6 +458,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 toStatus: 'approved',
                 reason: body.notes || 'Penanganan disetujui',
             });
+
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
             // Notify User
             if (updated[0].userId) {
@@ -603,12 +612,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         await db.insert(reportLogs).values({
             reportId: parent.id,
             actorId: staffId.toString(),
-            actorName: "Supervisor", // Ideally fetch name
+            actorName: "Supervisor",
             actorRole: "supervisor",
             action: 'grouped',
             toStatus: parent.status || 'pending',
             reason: notes || `Digabungkan dengan ${children.length} laporan lain.`,
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, parent.id);
+        for (const childId of childIds) {
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, childId);
+        }
 
         return {
             status: 'success',
