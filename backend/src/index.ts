@@ -15,7 +15,11 @@ import { locationController } from "./controllers/supervisor/location.controller
 import { specializationController } from "./controllers/supervisor/specialization.controller";
 import { trackingController } from "./controllers/emergency/tracking.controller";
 
-const app = new Elysia()
+const app = new Elysia({
+  serve: {
+    maxRequestBodySize: 1024 * 1024 * 50 // 50MB
+  }
+})
   .onError(({ code, error, set }) => {
     console.error(`[API ERROR] ${code}:`, error);
 

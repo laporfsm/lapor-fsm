@@ -98,6 +98,7 @@ class _ReportDetailWrapperState extends State<ReportDetailWrapper> {
       viewerRole: widget.viewerRole,
       appBarColor: widget.appBarColor,
       actionButtons: widget.actionButtonsBuilder?.call(_report!, _loadReport),
+      onReportChanged: _loadReport,
     );
   }
 }

@@ -41,7 +41,7 @@ class ReportLog {
       case ReportAction.accepted:
         return 'Laporan sedang dikerjakan oleh $actor';
       case ReportAction.completed:
-        return 'Laporan diselesaikan oleh teknisi $actor$reasonText';
+        return 'Laporan diselesaikan oleh $actor$reasonText';
       case ReportAction.reviewing:
         return 'Menunggu peninjauan ulang oleh supervisor';
       case ReportAction.rejected:
@@ -69,7 +69,7 @@ class ReportLog {
 
   factory ReportLog.fromJson(Map<String, dynamic> json) {
     return ReportLog(
-      id: json['id'] as String,
+      id: json['id'].toString(),
       fromStatus: ReportStatus.values.byName(json['fromStatus'] as String),
       toStatus: ReportStatus.values.byName(json['toStatus'] as String),
       action: ReportAction.values.byName(json['action'] as String),
