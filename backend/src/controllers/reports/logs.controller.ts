@@ -33,10 +33,21 @@ export const logStreamController = new Elysia()
 
             logEventEmitter.on(LOG_EVENTS.NEW_LOG, listener);
 
-            // Wait until the client disconnects
-            await stream.wait();
+            // Keep-alive to prevent timeout
+            const keepAlive = setInterval(() => {
+                stream.send(JSON.stringify({ type: 'ping' }));
+            }, 30000);
 
-            // Cleanup
-            logEventEmitter.off(LOG_EVENTS.NEW_LOG, listener);
+            // Wait until the client disconnects
+            try {
+                // @ts-ignore
+                await stream.wait();
+            } catch (e) {
+                // Ignore client disconnect error
+            } finally {
+                // Cleanup
+                logEventEmitter.off(LOG_EVENTS.NEW_LOG, listener);
+                clearInterval(keepAlive);
+            }
         });
     });

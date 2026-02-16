@@ -2,7 +2,9 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db';
 import { notifications, users, staff } from '../db/schema';
 import { eq, desc, and, or } from 'drizzle-orm';
+import { Stream } from '@elysiajs/stream';
 import { mapToMobileNotification } from '../utils/mapper';
+import { logEventEmitter, NOTIFICATION_EVENTS } from '../utils/events';
 
 export const notificationController = new Elysia({ prefix: '/notifications' })
     // Save FCM Token
@@ -27,6 +29,46 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
             role: t.String(),
             token: t.String()
         })
+    })
+
+    // SSE Stream for Notifications
+    .get('/stream/:type/:id', ({ params }) => {
+        const { type, id } = params;
+        const targetId = parseInt(id);
+
+        return new Stream(async (stream) => {
+            stream.send(JSON.stringify({ type: 'connected', targetId }));
+
+            const listener = (payload: any) => {
+                // Payload structure: { type: 'user'|'staff', id: number, data: NotificationData }
+                // Check if the notification is for this connected client
+                if (payload.type === type && payload.id === targetId) {
+                    stream.send(JSON.stringify({ 
+                        type: 'notification', 
+                        data: payload.data 
+                    }));
+                }
+            };
+
+            logEventEmitter.on(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+
+            // Keep-alive
+            const keepAlive = setInterval(() => {
+                stream.send(JSON.stringify({ type: 'ping' }));
+            }, 30000);
+
+            try {
+                // Wait for client disconnect
+                // @ts-ignore
+                await stream.wait();
+            } catch (e) {
+                // Ignore disconnect
+            } finally {
+                // Cleanup
+                logEventEmitter.off(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+                clearInterval(keepAlive);
+            }
+        });
     })
 
     // Get notifications for a user OR staff

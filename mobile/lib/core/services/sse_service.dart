@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:mobile/features/report_common/domain/entities/report_log.dart';
 import 'package:mobile/core/services/api_service.dart';
 
-/// Service for Server-Sent Events (SSE) to receive real-time report logs
+/// Service for Server-Sent Events (SSE) to receive real-time updates
+/// Supports multiple streams: Report Logs and Global Notifications
 class SSEService {
   static final SSEService _instance = SSEService._internal();
   factory SSEService() => _instance;
@@ -13,29 +14,83 @@ class SSEService {
 
   String get _baseUrl => ApiService.baseUrl;
 
-  StreamSubscription? _sseSubscription;
-  http.Client? _activeClient;
-  bool _isManualDisconnect = false;
+  // Report Logs Stream
+  StreamSubscription? _reportSubscription;
+  http.Client? _reportClient;
+  bool _isReportManualDisconnect = false;
   final _logsController = StreamController<List<ReportLog>>.broadcast();
-
   Stream<List<ReportLog>> get logsStream => _logsController.stream;
 
-  bool get isConnected => _sseSubscription != null;
+  // Notification Stream
+  StreamSubscription? _notificationSubscription;
+  http.Client? _notificationClient;
+  bool _isNotificationManualDisconnect = false;
+  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
 
-  /// Connect to SSE endpoint for a specific report
-  void connect(String reportId) {
-    // Reset manual disconnect flag on new connection
-    _isManualDisconnect = false;
+  // Connection State
+  final _connectionState = StreamController<String>.broadcast();
+  Stream<String> get connectionState => _connectionState.stream;
 
-    if (_sseSubscription != null) {
-      disconnect();
-    }
+  /// Connect to Report Logs SSE
+  void connectToReport(String reportId) {
+    _isReportManualDisconnect = false;
+    _startSSEConnection(
+      url: '$_baseUrl/reports/$reportId/logs/stream',
+      clientField: 'report',
+      onData: (data) {
+        if (data['type'] == 'logs' && data['logs'] != null) {
+          try {
+            final logsList = (data['logs'] as List)
+                .map((log) => ReportLog.fromJson(log as Map<String, dynamic>))
+                .toList();
+            _logsController.add(logsList);
+          } catch (e) {
+            debugPrint('[SSE-LOGS] Parse error: $e');
+          }
+        }
+      },
+      onReconnect: () => connectToReport(reportId),
+    );
+  }
+
+  /// Connect to Notifications SSE
+  /// [type] is 'user' or 'staff'
+  void connectToNotifications(String type, String id) {
+    _isNotificationManualDisconnect = false;
+    _startSSEConnection(
+      url: '$_baseUrl/notifications/stream/$type/$id',
+      clientField: 'notification',
+      onData: (data) {
+        if (data['type'] == 'notification' && data['data'] != null) {
+          _notificationController.add(data['data']);
+        }
+      },
+      onReconnect: () => connectToNotifications(type, id),
+    );
+  }
+
+  /// Legacy method for backward compatibility
+  void connect(String reportId) => connectToReport(reportId);
+
+  // Generic internal connection handler
+  void _startSSEConnection({
+    required String url,
+    required String clientField,
+    required Function(Map<String, dynamic>) onData,
+    required Function() onReconnect,
+  }) {
+    _disconnectClient(clientField);
 
     try {
-      final url = '$_baseUrl/reports/$reportId/logs/stream';
-      debugPrint('[SSE] Connecting to $url');
+      debugPrint('[SSE-$clientField] Connecting to $url');
+      final client = http.Client();
+      if (clientField == 'report') {
+        _reportClient = client;
+      } else {
+        _notificationClient = client;
+      }
 
-      _activeClient = http.Client();
       final request = http.Request('GET', Uri.parse(url));
       request.headers['Accept'] = 'text/event-stream';
       request.headers['Cache-Control'] = 'no-cache';
@@ -44,105 +99,120 @@ class SSEService {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      _activeClient!
-          .send(request)
-          .then((response) {
-            if (response.statusCode == 200) {
-              debugPrint('[SSE] Connection established');
+      client.send(request).then((response) {
+        if (response.statusCode == 200) {
+          debugPrint('[SSE-$clientField] Connected');
+          final stream = response.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter());
 
-              _sseSubscription = response.stream
-                  .transform(utf8.decoder)
-                  .transform(const LineSplitter())
-                  .listen(
-                    (line) => _handleSSELine(line),
-                    onError: (error) {
-                      debugPrint('[SSE] Stream error: $error');
-                      _reconnect(reportId);
-                    },
-                    onDone: () {
-                      debugPrint('[SSE] Stream closed by server');
-                      _reconnect(reportId);
-                    },
-                    cancelOnError: true,
-                  );
-            } else {
-              debugPrint(
-                '[SSE] Connection failed with status: ${response.statusCode}',
-              );
-              _reconnect(reportId);
-            }
-          })
-          .catchError((error) {
-            debugPrint('[SSE] Connection request error: $error');
-            _reconnect(reportId);
-          });
-    } catch (e) {
-      debugPrint('[SSE] Exception in connect: $e');
-      _reconnect(reportId);
-    }
-  }
-
-  void _handleSSELine(String line) {
-    if (line.isEmpty) return;
-
-    if (line.startsWith('data: ')) {
-      try {
-        final dataStr = line.substring(6).trim();
-        if (dataStr.isEmpty) return;
-
-        final jsonData = jsonDecode(dataStr);
-
-        if (jsonData['type'] == 'logs' && jsonData['logs'] != null) {
-          final logsList = (jsonData['logs'] as List)
-              .map((log) => ReportLog.fromJson(log as Map<String, dynamic>))
-              .toList();
-
-          _logsController.add(logsList);
-        } else if (jsonData['type'] == 'connected') {
-          debugPrint(
-            '[SSE] Confirmed connected for report: ${jsonData['reportId']}',
+          StreamSubscription? sub;
+          sub = stream.listen(
+            (line) {
+              if (line.startsWith('data: ')) {
+                try {
+                  final jsonStr = line.substring(6).trim();
+                  if (jsonStr.isNotEmpty) {
+                    final data = jsonDecode(jsonStr);
+                    if (data['type'] == 'ping') {
+                      // Heartbeat, ignore
+                    } else if (data['type'] == 'connected') {
+                      debugPrint('[SSE-$clientField] Handshake success');
+                    } else {
+                      onData(data);
+                    }
+                  }
+                } catch (e) {
+                  debugPrint('[SSE-$clientField] JSON Error: $e');
+                }
+              }
+            },
+            onError: (e) {
+              debugPrint('[SSE-$clientField] Error: $e');
+              _handleReconnect(clientField, onReconnect);
+            },
+            onDone: () {
+              debugPrint('[SSE-$clientField] Closed by server');
+              _handleReconnect(clientField, onReconnect);
+            },
+            cancelOnError: true,
           );
+
+          if (clientField == 'report') {
+            _reportSubscription = sub;
+          } else {
+            _notificationSubscription = sub;
+          }
+
+        } else {
+          debugPrint('[SSE-$clientField] Status ${response.statusCode}');
+          _handleReconnect(clientField, onReconnect);
         }
-      } catch (e) {
-        debugPrint('[SSE] Error parsing SSE line: $e. Line: $line');
-      }
+      }).catchError((e) {
+        debugPrint('[SSE-$clientField] Connection error: $e');
+        _handleReconnect(clientField, onReconnect);
+      });
+
+    } catch (e) {
+      debugPrint('[SSE-$clientField] Exception: $e');
+      _handleReconnect(clientField, onReconnect);
     }
   }
 
-  void _reconnect(String reportId) {
-    if (_isManualDisconnect) {
-      debugPrint('[SSE] Skipping reconnect: manual disconnect');
-      return;
-    }
+  void _handleReconnect(String clientField, Function() onReconnect) {
+    bool isManual = clientField == 'report' 
+        ? _isReportManualDisconnect 
+        : _isNotificationManualDisconnect;
 
-    debugPrint('[SSE] Scheduling reconnect in 5 seconds...');
+    if (isManual) return;
+
+    debugPrint('[SSE-$clientField] Reconnecting in 5s...');
     Future.delayed(const Duration(seconds: 5), () {
-      if (!_isManualDisconnect) {
-        connect(reportId);
-      } else {
-        debugPrint(
-          '[SSE] Reconnect aborted: manual disconnect occurred during wait',
-        );
+      bool stillManual = clientField == 'report' 
+        ? _isReportManualDisconnect 
+        : _isNotificationManualDisconnect;
+      
+      if (!stillManual) {
+        onReconnect();
       }
     });
   }
 
-  /// Disconnect from SSE
-  void disconnect() {
-    _isManualDisconnect = true;
-    _sseSubscription?.cancel();
-    _sseSubscription = null;
-    _activeClient?.close();
-    _activeClient = null;
-    debugPrint('[SSE] Disconnected manually');
+  void _disconnectClient(String clientField) {
+    if (clientField == 'report') {
+      _reportSubscription?.cancel();
+      _reportClient?.close();
+      _reportSubscription = null;
+      _reportClient = null;
+    } else {
+      _notificationSubscription?.cancel();
+      _notificationClient?.close();
+      _notificationSubscription = null;
+      _notificationClient = null;
+    }
   }
 
-  /// Dispose the service
+  void disconnectReport() {
+    _isReportManualDisconnect = true;
+    _disconnectClient('report');
+    debugPrint('[SSE-REPORT] Disconnected manually');
+  }
+
+  void disconnectNotification() {
+    _isNotificationManualDisconnect = true;
+    _disconnectClient('notification');
+    debugPrint('[SSE-NOTIF] Disconnected manually');
+  }
+
+  void disconnect() => disconnectReport(); // Legacy support
+
   void dispose() {
-    disconnect();
+    disconnectReport();
+    disconnectNotification();
     _logsController.close();
+    _notificationController.close();
+    _connectionState.close();
   }
 }
 
-// Global instance
 final sseService = SSEService();
