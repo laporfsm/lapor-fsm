@@ -25,6 +25,9 @@ enum ReportStatus {
   /// Sudah dialokasikan Supervisor, menunggu konfirmasi Teknisi
   diproses,
 
+  /// Sedang berjalan ke lokasi (En Route)
+  onTheWay,
+
   /// Sedang dikerjakan oleh Teknisi
   penanganan,
 
@@ -58,6 +61,8 @@ extension ReportStatusX on ReportStatus {
         return 'Terverifikasi';
       case ReportStatus.diproses:
         return 'Diproses';
+      case ReportStatus.onTheWay:
+        return 'Sedang Dijalan';
       case ReportStatus.penanganan:
         return 'Penanganan';
       case ReportStatus.onHold:
@@ -78,6 +83,7 @@ extension ReportStatusX on ReportStatus {
   /// Whether the report is currently in an active handling state by Technician
   bool get isTechnicianActive =>
       this == ReportStatus.penanganan ||
+      this == ReportStatus.onTheWay || // Added
       this == ReportStatus.onHold ||
       this == ReportStatus.recalled;
 
@@ -99,6 +105,7 @@ extension ReportStatusX on ReportStatus {
       ReportStatus.terverifikasi => const Color(0xFF2196F3), // Blue
       ReportStatus.verifikasi => const Color(0xFF2196F3), // Blue
       ReportStatus.diproses => const Color(0xFF9C27B0), // Purple
+      ReportStatus.onTheWay => const Color(0xFF03A9F4), // Light Blue
       ReportStatus.penanganan => const Color(0xFFFF9800), // Orange
       ReportStatus.onHold => const Color(0xFFFF5722), // Deep Orange
       ReportStatus.selesai => const Color(0xFF009688), // Teal
