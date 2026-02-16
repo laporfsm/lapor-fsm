@@ -18,6 +18,7 @@ import { categoryController } from "./controllers/admin/category.controller";
 import { locationController } from "./controllers/supervisor/location.controller";
 import { specializationController } from "./controllers/supervisor/specialization.controller";
 import { trackingController } from "./controllers/emergency/tracking.controller";
+import { logStreamController } from "./controllers/reports/logs.controller";
 
 const app = new Elysia({
   serve: {
@@ -61,6 +62,7 @@ const app = new Elysia({
   .use(locationController)
   .use(specializationController)
   .use(trackingController)
+  .use(logStreamController)
   .listen({
     port: process.env.PORT || 3000,
     hostname: '0.0.0.0'
