@@ -31,28 +31,51 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
 
     // Get notifications for a user OR staff
     .get('/:type/:id', async ({ params, set }) => {
-        const { type, id } = params;
-        const targetId = parseInt(id);
+        try {
+            const { type, id } = params;
+            const targetId = parseInt(id);
 
-        if (isNaN(targetId)) {
-            set.status = 400;
-            return { status: 'error', message: 'Invalid ID format' };
+            if (isNaN(targetId)) {
+                set.status = 400;
+                return { status: 'error', message: 'Invalid ID format' };
+            }
+
+            console.log(`[Notification] Fetching for ${type} ID: ${targetId}`);
+
+            // Fix: ensure correct column usage based on type
+            // Note: Schema has userId (nullable) AND staffId (nullable)
+            // If type is 'user', look for userId. If 'staff', look for staffId.
+            const whereClause = type === 'user'
+                ? eq(notifications.userId, targetId)
+                : eq(notifications.staffId, targetId);
+
+            const result = await db
+                .select()
+                .from(notifications)
+                .where(whereClause)
+                .orderBy(desc(notifications.createdAt));
+            
+            console.log(`[Notification] Found ${result.length} notifications`);
+
+            // Use try-catch map to avoid crash on single item error
+            const mappedData = result.map(n => {
+                try {
+                    return mapToMobileNotification(n);
+                } catch (e) {
+                    console.error('[Notification] Mapper error:', e);
+                    return null;
+                }
+            }).filter(n => n !== null);
+
+            return {
+                status: 'success',
+                data: mappedData,
+            };
+        } catch (error) {
+            console.error('[Notification] Error:', error);
+            set.status = 500;
+            return { status: 'error', message: 'Internal Server Error' };
         }
-
-        const whereClause = type === 'user'
-            ? eq(notifications.userId, targetId)
-            : eq(notifications.staffId, targetId);
-
-        const result = await db
-            .select()
-            .from(notifications)
-            .where(whereClause)
-            .orderBy(desc(notifications.createdAt));
-
-        return {
-            status: 'success',
-            data: result.map(n => mapToMobileNotification(n)),
-        };
     })
 
     // Mark notification as read
