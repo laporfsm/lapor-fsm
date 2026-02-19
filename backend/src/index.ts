@@ -41,6 +41,9 @@ const app = new Elysia({
     set.status = 500;
     return { status: 'error', message: 'Terjadi kesalahan sistem internal' };
   })
+  .onRequest(({ request }) => {
+    console.log(`[REQUEST] ${request.method} ${request.url}`);
+  })
   .use(cors({
     origin: true, // Allow all origins (for development)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -62,13 +65,17 @@ const app = new Elysia({
   .use(locationController)
   .use(specializationController)
   .use(trackingController)
-  .use(logStreamController)
-  .listen({
-    port: process.env.PORT || 3000,
-    hostname: '0.0.0.0'
-  });
+  .use(logStreamController);
+
+console.log(`Configured PORT: ${process.env.PORT || 3000}`);
+
+app.listen({
+  port: process.env.PORT || 3000,
+  hostname: '0.0.0.0'
+});
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
+
 
