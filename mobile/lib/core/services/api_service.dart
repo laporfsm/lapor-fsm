@@ -5,7 +5,7 @@ class ApiService {
   // For physical Android device, replace with your computer's local IP (e.g., 192.168.1.100)
   static String get baseUrl {
     // Local Dev (Android Emulator use 10.0.2.2)
-     return 'http://127.0.0.1:3000'; 
+     return 'http://127.0.0.1:4000'; 
     // return 'http://10.0.2.2:3000'; 
     // Production (Koyeb)
     // return 'https://wittering-sosanna-lapor-fsm-c18a18f2.koyeb.app';
