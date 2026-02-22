@@ -80,7 +80,7 @@ export const reports = pgTable('reports', {
   mediaUrls: jsonb('media_urls').default([]),
   isEmergency: boolean('is_emergency').default(false),
   status: text('status').default('pending'),
-  // Mobile Enum: pending, terverifikasi, verifikasi, diproses, onTheWay, penanganan, onHold, selesai, approved, ditolak, recalled, archived
+  // Mobile Enum: pending, terverifikasi, verifikasi, diproses, penanganan, onHold, selesai, approved, ditolak, recalled, archived
 
   // Handling Details
   assignedTo: integer('assigned_to').references(() => staff.id),

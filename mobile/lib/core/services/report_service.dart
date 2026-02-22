@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import 'api_service.dart';
 import '../../features/report_common/domain/entities/report.dart';
 
@@ -141,18 +142,57 @@ class ReportService {
   Future<String?> uploadMedia(XFile xfile) async {
     try {
       final fileName = xfile.name;
+      final fileExtension = fileName.split('.').last.toLowerCase();
+
+      String mimeType = 'image/jpeg';
+      if (fileExtension == 'png')
+        mimeType = 'image/png';
+      else if (fileExtension == 'webp')
+        mimeType = 'image/webp';
+      else if (fileExtension == 'gif')
+        mimeType = 'image/gif';
+      else if (fileExtension == 'mp4')
+        mimeType = 'video/mp4';
+      else if (fileExtension == 'mov' || fileExtension == 'quicktime')
+        mimeType = 'video/quicktime';
+
       final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(xfile.path, filename: fileName),
+        'file': MultipartFile.fromBytes(
+          await xfile.readAsBytes(),
+          filename: fileName,
+          contentType: MediaType.parse(mimeType),
+        ),
       });
 
-      final response = await apiService.dio.post('/upload', data: formData);
+      debugPrint(
+        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}/upload',
+      );
+
+      final response = await apiService.dio.post(
+        '/upload',
+        data: formData,
+        options: Options(
+          // Important: ensure Content-Type is NOT application/json for this request
+          contentType: 'multipart/form-data',
+          // Increase timeout for uploads
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+
+      debugPrint('Upload Response: ${response.data}');
 
       if (response.data['status'] == 'success') {
         return response.data['data']['url'];
+      } else {
+        debugPrint('Upload failed with message: ${response.data['message']}');
       }
       return null;
     } catch (e) {
       debugPrint('Error uploading media: $e');
+      if (e is DioException) {
+        debugPrint('Dio Error Details: ${e.response?.data}');
+      }
       return null;
     }
   }

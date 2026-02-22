@@ -81,8 +81,6 @@ class UniversalReportCard extends StatelessWidget {
         return LucideIcons.checkCircle;
       case ReportStatus.diproses:
         return LucideIcons.userCheck;
-      case ReportStatus.onTheWay:
-        return LucideIcons.bike; 
       case ReportStatus.penanganan:
         return LucideIcons.wrench;
       case ReportStatus.onHold:

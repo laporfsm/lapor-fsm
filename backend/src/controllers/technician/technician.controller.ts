@@ -232,58 +232,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         };
     })
 
-    // Start Travel (On The Way) - from diproses
-    .post('/reports/:id/start-travel', async ({ params, body }) => {
-        const reportId = parseInt(params.id);
-        const staffId = body.staffId;
-
-        const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
-        if (foundStaff.length === 0) return { status: 'error', message: 'Staff tidak ditemukan' };
-
-        const currentReport = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
-        if (currentReport.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
-
-        // Ensure status is valid for starting travel
-        if (currentReport[0].status !== 'diproses') {
-            return { status: 'error', message: 'Laporan harus berstatus diproses untuk memulai perjalanan' };
-        }
-
-        const updated = await db
-            .update(reports)
-            .set({
-                status: 'onTheWay',
-                assignedTo: staffId, // Confirm assignment
-                updatedAt: new Date(),
-            })
-            .where(eq(reports.id, reportId))
-            .returning();
-
-        if (updated.length === 0) return { status: 'error', message: 'Gagal mengupdate laporan' };
-
-        await db.insert(reportLogs).values({
-            reportId,
-            actorId: staffId.toString(),
-            actorName: foundStaff[0].name,
-            actorRole: foundStaff[0].role,
-            action: 'traveling',
-            fromStatus: 'diproses',
-            toStatus: 'onTheWay',
-            reason: 'Memulai perjalanan ke lokasi',
-        });
-
-        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
-
-        // Notify User
-        if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Teknisi Menuju Lokasi', `Teknisi ${foundStaff[0].name} sedang dalam perjalanan ke lokasi Anda.`, 'info', reportId);
-        }
-
-        return { status: 'success', data: mapToMobileReport(updated[0]) };
-    }, {
-        body: t.Object({ staffId: t.Number() }),
-    })
-
-    // Accept task (Start Penanganan) - from diproses, recalled, or onTheWay
+    // Accept task (Start Penanganan) - from diproses or recalled
     .post('/reports/:id/accept', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const staffId = body.staffId;
@@ -312,9 +261,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
         const actionReason = fromStatus === 'recalled'
             ? 'Melanjutkan penanganan setelah recall'
-            : fromStatus === 'onTheWay'
-                ? 'Tiba di lokasi dan memulai penanganan'
-                : 'Mulai penanganan laporan';
+            : 'Mulai penanganan laporan';
 
         await db.insert(reportLogs).values({
             reportId,

@@ -32,8 +32,15 @@ class WebSocketService {
     }
   }
 
-  /// Stream of incoming tracking messages
-  Stream<dynamic>? get stream => _channel?.stream;
+  Stream<dynamic>? _broadcastStream;
+
+  /// Stream of incoming tracking messages (broadcast)
+  Stream<dynamic>? get stream {
+    if (_broadcastStream == null && _channel != null) {
+      _broadcastStream = _channel!.stream.asBroadcastStream();
+    }
+    return _broadcastStream;
+  }
 
   /// Send location update
   void sendLocation({
@@ -65,6 +72,7 @@ class WebSocketService {
   void disconnect() {
     _channel?.sink.close();
     _channel = null;
+    _broadcastStream = null;
     _isConnected = false;
     debugPrint('[WS-SERVICE] Disconnected');
   }
