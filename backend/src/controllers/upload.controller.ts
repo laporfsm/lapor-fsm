@@ -17,7 +17,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const uploadController = new Elysia({ prefix: '/upload' })
   // Upload Media (Image/Video)
-  .post('/', async ({ body, set }) => {
+  .post('/', async ({ body, set, request }) => {
     try {
       const file = body.file;
 
@@ -51,7 +51,9 @@ export const uploadController = new Elysia({ prefix: '/upload' })
       // 4. Write file to local temp
       await writeFile(filepath, Buffer.from(buffer));
 
-      let url = `${API_BASE_URL}/uploads/${filename}`;
+      const host = request.headers.get('host') || 'localhost:3000';
+      const protocol = request.headers.get('x-forwarded-proto') || 'http';
+      let url = `${protocol}://${host}/uploads/${filename}`;
 
       // 5. Try Upload to Supabase Storage
       try {

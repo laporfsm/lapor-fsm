@@ -62,9 +62,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     _sseSubscription?.cancel();
     _locationBroadcastTimer?.cancel();
     sseService.disconnect();
-    if (widget.report.isEmergency) {
-      webSocketService.disconnect();
-    }
+    webSocketService.disconnect();
     super.dispose();
   }
 
