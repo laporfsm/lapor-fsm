@@ -70,12 +70,12 @@ class _TeknisiReportDetailPageState
 
   void _manageTracking(Report? report, String? currentStaffId) {
     if (report == null) return;
-    
-    // Only track if I am the assigned technician and status is onTheWay
-    final isAssignedToMe = report.assignedTo == currentStaffId;
-    final isEnRoute = report.status == ReportStatus.onTheWay;
 
-    if (isAssignedToMe && isEnRoute) {
+    // Only track if I am the assigned technician and status is penanganan
+    final isAssignedToMe = report.assignedTo == currentStaffId;
+    final isHandling = report.status == ReportStatus.penanganan;
+
+    if (isAssignedToMe && isHandling) {
       _startTracking(report.id, currentStaffId!);
     } else {
       _stopTracking();
@@ -86,13 +86,13 @@ class _TeknisiReportDetailPageState
     if (_trackingTimer != null && _trackingTimer!.isActive) return;
 
     webSocketService.connect(reportId);
-    
+
     // Send location immediately then every 10 seconds
     _sendLocationUpdate(reportId, staffId);
     _trackingTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _sendLocationUpdate(reportId, staffId);
     });
-    
+
     debugPrint('[TRACKING] Started tracking for report $reportId');
   }
 
@@ -117,39 +117,38 @@ class _TeknisiReportDetailPageState
     }
   }
 
-  Future<void> _handleStartTravel() async {
+  Future<void> _handleAcceptTask() async {
     setState(() => _isTravalLoading = true);
     try {
       final user = await authService.getCurrentUser();
       final staffId = user?['id'];
-      
+
       if (staffId == null) throw Exception('Staff ID not found');
 
       final response = await apiService.dio.post(
-        '/technician/reports/${widget.reportId}/start-travel',
-        data: {'staffId': staffId},
+        '/technician/reports/${widget.reportId}/accept',
+        data: {'staffId': int.parse(staffId.toString())},
       );
 
       if (response.statusCode == 200) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Memulai perjalanan. Lokasi Anda akan dibagikan.'),
+              content: Text('Penanganan dimulai.'),
               backgroundColor: Colors.green,
             ),
           );
-          ref.read(reportDetailProvider(widget.reportId).notifier).fetchReport();
+          ref
+              .read(reportDetailProvider(widget.reportId).notifier)
+              .fetchReport();
         }
       } else {
-        throw Exception('Gagal memulai perjalanan');
+        throw Exception('Gagal memulai penanganan');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -165,9 +164,9 @@ class _TeknisiReportDetailPageState
 
     // Listen to state changes to manage tracking
     ref.listen(reportDetailProvider(widget.reportId), (previous, next) {
-        if (next.report != null) {
-            _manageTracking(next.report, currentStaffId);
-        }
+      if (next.report != null) {
+        _manageTracking(next.report, currentStaffId);
+      }
     });
 
     if (detailState.isLoading) {
@@ -200,8 +199,9 @@ class _TeknisiReportDetailPageState
     return ReportDetailBase(
       report: report,
       viewerRole: UserRole.teknisi,
-      onReportChanged: () =>
-          ref.read(reportDetailProvider(widget.reportId).notifier).fetchReport(),
+      onReportChanged: () => ref
+          .read(reportDetailProvider(widget.reportId).notifier)
+          .fetchReport(),
       actionButtons: _buildActionButtons(
         context,
         ref,
@@ -224,51 +224,35 @@ class _TeknisiReportDetailPageState
       // logic for accepting from pool usually handled by report status + pool logic
       // But assuming 'diproses' means allocated to this technician specifically or pool
       // If it's in the pool (assignedTo is null), technician can take it.
-      // But helper sends 'assignedTo'. 
+      // But helper sends 'assignedTo'.
       // If report.assignedTo is null, anyone can take? Not handled here explicitly.
       // Assuming 'assignedTo' matches.
-      
+
       // Exception: If status is 'diproses' and 'assignedTo' is null (Pool).
     }
 
     final notifier = ref.read(reportDetailProvider(widget.reportId).notifier);
 
-    // 1. MULAI PERJALANAN (Status: Diproses)
+    // 1. TERIMA & MULAI PENANGANAN (Status: Diproses)
     if (report.status == ReportStatus.diproses) {
       return [
         ElevatedButton.icon(
           onPressed: _isTravalLoading || isProcessing
               ? null
-              : _handleStartTravel,
+              : _handleAcceptTask,
           icon: _isTravalLoading
               ? const SizedBox(
-                  width: 20, height: 20, 
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 )
-              : const Icon(LucideIcons.navigation),
-          label: Text(_isTravalLoading ? 'Memproses...' : 'Mulai Perjalanan'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blueAccent,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+              : const Icon(LucideIcons.playCircle),
+          label: Text(
+            _isTravalLoading ? 'Memproses...' : 'Terima & Mulai Penanganan',
           ),
-        ),
-      ];
-    } 
-    // 2. SAMPAI LOKASI / MULAI KERJA (Status: OnTheWay)
-    else if (report.status == ReportStatus.onTheWay) {
-       return [
-        ElevatedButton.icon(
-          onPressed: isProcessing
-              ? null
-              : () => _handleStart(context, notifier),
-          icon: isProcessing
-              ? const SizedBox(
-                  width: 20, height: 20, 
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
-                )
-              : const Icon(LucideIcons.mapPin),
-          label: Text(isProcessing ? 'Memproses...' : 'Sampai & Mulai Kerja'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.primaryColor,
             foregroundColor: Colors.white,
@@ -293,7 +277,8 @@ class _TeknisiReportDetailPageState
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () => context.push('/teknisi/report/${widget.reportId}/complete'),
+          onPressed: () =>
+              context.push('/teknisi/report/${widget.reportId}/complete'),
           icon: const Icon(LucideIcons.checkCircle2),
           label: const Text('Selesaikan'),
           style: ElevatedButton.styleFrom(
@@ -329,7 +314,7 @@ class _TeknisiReportDetailPageState
           ),
         ),
       ];
-    } 
+    }
     // 5. RECALLED
     else if (report.status == ReportStatus.recalled) {
       return [
