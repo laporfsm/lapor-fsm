@@ -59,7 +59,7 @@ class _PJGedungHomePageState extends State<PJGedungHomePage> {
   }
 
   Widget _buildNavItem(int index, IconData icon, String label) {
-    // PJ Lokasi theme color is Emerald Green usually, or we can use generic secondary if matched
+    // PJ Gedung theme color is Emerald Green usually, or we can use generic secondary if matched
     // Technician uses AppTheme.secondaryColor (Orange).
     // PJ Gedung should probably use its own color scheme for active state?
     // Supervisor Home uses _supervisorColor.

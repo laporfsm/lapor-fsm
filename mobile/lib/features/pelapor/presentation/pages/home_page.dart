@@ -369,88 +369,152 @@ class _HomePageState extends ConsumerState<HomePage> {
         ? _categories.take(maxItems - 1).toList()
         : _categories;
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: shouldLimit ? maxItems : displayCategories.length,
-      itemBuilder: (context, index) {
-        // "Lihat Semua" button
-        if (shouldLimit && index == maxItems - 1) {
-          return BouncingButton(
-            onTap: _showAllCategoriesSheet,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    shape: BoxShape.circle,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4).floorToDouble();
+        
+        return Wrap(
+          spacing: 12,
+          runSpacing: 24,
+          alignment: WrapAlignment.start,
+          crossAxisAlignment: WrapCrossAlignment.start,
+          children: List.generate(
+            shouldLimit ? maxItems : displayCategories.length,
+            (index) {
+              if (shouldLimit && index == maxItems - 1) {
+                return SizedBox(
+                  width: itemWidth,
+                  child: BouncingButton(
+                    onTap: _showAllCategoriesSheet,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withValues(alpha: 0.15),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                LucideIcons.moreHorizontal,
+                                color: Colors.black54,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const Gap(8),
+                        const Text(
+                          "Lihat Semua",
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF333333),
+                            height: 1.1,
+                            letterSpacing: -0.2,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: const Icon(
-                    LucideIcons.moreHorizontal,
-                    color: Colors.black54,
-                    size: 20,
+                );
+              }
+
+              final category = displayCategories[index];
+              final name = category['name'] as String;
+              final iconStr = category['icon'] as String? ?? 'help-circle';
+
+              return SizedBox(
+                width: itemWidth,
+                child: BouncingButton(
+                  onTap: () {
+                    context.push(
+                      '/create-report',
+                      extra: {
+                        'category': name,
+                        'isEmergency': false,
+                        'categoryId': category['id'].toString(),
+                      },
+                    );
+                  },
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                              blurRadius: 15,
+                              offset: const Offset(0, 6),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              IconHelper.getIcon(iconStr),
+                              color: AppTheme.primaryColor,
+                              size: 26,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(8),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
+                          height: 1.1,
+                          letterSpacing: -0.2,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                const Gap(6),
-                const Text(
-                  "Lihat Semua",
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                ),
-              ],
-            ),
-          );
-        }
-
-        final category = displayCategories[index];
-        final name = category['name'] as String;
-        final iconStr = category['icon'] as String? ?? 'help-circle';
-
-        return BouncingButton(
-          onTap: () {
-            context.push(
-              '/create-report',
-              extra: {
-                'category': name,
-                'isEmergency': false,
-                'categoryId': category['id'].toString(),
-              },
-            );
-          },
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  IconHelper.getIcon(iconStr),
-                  color: AppTheme.primaryColor,
-                  size: 20,
-                ),
-              ),
-              const Gap(6),
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+              );
+            },
           ),
         );
       },
@@ -485,61 +549,97 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const Gap(20),
             Expanded(
-              child: GridView.builder(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  childAspectRatio: 0.8,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final name = category['name'] as String;
-                  final iconStr = category['icon'] as String? ?? 'help-circle';
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4).floorToDouble();
+                    return Wrap(
+                      spacing: 12,
+                      runSpacing: 24,
+                      alignment: WrapAlignment.start,
+                      crossAxisAlignment: WrapCrossAlignment.start,
+                      children: List.generate(
+                        _categories.length,
+                        (index) {
+                          final category = _categories[index];
+                          final name = category['name'] as String;
+                          final iconStr = category['icon'] as String? ?? 'help-circle';
 
-                  return BouncingButton(
-                    onTap: () {
-                      Navigator.pop(context);
-                      context.push(
-                        '/create-report',
-                        extra: {
-                          'category': name,
-                          'isEmergency': false,
-                          'categoryId': category['id'].toString(),
+                          return SizedBox(
+                            width: itemWidth,
+                            child: BouncingButton(
+                              onTap: () {
+                                Navigator.pop(context);
+                                context.push(
+                                  '/create-report',
+                                  extra: {
+                                    'category': name,
+                                    'isEmergency': false,
+                                    'categoryId': category['id'].toString(),
+                                  },
+                                );
+                              },
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                                          blurRadius: 15,
+                                          offset: const Offset(0, 6),
+                                        ),
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.04),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          IconHelper.getIcon(iconStr),
+                                          color: AppTheme.primaryColor,
+                                          size: 26,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const Gap(8),
+                                  Text(
+                                    name,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF333333),
+                                      height: 1.1,
+                                      letterSpacing: -0.2,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
                         },
-                      );
-                    },
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            IconHelper.getIcon(iconStr),
-                            color: AppTheme.primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                        const Gap(6),
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ],

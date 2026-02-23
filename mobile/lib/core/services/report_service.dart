@@ -37,8 +37,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -61,8 +62,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -208,9 +210,8 @@ class ReportService {
       final response = await apiService.dio.get('/reports/categories');
 
       if (response.data['status'] == 'success') {
-        final allCats = List<Map<String, dynamic>>.from(response.data['data']);
-        // Optional: Filter 'Darurat' if needed globally, but better to filter in UI
-        return allCats;
+        final rawData = response.data['data'];
+        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
       }
       return [];
     } catch (e) {
@@ -279,7 +280,8 @@ class ReportService {
         queryParameters: {if (search != null) 'search': search},
       );
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
       }
       return [];
     } catch (e) {
@@ -405,7 +407,8 @@ class ReportService {
     try {
       final response = await apiService.dio.get('/supervisor/locations');
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
       }
       return null;
     } catch (e) {
@@ -422,8 +425,9 @@ class ReportService {
         queryParameters: {'limit': limit.toString()},
       );
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -487,8 +491,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -503,7 +508,8 @@ class ReportService {
     try {
       final response = await apiService.dio.get('/supervisor/technicians');
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
       }
       return [];
     } catch (e) {

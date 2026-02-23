@@ -50,7 +50,13 @@ class AuthService {
       };
     } catch (e) {
       debugPrint('LOGIN ERROR: $e');
-      return {'success': false, 'message': 'Error: $e'};
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+          return {'success': false, 'message': 'Koneksi timeout, pastikan server online.'};
+        }
+        return {'success': false, 'message': e.response?.data?['message'] ?? 'Email atau password salah.'};
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan sistem: $e'};
     }
   }
 
@@ -184,7 +190,13 @@ class AuthService {
       };
     } catch (e) {
       debugPrint('STAFF LOGIN ERROR: $e');
-      return {'success': false, 'message': 'Error: $e'};
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+          return {'success': false, 'message': 'Koneksi timeout, pastikan server online.'};
+        }
+        return {'success': false, 'message': e.response?.data?['message'] ?? 'Email atau password staf salah.'};
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan sistem: $e'};
     }
   }
 
