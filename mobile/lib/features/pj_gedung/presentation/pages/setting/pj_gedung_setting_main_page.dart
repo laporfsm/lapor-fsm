@@ -32,7 +32,8 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
   Future<void> _loadUserData() async {
     final user = await authService.getCurrentUser();
     if (user != null) {
-      if (mounted) setState(() => _profile = user);
+      if (!mounted) return;
+      setState(() => _profile = user);
 
       // Fetch historical stats
       try {
@@ -46,7 +47,8 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
         // If getPJStatistics returns these keys, great. If not, we might need adjustments.
         // Based on previous tool views, getPJStatistics exists.
 
-        if (mounted && statsData != null) {
+        if (!mounted) return;
+        if (statsData != null) {
           setState(() {
             _stats = {
               'total': statsData['totalReports'] ?? 0,
@@ -59,7 +61,8 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
         debugPrint('Error loading stats: $e');
       }
 
-      if (mounted) setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -107,15 +110,12 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
-        backgroundColor: AppTheme.pjGedungColor,
+        title: const Text('Setting'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        centerTitle: true,
         automaticallyImplyLeading: false,
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -132,7 +132,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withOpacity(0.1),
                       border: Border.all(
                         color: AppTheme.pjGedungColor,
                         width: 3,
@@ -140,19 +140,23 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                     ),
                     child: const Icon(
                       LucideIcons.user,
-                      size: 48,
+                      size: 50,
                       color: AppTheme.pjGedungColor,
                     ),
                   ),
                   const Gap(16),
                   Text(
-                    _profile!['name'] ?? "Unknown",
+                    _profile!['name'] ?? "Nama Tidak Tersedia",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const Gap(4),
+                  Text(
+                    _profile!['nimNip'] ?? "-",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  ),
                   const Gap(8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -160,7 +164,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
+                      color: AppTheme.pjGedungColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(
@@ -192,7 +196,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: StatsSectionCard(
-                title: "Statistik Gedung",
+                title: "Statistik Lokasi",
                 child: Row(
                   children: [
                     Expanded(
@@ -306,7 +310,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                 children: [
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Pengaturan",
+                    label: "Preferensi & Notifikasi",
                     onTap: () => context.push('/pj-gedung/settings'),
                     color: AppTheme.pjGedungColor,
                   ),

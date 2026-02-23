@@ -248,7 +248,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     if (_selectedBuilding == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih lokasi gedung terlebih dahulu!')),
+        const SnackBar(content: Text('Pilih Lokasi terlebih dahulu!')),
       );
       return;
     }
@@ -340,8 +340,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
         title: Text(widget.isEmergency ? "Lapor Darurat" : "Buat Laporan"),
         backgroundColor: widget.isEmergency
             ? AppTheme.emergencyColor
-            : Colors.white,
-        foregroundColor: widget.isEmergency ? Colors.white : Colors.black,
+            : AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -536,7 +542,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     .map((b) => DropdownMenuItem(value: b, child: Text(b)))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedBuilding = value),
-                validator: (value) => value == null ? "Pilih gedung" : null,
+                validator: (value) => value == null ? "Pilih Lokasi" : null,
               ),
               const Gap(16),
 

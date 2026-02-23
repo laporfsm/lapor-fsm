@@ -1,0 +1,16 @@
+Analyzing mobile...                                             
+
+   info - The imported package 'http_parser' isn't a dependency of the importing package - lib\core\services\report_service.dart:4:8 - depend_on_referenced_packages
+   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:151:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:153:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:155:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:157:9 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:159:9 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pj_gedung\presentation\pages\setting\pj_gedung_setting_main_page.dart:135:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pj_gedung\presentation\pages\setting\pj_gedung_setting_main_page.dart:167:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\supervisor\presentation\pages\setting\supervisor_setting_main_page.dart:94:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\supervisor\presentation\pages\setting\supervisor_setting_main_page.dart:129:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\teknisi\presentation\pages\setting\teknisi_setting_main_page.dart:117:54 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\teknisi\presentation\pages\setting\teknisi_setting_main_page.dart:149:54 - deprecated_member_use
+
+12 issues found. (ran in 5.9s)

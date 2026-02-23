@@ -3,17 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile/features/notification/presentation/providers/notification_provider.dart';
-import 'package:mobile/features/notification/presentation/widgets/notification_bottom_sheet.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/utils/icon_helper.dart';
+import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
 class HomePage extends ConsumerStatefulWidget {
-  const HomePage({super.key});
+  final void Function(int)? onTabSwitch;
+
+  const HomePage({super.key, this.onTabSwitch});
 
   @override
   ConsumerState<HomePage> createState() => _HomePageState();
@@ -77,234 +78,249 @@ class _HomePageState extends ConsumerState<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: RefreshIndicator(
-        onRefresh: _fetchReports,
-        child: CustomScrollView(
-          slivers: [
-            // 1. Header Section
-            SliverToBoxAdapter(
-              child: Stack(
-                children: [
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppTheme.primaryColor,
-                          AppTheme.primaryColor.withValues(alpha: 0.8),
-                          const Color(0xFF1565C0),
-                        ],
+      backgroundColor: AppTheme.backgroundColor,
+      floatingActionButton: const NotificationFab(
+        backgroundColor: AppTheme.primaryColor,
+      ),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverAppBar(
+              expandedHeight: 140,
+              floating: false,
+              pinned: true,
+              backgroundColor: Colors.white,
+              automaticallyImplyLeading: false,
+              elevation: 0,
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Lapor FSM!',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
                       ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.1,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(
-                              'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2070&auto=format&fit=crop',
-                            ),
-                            fit: BoxFit.cover,
-                          ),
+                    )
+                  : null,
+              centerTitle: true,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // 1. Base Gradient Background
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppTheme.primaryColor,
+                            AppTheme.primaryColor.withValues(alpha: 0.8),
+                            const Color(0xFF1565C0),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 25,
-                    left: 20,
-                    right: 20,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    // 2. Decorative Slanted Patterns
+                    Positioned(
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
+                      right: -50,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 40,
+                      right: -30,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 400,
+                          height: 60,
+                          color: Colors.white.withAlpha(15),
+                        ),
+                      ),
+                    ),
+                    // 3. Content
+                    SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Center(
+                          child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Text(
-                                  "UNIVERSITAS DIPONEGORO",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 9,
+                                  color: Colors.white.withAlpha(51),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withAlpha(76),
+                                    width: 1.5,
                                   ),
                                 ),
-                              ),
-                              const Gap(8),
-                              const Text(
-                                "Lapor FSM!",
-                                style: TextStyle(
+                                child: const Icon(
+                                  LucideIcons.megaphone,
                                   color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
+                                  size: 26,
                                 ),
                               ),
-                              const Gap(4),
-                              const Text(
-                                "Sistem Pelaporan Fasilitas",
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                ),
+                              const Gap(14),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Lapor FSM!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Gap(2),
+                                  Text(
+                                    'Sistem Pelaporan Insiden & Fasilitas',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.85,
+                                      ),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const Gap(1),
+                                  Text(
+                                    'FSM Universitas Diponegoro',
+                                    style: TextStyle(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.6,
+                                      ),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
-                        // Notification Icon
-                        _buildNotificationIcon(),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
+          ];
+        },
+        body: RefreshIndicator(
+          onRefresh: _fetchData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                // Emergency Button
+                _buildEmergencyButton(),
+                const Gap(32),
 
-            // 2. Main Content
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Emergency Button
-                  _buildEmergencyButton(),
-                  const Gap(32),
+                // Menu Grid
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Laporan Non-Darurat",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        "Pilih kategori untuk melaporkan masalah fasilitas",
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const Gap(16),
+                      _buildMenuGrid(),
+                      const Gap(32),
 
-                  // Menu Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Laporan Non-Darurat",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                      // Public Feed Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Info Terkini",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const Text(
-                          "Pilih kategori untuk melaporkan masalah fasilitas",
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        const Gap(16),
-                        _buildMenuGrid(),
-                        const Gap(32),
-
-                        // Public Feed Section
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Info Terkini",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                          TextButton(
+                            onPressed: () {
+                              // Navigate to Feed tab (index 1)
+                              widget.onTabSwitch?.call(1);
+                            },
+                            child: const Text("Lihat Semua"),
+                          ),
+                        ],
+                      ),
+                      const Gap(12),
+                      _isLoading
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(32.0),
+                                child: CircularProgressIndicator(),
                               ),
-                            ),
-                            TextButton(
-                              onPressed: () => context.go('/feed'),
-                              child: const Text("Lihat Semua"),
-                            ),
-                          ],
-                        ),
-                        const Gap(12),
-                        _isLoading
-                            ? const Center(
-                                child: Padding(
-                                  padding: EdgeInsets.all(32.0),
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            : _buildPublicFeed(),
-                      ],
-                    ),
+                            )
+                          : _buildPublicFeed(),
+                    ],
                   ),
-                  const Gap(80),
-                ]),
-              ),
+                ),
+                const Gap(80),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildNotificationIcon() {
-    return Consumer(
-      builder: (context, ref, child) {
-        final unreadCount = ref.watch(notificationProvider).unreadCount;
-        return BouncingButton(
-          onTap: () {
-            showModalBottomSheet(
-              context: context,
-              backgroundColor: Colors.transparent,
-              isScrollControlled: true,
-              builder: (context) => const NotificationBottomSheet(),
-            );
-          },
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: const Icon(
-                  LucideIcons.bell,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              if (unreadCount > 0)
-                Positioned(
-                  top: -2,
-                  right: -2,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: Text(
-                      unreadCount > 9 ? '9+' : '$unreadCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -371,8 +387,9 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4).floorToDouble();
-        
+        final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4)
+            .floorToDouble();
+
         return Wrap(
           spacing: 12,
           runSpacing: 24,
@@ -470,7 +487,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                           borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.12,
+                              ),
                               blurRadius: 15,
                               offset: const Offset(0, 6),
                             ),
@@ -485,7 +504,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withValues(alpha: 0.08),
+                              color: AppTheme.primaryColor.withValues(
+                                alpha: 0.08,
+                              ),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -553,90 +574,95 @@ class _HomePageState extends ConsumerState<HomePage> {
                 padding: const EdgeInsets.all(20),
                 child: LayoutBuilder(
                   builder: (context, constraints) {
-                    final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4).floorToDouble();
+                    final itemWidth = ((constraints.maxWidth - (3 * 12)) / 4)
+                        .floorToDouble();
                     return Wrap(
                       spacing: 12,
                       runSpacing: 24,
                       alignment: WrapAlignment.start,
                       crossAxisAlignment: WrapCrossAlignment.start,
-                      children: List.generate(
-                        _categories.length,
-                        (index) {
-                          final category = _categories[index];
-                          final name = category['name'] as String;
-                          final iconStr = category['icon'] as String? ?? 'help-circle';
+                      children: List.generate(_categories.length, (index) {
+                        final category = _categories[index];
+                        final name = category['name'] as String;
+                        final iconStr =
+                            category['icon'] as String? ?? 'help-circle';
 
-                          return SizedBox(
-                            width: itemWidth,
-                            child: BouncingButton(
-                              onTap: () {
-                                Navigator.pop(context);
-                                context.push(
-                                  '/create-report',
-                                  extra: {
-                                    'category': name,
-                                    'isEmergency': false,
-                                    'categoryId': category['id'].toString(),
-                                  },
-                                );
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(18),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: AppTheme.primaryColor.withValues(alpha: 0.12),
-                                          blurRadius: 15,
-                                          offset: const Offset(0, 6),
+                        return SizedBox(
+                          width: itemWidth,
+                          child: BouncingButton(
+                            onTap: () {
+                              Navigator.pop(context);
+                              context.push(
+                                '/create-report',
+                                extra: {
+                                  'category': name,
+                                  'isEmergency': false,
+                                  'categoryId': category['id'].toString(),
+                                },
+                              );
+                            },
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(18),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppTheme.primaryColor.withValues(
+                                          alpha: 0.12,
                                         ),
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.04),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.04,
                                         ),
-                                      ],
-                                    ),
-                                    child: Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: AppTheme.primaryColor.withValues(alpha: 0.08),
-                                          shape: BoxShape.circle,
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryColor.withValues(
+                                          alpha: 0.08,
                                         ),
-                                        child: Icon(
-                                          IconHelper.getIcon(iconStr),
-                                          color: AppTheme.primaryColor,
-                                          size: 26,
-                                        ),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        IconHelper.getIcon(iconStr),
+                                        color: AppTheme.primaryColor,
+                                        size: 26,
                                       ),
                                     ),
                                   ),
-                                  const Gap(8),
-                                  Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF333333),
-                                      height: 1.1,
-                                      letterSpacing: -0.2,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                ),
+                                const Gap(8),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF333333),
+                                    height: 1.1,
+                                    letterSpacing: -0.2,
                                   ),
-                                ],
-                              ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      }),
                     );
                   },
                 ),

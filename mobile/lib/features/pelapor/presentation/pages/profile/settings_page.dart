@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/widgets/settings_widgets.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -13,80 +14,44 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _notificationsEnabled = true;
   bool _pushNotifications = true;
-  bool _soundEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
-        backgroundColor: Colors.white,
-        centerTitle: true,
+        title: const Text('Preferensi & Notifikasi'),
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
         elevation: 0,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const Gap(16),
-            SettingsSection(
+            ProfileSection(
               title: 'Notifikasi',
               children: [
                 SettingsSwitchTile(
                   icon: LucideIcons.bell,
-                  title: 'Aktifkan Notifikasi',
-                  subtitle: 'Terima pembaruan tentang laporan Anda',
-                  value: _notificationsEnabled,
-                  onChanged: (value) =>
-                      setState(() => _notificationsEnabled = value),
-                  activeColor: AppTheme.primaryColor,
-                ),
-                SettingsSwitchTile(
-                  icon: LucideIcons.smartphone,
                   title: 'Push Notification',
-                  subtitle: 'Notifikasi di perangkat',
+                  subtitle: 'Terima pembaruan tentang laporan Anda',
                   value: _pushNotifications,
-                  onChanged: _notificationsEnabled
-                      ? (value) => setState(() => _pushNotifications = value)
-                      : null,
-                  activeColor: AppTheme.primaryColor,
-                ),
-                SettingsSwitchTile(
-                  icon: LucideIcons.volume2,
-                  title: 'Suara Notifikasi',
-                  subtitle: 'Aktifkan suara saat notifikasi',
-                  value: _soundEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) => setState(() => _soundEnabled = value)
-                      : null,
+                  onChanged: (value) =>
+                      setState(() => _pushNotifications = value),
                   activeColor: AppTheme.primaryColor,
                 ),
               ],
             ),
             const Gap(24),
-            SettingsSection(
-              title: 'Tampilan',
-              children: [
-                SettingsTile(
-                  icon: LucideIcons.globe,
-                  title: 'Bahasa',
-                  subtitle: 'Indonesia',
-                  trailing: _buildLabel('Segera Hadir', Colors.orange),
-                  onTap: () =>
-                      _showSnackBar('Fitur multi-bahasa akan segera hadir!'),
-                ),
-                SettingsTile(
-                  icon: LucideIcons.palette,
-                  title: 'Tema',
-                  subtitle: 'Terang',
-                  onTap: () => _showSnackBar('Tema lainnya akan segera hadir!'),
-                ),
-              ],
-            ),
-            const Gap(24),
-            SettingsSection(
+            ProfileSection(
               title: 'Privasi & Keamanan',
               children: [
                 SettingsTile(
@@ -108,7 +73,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             const Gap(24),
-            SettingsSection(
+            ProfileSection(
               title: 'Tentang',
               children: [
                 const SettingsTile(
@@ -126,7 +91,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             const Gap(24),
-            SettingsSection(
+            ProfileSection(
               title: 'Zona Berbahaya',
               children: [
                 SettingsTile(
@@ -142,30 +107,6 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
-  }
-
-  Widget _buildLabel(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _showInfoDialog(String title, String content) {
