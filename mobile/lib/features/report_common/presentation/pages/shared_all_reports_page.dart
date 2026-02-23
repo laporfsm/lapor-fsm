@@ -377,9 +377,14 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
 
       if (mounted) {
         setState(() {
-          final newReports = reportsData
-              .map((json) => Report.fromJson(json))
-              .toList();
+          final newReports = reportsData.map((json) {
+            try {
+              return Report.fromJson(json);
+            } catch (e) {
+              debugPrint('Error parsing report item: $e');
+              return null;
+            }
+          }).whereType<Report>().toList();
           if (isRefresh) {
             _reports = newReports;
           } else {

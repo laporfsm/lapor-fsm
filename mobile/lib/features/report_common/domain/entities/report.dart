@@ -229,7 +229,7 @@ class Report {
       mediaUrls: json['mediaUrls'] != null
           ? List<String>.from(json['mediaUrls'] as List)
           : null,
-      status: ReportStatus.values.byName(json['status'] as String),
+      status: _parseStatus(json['status'] as String?),
       isEmergency: json['isEmergency'] as bool? ?? false,
       createdAt: DateTime.parse(json['createdAt'] as String),
       reporterId: json['reporterId'].toString(),
@@ -308,5 +308,14 @@ class Report {
       'logs': logs.map((e) => e.toJson()).toList(),
       'parentId': parentId,
     };
+  }
+}
+
+ReportStatus _parseStatus(String? statusStr) {
+  if (statusStr == null) return ReportStatus.pending;
+  try {
+    return ReportStatus.values.byName(statusStr);
+  } catch (_) {
+    return ReportStatus.pending;
   }
 }
