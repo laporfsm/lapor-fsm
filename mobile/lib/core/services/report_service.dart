@@ -37,8 +37,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -61,8 +62,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -422,8 +424,9 @@ class ReportService {
         queryParameters: {'limit': limit.toString()},
       );
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -487,8 +490,9 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
           'total': response.data['total'] ?? 0,
         };
       }
