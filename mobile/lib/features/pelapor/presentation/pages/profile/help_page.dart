@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/base_templates.dart';
 
 class HelpPage extends StatelessWidget {
@@ -7,14 +8,16 @@ class HelpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const BaseHelpPage(
+    return BaseHelpPage(
       title: 'Bantuan Pelapor',
-      topics: [
+      appBarColor: AppTheme.primaryColor,
+      appBarForegroundColor: Colors.white,
+      topics: const [
         HelpTopic(
           icon: LucideIcons.filePlus,
           title: 'Cara Membuat Laporan',
           description:
-              'Pilih kategori masalah, tentukan lokasi gedung, tambahkan foto, dan tulis deskripsi singkat. Tekan "Kirim" untuk memproses.',
+              'Pilih kategori masalah, tentukan Lokasi, tambahkan foto, dan tulis deskripsi singkat. Tekan "Kirim" untuk memproses.',
         ),
         HelpTopic(
           icon: LucideIcons.siren,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/report_common/presentation/pages/shared_all_reports_page.dart';
 
 /// Public Feed Page for Pelapor
@@ -11,10 +12,10 @@ class PublicFeedPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return SharedAllReportsPage(
       appBarTitle: 'Public Feed',
-      appBarColor: Colors.white,
-      appBarIconColor: Colors.black,
+      appBarColor: AppTheme.primaryColor,
+      appBarIconColor: Colors.white,
       appBarTitleStyle: const TextStyle(
-        color: Colors.black,
+        color: Colors.white,
         fontWeight: FontWeight.bold,
         fontSize: 18,
       ),

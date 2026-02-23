@@ -32,19 +32,18 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
       final statsData = await reportService.getTechnicianDashboardStats(
         user['id'].toString(),
       );
-      if (mounted) {
-        setState(() {
-          _profile = user;
-          if (statsData != null) {
-            _stats = {
-              'menunggu': statsData['diproses'] ?? 0,
-              'ditangani': statsData['penanganan'] ?? 0,
-              'disetujui': statsData['approved'] ?? 0,
-            };
-          }
-          _isLoading = false;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _profile = user;
+        if (statsData != null) {
+          _stats = {
+            'menunggu': statsData['diproses'] ?? 0,
+            'ditangani': statsData['penanganan'] ?? 0,
+            'disetujui': statsData['approved'] ?? 0,
+          };
+        }
+        _isLoading = false;
+      });
     } else {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -93,8 +92,11 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
+        title: const Text('Setting'),
         backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -112,7 +114,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.secondaryColor.withOpacity(0.1),
                       border: Border.all(
                         color: AppTheme.secondaryColor,
                         width: 3,
@@ -120,17 +122,22 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                     ),
                     child: const Icon(
                       LucideIcons.wrench,
-                      size: 48,
+                      size: 50,
                       color: AppTheme.secondaryColor,
                     ),
                   ),
                   const Gap(16),
                   Text(
-                    _profile!['name'] ?? "Unknown",
+                    _profile!['name'] ?? "Nama Tidak Tersedia",
                     style: const TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    _profile!['nimNip'] ?? "-",
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
                   const Gap(8),
                   Container(
@@ -139,19 +146,19 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
+                      color: AppTheme.secondaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           LucideIcons.wrench,
                           size: 14,
                           color: AppTheme.secondaryColor,
                         ),
                         const Gap(4),
-                        Text(
+                        const Text(
                           "Teknisi",
                           style: TextStyle(
                             color: AppTheme.secondaryColor,
@@ -287,7 +294,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                 children: [
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Pengaturan",
+                    label: "Preferensi & Notifikasi",
                     onTap: () => context.push('/teknisi/settings'),
                     color: AppTheme.secondaryColor,
                   ),

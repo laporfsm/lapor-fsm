@@ -64,10 +64,11 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
+        title: const Text('Setting'),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.black87,
         elevation: 0,
+        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: _isLoading
@@ -90,7 +91,7 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppTheme.supervisorColor.withAlpha(25),
+                              color: AppTheme.supervisorColor.withOpacity(0.1),
                               border: Border.all(
                                 color: AppTheme.supervisorColor,
                                 width: 3,
@@ -98,7 +99,7 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                             ),
                             child: const Icon(
                               LucideIcons.shieldCheck,
-                              size: 48,
+                              size: 50,
                               color: AppTheme.supervisorColor,
                             ),
                           ),
@@ -110,6 +111,14 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const Gap(4),
+                          Text(
+                            _profile?['nimNip'] ?? "-",
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: 14,
+                            ),
+                          ),
                           const Gap(8),
                           Container(
                             padding: const EdgeInsets.symmetric(
@@ -117,7 +126,7 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.supervisorColor.withAlpha(25),
+                              color: AppTheme.supervisorColor.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Row(
@@ -281,7 +290,7 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                             children: [
                               ProfileMenuItem(
                                 icon: LucideIcons.settings,
-                                label: "Pengaturan",
+                                label: "Preferensi & Notifikasi",
                                 onTap: () =>
                                     context.push('/supervisor/settings'),
                                 color: AppTheme.supervisorColor,
