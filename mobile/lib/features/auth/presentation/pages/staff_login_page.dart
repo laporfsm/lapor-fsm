@@ -57,7 +57,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 30),
                     decoration: BoxDecoration(
-                      color: AppTheme.emergencyColor.withOpacity(0.05),
+                      color: AppTheme.emergencyColor.withValues(alpha: 0.05),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(24),
                       ),
@@ -65,7 +65,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppTheme.emergencyColor.withOpacity(0.1),
+                        color: AppTheme.emergencyColor.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -110,7 +110,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.primaryColor.withOpacity(0.3),
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),

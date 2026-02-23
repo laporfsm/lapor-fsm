@@ -11,7 +11,7 @@ import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/features/notification/presentation/widgets/notification_fab.dart';
 
-/// PJ Lokasi theme color
+/// PJ Gedung theme color
 const Color pjGedungColor = Color(0xFF059669); // Emerald green
 
 class PJGedungDashboardPage extends StatefulWidget {
@@ -241,7 +241,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                     ),
                                     Gap(2),
                                     Text(
-                                      'Verifikasi & Monitoring Lokasi A',
+                                      'Verifikasi & Monitoring Gedung',
                                       style: TextStyle(
                                         color: Colors.white70,
                                         fontSize: 13,
