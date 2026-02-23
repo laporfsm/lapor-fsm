@@ -128,7 +128,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
               iconTheme: const IconThemeData(color: Colors.white),
               title: innerBoxIsScrolled
                   ? const Text(
-                      'Dashboard Gedung',
+                      'Dashboard PJ Gedung',
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -232,7 +232,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Dashboard Gedung',
+                                      'Dashboard PJ Gedung',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 22,
