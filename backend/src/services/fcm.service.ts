@@ -22,10 +22,8 @@ try {
     if (serviceAccount) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
-            // Default bucket name format: project-id.appspot.com
-            storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
         });
-        console.log('🔥 Firebase Admin Initialized with Storage');
+        console.log('🚀 Firebase Admin Initialized for FCM');
     } else {
         console.warn('⚠️ No Firebase credentials found. FCM & Storage will not work.');
     }

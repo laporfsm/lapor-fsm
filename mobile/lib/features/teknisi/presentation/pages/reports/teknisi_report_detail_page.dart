@@ -85,6 +85,7 @@ class _TeknisiReportDetailPageState
   void _startTracking(String reportId, String staffId) {
     if (_trackingTimer != null && _trackingTimer!.isActive) return;
 
+    // 1. Initialize Tracking
     webSocketService.connect(reportId);
 
     // Send location immediately then every 10 seconds
@@ -99,11 +100,12 @@ class _TeknisiReportDetailPageState
   Future<void> _sendLocationUpdate(String reportId, String staffId) async {
     final position = await locationService.getCurrentPosition();
     if (position != null) {
-      webSocketService.sendLocation(
+      await webSocketService.sendLocation(
         latitude: position.latitude,
         longitude: position.longitude,
         role: 'teknisi',
-        senderName: 'Technician', // Ideally get name from user provider
+        senderName: 'Technician',
+        reportId: reportId,
       );
     }
   }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
@@ -43,7 +42,6 @@ class ReportDetailBase extends StatefulWidget {
 
 class _ReportDetailBaseState extends State<ReportDetailBase> {
   LatLng? _liveLatLng;
-  StreamSubscription? _wsSubscription;
   StreamSubscription? _sseSubscription;
   Timer? _locationBroadcastTimer;
   List<ReportLog> _logs = [];
@@ -58,7 +56,6 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
 
   @override
   void dispose() {
-    _wsSubscription?.cancel();
     _sseSubscription?.cancel();
     _locationBroadcastTimer?.cancel();
     sseService.disconnect();
@@ -71,23 +68,42 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     sseService.connect(widget.report.id);
 
     // Listen to SSE stream
-    _sseSubscription = sseService.logsStream.listen((logs) {
-      if (mounted && logs.isNotEmpty) {
-        // Check if the latest log indicates a status change
-        final latestLog = logs.first; // logs are ordered desc by timestamp
-        final currentStatus = widget.report.status.name;
-        final newStatus = latestLog.toStatus.name;
+    _sseSubscription = sseService.stream.listen((event) {
+      if (!mounted) return;
 
-        setState(() {
-          _logs = logs;
-        });
+      final type = event['type'];
 
-        // If status changed, trigger full report re-fetch
-        if (newStatus != currentStatus && widget.onReportChanged != null) {
-          debugPrint(
-            '[SSE] Status change detected: $currentStatus -> $newStatus, triggering refresh',
-          );
-          widget.onReportChanged!();
+      if (type == 'logs') {
+        final List<dynamic> logsJson = event['logs'] as List<dynamic>;
+        final logs = logsJson.map((l) => ReportLog.fromJson(l)).toList();
+
+        if (logs.isNotEmpty) {
+          final latestLog = logs.first;
+          final currentStatus = widget.report.status.name;
+          final newStatus = latestLog.toStatus.name;
+
+          setState(() {
+            _logs = logs;
+          });
+
+          if (newStatus != currentStatus && widget.onReportChanged != null) {
+            debugPrint(
+              '[SSE] Status change: $currentStatus -> $newStatus, refreshing',
+            );
+            widget.onReportChanged!();
+          }
+        }
+      } else if (type == 'tracking') {
+        try {
+          setState(() {
+            _liveLatLng = LatLng(
+              event['latitude'] as double,
+              event['longitude'] as double,
+            );
+          });
+          debugPrint('[SSE-TRACKING] Received update: $_liveLatLng');
+        } catch (e) {
+          debugPrint('[SSE-TRACKING] Error parsing: $e');
         }
       }
     });
@@ -101,33 +117,15 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
       return;
     }
 
-    // 1. Connect WS
+    // 1. Initialize Tracking
     webSocketService.connect(widget.report.id);
 
-    // 2. Listen for updates
-    _wsSubscription = webSocketService.stream?.listen((event) {
-      try {
-        final data = jsonDecode(event);
-        if (data['action'] == 'location_update') {
-          setState(() {
-            _liveLatLng = LatLng(
-              data['latitude'] as double,
-              data['longitude'] as double,
-            );
-          });
-          debugPrint('[TRACKING] Received update: $_liveLatLng');
-        }
-      } catch (e) {
-        debugPrint('[TRACKING] Error parsing WS message: $e');
-      }
-    });
-
-    // 3. If I am the reporter, broadcast my location
+    // 2. If I am the reporter, broadcast my location
     if (widget.viewerRole == UserRole.pelapor) {
       _startSelfBroadcasting();
     }
 
-    // 4. If I am the assigned technician and status is penanganan, broadcast my location
+    // 3. If I am the assigned technician and status is penanganan, broadcast my location
     if (widget.viewerRole == UserRole.teknisi &&
         widget.report.status == ReportStatus.penanganan) {
       _startTechnicianBroadcasting();
@@ -145,11 +143,12 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           final user = await authService.getCurrentUser();
           final name = user?['name'] ?? 'Pelapor';
 
-          webSocketService.sendLocation(
+          await webSocketService.sendLocation(
             latitude: position.latitude,
             longitude: position.longitude,
             role: 'pelapor',
             senderName: name,
+            reportId: widget.report.id,
           );
 
           // Update local UI immediately too
@@ -179,11 +178,12 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
 
           // Only broadcast if this technician is assigned to the report
           if (userId != null && widget.report.assignedTo == userId) {
-            webSocketService.sendLocation(
+            await webSocketService.sendLocation(
               latitude: position.latitude,
               longitude: position.longitude,
               role: 'teknisi',
               senderName: name,
+              reportId: widget.report.id,
             );
 
             debugPrint(

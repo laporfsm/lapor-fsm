@@ -3,7 +3,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 /// Log entry for report timeline transparency
 class ReportLog {
   final String id;
-  final ReportStatus fromStatus;
+  final ReportStatus? fromStatus;
   final ReportStatus toStatus;
   final ReportAction action;
   final String actorId;
@@ -15,7 +15,7 @@ class ReportLog {
 
   const ReportLog({
     required this.id,
-    required this.fromStatus,
+    this.fromStatus,
     required this.toStatus,
     required this.action,
     required this.actorId,
@@ -70,22 +70,45 @@ class ReportLog {
   factory ReportLog.fromJson(Map<String, dynamic> json) {
     return ReportLog(
       id: json['id'].toString(),
-      fromStatus: ReportStatus.values.byName(json['fromStatus'] as String),
-      toStatus: ReportStatus.values.byName(json['toStatus'] as String),
-      action: ReportAction.values.byName(json['action'] as String),
-      actorId: json['actorId'] as String,
+      fromStatus: json['fromStatus'] != null
+          ? _parseStatus(json['fromStatus'] as String?)
+          : null,
+      toStatus:
+          _parseStatus(json['toStatus'] as String?) ?? ReportStatus.pending,
+      action: _parseAction(json['action'] as String?),
+      actorId: json['actorId'].toString(),
       actorName: json['actorName'] as String,
       actorRole: json['actorRole'] as String,
       reason: json['reason'] as String?,
       mediaUrls: (json['mediaUrls'] as List<dynamic>?)?.cast<String>(),
-      timestamp: DateTime.parse(json['timestamp'] as String),
+      timestamp: json['timestamp'] != null
+          ? DateTime.parse(json['timestamp'] as String)
+          : DateTime.now(),
     );
+  }
+
+  static ReportStatus? _parseStatus(String? statusStr) {
+    if (statusStr == null) return null;
+    try {
+      return ReportStatus.values.byName(statusStr);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static ReportAction _parseAction(String? actionStr) {
+    if (actionStr == null) return ReportAction.created;
+    try {
+      return ReportAction.values.byName(actionStr);
+    } catch (_) {
+      return ReportAction.created;
+    }
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'fromStatus': fromStatus.name,
+      'fromStatus': fromStatus?.name,
       'toStatus': toStatus.name,
       'action': action.name,
       'actorId': actorId,

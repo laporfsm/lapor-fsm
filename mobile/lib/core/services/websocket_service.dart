@@ -1,58 +1,31 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
+/// Service for report tracking (Location sharing)
+/// Now uses HTTP POST for sending and SSE for receiving (handled in ReportDetailBase)
 class WebSocketService {
-  WebSocketChannel? _channel;
   bool _isConnected = false;
-
   bool get isConnected => _isConnected;
 
-  String get _wsBaseUrl {
-    final httpUrl = ApiService.baseUrl;
-    return httpUrl.replaceFirst('http', 'ws');
-  }
-
-  /// Connect to the tracking websocket for a specific report
+  /// Connect to the tracking service (Simulated for compatibility)
   void connect(String reportId) {
     if (_isConnected) return;
-
-    final token = ApiService.token;
-    final url =
-        '$_wsBaseUrl/ws/tracking/$reportId${token != null ? "?token=$token" : ""}';
-    debugPrint('[WS-SERVICE] Connecting to $url');
-
-    try {
-      _channel = WebSocketChannel.connect(Uri.parse(url));
-      _isConnected = true;
-    } catch (e) {
-      debugPrint('[WS-SERVICE] Connection error: $e');
-      _isConnected = false;
-    }
+    debugPrint('[TRACKING-SERVICE] Initialized for report $reportId');
+    _isConnected = true;
   }
 
-  Stream<dynamic>? _broadcastStream;
-
-  /// Stream of incoming tracking messages (broadcast)
-  Stream<dynamic>? get stream {
-    if (_broadcastStream == null && _channel != null) {
-      _broadcastStream = _channel!.stream.asBroadcastStream();
-    }
-    return _broadcastStream;
-  }
-
-  /// Send location update
-  void sendLocation({
+  /// Send location update via HTTP POST
+  Future<void> sendLocation({
     required double latitude,
     required double longitude,
     required String role,
     required String senderName,
-  }) {
-    if (!_isConnected || _channel == null) {
-      debugPrint('[WS-SERVICE] Cannot send: Not connected');
-      return;
-    }
+    required String reportId,
+  }) async {
+    final token = ApiService.token;
+    final url = Uri.parse('${ApiService.baseUrl}/tracking/$reportId');
 
     final message = jsonEncode({
       'latitude': latitude,
@@ -62,19 +35,27 @@ class WebSocketService {
     });
 
     try {
-      _channel!.sink.add(message);
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: message,
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint('[TRACKING-SERVICE] Error sending: ${response.body}');
+      }
     } catch (e) {
-      debugPrint('[WS-SERVICE] Error sending message: $e');
+      debugPrint('[TRACKING-SERVICE] Exception: $e');
     }
   }
 
-  /// Close connection
+  /// Close tracking
   void disconnect() {
-    _channel?.sink.close();
-    _channel = null;
-    _broadcastStream = null;
     _isConnected = false;
-    debugPrint('[WS-SERVICE] Disconnected');
+    debugPrint('[TRACKING-SERVICE] Stopped');
   }
 }
 

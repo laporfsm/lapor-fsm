@@ -25,12 +25,12 @@ const app = new Elysia({
     maxRequestBodySize: 1024 * 1024 * 50 // 50MB
   }
 })
-  .onError(({ code, error, set }) => {
+  .onError(({ code, error, set }: any) => {
     console.error(`[API ERROR] ${code}:`, error);
 
     if (code === 'VALIDATION') {
       set.status = 400;
-      return { status: 'error', message: 'Validasi input gagal', details: error.all };
+      return { status: 'error', message: 'Validasi input gagal', details: (error as any).all };
     }
 
     if (code === 'NOT_FOUND') {
@@ -41,13 +41,13 @@ const app = new Elysia({
     set.status = 500;
     return { status: 'error', message: 'Terjadi kesalahan sistem internal' };
   })
-  .onRequest(({ request }) => {
+  .onRequest(({ request }: any) => {
     console.log(`[REQUEST] ${request.method} ${request.url}`);
   })
   .use(cors({
     origin: true, // Allow all origins (for development)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control'],
     credentials: true,
   })) // Allow request from Mobile/Web
   .use(staticPlugin({ assets: 'uploads', prefix: '/uploads' })) // Serve uploaded files

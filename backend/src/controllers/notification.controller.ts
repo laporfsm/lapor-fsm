@@ -36,37 +36,53 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
         const { type, id } = params;
         const targetId = parseInt(id);
 
-        return new Stream(async (stream) => {
-            stream.send(JSON.stringify({ type: 'connected', targetId }));
+        return new Response(new ReadableStream({
+            start(controller) {
+                const encoder = new TextEncoder();
+                const send = (data: any) => {
+                    try {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+                    } catch (e) {
+                        // Controller might be closed
+                    }
+                };
 
-            const listener = (payload: any) => {
-                // Payload structure: { type: 'user'|'staff', id: number, data: NotificationData }
-                // Check if the notification is for this connected client
-                if (payload.type === type && payload.id === targetId) {
-                    stream.send(JSON.stringify({ 
-                        type: 'notification', 
-                        data: payload.data 
-                    }));
+                send({ type: 'connected', targetId });
+
+                const listener = (payload: any) => {
+                    // Payload structure: { type: 'user'|'staff', id: number, data: NotificationData }
+                    // Check if the notification is for this connected client
+                    if (payload.type === type && payload.id === targetId) {
+                        send({
+                            type: 'notification',
+                            data: payload.data
+                        });
+                    }
+                };
+
+                logEventEmitter.on(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+
+                // Keep-alive
+                const keepAlive = setInterval(() => {
+                    send({ type: 'ping' });
+                }, 30000);
+
+                // Store cleanup
+                (controller as any)._cleanup = () => {
+                    logEventEmitter.off(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+                    clearInterval(keepAlive);
+                };
+            },
+            cancel(controller) {
+                if ((controller as any)._cleanup) {
+                    (controller as any)._cleanup();
                 }
-            };
-
-            logEventEmitter.on(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
-
-            // Keep-alive
-            const keepAlive = setInterval(() => {
-                stream.send(JSON.stringify({ type: 'ping' }));
-            }, 30000);
-
-            try {
-                // Wait for client disconnect
-                // @ts-ignore
-                await stream.wait();
-            } catch (e) {
-                // Ignore disconnect
-            } finally {
-                // Cleanup
-                logEventEmitter.off(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
-                clearInterval(keepAlive);
+            }
+        }), {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
             }
         });
     })
@@ -96,7 +112,7 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
                 .from(notifications)
                 .where(whereClause)
                 .orderBy(desc(notifications.createdAt));
-            
+
             console.log(`[Notification] Found ${result.length} notifications`);
 
             // Use try-catch map to avoid crash on single item error
