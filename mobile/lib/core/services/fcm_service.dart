@@ -168,7 +168,9 @@ class FCMService {
             channelDescription:
                 'This channel is used for important notifications.',
             icon: android.smallIcon,
-            color: const Color(0xFF0055A5), // Primary Color
+            color: channelId == 'lapor_fsm_channel_emergency_v3'
+                ? const Color(0xFFFF0000)
+                : const Color(0xFF0055A5),
             sound: sound != null
                 ? RawResourceAndroidNotificationSound(sound)
                 : null,

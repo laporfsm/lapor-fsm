@@ -114,7 +114,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.secondaryColor.withOpacity(0.1),
+                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
                       border: Border.all(
                         color: AppTheme.secondaryColor,
                         width: 3,
@@ -146,7 +146,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.secondaryColor.withOpacity(0.1),
+                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(

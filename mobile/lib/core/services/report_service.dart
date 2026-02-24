@@ -39,7 +39,11 @@ class ReportService {
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
         return {
-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -64,7 +68,11 @@ class ReportService {
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
         return {
-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -147,16 +155,17 @@ class ReportService {
       final fileExtension = fileName.split('.').last.toLowerCase();
 
       String mimeType = 'image/jpeg';
-      if (fileExtension == 'png')
+      if (fileExtension == 'png') {
         mimeType = 'image/png';
-      else if (fileExtension == 'webp')
+      } else if (fileExtension == 'webp') {
         mimeType = 'image/webp';
-      else if (fileExtension == 'gif')
+      } else if (fileExtension == 'gif') {
         mimeType = 'image/gif';
-      else if (fileExtension == 'mp4')
+      } else if (fileExtension == 'mp4') {
         mimeType = 'video/mp4';
-      else if (fileExtension == 'mov' || fileExtension == 'quicktime')
+      } else if (fileExtension == 'mov' || fileExtension == 'quicktime') {
         mimeType = 'video/quicktime';
+      }
 
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(
@@ -211,7 +220,10 @@ class ReportService {
 
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {
@@ -281,7 +293,10 @@ class ReportService {
       );
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {
@@ -408,7 +423,10 @@ class ReportService {
       final response = await apiService.dio.get('/supervisor/locations');
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return null;
     } catch (e) {
@@ -427,7 +445,11 @@ class ReportService {
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
         return {
-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -493,7 +515,11 @@ class ReportService {
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
         return {
-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -509,7 +535,10 @@ class ReportService {
       final response = await apiService.dio.get('/supervisor/technicians');
       if (response.data['status'] == 'success') {
         final rawData = response.data['data'];
-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {

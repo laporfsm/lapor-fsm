@@ -694,6 +694,7 @@ class _SupervisorDashboardPageState
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,
+          isEmergency: r.isEmergency,
           handledBy: r.handledBy?.join(', '),
           showStatus: true,
           showTimer: false,
@@ -751,6 +752,7 @@ class _SupervisorDashboardPageState
           locationDetail: r.locationDetail,
           category: r.category,
           status: r.status,
+          isEmergency: r.isEmergency,
           elapsedTime: DateTime.now().difference(r.createdAt),
           showStatus: true,
           onTap: () => context.push(

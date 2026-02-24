@@ -132,7 +132,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                     height: 100,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: AppTheme.pjGedungColor.withOpacity(0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       border: Border.all(
                         color: AppTheme.pjGedungColor,
                         width: 3,
@@ -164,7 +164,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.pjGedungColor.withOpacity(0.1),
+                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Row(

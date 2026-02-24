@@ -158,6 +158,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                                   location: report.location,
                                   locationDetail: report.locationDetail,
                                   status: report.status,
+                                  isEmergency: report.isEmergency,
                                   elapsedTime: DateTime.now().difference(
                                     report.createdAt,
                                   ),
@@ -179,7 +180,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(

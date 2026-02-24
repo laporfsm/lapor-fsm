@@ -89,14 +89,14 @@ class _HomePageState extends ConsumerState<HomePage> {
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: Colors.white,
+              backgroundColor: AppTheme.primaryColor,
               automaticallyImplyLeading: false,
               elevation: 0,
               title: innerBoxIsScrolled
                   ? const Text(
                       'Lapor FSM!',
                       style: TextStyle(
-                        color: Colors.black,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
                       ),
@@ -281,7 +281,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       ),
                       const Gap(16),
                       _buildMenuGrid(),
-                      const Gap(32),
+                      const Gap(16),
 
                       // Public Feed Section
                       Row(
@@ -303,7 +303,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ),
                         ],
                       ),
-                      const Gap(12),
+                      const Gap(8),
                       _isLoading
                           ? const Center(
                               child: Padding(
@@ -693,10 +693,11 @@ class _HomePageState extends ConsumerState<HomePage> {
     }
 
     return ListView.separated(
+      padding: EdgeInsets.zero,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _recentReports.length,
-      separatorBuilder: (context, index) => const Gap(12),
+      separatorBuilder: (context, index) => const Gap(16),
       itemBuilder: (context, index) {
         final report = _recentReports[index];
         return UniversalReportCard(
@@ -706,6 +707,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           locationDetail: report.locationDetail,
           category: report.category,
           status: report.status,
+          isEmergency: report.isEmergency,
           reporterName: report.reporterName,
           elapsedTime: DateTime.now().difference(report.createdAt),
           showStatus: true,
