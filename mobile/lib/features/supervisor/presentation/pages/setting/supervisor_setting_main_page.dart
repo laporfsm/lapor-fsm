@@ -91,7 +91,9 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                             height: 100,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: AppTheme.supervisorColor.withOpacity(0.1),
+                              color: AppTheme.supervisorColor.withValues(
+                                alpha: 0.1,
+                              ),
                               border: Border.all(
                                 color: AppTheme.supervisorColor,
                                 width: 3,
@@ -126,7 +128,9 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: AppTheme.supervisorColor.withOpacity(0.1),
+                              color: AppTheme.supervisorColor.withValues(
+                                alpha: 0.1,
+                              ),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Row(

@@ -719,6 +719,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
             locationDetail: report.locationDetail,
             category: report.category,
             status: report.status,
+            isEmergency: report.isEmergency,
             elapsedTime: DateTime.now().difference(report.createdAt),
             showStatus: true,
             compact: true,

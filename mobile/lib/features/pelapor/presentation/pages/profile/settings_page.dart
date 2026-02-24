@@ -33,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           children: [
             const Gap(16),
