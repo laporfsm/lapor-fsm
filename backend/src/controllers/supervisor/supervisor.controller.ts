@@ -512,6 +512,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.reason,
             });
 
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
             // Notify User
             if (updated[0].userId) {
                 await NotificationService.notifyUser(updated[0].userId, 'Laporan Ditolak', `Maaf, laporan Anda ditolak: ${body.reason}`, 'warning', reportId);

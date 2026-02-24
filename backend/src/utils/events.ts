@@ -4,7 +4,8 @@ export const logEventEmitter = new EventEmitter();
 
 // Event types
 export const LOG_EVENTS = {
-    NEW_LOG: 'new_log'
+    NEW_LOG: 'new_log',
+    TRACKING_UPDATE: 'tracking_update'
 };
 
 export const NOTIFICATION_EVENTS = {

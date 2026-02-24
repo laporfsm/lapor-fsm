@@ -4,6 +4,7 @@ import { reports, reportLogs, staff, users, categories } from '../../db/schema';
 import { eq, desc, and, or, sql, count, gte, lte, inArray } from 'drizzle-orm';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 import { jwt } from '@elysiajs/jwt';
 import PDFDocument from 'pdfkit';
 import { getStartOfWeek, getStartOfMonth } from '../../utils/date.utils';
@@ -243,6 +244,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             reason: body.notes || 'Laporan telah diverifikasi oleh PJ Lokasi',
         });
 
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
         // Notify User
         if (updated[0].userId) {
             await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Lokasi.`);
@@ -303,6 +306,8 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             toStatus: 'ditolak',
             reason: body.reason,
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         return { status: 'success', data: mapToMobileReport(updated[0]) };
     }, {

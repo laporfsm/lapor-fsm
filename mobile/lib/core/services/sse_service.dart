@@ -18,6 +18,9 @@ class SSEService {
   StreamSubscription? _reportSubscription;
   http.Client? _reportClient;
   bool _isReportManualDisconnect = false;
+  final _reportController = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get stream => _reportController.stream;
+
   final _logsController = StreamController<List<ReportLog>>.broadcast();
   Stream<List<ReportLog>> get logsStream => _logsController.stream;
 
@@ -25,8 +28,10 @@ class SSEService {
   StreamSubscription? _notificationSubscription;
   http.Client? _notificationClient;
   bool _isNotificationManualDisconnect = false;
-  final _notificationController = StreamController<Map<String, dynamic>>.broadcast();
-  Stream<Map<String, dynamic>> get notificationStream => _notificationController.stream;
+  final _notificationController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get notificationStream =>
+      _notificationController.stream;
 
   // Connection State
   final _connectionState = StreamController<String>.broadcast();
@@ -39,6 +44,9 @@ class SSEService {
       url: '$_baseUrl/reports/$reportId/logs/stream',
       clientField: 'report',
       onData: (data) {
+        // Push to global event stream
+        _reportController.add(data);
+
         if (data['type'] == 'logs' && data['logs'] != null) {
           try {
             final logsList = (data['logs'] as List)
@@ -99,60 +107,61 @@ class SSEService {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      client.send(request).then((response) {
-        if (response.statusCode == 200) {
-          debugPrint('[SSE-$clientField] Connected');
-          final stream = response.stream
-              .transform(utf8.decoder)
-              .transform(const LineSplitter());
+      client
+          .send(request)
+          .then((response) {
+            if (response.statusCode == 200) {
+              debugPrint('[SSE-$clientField] Connected');
+              final stream = response.stream
+                  .transform(utf8.decoder)
+                  .transform(const LineSplitter());
 
-          StreamSubscription? sub;
-          sub = stream.listen(
-            (line) {
-              if (line.startsWith('data: ')) {
-                try {
-                  final jsonStr = line.substring(6).trim();
-                  if (jsonStr.isNotEmpty) {
-                    final data = jsonDecode(jsonStr);
-                    if (data['type'] == 'ping') {
-                      // Heartbeat, ignore
-                    } else if (data['type'] == 'connected') {
-                      debugPrint('[SSE-$clientField] Handshake success');
-                    } else {
-                      onData(data);
+              StreamSubscription? sub;
+              sub = stream.listen(
+                (line) {
+                  if (line.startsWith('data: ')) {
+                    try {
+                      final jsonStr = line.substring(6).trim();
+                      if (jsonStr.isNotEmpty) {
+                        final data = jsonDecode(jsonStr);
+                        if (data['type'] == 'ping') {
+                          // Heartbeat, ignore
+                        } else if (data['type'] == 'connected') {
+                          debugPrint('[SSE-$clientField] Handshake success');
+                        } else {
+                          onData(data);
+                        }
+                      }
+                    } catch (e) {
+                      debugPrint('[SSE-$clientField] JSON Error: $e');
                     }
                   }
-                } catch (e) {
-                  debugPrint('[SSE-$clientField] JSON Error: $e');
-                }
+                },
+                onError: (e) {
+                  debugPrint('[SSE-$clientField] Error: $e');
+                  _handleReconnect(clientField, onReconnect);
+                },
+                onDone: () {
+                  debugPrint('[SSE-$clientField] Closed by server');
+                  _handleReconnect(clientField, onReconnect);
+                },
+                cancelOnError: true,
+              );
+
+              if (clientField == 'report') {
+                _reportSubscription = sub;
+              } else {
+                _notificationSubscription = sub;
               }
-            },
-            onError: (e) {
-              debugPrint('[SSE-$clientField] Error: $e');
+            } else {
+              debugPrint('[SSE-$clientField] Status ${response.statusCode}');
               _handleReconnect(clientField, onReconnect);
-            },
-            onDone: () {
-              debugPrint('[SSE-$clientField] Closed by server');
-              _handleReconnect(clientField, onReconnect);
-            },
-            cancelOnError: true,
-          );
-
-          if (clientField == 'report') {
-            _reportSubscription = sub;
-          } else {
-            _notificationSubscription = sub;
-          }
-
-        } else {
-          debugPrint('[SSE-$clientField] Status ${response.statusCode}');
-          _handleReconnect(clientField, onReconnect);
-        }
-      }).catchError((e) {
-        debugPrint('[SSE-$clientField] Connection error: $e');
-        _handleReconnect(clientField, onReconnect);
-      });
-
+            }
+          })
+          .catchError((e) {
+            debugPrint('[SSE-$clientField] Connection error: $e');
+            _handleReconnect(clientField, onReconnect);
+          });
     } catch (e) {
       debugPrint('[SSE-$clientField] Exception: $e');
       _handleReconnect(clientField, onReconnect);
@@ -160,18 +169,18 @@ class SSEService {
   }
 
   void _handleReconnect(String clientField, Function() onReconnect) {
-    bool isManual = clientField == 'report' 
-        ? _isReportManualDisconnect 
+    bool isManual = clientField == 'report'
+        ? _isReportManualDisconnect
         : _isNotificationManualDisconnect;
 
     if (isManual) return;
 
     debugPrint('[SSE-$clientField] Reconnecting in 5s...');
     Future.delayed(const Duration(seconds: 5), () {
-      bool stillManual = clientField == 'report' 
-        ? _isReportManualDisconnect 
-        : _isNotificationManualDisconnect;
-      
+      bool stillManual = clientField == 'report'
+          ? _isReportManualDisconnect
+          : _isNotificationManualDisconnect;
+
       if (!stillManual) {
         onReconnect();
       }
