@@ -43,8 +43,10 @@ class ReportDetailNotifier extends Notifier<ReportDetailState> {
     return ReportDetailState(isLoading: true);
   }
 
-  Future<void> fetchReport() async {
-    state = state.copyWith(isLoading: true, error: null);
+  Future<void> fetchReport({bool silent = false}) async {
+    if (!silent) {
+      state = state.copyWith(isLoading: true, error: null);
+    }
     try {
       final data = await reportService.getReportDetail(reportId);
       if (data != null) {
@@ -69,7 +71,7 @@ class ReportDetailNotifier extends Notifier<ReportDetailState> {
     state = state.copyWith(isProcessing: true);
     try {
       await reportService.acceptTask(state.report!.id, staffId);
-      await fetchReport();
+      await fetchReport(silent: true);
     } catch (e) {
       debugPrint('Error accepting task: $e');
       rethrow;
@@ -83,7 +85,7 @@ class ReportDetailNotifier extends Notifier<ReportDetailState> {
     state = state.copyWith(isProcessing: true);
     try {
       await reportService.pauseTask(state.report!.id, staffId, reason);
-      await fetchReport();
+      await fetchReport(silent: true);
     } catch (e) {
       debugPrint('Error pausing task: $e');
       rethrow;
@@ -97,7 +99,7 @@ class ReportDetailNotifier extends Notifier<ReportDetailState> {
     state = state.copyWith(isProcessing: true);
     try {
       await reportService.resumeTask(state.report!.id, staffId);
-      await fetchReport();
+      await fetchReport(silent: true);
     } catch (e) {
       debugPrint('Error resuming task: $e');
       rethrow;

@@ -36,12 +36,14 @@ class _ReportDetailWrapperState extends State<ReportDetailWrapper> {
     _loadReport();
   }
 
-  Future<void> _loadReport() async {
+  Future<void> _loadReport({bool silent = false}) async {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    if (!silent) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
       final data = await reportService.getReportDetail(widget.reportId);
@@ -84,7 +86,7 @@ class _ReportDetailWrapperState extends State<ReportDetailWrapper> {
               Text(_errorMessage ?? 'Laporan tidak ditemukan'),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _loadReport,
+                onPressed: () => _loadReport(),
                 child: const Text('Coba Lagi'),
               ),
             ],
@@ -97,8 +99,11 @@ class _ReportDetailWrapperState extends State<ReportDetailWrapper> {
       report: _report!,
       viewerRole: widget.viewerRole,
       appBarColor: widget.appBarColor,
-      actionButtons: widget.actionButtonsBuilder?.call(_report!, _loadReport),
-      onReportChanged: _loadReport,
+      actionButtons: widget.actionButtonsBuilder?.call(
+        _report!,
+        () => _loadReport(silent: true),
+      ),
+      onReportChanged: () => _loadReport(silent: true),
     );
   }
 }

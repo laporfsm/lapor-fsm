@@ -576,16 +576,33 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         ),
                         const Gap(12),
 
-                        // Map Preview
+                        // Map Preview - Interactive
+                        const Text(
+                          "Lokasi *",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const Gap(4),
+                        Text(
+                          'Geser peta untuk menyesuaikan lokasi',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Gap(8),
                         if (_latitude != null &&
                             _longitude != null &&
                             !_isFetchingLocation)
                           Container(
-                            height: 180,
+                            height: 200,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green, width: 2),
+                              border: Border.all(
+                                color: AppTheme
+                                    .emergencyColor, // Use emergency color
+                                width: 2,
+                              ),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(10),
@@ -619,47 +636,12 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                       ),
                                     ],
                                   ),
-                                  // Center marker (fixed)
+                                  // Center marker (fixed position)
                                   const Center(
                                     child: Icon(
                                       Icons.location_pin,
                                       color: Colors.red,
                                       size: 40,
-                                    ),
-                                  ),
-                                  // Drag hint
-                                  Positioned(
-                                    top: 8,
-                                    left: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            LucideIcons.move,
-                                            color: Colors.white,
-                                            size: 12,
-                                          ),
-                                          Gap(4),
-                                          Text(
-                                            'Geser peta',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
                                     ),
                                   ),
                                   // Location info overlay
@@ -730,25 +712,75 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                       ),
                                     ),
                                   ),
+                                  // Drag hint overlay
+                                  Positioned(
+                                    top: 8,
+                                    left: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.6,
+                                        ),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            LucideIcons.move,
+                                            color: Colors.white,
+                                            size: 12,
+                                          ),
+                                          Gap(4),
+                                          Text(
+                                            'Geser peta',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                           )
-                        else if (_isFetchingLocation)
+                        else
                           Container(
                             height: 150,
                             width: double.infinity,
                             decoration: BoxDecoration(
                               color: Colors.grey.shade100,
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
-                            child: const Center(
+                            child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  CircularProgressIndicator(),
-                                  Gap(8),
-                                  Text('Mendeteksi lokasi...'),
+                                  if (_isFetchingLocation) ...[
+                                    const CircularProgressIndicator(),
+                                    const Gap(8),
+                                    const Text('Mendeteksi lokasi...'),
+                                  ] else ...[
+                                    const Icon(
+                                      LucideIcons.mapPin,
+                                      size: 32,
+                                      color: Colors.grey,
+                                    ),
+                                    const Gap(8),
+                                    const Text('Lokasi tidak tersedia'),
+                                    TextButton(
+                                      onPressed: _fetchCurrentLocation,
+                                      child: const Text('Coba lagi'),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

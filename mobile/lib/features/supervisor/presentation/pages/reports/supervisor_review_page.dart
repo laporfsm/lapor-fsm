@@ -32,7 +32,10 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     _loadReport();
   }
 
-  Future<void> _loadReport() async {
+  Future<void> _loadReport({bool silent = false}) async {
+    if (!silent) {
+      if (mounted) setState(() => _isLoading = true);
+    }
     try {
       final data = await reportService.getReportDetail(widget.reportId);
       if (data != null && mounted) {
@@ -63,7 +66,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       viewerRole: UserRole.supervisor,
       appBarColor: AppTheme.supervisorColor,
       actionButtons: _buildActionButtons(),
-      onReportChanged: _loadReport,
+      onReportChanged: () => _loadReport(silent: true),
     );
   }
 
@@ -257,7 +260,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         }
 
         if (!mounted) return;
-        await _loadReport();
+        await _loadReport(silent: true);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

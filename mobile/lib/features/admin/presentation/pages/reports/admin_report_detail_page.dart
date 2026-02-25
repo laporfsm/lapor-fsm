@@ -25,7 +25,10 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
     _fetchReport();
   }
 
-  Future<void> _fetchReport() async {
+  Future<void> _fetchReport({bool silent = false}) async {
+    if (!silent) {
+      if (mounted) setState(() => _isLoading = true);
+    }
     try {
       final data = await reportService.getReportDetail(widget.reportId);
       if (data != null && mounted) {
@@ -88,7 +91,7 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
                     content: Text('Laporan berhasil ditutup paksa'),
                   ),
                 );
-                _fetchReport(); // Refresh
+                _fetchReport(silent: true); // Refresh
               } else {
                 messenger.showSnackBar(
                   const SnackBar(content: Text('Gagal menutup laporan')),
@@ -129,7 +132,7 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
     return ReportDetailBase(
       report: _report!,
       viewerRole: UserRole.admin,
-      onReportChanged: _fetchReport,
+      onReportChanged: () => _fetchReport(silent: true),
       actionButtons: canForceClose
           ? [
               ElevatedButton(

@@ -51,7 +51,9 @@ class _TeknisiReportDetailPageState
     _logSubscription = sseService.logsStream.listen((logs) {
       // When new logs arrive, refresh the report detail to get latest state
       if (mounted) {
-        ref.read(reportDetailProvider(widget.reportId).notifier).fetchReport();
+        ref
+            .read(reportDetailProvider(widget.reportId).notifier)
+            .fetchReport(silent: true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Riwayat laporan diperbarui'),
@@ -142,7 +144,7 @@ class _TeknisiReportDetailPageState
           );
           ref
               .read(reportDetailProvider(widget.reportId).notifier)
-              .fetchReport();
+              .fetchReport(silent: true);
         }
       } else {
         throw Exception('Gagal memulai penanganan');
@@ -203,7 +205,7 @@ class _TeknisiReportDetailPageState
       viewerRole: UserRole.teknisi,
       onReportChanged: () => ref
           .read(reportDetailProvider(widget.reportId).notifier)
-          .fetchReport(),
+          .fetchReport(silent: true),
       actionButtons: _buildActionButtons(
         context,
         ref,
