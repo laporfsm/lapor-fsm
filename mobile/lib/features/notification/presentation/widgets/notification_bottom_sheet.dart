@@ -83,23 +83,29 @@ class NotificationBottomSheet extends ConsumerWidget {
                               .markAsRead(item.id);
 
                           if (item.reportId != null && context.mounted) {
-                            Navigator.pop(context); // Close bottom sheet
-
+                            // Fetch user info BEFORE popping to ensure context remains mounted during async call
                             final user = await authService.getCurrentUser();
                             final role = user?['role'];
 
                             if (!context.mounted) return;
 
+                            // Cache router before popping
+                            final router = GoRouter.of(context);
+
+                            Navigator.pop(context); // Close bottom sheet
+
                             if (role == 'pelapor' || role == 'user') {
-                              context.push('/report-detail/${item.reportId}');
+                              router.push('/report-detail/${item.reportId}');
                             } else if (role == 'teknisi') {
-                              context.push('/teknisi/report/${item.reportId}');
+                              router.push('/teknisi/report/${item.reportId}');
                             } else if (role == 'supervisor') {
-                              context.push('/supervisor/review/${item.reportId}');
+                              router.push(
+                                '/supervisor/review/${item.reportId}',
+                              );
                             } else if (role == 'pj_gedung') {
-                              context.push('/pj-gedung/report/${item.reportId}');
+                              router.push('/pj-gedung/report/${item.reportId}');
                             } else if (role == 'admin') {
-                              context.push('/admin/reports/${item.reportId}');
+                              router.push('/admin/reports/${item.reportId}');
                             }
                           }
                         },
@@ -124,7 +130,9 @@ class NotificationBottomSheet extends ConsumerWidget {
         color: item.isRead ? Colors.white : Colors.blue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: item.isRead ? Colors.grey.shade200 : color.withValues(alpha: 0.2),
+          color: item.isRead
+              ? Colors.grey.shade200
+              : color.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
