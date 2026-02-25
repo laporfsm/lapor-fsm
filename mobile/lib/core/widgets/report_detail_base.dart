@@ -465,13 +465,9 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                       _buildMapPreview(
                         context,
                         latitude:
-                            _liveLatLng?.latitude ??
-                            widget.report.latitude ??
-                            -6.998576,
+                            _liveLatLng?.latitude ?? widget.report.latitude,
                         longitude:
-                            _liveLatLng?.longitude ??
-                            widget.report.longitude ??
-                            110.423188,
+                            _liveLatLng?.longitude ?? widget.report.longitude,
                       ),
                     ],
                   ),
@@ -871,9 +867,31 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
 
   Widget _buildMapPreview(
     BuildContext context, {
-    required double latitude,
-    required double longitude,
+    required double? latitude,
+    required double? longitude,
   }) {
+    if (latitude == null || longitude == null) {
+      return Container(
+        height: 150,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(LucideIcons.mapPin, size: 32, color: Colors.grey),
+              const Gap(8),
+              const Text('Lokasi tidak tersedia'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       height: 150,
       width: double.infinity,

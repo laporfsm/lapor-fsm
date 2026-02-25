@@ -248,11 +248,11 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
         // Notify User
         if (updated[0].userId) {
-            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Lokasi.`);
+            await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi oleh PJ Lokasi.`, 'info', reportId);
         }
 
         // Notify Supervisor
-        await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].location} telah diverifikasi oleh PJ Lokasi.`);
+        await NotificationService.notifyRole('supervisor', 'Laporan Terverifikasi', `Laporan baru di ${updated[0].location} telah diverifikasi oleh PJ Lokasi.`, 'info', reportId);
 
         return {
             status: 'success',
