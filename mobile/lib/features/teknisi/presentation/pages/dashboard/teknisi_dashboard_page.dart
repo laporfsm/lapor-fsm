@@ -443,7 +443,8 @@ class _TeknisiDashboardPageState extends ConsumerState<TeknisiDashboardPage> {
                 isEmergency: report.isEmergency,
                 elapsedTime: DateTime.now().difference(report.createdAt),
                 reporterName: report.reporterName,
-                handledBy: report.handledBy?.join(', '),
+                assignedTo: report.assignedTo,
+                handledBy: report.handledBy,
                 showStatus: true,
                 showTimer: true,
                 compact: false, // Set to false to show extra info
@@ -488,7 +489,8 @@ class _TeknisiDashboardPageState extends ConsumerState<TeknisiDashboardPage> {
                 isEmergency: report.isEmergency,
                 elapsedTime: DateTime.now().difference(report.createdAt),
                 reporterName: report.reporterName,
-                handledBy: report.handledBy?.join(', '),
+                assignedTo: report.assignedTo,
+                handledBy: report.handledBy,
                 showStatus: true,
                 showTimer: true,
                 compact: false, // Set to false to show extra info

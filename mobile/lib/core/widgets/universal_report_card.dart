@@ -18,7 +18,8 @@ class UniversalReportCard extends StatelessWidget {
   final Duration? elapsedTime;
   final Duration? handlingTime; // Waktu pengerjaan (for completed reports)
   final Duration? holdTime; // Waktu hold (optional)
-  final String? handledBy;
+  final List<String>? handledBy;
+  final List<String>? assignedTo;
   final String? reporterName; // New field
   final VoidCallback? onTap;
   final Widget? actionButton;
@@ -42,6 +43,7 @@ class UniversalReportCard extends StatelessWidget {
     this.handlingTime,
     this.holdTime,
     this.handledBy,
+    this.assignedTo,
     this.reporterName,
     this.onTap,
     this.actionButton,
@@ -393,26 +395,54 @@ class UniversalReportCard extends StatelessWidget {
                             ),
                           ),
 
-                        if (handledBy != null)
-                          Row(
-                            children: [
-                              Icon(
-                                LucideIcons.wrench,
-                                size: 13,
-                                color: AppTheme.secondaryColor,
-                              ),
-                              const Gap(4),
-                              Expanded(
-                                child: Text(
-                                  'Ditangani: $handledBy',
-                                  style: TextStyle(
-                                    color: AppTheme.secondaryColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
+                        if (assignedTo != null && assignedTo!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.users,
+                                  size: 13,
+                                  color: AppTheme.secondaryColor,
+                                ),
+                                const Gap(4),
+                                Expanded(
+                                  child: Text(
+                                    'Ditugaskan: ${assignedTo!.join(', ')}',
+                                    style: TextStyle(
+                                      color: AppTheme.secondaryColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+
+                        if (handledBy != null && handledBy!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  LucideIcons.wrench,
+                                  size: 13,
+                                  color: AppTheme.secondaryColor,
+                                ),
+                                const Gap(4),
+                                Expanded(
+                                  child: Text(
+                                    'Ditangani: ${handledBy!.join(', ')}',
+                                    style: TextStyle(
+                                      color: AppTheme.secondaryColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                       ],
 

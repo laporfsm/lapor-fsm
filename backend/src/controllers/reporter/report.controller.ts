@@ -127,10 +127,10 @@ export const reportController = new Elysia({ prefix: '/reports' })
         reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
         reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
-        handlerName: handlerStaff.name,
+        handlerName: reports.handlerNames,
         approvedBy: reports.approvedBy,
         verifiedBy: reports.verifiedBy,
-        supervisorName: verifierStaff.name,
+        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
         pausedAt: reports.pausedAt,
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
@@ -141,8 +141,6 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(users, eq(reports.userId, users.id))
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
-      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(whereClause)
       .orderBy(desc(reports.createdAt))
       .limit(limitNum)
@@ -208,10 +206,10 @@ export const reportController = new Elysia({ prefix: '/reports' })
         reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
         reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
-        handlerName: handlerStaff.name,
+        handlerName: reports.handlerNames,
         approvedBy: reports.approvedBy,
         verifiedBy: reports.verifiedBy,
-        supervisorName: verifierStaff.name,
+        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
         pausedAt: reports.pausedAt,
         totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
         holdReason: reports.holdReason,
@@ -222,8 +220,6 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .leftJoin(users, eq(reports.userId, users.id))
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
-      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(condition)
       .orderBy(desc(reports.createdAt));
 
@@ -271,18 +267,16 @@ export const reportController = new Elysia({ prefix: '/reports' })
         reporterEmail: sql<string>`COALESCE(${users.email}, ${reporterStaff.email})`,
         reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
         categoryName: categories.name,
-        handlerName: handlerStaff.name,
+        handlerName: reports.handlerNames,
         approvedBy: reports.approvedBy,
         verifiedBy: reports.verifiedBy,
-        supervisorName: verifierStaff.name,
+        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
         assignedTo: reports.assignedTo,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
       .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
       .leftJoin(categories, eq(reports.categoryId, categories.id))
-      .leftJoin(handlerStaff, eq(reports.assignedTo, handlerStaff.id))
-      .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
       .where(eq(reports.id, reportId))
       .limit(1);
 

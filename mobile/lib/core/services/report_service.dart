@@ -577,12 +577,12 @@ class ReportService {
   Future<Report> assignTechnician(
     String reportId,
     int supervisorId,
-    int technicianId,
+    List<int> technicianIds,
   ) async {
     try {
       final response = await apiService.dio.post(
         '/supervisor/reports/$reportId/assign',
-        data: {'supervisorId': supervisorId, 'technicianId': technicianId},
+        data: {'supervisorId': supervisorId, 'technicianIds': technicianIds},
       );
       if (response.data['status'] == 'success') {
         return Report.fromJson(response.data['data']);

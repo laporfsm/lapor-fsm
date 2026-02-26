@@ -599,8 +599,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: AppTheme
-                                    .emergencyColor, // Use emergency color
+                                color: const Color(0xFFDC2626),
                                 width: 2,
                               ),
                             ),

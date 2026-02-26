@@ -695,7 +695,8 @@ class _SupervisorDashboardPageState
           category: r.category,
           status: r.status,
           isEmergency: r.isEmergency,
-          handledBy: r.handledBy?.join(', '),
+          assignedTo: r.assignedTo,
+          handledBy: r.handledBy,
           showStatus: true,
           showTimer: false,
           onTap: () => context.push(

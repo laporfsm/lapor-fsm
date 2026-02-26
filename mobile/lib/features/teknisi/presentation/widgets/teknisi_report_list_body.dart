@@ -643,7 +643,8 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
                         status: report.status,
                         isEmergency: report.isEmergency,
                         reporterName: report.reporterName,
-                        handledBy: report.handledBy?.join(', '),
+                        assignedTo: report.assignedTo,
+                        handledBy: report.handledBy,
                         elapsedTime: DateTime.now().difference(
                           report.createdAt,
                         ),

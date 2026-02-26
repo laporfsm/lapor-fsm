@@ -180,7 +180,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
                 createdAt: reports.createdAt,
                 reporterName: users.name,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -188,7 +188,6 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(whereClause)
             .orderBy(desc(reports.createdAt));
 

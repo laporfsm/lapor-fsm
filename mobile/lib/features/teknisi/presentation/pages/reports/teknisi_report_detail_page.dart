@@ -54,13 +54,6 @@ class _TeknisiReportDetailPageState
         ref
             .read(reportDetailProvider(widget.reportId).notifier)
             .fetchReport(silent: true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Riwayat laporan diperbarui'),
-            backgroundColor: Colors.blue,
-            duration: Duration(seconds: 1),
-          ),
-        );
       }
     });
   }

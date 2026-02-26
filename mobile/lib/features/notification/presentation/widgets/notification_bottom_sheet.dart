@@ -107,6 +107,16 @@ class NotificationBottomSheet extends ConsumerWidget {
                             } else if (role == 'admin') {
                               router.push('/admin/reports/${item.reportId}');
                             }
+                          } else if (item.reportId == null && context.mounted) {
+                            Navigator.pop(context); // Close bottom sheet
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Detail laporan tidak tersedia untuk notifikasi ini.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
                           }
                         },
                         borderRadius: BorderRadius.circular(12),

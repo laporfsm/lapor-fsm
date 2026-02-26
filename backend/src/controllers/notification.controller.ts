@@ -35,6 +35,7 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
     .get('/stream/:type/:id', ({ params }) => {
         const { type, id } = params;
         const targetId = parseInt(id);
+        let cleanup: (() => void) | undefined;
 
         return new Response(new ReadableStream({
             start(controller) {
@@ -68,15 +69,13 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
                 }, 30000);
 
                 // Store cleanup
-                (controller as any)._cleanup = () => {
+                cleanup = () => {
                     logEventEmitter.off(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
                     clearInterval(keepAlive);
                 };
             },
-            cancel(controller) {
-                if ((controller as any)._cleanup) {
-                    (controller as any)._cleanup();
-                }
+            cancel() {
+                if (cleanup) cleanup();
             }
         }), {
             headers: {

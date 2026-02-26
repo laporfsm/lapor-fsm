@@ -71,7 +71,8 @@ console.log(`Configured PORT: ${process.env.PORT || 3000}`);
 
 app.listen({
   port: process.env.PORT || 3000,
-  hostname: '0.0.0.0'
+  hostname: '0.0.0.0',
+  idleTimeout: 60
 });
 
 console.log(

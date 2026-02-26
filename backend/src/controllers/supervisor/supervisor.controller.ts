@@ -163,16 +163,14 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reporterName: users.name,
                 reporterEmail: users.email,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
-                supervisorName: verifierStaff.name,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
-            .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
             .where(whereClause)
             .orderBy(desc(reports.createdAt))
             .limit(limitNum)
@@ -302,15 +300,25 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/assign', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const supervisorId = body.supervisorId;
+        const technicianIds = body.technicianIds;
 
         try {
             const foundSupervisor = await db.select().from(staff).where(eq(staff.id, supervisorId)).limit(1);
+            
+            // Get technician names for denormalization
+            const assignedStaff = await db
+                .select({ name: staff.name })
+                .from(staff)
+                .where(inArray(staff.id, technicianIds));
+            
+            const handlerNames = assignedStaff.map(s => s.name).join(', ');
 
             const updated = await db
                 .update(reports)
                 .set({
                     status: 'diproses',
-                    assignedTo: body.technicianId,
+                    assignedTo: technicianIds,
+                    handlerNames: handlerNames,
                     assignedAt: new Date(),
                     updatedAt: new Date(),
                 })
@@ -327,17 +335,19 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 action: 'handling',
                 fromStatus: 'terverifikasi',
                 toStatus: 'diproses',
-                reason: `Laporan ditugaskan ke teknisi`,
+                reason: `Laporan ditugaskan ke teknisi: ${handlerNames}`,
             });
 
             logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
-            // Notify Technician
-            await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+            // Notify all Technicians
+            for (const techId of technicianIds) {
+                await NotificationService.notifyStaff(techId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+            }
 
             // Notify User
             if (updated[0].userId) {
-                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi (${handlerNames}) sedang menangani laporan Anda.`, 'info', reportId);
             }
 
             return {
@@ -354,7 +364,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     }, {
         body: t.Object({
             supervisorId: t.Number(),
-            technicianId: t.Number(),
+            technicianIds: t.Array(t.Number()),
         })
     })
 
@@ -1059,7 +1069,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             const updated = await db.update(reports)
                 .set({
                     status: 'pending',
-                    assignedTo: null, // Clear assignment
+                    assignedTo: [], // Clear assignment
+                    handlerNames: null,
                     updatedAt: new Date(),
                 })
                 .where(eq(reports.id, reportId))
@@ -1171,7 +1182,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         })
             .from(staff)
             .leftJoin(reports, and(
-                eq(reports.assignedTo, staff.id),
+                sql`${staff.id} = ANY(${reports.assignedTo})`,
                 sql`${reports.status} IN ('selesai', 'approved')`
             ))
             .where(eq(staff.role, 'teknisi'))
