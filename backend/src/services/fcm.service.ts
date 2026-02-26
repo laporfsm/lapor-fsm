@@ -1,7 +1,7 @@
 import admin from 'firebase-admin';
 import { db } from '../db';
 import { users, staff } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { readFileSync } from 'fs';
 
 // Initialize Firebase Admin
@@ -84,9 +84,24 @@ export const FCMService = {
                 }
             });
             console.log(`✅ FCM sent to ${role} ${userId}: ${title}`);
-        } catch (error) {
+        } catch (error: any) {
             console.error('⚠️ FCM Send Error:', error);
-            // Optional: Handle invalid tokens here (delete from DB)
+
+            // Handle invalid tokens (delete from DB)
+            if (error.code === 'messaging/registration-token-not-registered') {
+                console.log(`🧹 Cleaning up invalid FCM token for ${role} ${userId}`);
+                const id = parseInt(userId);
+                try {
+                    if (role === 'user' || role === 'pelapor') {
+                        await db.update(users).set({ fcmToken: null }).where(eq(users.id, id));
+                    } else {
+                        await db.update(staff).set({ fcmToken: null }).where(eq(staff.id, id));
+                    }
+                    console.log(`✅ Cleaned up invalid FCM token for ${role} ${userId}`);
+                } catch (dbError) {
+                    console.error(`❌ Failed to clean up FCM token for ${role} ${id}:`, dbError);
+                }
+            }
         }
     },
 
@@ -122,13 +137,36 @@ export const FCMService = {
         }
 
         try {
-            await admin.messaging().sendEachForMulticast({
+            const response = await admin.messaging().sendEachForMulticast({
                 tokens,
                 notification: { title, body },
                 data,
                 android: androidConfig,
             });
-            console.log(`✅ FCM Broadcast to ${tokens.length} ${role}s`);
+
+            console.log(`✅ FCM Broadcast to ${tokens.length} ${role}s. Success: ${response.successCount}, Failure: ${response.failureCount}`);
+
+            if (response.failureCount > 0) {
+                const tokensToRemove: string[] = [];
+                response.responses.forEach((resp, idx) => {
+                    if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+                        tokensToRemove.push(tokens[idx]);
+                    }
+                });
+
+                if (tokensToRemove.length > 0) {
+                    console.log(`🧹 Cleaning up ${tokensToRemove.length} invalid FCM tokens from broadcast...`);
+                    try {
+                        await db.update(staff)
+                            .set({ fcmToken: null })
+                            .where(inArray(staff.fcmToken, tokensToRemove));
+
+                        console.log(`✅ Cleaned up ${tokensToRemove.length} invalid tokens from broadcast.`);
+                    } catch (dbError) {
+                        console.error('❌ Failed to clean up invalid tokens from broadcast:', dbError);
+                    }
+                }
+            }
         } catch (error) {
             console.error('⚠️ FCM Broadcast Error:', error);
         }

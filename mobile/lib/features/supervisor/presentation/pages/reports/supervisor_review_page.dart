@@ -211,7 +211,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     ReportStatus newStatus,
     ReportAction action, {
     String? notes,
-    String? technicianId,
+    List<String>? technicianIds,
   }) async {
     if (_report == null) return;
     setState(() => _isProcessing = true);
@@ -230,11 +230,11 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
             );
             break;
           case ReportAction.handling:
-            if (technicianId != null) {
+            if (technicianIds != null && technicianIds.isNotEmpty) {
               await reportService.assignTechnician(
                 _report!.id,
                 staffId,
-                int.parse(technicianId),
+                technicianIds.map((id) => int.parse(id)).toList(),
               );
             }
             break;
@@ -296,12 +296,12 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => _AssignTechnicianSheet(
-        onAssign: (technicianId) {
+        onAssign: (technicianIds) {
           Navigator.pop(context);
           _updateReportStatus(
             ReportStatus.diproses,
             ReportAction.handling,
-            technicianId: technicianId,
+            technicianIds: technicianIds,
           );
         },
       ),
@@ -355,7 +355,7 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
 }
 
 class _AssignTechnicianSheet extends StatefulWidget {
-  final Function(String) onAssign;
+  final Function(List<String>) onAssign;
 
   const _AssignTechnicianSheet({required this.onAssign});
 
@@ -364,7 +364,7 @@ class _AssignTechnicianSheet extends StatefulWidget {
 }
 
 class _AssignTechnicianSheetState extends State<_AssignTechnicianSheet> {
-  String? _selectedTechnicianId;
+  final List<String> _selectedTechnicianIds = [];
   List<dynamic> _technicians = [];
   bool _isLoading = true;
 
@@ -416,12 +416,16 @@ class _AssignTechnicianSheetState extends State<_AssignTechnicianSheet> {
                     itemBuilder: (context, index) {
                       final tech = _technicians[index];
                       final techId = tech['id'].toString();
-                      final isSelected = _selectedTechnicianId == techId;
+                      final isSelected = _selectedTechnicianIds.contains(techId);
 
                       return GestureDetector(
                         onTap: () {
                           setState(() {
-                            _selectedTechnicianId = techId;
+                            if (isSelected) {
+                              _selectedTechnicianIds.remove(techId);
+                            } else {
+                              _selectedTechnicianIds.add(techId);
+                            }
                           });
                         },
                         child: Container(
@@ -496,12 +500,15 @@ class _AssignTechnicianSheetState extends State<_AssignTechnicianSheet> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _selectedTechnicianId != null
-                  ? () => widget.onAssign(_selectedTechnicianId!)
+              onPressed: _selectedTechnicianIds.isNotEmpty
+                  ? () => widget.onAssign(_selectedTechnicianIds)
                   : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.supervisorColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               child: const Text('Simpan Penugasan'),
             ),

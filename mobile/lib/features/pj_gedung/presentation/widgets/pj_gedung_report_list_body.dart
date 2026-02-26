@@ -639,7 +639,8 @@ class _PjGedungReportListBodyState
                           isEmergency: report.isEmergency,
                           elapsedTime: report.elapsed,
                           reporterName: report.reporterName,
-                          handledBy: report.handledBy?.join(', '),
+                          assignedTo: report.assignedTo,
+                          handledBy: report.handledBy,
                           showStatus: true,
                           onTap: () {
                             widget.onReportTap(report.id, report.status);

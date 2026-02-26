@@ -93,12 +93,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               automaticallyImplyLeading: false,
               elevation: 0,
               title: innerBoxIsScrolled
-                  ? const Text(
-                      'Lapor FSM!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                  ? Image.asset(
+                      'assets/images/logo.png',
+                      height: 32,
+                      errorBuilder: (context, error, stackTrace) => const Text(
+                        'Lapor FSM!',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
                     )
                   : null,
@@ -121,7 +125,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         ),
                       ),
                     ),
-                    // 2. Decorative Slanted Patterns
+                    // 2. Decorative Patterns
                     Positioned(
                       top: -10,
                       left: -20,
@@ -129,20 +133,27 @@ class _HomePageState extends ConsumerState<HomePage> {
                         angle: -0.25,
                         child: Container(
                           width: 500,
-                          height: 80,
-                          color: Colors.white.withAlpha(25),
+                          height: 90,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withAlpha(25),
+                                Colors.white.withAlpha(0),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     Positioned(
-                      top: 70,
+                      top: 65,
                       left: -100,
                       child: Transform.rotate(
                         angle: -0.25,
                         child: Container(
                           width: 500,
-                          height: 45,
-                          color: Colors.white.withAlpha(18),
+                          height: 40,
+                          color: Colors.white.withAlpha(12),
                         ),
                       ),
                     ),
@@ -190,19 +201,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                           child: Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(12),
+                                width: 54,
+                                height: 54,
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(51),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: Colors.white.withAlpha(76),
-                                    width: 1.5,
+                                    color: Colors.white.withAlpha(40),
+                                    width: 1,
                                   ),
                                 ),
-                                child: const Icon(
-                                  LucideIcons.megaphone,
-                                  color: Colors.white,
-                                  size: 26,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.asset(
+                                    'assets/images/logo.png',
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Center(
+                                              child: Icon(
+                                                LucideIcons.megaphone,
+                                                color: Colors.white,
+                                                size: 26,
+                                              ),
+                                            ),
+                                  ),
                                 ),
                               ),
                               const Gap(14),
@@ -210,14 +232,6 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    'Lapor FSM!',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
                                   const Gap(2),
                                   Text(
                                     'Sistem Pelaporan Insiden & Fasilitas',
@@ -226,6 +240,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                         alpha: 0.85,
                                       ),
                                       fontSize: 13,
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                   const Gap(1),
@@ -233,7 +248,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     'FSM Universitas Diponegoro',
                                     style: TextStyle(
                                       color: Colors.white.withValues(
-                                        alpha: 0.6,
+                                        alpha: 0.65,
                                       ),
                                       fontSize: 11,
                                       fontWeight: FontWeight.w300,
@@ -338,12 +353,24 @@ class _HomePageState extends ConsumerState<HomePage> {
             color: const Color(0xFFDC2626),
             shape: BoxShape.circle,
             boxShadow: [
+              // Outer vibrant glow
               BoxShadow(
-                color: const Color(0xFFDC2626).withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: const Color(0xFFDC2626).withValues(alpha: 0.5),
+                blurRadius: 30,
+                spreadRadius: 2,
+                offset: const Offset(0, 8),
+              ),
+              // Inner secondary glow
+              BoxShadow(
+                color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+                blurRadius: 15,
+                spreadRadius: -4,
               ),
             ],
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.15),
+              width: 4,
+            ),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

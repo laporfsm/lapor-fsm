@@ -765,17 +765,6 @@ class _CreateReportPageState extends State<CreateReportPage> {
               ),
               const Gap(16),
 
-              // Additional Notes
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: "Catatan Tambahan (Opsional)",
-                  hintText: "Informasi tambahan jika ada...",
-                  alignLabelWithHint: true,
-                ),
-              ),
-
               const Gap(32),
               SizedBox(
                 width: double.infinity,
