@@ -94,7 +94,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               elevation: 0,
               title: innerBoxIsScrolled
                   ? Image.asset(
-                      'assets/images/logo.png',
+                      'assets/images/Lapor FSM! Logo Polos.png',
                       height: 32,
                       errorBuilder: (context, error, stackTrace) => const Text(
                         'Lapor FSM!',
@@ -204,16 +204,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 width: 54,
                                 height: 54,
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.white.withAlpha(40),
-                                    width: 1,
-                                  ),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Image.asset(
-                                    'assets/images/logo.png',
+                                    'assets/images/Lapor FSM! Logo Polos.png',
                                     fit: BoxFit.cover,
                                     errorBuilder:
                                         (context, error, stackTrace) =>
@@ -232,15 +228,24 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  const Text(
+                                    'Lapor FSM!',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
                                   const Gap(2),
                                   Text(
                                     'Sistem Pelaporan Insiden & Fasilitas',
                                     style: TextStyle(
                                       color: Colors.white.withValues(
-                                        alpha: 0.85,
+                                        alpha: 0.9,
                                       ),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   const Gap(1),
@@ -248,10 +253,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                                     'FSM Universitas Diponegoro',
                                     style: TextStyle(
                                       color: Colors.white.withValues(
-                                        alpha: 0.65,
+                                        alpha: 0.7,
                                       ),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w300,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
                                     ),
                                   ),
                                 ],
