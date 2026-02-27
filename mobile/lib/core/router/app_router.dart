@@ -1,9 +1,9 @@
 import 'package:go_router/go_router.dart';
 
-import 'package:mobile/features/pelapor/presentation/pages/auth/login_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/register_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/email_verification_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/complete_profile_page.dart';
+import 'package:mobile/features/auth/presentation/pages/login_page.dart';
+import 'package:mobile/features/auth/presentation/pages/register_page.dart';
+import 'package:mobile/features/auth/presentation/pages/email_verification_page.dart';
+import 'package:mobile/features/auth/presentation/pages/complete_profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/pelapor_home_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/create_report_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/report_success_page.dart';
