@@ -177,7 +177,8 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           final userId = user?['id']?.toString();
 
           // Only broadcast if this technician is assigned to the report
-          if (userId != null && widget.report.assignedTo == userId) {
+          if (userId != null &&
+              (widget.report.assignedTo?.contains(userId) ?? false)) {
             await webSocketService.sendLocation(
               latitude: position.latitude,
               longitude: position.longitude,

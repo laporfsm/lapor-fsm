@@ -103,6 +103,8 @@ flutter:
     - assets/images/logo.png
     - assets/images/Lapor FSM! Logo.png
     - assets/images/Lapor FSM! Logo Polos.png
+    - assets/images/Notifikasi Darurat.png
+    - assets/images/Notifikasi Non Darurat.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

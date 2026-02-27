@@ -94,7 +94,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               elevation: 0,
               title: innerBoxIsScrolled
                   ? Image.asset(
-                      'assets/images/Lapor FSM! Logo Polos.png',
+                      'assets/images/Lapor FSM! Logo.png',
                       height: 32,
                       errorBuilder: (context, error, stackTrace) => const Text(
                         'Lapor FSM!',
@@ -209,7 +209,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
                                   child: Image.asset(
-                                    'assets/images/Lapor FSM! Logo Polos.png',
+                                    'assets/images/Lapor FSM! Logo.png',
                                     fit: BoxFit.cover,
                                     errorBuilder:
                                         (context, error, stackTrace) =>
