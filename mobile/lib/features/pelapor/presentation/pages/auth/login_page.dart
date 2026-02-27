@@ -31,7 +31,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _showErrorModal(String message) {
     if (!mounted) return;
-    
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -78,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  
+
                   // Content
                   Padding(
                     padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         const Gap(30),
-                        
+
                         // Action Button
                         SizedBox(
                           width: double.infinity,
@@ -117,7 +117,9 @@ class _LoginPageState extends State<LoginPage> {
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    color: AppTheme.primaryColor.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -187,7 +189,9 @@ class _LoginPageState extends State<LoginPage> {
           context.go(redirectPath);
         }
       } else if (mounted) {
-        _showErrorModal(result['message'] ?? 'Email atau password salah. Silakan coba lagi.');
+        _showErrorModal(
+          result['message'] ?? 'Email atau password salah. Silakan coba lagi.',
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -213,25 +217,34 @@ class _LoginPageState extends State<LoginPage> {
               const Gap(40),
 
               // Logo & Title
-              Image.asset(
-                'assets/images/logo.png',
+              Container(
                 width: 100,
                 height: 100,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    'assets/images/Lapor FSM! Logo Polos.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
                       color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
+                      child: const Icon(
+                        LucideIcons.shieldCheck,
+                        size: 50,
+                        color: AppTheme.primaryColor,
+                      ),
                     ),
-                    child: const Icon(
-                      LucideIcons.shieldCheck,
-                      size: 50,
-                      color: AppTheme.primaryColor,
-                    ),
-                  );
-                },
+                  ),
+                ),
               ),
               const Gap(16),
               Text(

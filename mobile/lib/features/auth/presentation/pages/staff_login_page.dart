@@ -29,7 +29,7 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
 
   void _showErrorModal(String message) {
     if (!mounted) return;
-    
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -110,7 +110,9 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    color: AppTheme.primaryColor.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     blurRadius: 12,
                                     offset: const Offset(0, 4),
                                   ),
@@ -172,11 +174,15 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
 
         context.go(redirectPath);
       } else if (mounted) {
-        _showErrorModal(result['message'] ?? 'Email atau password salah. Silakan coba lagi.');
+        _showErrorModal(
+          result['message'] ?? 'Email atau password salah. Silakan coba lagi.',
+        );
       }
     } catch (e) {
       if (mounted) {
-        _showErrorModal('Gagal menghubungkan ke server. Silakan cek koneksi Anda.');
+        _showErrorModal(
+          'Gagal menghubungkan ke server. Silakan cek koneksi Anda.',
+        );
       }
     } finally {
       if (mounted) {
@@ -203,10 +209,37 @@ class _StaffLoginPageState extends State<StaffLoginPage> {
               Center(
                 child: Column(
                   children: [
-                    Image.asset(
-                      'assets/images/logo.png',
+                    Container(
                       width: 100,
                       height: 100,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/Lapor FSM! Logo Polos.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 50,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                        ),
+                      ),
                     ),
                     const Gap(24),
                     const Text(

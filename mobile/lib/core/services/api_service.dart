@@ -1,19 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS/web/desktop
   // For physical Android device, replace with your computer's local IP (e.g., 192.168.1.100)
   static String get baseUrl {
-    if (kIsWeb) {
-      // Dynamic detection for Web: use the current browser's host but port 4000
-      return '${Uri.base.scheme}://${Uri.base.host}:4000';
-    }
-    // Local Dev (Android Emulator use 10.0.2.2)
-    return 'http://10.137.129.104:4000';
-    // return 'http://10.0.2.2:3000';
-    // Production (Koyeb)
-    // return 'https://wittering-sosanna-lapor-fsm-c18a18f2.koyeb.app';
+    // Production / Testing server Tim 7 (UP2TI)
+    return 'http://10.137.58.124:20072';
   }
 
   late final Dio _dio;
