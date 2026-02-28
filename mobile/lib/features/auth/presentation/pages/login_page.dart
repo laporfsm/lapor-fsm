@@ -233,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Image.asset(
-                    'assets/images/Lapor FSM! Logo.png',
+                    'assets/images/Lapor FSM! Logo Polos.png',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: AppTheme.primaryColor.withValues(alpha: 0.1),
