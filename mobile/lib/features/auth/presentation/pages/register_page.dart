@@ -371,6 +371,66 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Branding Section
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/Lapor FSM! Logo Polos.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 40,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                        ),
+                      ),
+                    ),
+                    const Gap(16),
+                    const Text(
+                      'Lapor FSM!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryColor,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      'Sistem Pelaporan Fasilitas\nFSM Universitas Diponegoro',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(32),
+
               // Progress Indicator
               _buildProgressIndicator(),
               const Gap(20),
@@ -416,38 +476,54 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildStepCircle(int step, String label) {
     final isActive = _currentStep >= step;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: isActive ? AppTheme.primaryColor : Colors.grey.shade300,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: isActive && _currentStep > step
-                ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
-                : Text(
-                    '${step + 1}',
-                    style: TextStyle(
-                      color: isActive ? Colors.white : Colors.grey.shade600,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+    return GestureDetector(
+      onTap: () {
+        if (step == _currentStep) return;
+        if (step < _currentStep) {
+          // Selalu boleh kembali ke step sebelumnya
+          setState(() => _currentStep = step);
+        } else {
+          // Hanya boleh maju jika validasi step saat ini berhasil
+          if (_currentStep == 0) {
+            _validateEmail();
+          } else if (_currentStep == 1) {
+            _proceedToUserData();
+          }
+        }
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: isActive ? AppTheme.primaryColor : Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: isActive && _currentStep > step
+                  ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                  : Text(
+                      '${step + 1}',
+                      style: TextStyle(
+                        color: isActive ? Colors.white : Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+            ),
           ),
-        ),
-        const Gap(4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9,
-            color: isActive ? AppTheme.primaryColor : Colors.grey.shade500,
+          const Gap(4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: isActive ? AppTheme.primaryColor : Colors.grey.shade500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

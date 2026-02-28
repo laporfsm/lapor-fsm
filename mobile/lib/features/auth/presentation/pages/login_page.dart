@@ -246,7 +246,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
-              const Gap(16),
+              const Gap(24),
+              const Text(
+                'Lapor FSM!',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.primaryColor,
+                  letterSpacing: -1,
+                ),
+              ),
+              const Gap(8),
               Text(
                 'Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 14),

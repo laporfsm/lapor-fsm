@@ -67,7 +67,7 @@ class _TeknisiReportDetailPageState
     if (report == null) return;
 
     // Only track if I am the assigned technician and status is penanganan
-    final isAssignedToMe = report.assignedTo == currentStaffId;
+    final isAssignedToMe = report.assignedTo?.contains(currentStaffId) ?? false;
     final isHandling = report.status == ReportStatus.penanganan;
 
     if (isAssignedToMe && isHandling) {
@@ -216,7 +216,8 @@ class _TeknisiReportDetailPageState
     String? currentStaffId,
     bool isProcessing,
   ) {
-    if (currentStaffId == null || report.assignedTo != currentStaffId) {
+    if (currentStaffId == null ||
+        !(report.assignedTo?.contains(currentStaffId) ?? false)) {
       // If diproses (pool) and not assigned, or assigned to others
       // logic for accepting from pool usually handled by report status + pool logic
       // But assuming 'diproses' means allocated to this technician specifically or pool
