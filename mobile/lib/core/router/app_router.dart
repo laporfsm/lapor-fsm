@@ -4,6 +4,7 @@ import 'package:mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/features/auth/presentation/pages/register_page.dart';
 import 'package:mobile/features/auth/presentation/pages/email_verification_page.dart';
 import 'package:mobile/features/auth/presentation/pages/complete_profile_page.dart';
+import 'package:mobile/features/auth/presentation/pages/splash_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/pelapor_home_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/create_report_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/report_success_page.dart';
@@ -76,7 +77,7 @@ import 'package:mobile/features/auth/presentation/pages/reset_password_page.dart
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   redirect: (context, state) async {
     final bool loggedIn = await authService.isLoggedIn();
     final String location = state.uri.path;
@@ -89,12 +90,16 @@ final appRouter = GoRouter(
         location == '/reset-password' ||
         location == '/complete-profile';
 
+    final bool isSplashPath = location == '/splash';
+
     if (!loggedIn) {
-      // If not logged in and not on an auth path, go to login
-      return isAuthPath ? null : '/login';
+      // If not logged in and not on an auth path or splash, go to login
+      if (isAuthPath || isSplashPath) return null;
+      return '/login';
     }
 
     // If logged in and on an auth path, redirect to appropriate home
+    // (Excluding /splash to allow SplashPage to handle redirection after animation)
     if (isAuthPath) {
       final user = await authService.getCurrentUser();
       final role = user?['role'];
@@ -122,6 +127,7 @@ final appRouter = GoRouter(
   },
   routes: [
     // Auth - Unified Login & Register
+    GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(
       path: '/register',

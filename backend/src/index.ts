@@ -2,6 +2,10 @@ import { Elysia } from "elysia";
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
 import { mkdirSync } from 'fs';
+import { checkEnv } from './utils/env_check';
+
+// Perform environment check on startup
+checkEnv();
 
 // Ensure uploads directory exists before static plugin tries to access it
 mkdirSync('uploads', { recursive: true });
