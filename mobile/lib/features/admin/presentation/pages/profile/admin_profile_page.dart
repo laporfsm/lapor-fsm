@@ -46,119 +46,123 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header Profile
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              color: Colors.white,
               child: Column(
                 children: [
+                  // Header Profile
                   Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.adminColor.withValues(alpha: 0.1),
-                      border: Border.all(color: AppTheme.adminColor, width: 3),
-                    ),
-                    child: const Icon(
-                      LucideIcons.userCog,
-                      size: 48,
-                      color: AppTheme.adminColor,
-                    ),
-                  ),
-                  const Gap(16),
-                  Text(
-                    _user?['name'] ?? 'Admin FSM',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const Gap(4),
-                  Text(
-                    _user?['email'] ?? 'admin@laporfsm.com',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-                  const Gap(8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.adminColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    color: Colors.white,
+                    child: Column(
                       children: [
-                        Icon(
-                          LucideIcons.shieldAlert,
-                          size: 14,
-                          color: AppTheme.adminColor,
-                        ),
-                        Gap(4),
-                        Text(
-                          "Administrator",
-                          style: TextStyle(
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppTheme.adminColor.withValues(alpha: 0.1),
+                            border: Border.all(
+                              color: AppTheme.adminColor,
+                              width: 3,
+                            ),
+                          ),
+                          child: const Icon(
+                            LucideIcons.userCog,
+                            size: 48,
                             color: AppTheme.adminColor,
-                            fontSize: 12,
+                          ),
+                        ),
+                        const Gap(16),
+                        Text(
+                          _user?['name'] ?? 'Admin FSM',
+                          style: const TextStyle(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Gap(4),
+                        Text(
+                          _user?['email'] ?? 'admin@laporfsm.com',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const Gap(8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.adminColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                LucideIcons.shieldAlert,
+                                size: 14,
+                                color: AppTheme.adminColor,
+                              ),
+                              Gap(4),
+                              Text(
+                                "Administrator",
+                                style: TextStyle(
+                                  color: AppTheme.adminColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+                  const Gap(16),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ProfileSection(
+                      title: 'Informasi',
+                      children: [
+                        ProfileMenuItem(
+                          icon: LucideIcons.helpCircle,
+                          label: 'Bantuan',
+                          onTap: () => _showHelpSheet(context),
+                          color: AppTheme.adminColor,
+                        ),
+                        ProfileMenuItem(
+                          icon: LucideIcons.info,
+                          label: 'Tentang Aplikasi',
+                          onTap: () => _showAboutSheet(context),
+                          color: AppTheme.adminColor,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Gap(16),
+
+                  // Logout
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: ProfileSection(
+                      children: [
+                        ProfileMenuItem(
+                          icon: LucideIcons.logOut,
+                          label: 'Keluar',
+                          onTap: () => _showLogoutDialog(context),
+                          isDestructive: true,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Gap(100),
                 ],
               ),
             ),
-            const Gap(16),
-
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ProfileSection(
-                title: 'Informasi',
-                children: [
-                  ProfileMenuItem(
-                    icon: LucideIcons.helpCircle,
-                    label: 'Bantuan',
-                    onTap: () => _showHelpSheet(context),
-                    color: AppTheme.adminColor,
-                  ),
-                  ProfileMenuItem(
-                    icon: LucideIcons.info,
-                    label: 'Tentang Aplikasi',
-                    onTap: () => _showAboutSheet(context),
-                    color: AppTheme.adminColor,
-                  ),
-                ],
-              ),
-            ),
-            const Gap(16),
-
-            // Logout
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ProfileSection(
-                children: [
-                  ProfileMenuItem(
-                    icon: LucideIcons.logOut,
-                    label: 'Keluar',
-                    onTap: () => _showLogoutDialog(context),
-                    isDestructive: true,
-                  ),
-                ],
-              ),
-            ),
-
-            const Gap(100),
-          ],
-        ),
-      ),
     );
   }
-
 
   void _showHelpSheet(BuildContext context) {
     showModalBottomSheet(
@@ -371,7 +375,6 @@ class _AdminProfilePageState extends State<AdminProfilePage> {
     );
   }
 }
-
 
 class _HelpItem extends StatelessWidget {
   final IconData icon;

@@ -197,8 +197,15 @@ export const authController = new Elysia({ prefix: '/auth' })
         }
       };
     } catch (error: any) {
+      console.error(' [REGISTRATION ERROR] ', error);
       set.status = 500;
-      return { status: 'error', message: 'Internal Server Error' }; // Don't leak technical messages
+
+      // Return more specific message if available
+      const errorMessage = error?.message || 'Internal server error';
+      return {
+        status: 'error',
+        message: `Terjadi kesalahan pada server: ${errorMessage}. Pastikan konfigurasi SMTP dan Database sudah benar.`
+      };
     }
   }, {
     body: t.Object({
@@ -570,7 +577,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       id: foundStaff[0].id,
       role: foundStaff[0].role,
       email: foundStaff[0].email,
-      managedLocation: foundStaff[0].managedLocation,
+      managedLocation: foundStaff[0].managedLocation ?? '',
     });
 
     return {
