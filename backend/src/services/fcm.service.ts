@@ -8,15 +8,29 @@ import { readFileSync } from 'fs';
 try {
     let serviceAccount: any;
 
-    // 1. Try loading from Environment Variable (Best for Railway/Production)
+    // 1. Try loading from Environment Variable
     if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+        try {
+            if (process.env.FIREBASE_SERVICE_ACCOUNT.startsWith('{')) {
+                serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+            } else if (require('fs').existsSync(process.env.FIREBASE_SERVICE_ACCOUNT)) {
+                serviceAccount = JSON.parse(
+                    readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT, 'utf-8')
+                );
+            }
+        } catch (e) {
+            console.error('❌ Error parsing FIREBASE_SERVICE_ACCOUNT env:', e);
+        }
     }
-    // 2. Try loading from local file (Best for Local Dev)
-    else if (require('fs').existsSync('service-account.json')) {
-        serviceAccount = JSON.parse(
-            readFileSync('service-account.json', 'utf-8')
-        );
+    // 2. Try loading from default local file (Best for Local Dev)
+    if (!serviceAccount && require('fs').existsSync('service-account.json')) {
+        try {
+            serviceAccount = JSON.parse(
+                readFileSync('service-account.json', 'utf-8')
+            );
+        } catch (e) {
+            console.error('❌ Error parsing service-account.json:', e);
+        }
     }
 
     if (serviceAccount) {
