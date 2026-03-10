@@ -246,18 +246,29 @@ export const authController = new Elysia({ prefix: '/auth' })
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akun Sudah Aktif - Lapor FSM</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f3f4f6; }
-        .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-        h1 { color: #111827; }
-        p { color: #4b5563; margin: 1rem 0; }
-        .btn { display: inline-block; background: #3b82f6; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .icon { width: 80px; height: 80px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+        .icon svg { width: 40px; height: 40px; fill: white; }
+        h1 { color: #1f2937; font-size: 24px; margin-bottom: 16px; font-weight: 700; }
+        p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
+        .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; transition: all 0.3s; }
+        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .note { color: #9ca3af; font-size: 13px; margin-top: 16px; }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
     </style>
 </head>
 <body>
-    <div class="card">
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
         <h1>Akun Sudah Aktif</h1>
-        <p>Akun Anda sudah aktif sebelumnya. Silakan login untuk menggunakan aplikasi.</p>
-        <a href="${process.env.APP_URL || 'http://localhost:8080'}/#/login" class="btn">Login Sekarang</a>
+        <p>Akun Anda sudah aktif sebelumnya. Silakan buka aplikasi dan login.</p>
+        <a href="laporfsm://login" class="btn">Buka Aplikasi</a>
+        <p class="note">Jika tombol tidak bekerja, buka aplikasi Lapor FSM secara manual.</p>
+        <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
 </body>
 </html>`;
@@ -304,8 +315,7 @@ export const authController = new Elysia({ prefix: '/auth' })
       }
     }
 
-    const frontendUrl = process.env.APP_URL || 'http://localhost:8080';
-    const loginUrl = `${frontendUrl}/#/login`;
+    const loginUrl = 'laporfsm://login';
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -335,7 +345,8 @@ export const authController = new Elysia({ prefix: '/auth' })
         </div>
         <h1>Akun Anda Telah Aktif!</h1>
         <p>Selamat! Akun Lapor FSM Anda telah berhasil diaktivasi. Anda sekarang dapat login dan mulai menggunakan aplikasi.</p>
-        <a href="${loginUrl}" class="btn">Login Sekarang</a>
+        <a href="${loginUrl}" class="btn">Buka Aplikasi</a>
+        <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">Jika tombol tidak bekerja, buka aplikasi Lapor FSM secara manual.</p>
         <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
 </body>
