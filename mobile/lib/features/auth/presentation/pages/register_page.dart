@@ -255,12 +255,16 @@ class _RegisterPageState extends State<RegisterPage> {
             result['needsAdminApproval'] == true,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Registrasi gagal'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          final message = result['message'] ?? 'Registrasi gagal';
+          if (message.toString().toLowerCase().contains(
+            'email sudah terdaftar',
+          )) {
+            _showEmailAlreadyRegisteredDialog();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: Colors.red),
+            );
+          }
         }
       }
     } catch (e) {
@@ -333,6 +337,83 @@ class _RegisterPageState extends State<RegisterPage> {
                   ),
                 ),
                 child: const Text('Kembali ke Login'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEmailAlreadyRegisteredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.alertCircle,
+                size: 48,
+                color: Colors.orange,
+              ),
+            ),
+            const Gap(20),
+            const Text(
+              'Email Sudah Terdaftar',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(12),
+            Text(
+              'Email yang Anda masukkan sudah terdaftar. Silakan login atau gunakan email lain untuk mendaftar.',
+              style: TextStyle(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/login');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Login Sekarang'),
+              ),
+            ),
+            const Gap(12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() => _currentStep = 0);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: const BorderSide(color: AppTheme.primaryColor),
+                ),
+                child: const Text('Gunakan Email Lain'),
               ),
             ),
           ],
