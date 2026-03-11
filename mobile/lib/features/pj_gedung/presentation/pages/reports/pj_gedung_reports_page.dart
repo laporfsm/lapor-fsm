@@ -3,7 +3,7 @@ import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/pj_gedung/presentation/widgets/pj_gedung_report_list_body.dart';
 import 'package:go_router/go_router.dart';
 
-/// PJ Lokasi Reports Page - wrapper for SharedAllReportsPage
+/// PJ Gedung Reports Page - wrapper for SharedAllReportsPage
 class PJGedungReportsPage extends StatelessWidget {
   final Map<String, String> queryParams;
 

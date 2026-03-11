@@ -260,22 +260,22 @@ export const adminController = new Elysia({ prefix: '/admin' })
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const growthData = await db.select({
-            date: sql`DATE(${users.createdAt})`,
-            count: count()
-        })
-            .from(users)
-            .where(gte(users.createdAt, thirtyDaysAgo))
-            .groupBy(sql`DATE(${users.createdAt})`)
-            .orderBy(sql`DATE(${users.createdAt})`);
+            const growthData = await db.select({
+                date: sql`DATE(${users.createdAt})`,
+                count: count()
+            })
+                .from(users)
+                .where(gte(users.createdAt, thirtyDaysAgo))
+                .groupBy(sql`DATE(${users.createdAt})`)
+                .orderBy(sql`DATE(${users.createdAt})`);
 
-        // 2. User Distribution by Role
-        const roleDistributionStaff = await db.select({
-            role: staff.role,
-            count: count()
-        })
-            .from(staff)
-            .groupBy(staff.role);
+            // 2. User Distribution by Role
+            const roleDistributionStaff = await db.select({
+                role: staff.role,
+                count: count()
+            })
+                .from(staff)
+                .groupBy(staff.role);
 
             const totalPelapor = await db.select({ count: count() }).from(users);
 
@@ -289,34 +289,34 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 }
             });
 
-        // 3. Report Volume by Category (Top 5)
-        const reportVolume = await db.select({
-            categoryName: categories.name,
-            total: count(),
-            done: sql`COUNT(CASE WHEN ${reports.status} = 'selesai' THEN 1 END)`
-        })
-            .from(reports)
-            .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .groupBy(categories.name)
-            .orderBy(desc(count()))
-            .limit(5);
+            // 3. Report Volume by Category (Top 5)
+            const reportVolume = await db.select({
+                categoryName: categories.name,
+                total: count(),
+                done: sql`COUNT(CASE WHEN ${reports.status} = 'selesai' THEN 1 END)`
+            })
+                .from(reports)
+                .leftJoin(categories, eq(reports.categoryId, categories.id))
+                .groupBy(categories.name)
+                .orderBy(desc(count()))
+                .limit(5);
 
-        // 4. Activity Traffic (Last 7 Days) - Includes user registrations, verifications, and report creations
-        const trafficData = await db.select({
-            date: sql`DATE(${reportLogs.timestamp})`,
-            count: count()
-        })
-            .from(reportLogs)
-            .where(and(
-                gte(reportLogs.timestamp, sevenDaysAgo),
-                or(
-                    eq(reportLogs.action, 'register'),
-                    eq(reportLogs.action, 'verify_email'),
-                    eq(reportLogs.action, 'created')
-                )
-            ))
-            .groupBy(sql`DATE(${reportLogs.timestamp})`)
-            .orderBy(sql`DATE(${reportLogs.timestamp})`);
+            // 4. Activity Traffic (Last 7 Days) - Includes user registrations, verifications, and report creations
+            const trafficData = await db.select({
+                date: sql`DATE(${reportLogs.timestamp})`,
+                count: count()
+            })
+                .from(reportLogs)
+                .where(and(
+                    gte(reportLogs.timestamp, sevenDaysAgo),
+                    or(
+                        eq(reportLogs.action, 'register'),
+                        eq(reportLogs.action, 'verify_email'),
+                        eq(reportLogs.action, 'created')
+                    )
+                ))
+                .groupBy(sql`DATE(${reportLogs.timestamp})`)
+                .orderBy(sql`DATE(${reportLogs.timestamp})`);
 
             const trafficMap = trafficData.reduce((acc, curr) => {
                 if (curr.date) {
@@ -375,7 +375,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape', bufferPages: true });
             const chunks: Buffer[] = [];
-            
+
             // Promise wrapper to handle stream completion and errors
             const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
                 doc.on('data', (chunk) => chunks.push(chunk));
@@ -406,13 +406,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             doc.fontSize(14).fillColor(colors.text).text('DATA PENGGUNA (USER & STAFF)', 400, 30, { align: 'right', width: 410 });
             doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 50, { align: 'right', width: 410 });
-            
+
             doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
             // --- SUMMARY CARD ---
             const summaryY = 90;
             doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
-            
+
             const drawSummaryItem = (label: string, value: string, x: number) => {
                 doc.fillColor(colors.textLight).fontSize(9).text(safeText(label), x, summaryY + 10, { align: 'center', width: 150 });
                 doc.fillColor(colors.primary).font('Helvetica-Bold').fontSize(14).text(safeText(value), x, summaryY + 25, { align: 'center', width: 150 });
@@ -424,7 +424,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             // --- TABLE HELPER ---
             let currentY = 160;
-            
+
             const drawTableHeader = (headers: string[], colWidths: number[]) => {
                 const rowHeight = 25;
                 doc.rect(30, currentY, 782, rowHeight).fill(colors.primary);
@@ -461,10 +461,10 @@ export const adminController = new Elysia({ prefix: '/admin' })
             // --- SECTION 1: PELAPOR ---
             doc.font('Helvetica-Bold').fontSize(12).fillColor(colors.text).text('1. DAFTAR PELAPOR (MAHASISWA/UMUM)', 30, 160);
             currentY = 180;
-            
+
             const userCols = [30, 150, 180, 100, 150, 80, 92]; // Total 782
             const userHeaders = ['No', 'Nama', 'Email', 'NIM/NIP', 'Unit (Dept/Fakultas)', 'Status', 'Terdaftar'];
-            
+
             drawTableHeader(userHeaders, userCols);
 
             userList.forEach((u, i) => {
@@ -513,9 +513,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
             for (let i = 0; i < range.count; i++) {
                 doc.switchToPage(i);
                 doc.fontSize(8).fillColor(colors.textLight).text(
-                    `Halaman ${i + 1} dari ${range.count} - Lapor FSM Admin Export`, 
-                    30, 
-                    570, 
+                    `Halaman ${i + 1} dari ${range.count} - Lapor FSM Admin Export`,
+                    30,
+                    570,
                     { align: 'right', width: 782 }
                 );
                 doc.moveTo(30, 565).lineTo(812, 565).lineWidth(0.5).stroke(colors.border);
@@ -523,7 +523,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             doc.end();
             const buffer = await pdfBufferPromise;
-            
+
             set.headers['Content-Type'] = 'application/pdf';
             set.headers['Content-Disposition'] = 'attachment; filename=data_users_laporfsm.pdf';
             return buffer;
@@ -541,7 +541,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             const staffList = await db.select().from(staff).orderBy(desc(staff.createdAt));
 
             const workbook = new ExcelJS.Workbook();
-            
+
             // Sheet for Pelapor
             const sheet1 = workbook.addWorksheet('Pelapor');
             sheet1.columns = [
@@ -629,7 +629,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape', bufferPages: true });
             const chunks: Buffer[] = [];
-            
+
             // Promise wrapper to handle stream completion and errors
             const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
                 doc.on('data', (chunk) => chunks.push(chunk));
@@ -662,13 +662,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             doc.fontSize(14).fillColor(colors.text).text('LAPORAN KERUSAKAN FASILITAS', 400, 30, { align: 'right', width: 410 });
             doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 50, { align: 'right', width: 410 });
-            
+
             doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
             // --- SUMMARY STATISTICS ---
             const summaryY = 90;
             doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
-            
+
             const total = reportList.length;
             const done = reportList.filter(r => r.status === 'selesai').length;
             const process = reportList.filter(r => ['proses', 'tunggu-sparepart', 'dijadwalkan'].includes(r.status || '')).length;
@@ -721,11 +721,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 const drawCell = (text: string, colIndex: number, bold: boolean = false, color: string = colors.text) => {
                     if (bold) doc.font('Helvetica-Bold'); else doc.font('Helvetica');
                     doc.fillColor(color);
-                    doc.text(safeText(text), currentX + 5, currentY + 8, { 
-                        width: colWidths[colIndex] - 10, 
+                    doc.text(safeText(text), currentX + 5, currentY + 8, {
+                        width: colWidths[colIndex] - 10,
                         height: rowHeight - 16,
-                        lineBreak: false, 
-                        ellipsis: true 
+                        lineBreak: false,
+                        ellipsis: true
                     });
                     currentX += colWidths[colIndex];
                 };
@@ -747,9 +747,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
             for (let i = 0; i < range.count; i++) {
                 doc.switchToPage(i);
                 doc.fontSize(8).fillColor(colors.textLight).text(
-                    `Halaman ${i + 1} dari ${range.count} - Laporan Kerusakan Fasilitas`, 
-                    30, 
-                    570, 
+                    `Halaman ${i + 1} dari ${range.count} - Laporan Kerusakan Fasilitas`,
+                    30,
+                    570,
                     { align: 'right', width: 782 }
                 );
                 doc.moveTo(30, 565).lineTo(812, 565).lineWidth(0.5).stroke(colors.border);
@@ -863,7 +863,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             const doc = new PDFDocument({ margin: 30, size: 'A4', layout: 'landscape', bufferPages: true });
             const chunks: Buffer[] = [];
-            
+
             // Promise wrapper to handle stream completion and errors
             const pdfBufferPromise = new Promise<Buffer>((resolve, reject) => {
                 doc.on('data', (chunk) => chunks.push(chunk));
@@ -895,13 +895,13 @@ export const adminController = new Elysia({ prefix: '/admin' })
             doc.fontSize(14).fillColor(colors.text).text('LOG AKTIVITAS SISTEM', 400, 30, { align: 'right', width: 410 });
             doc.fontSize(9).fillColor(colors.textLight).text('Rekam Jejak Aktivitas User & Admin', 400, 50, { align: 'right', width: 410 });
             doc.fontSize(9).fillColor(colors.textLight).text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, 400, 62, { align: 'right', width: 410 });
-            
+
             doc.moveTo(30, 75).lineTo(812, 75).lineWidth(1).stroke(colors.primary);
 
             // --- SUMMARY STATISTICS ---
             const summaryY = 90;
             doc.roundedRect(30, summaryY, 782, 50, 5).fill(colors.rowOdd).stroke(colors.border);
-            
+
             const totalLogs = logs.length;
             const adminActions = logs.filter(l => l.actorRole === 'admin').length;
             const userActions = logs.filter(l => l.actorRole === 'user' || l.actorRole === 'pelapor').length;
@@ -953,11 +953,11 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 doc.fillColor(colors.text);
                 const drawCell = (text: string, colIndex: number, bold: boolean = false) => {
                     if (bold) doc.font('Helvetica-Bold'); else doc.font('Helvetica');
-                    doc.text(safeText(text), currentX + 5, currentY + 8, { 
-                        width: colWidths[colIndex] - 10, 
+                    doc.text(safeText(text), currentX + 5, currentY + 8, {
+                        width: colWidths[colIndex] - 10,
                         height: rowHeight - 16,
-                        lineBreak: false, 
-                        ellipsis: true 
+                        lineBreak: false,
+                        ellipsis: true
                     });
                     currentX += colWidths[colIndex];
                 };
@@ -965,7 +965,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 const actorStr = `${l.actorName || 'Unknown'} (${l.actorRole || 'unknown'})`;
                 const actionStr = l.action ? l.action.toUpperCase() : '-';
                 const detailStr = l.reason || (l.fromStatus && l.toStatus ? `${l.fromStatus} → ${l.toStatus}` : '-');
-                
+
                 drawCell(timeStr, 0);
                 drawCell(actorStr, 1, true);
                 drawCell(actionStr, 2);
@@ -978,9 +978,9 @@ export const adminController = new Elysia({ prefix: '/admin' })
             for (let i = 0; i < range.count; i++) {
                 doc.switchToPage(i);
                 doc.fontSize(8).fillColor(colors.textLight).text(
-                    `Halaman ${i + 1} dari ${range.count} - Log Aktivitas Sistem`, 
-                    30, 
-                    570, 
+                    `Halaman ${i + 1} dari ${range.count} - Log Aktivitas Sistem`,
+                    30,
+                    570,
                     { align: 'right', width: 782 }
                 );
                 doc.moveTo(30, 565).lineTo(812, 565).lineWidth(0.5).stroke(colors.border);
@@ -988,7 +988,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
             doc.end();
             const buffer = await pdfBufferPromise;
-            
+
             set.headers['Content-Type'] = 'application/pdf';
             set.headers['Content-Disposition'] = 'attachment; filename=log_aktivitas_sistem.pdf';
             return buffer;
@@ -1075,46 +1075,46 @@ export const adminController = new Elysia({ prefix: '/admin' })
 
     .post('/users/:id/verify', async ({ params }) => {
         const userId = parseInt(params.id);
-        
+
         // Get user details first
         const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
         if (user.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
-        
+
         const userData = user[0];
-        
+
         // Check if it's an external user (non-UNDIP)
         const isUndipEmail = (email: string) => {
             const lowerEmail = email.toLowerCase();
             return lowerEmail.endsWith('@undip.ac.id') ||
-                   lowerEmail.endsWith('@students.undip.ac.id') ||
-                   lowerEmail.endsWith('@live.undip.ac.id') ||
-                   lowerEmail.endsWith('@lecturer.undip.ac.id') ||
-                   lowerEmail.endsWith('@staff.undip.ac.id');
+                lowerEmail.endsWith('@students.undip.ac.id') ||
+                lowerEmail.endsWith('@live.undip.ac.id') ||
+                lowerEmail.endsWith('@lecturer.undip.ac.id') ||
+                lowerEmail.endsWith('@staff.undip.ac.id');
         };
-        
+
         const isExternal = !isUndipEmail(userData.email);
-        
+
         // Update user as verified
         const updated = await db.update(users).set({ isVerified: true }).where(eq(users.id, userId)).returning();
-        
+
         // For external users, generate activation token and send email
         if (isExternal) {
             const crypto = require('crypto');
             const activationToken = crypto.randomBytes(32).toString('hex');
             const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-            
+
             // Store token in database
             await db.update(users)
-                .set({ 
+                .set({
                     emailVerificationToken: activationToken,
                     emailVerificationExpiresAt: expiresAt
                 })
                 .where(eq(users.id, userId));
-            
+
             // Send activation email
             const apiUrl = process.env.API_URL || 'http://localhost:3000';
             const activationLink = `${apiUrl}/auth/activate?token=${activationToken}&email=${encodeURIComponent(userData.email)}`;
-            
+
             console.log(`[ADMIN VERIFY] Activation token for ${userData.email}: ${activationToken}`);
             try {
                 // Import EmailService
@@ -1127,16 +1127,16 @@ export const adminController = new Elysia({ prefix: '/admin' })
             // For UNDIP users, just send notification
             await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin.');
         }
-        
+
         await db.insert(reportLogs).values({
             action: 'verified', actorId: 'admin', actorName: 'Admin System', actorRole: 'admin',
             reason: `Admin memverifikasi user: ${updated[0].name}${isExternal ? ' (External - Activation email sent)' : ''}`,
         });
-        
-        return { 
-            status: 'success', 
-            message: isExternal ? 'User berhasil diverifikasi dan email aktivasi telah dikirim' : 'User berhasil diverifikasi', 
-            data: mapToMobileUser(updated[0]) 
+
+        return {
+            status: 'success',
+            message: isExternal ? 'User berhasil diverifikasi dan email aktivasi telah dikirim' : 'User berhasil diverifikasi',
+            data: mapToMobileUser(updated[0])
         };
     })
 
@@ -1170,7 +1170,7 @@ export const adminController = new Elysia({ prefix: '/admin' })
             actorId: 'admin', actorName: 'Admin System', actorRole: 'admin', reason: body.reason,
         });
         if (updatedReport[0].userId) {
-            await NotificationService.notifyUser(updatedReport[0].userId, 'Laporan Ditutup Admin', `Laporan Anda telah diselesaikan oleh Admin: ${body.reason}`);
+            await NotificationService.notifyUser(updatedReport[0].userId, 'Laporan Ditutup Admin', `Laporan Anda telah diselesaikan oleh Admin: ${body.reason}`, 'info', reportId);
         }
         return { status: 'success', message: 'Laporan berhasil ditutup paksa', data: mapToMobileReport(updatedReport[0]) };
     }, { body: t.Object({ reason: t.String() }) })

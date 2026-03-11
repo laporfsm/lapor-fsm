@@ -78,6 +78,7 @@ class NotificationData {
   static Color getIconColor(String type) {
     switch (type) {
       case 'emergency':
+      case 'darurat':
         return Colors.red;
       case 'success':
         return Colors.green;
@@ -91,6 +92,7 @@ class NotificationData {
   static IconData getIcon(String type) {
     switch (type) {
       case 'emergency':
+      case 'darurat':
         return LucideIcons.alertTriangle;
       case 'success':
         return LucideIcons.checkCircle2;
@@ -104,6 +106,7 @@ class NotificationData {
   static Color getBgColor(String type) {
     switch (type) {
       case 'emergency':
+      case 'darurat':
         return Colors.red.withValues(alpha: 0.1);
       case 'success':
         return Colors.green.withValues(alpha: 0.1);

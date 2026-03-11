@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -117,48 +118,7 @@ class MediaGalleryWidget extends StatelessWidget {
                       ),
                     ),
                   )
-                : Image.network(
-                    _getSanitizedUrl(mediaUrls[index]),
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey.shade100,
-                        child: const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      final sanitizedUrl = _getSanitizedUrl(mediaUrls[index]);
-                      debugPrint('Error loading image: $sanitizedUrl - $error');
-                      return Container(
-                        color: Colors.grey.shade200,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              LucideIcons.imageOff,
-                              color: Colors.grey.shade400,
-                              size: 24,
-                            ),
-                            const SizedBox(height: 4),
-                            Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Text(
-                                'Gagal muat',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 10,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                : _buildImageWidget(mediaUrls[index]),
             if (extraCount != null)
               Container(
                 color: Colors.black.withValues(alpha: 0.6),
@@ -177,6 +137,52 @@ class MediaGalleryWidget extends StatelessWidget {
               const SizedBox.shrink(), // Play icon is already in the placeholder
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(String url) {
+    if (url.startsWith('data:image')) {
+      try {
+        final base64Content = url.split(',').last;
+        return Image.memory(
+          base64Decode(base64Content),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
+        );
+      } catch (e) {
+        return _buildErrorImage();
+      }
+    }
+
+    return Image.network(
+      _getSanitizedUrl(url),
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return Container(
+          color: Colors.grey.shade100,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) => _buildErrorImage(),
+    );
+  }
+
+  Widget _buildErrorImage() {
+    return Container(
+      color: Colors.grey.shade200,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(LucideIcons.imageOff, color: Colors.grey.shade400, size: 24),
+          const Gap(4),
+          const Text(
+            'Gagal muat',
+            style: TextStyle(color: Colors.grey, fontSize: 10),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

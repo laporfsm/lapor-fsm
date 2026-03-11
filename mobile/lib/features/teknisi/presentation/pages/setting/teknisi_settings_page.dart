@@ -21,12 +21,19 @@ class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Pengaturan'),
-        backgroundColor: Colors.white,
+        title: const Text('Preferensi & Notifikasi'),
+        backgroundColor: AppTheme.teknisiColor,
+        foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
           onPressed: () => context.pop(),
         ),
       ),
@@ -51,20 +58,53 @@ class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
               ),
               const Gap(24),
               ProfileSection(
-                title: 'Aplikasi',
+                title: 'Privasi & Keamanan',
+                children: [
+                  SettingsTile(
+                    icon: LucideIcons.shield,
+                    title: 'Kebijakan Privasi',
+                    onTap: () => _showInfoDialog(
+                      'Kebijakan Privasi',
+                      'Data Anda dilindungi sesuai dengan kebijakan privasi Universitas Diponegoro. Informasi yang Anda berikan hanya digunakan untuk keperluan pelaporan fasilitas.',
+                    ),
+                  ),
+                  SettingsTile(
+                    icon: LucideIcons.fileText,
+                    title: 'Syarat & Ketentuan',
+                    onTap: () => _showInfoDialog(
+                      'Syarat & Ketentuan',
+                      'Dengan menggunakan aplikasi ini, Anda setuju untuk menggunakan layanan secara bertanggung jawab. Laporan palsu dapat dikenakan sanksi sesuai peraturan universitas.',
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(24),
+              ProfileSection(
+                title: 'Tentang',
+                children: [
+                  const SettingsTile(
+                    icon: LucideIcons.info,
+                    title: 'Versi Aplikasi',
+                    subtitle: '1.0.0 (Build 1)',
+                    trailing: SizedBox.shrink(),
+                  ),
+                  const SettingsTile(
+                    icon: LucideIcons.code,
+                    title: 'Pengembang',
+                    subtitle: 'Tim Lapor FSM - FSM Undip',
+                    trailing: SizedBox.shrink(),
+                  ),
+                ],
+              ),
+              const Gap(24),
+              ProfileSection(
+                title: 'Zona Berbahaya',
                 children: [
                   SettingsTile(
                     icon: LucideIcons.trash2,
-                    title: 'Hapus Cache Aplikasi',
-                    subtitle: 'Selesaikan masalah sinkronisasi data',
-                    onTap: () => _showSnackBar('Cache berhasil dibersihkan'),
+                    title: 'Hapus Akun',
                     iconColor: Colors.red,
-                  ),
-                  const SettingsTile(
-                    icon: LucideIcons.info,
-                    title: 'Tentang Aplikasi',
-                    subtitle: 'Versi 1.0.0',
-                    trailing: SizedBox.shrink(),
+                    onTap: () => _showDeleteAccountDialog(),
                   ),
                 ],
               ),
@@ -76,9 +116,52 @@ class _TeknisiSettingsPageState extends State<TeknisiSettingsPage> {
     );
   }
 
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+  void _showInfoDialog(String title, String content) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        content: Text(content),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Akun?'),
+        content: const Text(
+          'Tindakan ini akan menghapus semua data akun Anda secara permanen. Laporan yang sudah dibuat tidak akan dapat dikembalikan.',
+        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(context);
+              context.go('/login');
+            },
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 }

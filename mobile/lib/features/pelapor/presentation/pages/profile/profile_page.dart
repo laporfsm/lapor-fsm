@@ -3,8 +3,10 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/widgets/statistics_widgets.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -16,6 +18,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   Map<String, dynamic>? _currentUser;
   bool _isLoading = true;
+  Map<String, int> _stats = {'aktif': 0, 'selesai': 0, 'ditolak': 0};
 
   @override
   void initState() {
@@ -25,47 +28,99 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadUserData() async {
     final user = await authService.getCurrentUser();
-    if (mounted) {
-      setState(() {
-        _currentUser = user;
-        _isLoading = false;
-      });
+    if (user != null) {
+      final reportsResponse = await reportService.getMyReports(
+        user['id'].toString(),
+      );
+      if (!mounted) return;
+      final List<dynamic> reports = reportsResponse['data'] ?? [];
+
+      int aktifCount = 0;
+      int selesaiCount = 0;
+      int ditolakCount = 0;
+
+      for (var reportJson in reports) {
+        final statusStr = reportJson['status'] as String?;
+        if (statusStr == null) {
+          aktifCount++;
+          continue;
+        }
+
+        final statusLower = statusStr.toLowerCase();
+
+        // Match Logic in report_history_page.dart
+        if (statusLower == 'ditolak') {
+          ditolakCount++;
+        } else if (['selesai', 'approved', 'archived'].contains(statusLower)) {
+          selesaiCount++;
+        } else {
+          aktifCount++;
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+          _stats = {
+            'aktif': aktifCount,
+            'selesai': selesaiCount,
+            'ditolak': ditolakCount,
+          };
+          _isLoading = false;
+        });
+      }
+    } else {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (_currentUser == null) {
       return Scaffold(
         body: Center(
-          child: ElevatedButton(
-            onPressed: () => context.go('/login'),
-            child: const Text('Silakan Login'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Silakan Login Kembali'),
+              const Gap(16),
+              ElevatedButton(
+                onPressed: () => context.go('/login'),
+                child: const Text('Login'),
+              ),
+            ],
           ),
         ),
       );
     }
 
-    final isVerified = _currentUser!['isVerified'] == true;
+    // Removed isVerified logic as it's redundant for logged in users
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Profil Saya'),
+        title: const Text('Setting'),
         backgroundColor: Colors.white,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header Profile
+            // Header Profile (Clean Style)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
               color: Colors.white,
+              padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
                   // Avatar
@@ -82,7 +137,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     child: const Icon(
                       LucideIcons.user,
-                      size: 48,
+                      size: 50,
                       color: AppTheme.primaryColor,
                     ),
                   ),
@@ -93,45 +148,39 @@ class _ProfilePageState extends State<ProfilePage> {
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                   const Gap(4),
                   Text(
                     _currentUser!['nimNip'] ?? "-",
-                    style: const TextStyle(color: Colors.grey),
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                   ),
                   const Gap(8),
 
-                  // Status Badge
+                  // Role Badge
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: isVerified
-                          ? Colors.green.withValues(alpha: 0.1)
-                          : Colors.orange.withValues(alpha: 0.1),
+                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          isVerified
-                              ? LucideIcons.checkCircle
-                              : LucideIcons.clock,
+                        const Icon(
+                          LucideIcons.user,
                           size: 14,
-                          color: isVerified ? Colors.green : Colors.orange,
+                          color: AppTheme.primaryColor,
                         ),
                         const Gap(4),
                         Text(
-                          isVerified
-                              ? "Akun Terverifikasi"
-                              : "Menunggu Verifikasi",
+                          "Pelapor",
                           style: TextStyle(
-                            color: isVerified ? Colors.green : Colors.orange,
+                            color: AppTheme.primaryColor,
                             fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -142,47 +191,85 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const Gap(16),
 
-            // Info Section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+            // Statistics Section (Aligned with History Filters)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: StatsSectionCard(
+                title: "Statistik Laporan Saya",
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: StatsBigStatItem(
+                        icon: LucideIcons.clock,
+                        value: _stats['aktif'].toString(),
+                        label: "Aktif",
+                        color: Colors.orange,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                    ),
+                    Expanded(
+                      child: StatsBigStatItem(
+                        icon: LucideIcons.checkCircle2,
+                        value: _stats['selesai'].toString(),
+                        label: "Selesai",
+                        color: Colors.green,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                    ),
+                    Expanded(
+                      child: StatsBigStatItem(
+                        icon: LucideIcons.xCircle,
+                        value: _stats['ditolak'].toString(),
+                        label: "Ditolak",
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
+            ),
+            const Gap(16),
+
+            // Biodata & Kontak Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: "Biodata & Kontak",
                 children: [
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.mail,
                     label: "Email",
                     value: _currentUser!['email'] ?? "-",
                   ),
-                  const Divider(height: 24),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.hash,
                     label: "NIM/NIP",
                     value: _currentUser!['nimNip'] ?? "-",
                   ),
-                  const Divider(height: 24),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.building,
                     label: "Fakultas",
                     value: _currentUser!['faculty'] ?? "-",
                   ),
-                  const Divider(height: 24),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.school,
                     label: "Departemen / Prodi",
                     value: _currentUser!['department'] ?? "-",
                   ),
-                  const Divider(height: 24),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.phone,
                     label: "Nomor HP",
                     value: _currentUser!['phone'] ?? "-",
                   ),
-                  const Divider(height: 24),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.mapPin,
                     label: "Alamat",
                     value: _currentUser!['address'] ?? "-",
@@ -192,43 +279,18 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const Gap(16),
 
-            // Emergency Contact Section
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade100),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Kontak Darurat Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: "Kontak Darurat",
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        LucideIcons.alertCircle,
-                        color: Colors.red.shade700,
-                        size: 18,
-                      ),
-                      const Gap(8),
-                      Text(
-                        'Kontak Darurat',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red.shade700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(12),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.userCircle,
                     label: "Nama",
                     value: _currentUser!['emergencyName'] ?? "-",
                   ),
-                  const Divider(height: 20),
-                  _InfoRow(
+                  ProfileInfoRow(
                     icon: LucideIcons.phoneCall,
                     label: "Nomor HP",
                     value: _currentUser!['emergencyPhone'] ?? "-",
@@ -238,34 +300,54 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const Gap(16),
 
-            // Menu
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
+            // Akun Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: "Akun",
                 children: [
-                  _MenuItem(
-                    icon: LucideIcons.edit,
+                  ProfileMenuItem(
+                    icon: LucideIcons.userCog,
                     label: "Edit Profil",
                     onTap: () async {
                       await context.push('/edit-profile');
                       _loadUserData();
                     },
+                    color: AppTheme.primaryColor,
                   ),
-                  _MenuItem(
+                  ProfileMenuItem(
+                    icon: LucideIcons.lock,
+                    label: "Ubah Password",
+                    onTap: () {
+                      // Note: Usually uses forgot password flow or dedicated reset page
+                      context.push('/forgot-password');
+                    },
+                    color: AppTheme.primaryColor,
+                  ),
+                ],
+              ),
+            ),
+            const Gap(16),
+
+            // Pengaturan & Lainnya Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ProfileSection(
+                title: "Pengaturan & Lainnya",
+                children: [
+                  ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Pengaturan",
+                    label: "Preferensi & Notifikasi",
                     onTap: () => context.push('/settings'),
+                    color: AppTheme.primaryColor,
                   ),
-                  _MenuItem(
+                  ProfileMenuItem(
                     icon: LucideIcons.helpCircle,
                     label: "Bantuan",
                     onTap: () => context.push('/help'),
+                    color: AppTheme.primaryColor,
                   ),
-                  _MenuItem(
+                  ProfileMenuItem(
                     icon: LucideIcons.logOut,
                     label: "Keluar",
                     onTap: () => _showLogoutConfirmation(context),
@@ -303,88 +385,6 @@ class _ProfilePageState extends State<ProfilePage> {
             child: const Text('Keluar', style: TextStyle(color: Colors.red)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: Colors.grey),
-        const Gap(12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-              Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MenuItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final bool isDestructive;
-
-  const _MenuItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.isDestructive = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return BouncingButton(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isDestructive ? Colors.red : Colors.grey.shade700,
-              size: 24,
-            ),
-            const Gap(16),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: isDestructive ? Colors.red : Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const Icon(LucideIcons.chevronRight, size: 20, color: Colors.grey),
-          ],
-        ),
       ),
     );
   }

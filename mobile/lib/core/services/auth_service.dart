@@ -50,7 +50,21 @@ class AuthService {
       };
     } catch (e) {
       debugPrint('LOGIN ERROR: $e');
-      return {'success': false, 'message': 'Error: $e'};
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          return {
+            'success': false,
+            'message': 'Koneksi timeout, pastikan server online.',
+          };
+        }
+        return {
+          'success': false,
+          'message':
+              e.response?.data?['message'] ?? 'Email atau password salah.',
+        };
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan sistem: $e'};
     }
   }
 
@@ -101,7 +115,13 @@ class AuthService {
         'message': response.data['message'] ?? 'Registrasi gagal',
       };
     } catch (e) {
-      return {'success': false, 'message': e.toString()};
+      if (e is DioException && e.response != null) {
+        return {
+          'success': false,
+          'message': e.response?.data?['message'] ?? 'Registrasi gagal',
+        };
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan koneksi: $e'};
     }
   }
 
@@ -184,7 +204,21 @@ class AuthService {
       };
     } catch (e) {
       debugPrint('STAFF LOGIN ERROR: $e');
-      return {'success': false, 'message': 'Error: $e'};
+      if (e is DioException) {
+        if (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          return {
+            'success': false,
+            'message': 'Koneksi timeout, pastikan server online.',
+          };
+        }
+        return {
+          'success': false,
+          'message':
+              e.response?.data?['message'] ?? 'Email atau password staf salah.',
+        };
+      }
+      return {'success': false, 'message': 'Terjadi kesalahan sistem: $e'};
     }
   }
 

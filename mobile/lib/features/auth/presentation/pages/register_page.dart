@@ -66,11 +66,9 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isUndipEmail(String email) {
     final lowerEmail = email.toLowerCase();
-    return lowerEmail.endsWith('@undip.ac.id') ||
-        lowerEmail.endsWith('@students.undip.ac.id') ||
-        lowerEmail.endsWith('@live.undip.ac.id') ||
-        lowerEmail.endsWith('@lecturer.undip.ac.id') ||
-        lowerEmail.endsWith('@staff.undip.ac.id');
+    // Only @students.undip.ac.id gets auto-verified flow
+    // @live.undip.ac.id and other emails go to external email flow (require ID card and admin approval)
+    return lowerEmail.endsWith('@students.undip.ac.id');
   }
 
   void _validateEmail() {
@@ -257,12 +255,16 @@ class _RegisterPageState extends State<RegisterPage> {
             result['needsAdminApproval'] == true,
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Registrasi gagal'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          final message = result['message'] ?? 'Registrasi gagal';
+          if (message.toString().toLowerCase().contains(
+            'email sudah terdaftar',
+          )) {
+            _showEmailAlreadyRegisteredDialog();
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: Colors.red),
+            );
+          }
         }
       }
     } catch (e) {
@@ -343,6 +345,83 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  void _showEmailAlreadyRegisteredDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                LucideIcons.alertCircle,
+                size: 48,
+                color: Colors.orange,
+              ),
+            ),
+            const Gap(20),
+            const Text(
+              'Email Sudah Terdaftar',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(12),
+            Text(
+              'Email yang Anda masukkan sudah terdaftar. Silakan login atau gunakan email lain untuk mendaftar.',
+              style: TextStyle(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            const Gap(24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  context.go('/login');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Login Sekarang'),
+              ),
+            ),
+            const Gap(12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  setState(() => _currentStep = 0);
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: const BorderSide(color: AppTheme.primaryColor),
+                ),
+                child: const Text('Gunakan Email Lain'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -373,6 +452,66 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Branding Section
+              Center(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 15,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.asset(
+                          'assets/images/Lapor FSM! Logo Polos.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: AppTheme.primaryColor.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  LucideIcons.shieldCheck,
+                                  size: 40,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                        ),
+                      ),
+                    ),
+                    const Gap(16),
+                    const Text(
+                      'Lapor FSM!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.primaryColor,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      'Sistem Pelaporan Fasilitas\nFSM Universitas Diponegoro',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const Gap(32),
+
               // Progress Indicator
               _buildProgressIndicator(),
               const Gap(20),
@@ -418,38 +557,54 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Widget _buildStepCircle(int step, String label) {
     final isActive = _currentStep >= step;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: isActive ? AppTheme.primaryColor : Colors.grey.shade300,
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: isActive && _currentStep > step
-                ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
-                : Text(
-                    '${step + 1}',
-                    style: TextStyle(
-                      color: isActive ? Colors.white : Colors.grey.shade600,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+    return GestureDetector(
+      onTap: () {
+        if (step == _currentStep) return;
+        if (step < _currentStep) {
+          // Selalu boleh kembali ke step sebelumnya
+          setState(() => _currentStep = step);
+        } else {
+          // Hanya boleh maju jika validasi step saat ini berhasil
+          if (_currentStep == 0) {
+            _validateEmail();
+          } else if (_currentStep == 1) {
+            _proceedToUserData();
+          }
+        }
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: isActive ? AppTheme.primaryColor : Colors.grey.shade300,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: isActive && _currentStep > step
+                  ? const Icon(LucideIcons.check, size: 14, color: Colors.white)
+                  : Text(
+                      '${step + 1}',
+                      style: TextStyle(
+                        color: isActive ? Colors.white : Colors.grey.shade600,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
+            ),
           ),
-        ),
-        const Gap(4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 9,
-            color: isActive ? AppTheme.primaryColor : Colors.grey.shade500,
+          const Gap(4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 9,
+              color: isActive ? AppTheme.primaryColor : Colors.grey.shade500,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -508,7 +663,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const Gap(12),
               Expanded(
                 child: Text(
-                  'Email UNDIP yang valid:\n• @undip.ac.id\n• @students.undip.ac.id\n• @live.undip.ac.id',
+                  'Email yang mendapatkan verifikasi otomatis:\n• @students.undip.ac.id\n\nEmail lain (termasuk @live.undip.ac.id) memerlukan upload kartu identitas dan approval admin.',
                   style: TextStyle(color: Colors.blue.shade700, fontSize: 12),
                 ),
               ),

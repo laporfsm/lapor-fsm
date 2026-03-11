@@ -39,7 +39,7 @@ class Report {
 
   // Handling Details
   final List<String>? handledBy;
-  final String? assignedTo; // ID of assigned technician
+  final List<String>? assignedTo; // IDs of assigned technicians
   final DateTime? assignedAt; // When assigned to technician
   final DateTime? handlingStartedAt; // When technician starts work
   final DateTime? completedAt; // When technician marks as complete
@@ -160,7 +160,7 @@ class Report {
     String? pjLocationName,
     DateTime? verifiedAt,
     List<String>? handledBy,
-    String? assignedTo,
+    List<String>? assignedTo,
     DateTime? assignedAt,
     DateTime? handlingStartedAt,
     DateTime? completedAt,
@@ -229,9 +229,11 @@ class Report {
       mediaUrls: json['mediaUrls'] != null
           ? List<String>.from(json['mediaUrls'] as List)
           : null,
-      status: ReportStatus.values.byName(json['status'] as String),
+      status: _parseStatus(json['status'] as String?),
       isEmergency: json['isEmergency'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt'] as String) ?? DateTime.now()
+          : DateTime.now(),
       reporterId: json['reporterId'].toString(),
       reporterName: json['reporterName'] as String,
       reporterEmail: json['reporterEmail'] as String?,
@@ -244,7 +246,9 @@ class Report {
       handledBy: json['handledBy'] != null
           ? List<String>.from(json['handledBy'] as List)
           : null,
-      assignedTo: json['assignedTo']?.toString(),
+      assignedTo: json['assignedTo'] != null
+          ? List<String>.from(json['assignedTo'].map((e) => e.toString()))
+          : null,
       assignedAt: json['assignedAt'] != null
           ? DateTime.parse(json['assignedAt'] as String)
           : null,
@@ -308,5 +312,14 @@ class Report {
       'logs': logs.map((e) => e.toJson()).toList(),
       'parentId': parentId,
     };
+  }
+}
+
+ReportStatus _parseStatus(String? statusStr) {
+  if (statusStr == null) return ReportStatus.pending;
+  try {
+    return ReportStatus.values.byName(statusStr);
+  } catch (_) {
+    return ReportStatus.pending;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import 'api_service.dart';
 import '../../features/report_common/domain/entities/report.dart';
 
@@ -36,8 +37,13 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -60,8 +66,13 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -137,33 +148,69 @@ class ReportService {
     }
   }
 
-  // Upload image
-  Future<String?> uploadImage(XFile xfile) async {
+  // Upload media (image or video)
+  Future<String?> uploadMedia(XFile xfile) async {
     try {
-      MultipartFile multipartFile;
+      final fileName = xfile.name;
+      final fileExtension = fileName.split('.').last.toLowerCase();
 
-      if (kIsWeb) {
-        final bytes = await xfile.readAsBytes();
-        multipartFile = MultipartFile.fromBytes(bytes, filename: xfile.name);
-      } else {
-        multipartFile = await MultipartFile.fromFile(
-          xfile.path,
-          filename: xfile.path.split('/').last,
-        );
+      String mimeType = 'image/jpeg';
+      if (fileExtension == 'png') {
+        mimeType = 'image/png';
+      } else if (fileExtension == 'webp') {
+        mimeType = 'image/webp';
+      } else if (fileExtension == 'gif') {
+        mimeType = 'image/gif';
+      } else if (fileExtension == 'mp4') {
+        mimeType = 'video/mp4';
+      } else if (fileExtension == 'mov' || fileExtension == 'quicktime') {
+        mimeType = 'video/quicktime';
       }
 
-      final formData = FormData.fromMap({'file': multipartFile});
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          await xfile.readAsBytes(),
+          filename: fileName,
+          contentType: MediaType.parse(mimeType),
+        ),
+      });
 
-      final response = await apiService.dio.post('/upload', data: formData);
+      debugPrint(
+        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}/upload',
+      );
+
+      final response = await apiService.dio.post(
+        '/upload',
+        data: formData,
+        options: Options(
+          // Important: ensure Content-Type is NOT application/json for this request
+          contentType: 'multipart/form-data',
+          // Increase timeout for uploads
+          sendTimeout: const Duration(minutes: 5),
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+
+      debugPrint('Upload Response: ${response.data}');
 
       if (response.data['status'] == 'success') {
         return response.data['data']['url'];
+      } else {
+        debugPrint('Upload failed with message: ${response.data['message']}');
       }
       return null;
     } catch (e) {
-      debugPrint('Error uploading image: $e');
+      debugPrint('Error uploading media: $e');
+      if (e is DioException) {
+        debugPrint('Dio Error Details: ${e.response?.data}');
+      }
       return null;
     }
+  }
+
+  // Deprecated: Use uploadMedia instead
+  Future<String?> uploadImage(XFile xfile) async {
+    return uploadMedia(xfile);
   }
 
   // Get categories
@@ -172,9 +219,11 @@ class ReportService {
       final response = await apiService.dio.get('/reports/categories');
 
       if (response.data['status'] == 'success') {
-        final allCats = List<Map<String, dynamic>>.from(response.data['data']);
-        // Optional: Filter 'Darurat' if needed globally, but better to filter in UI
-        return allCats;
+        final rawData = response.data['data'];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {
@@ -243,7 +292,11 @@ class ReportService {
         queryParameters: {if (search != null) 'search': search},
       );
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {
@@ -369,7 +422,11 @@ class ReportService {
     try {
       final response = await apiService.dio.get('/supervisor/locations');
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return null;
     } catch (e) {
@@ -386,8 +443,13 @@ class ReportService {
         queryParameters: {'limit': limit.toString()},
       );
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -451,8 +513,13 @@ class ReportService {
       );
 
       if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
         return {
-          'data': List<Map<String, dynamic>>.from(response.data['data']),
+          'data':
+              (rawData as List?)
+                  ?.map((e) => Map<String, dynamic>.from(e))
+                  .toList() ??
+              [],
           'total': response.data['total'] ?? 0,
         };
       }
@@ -467,7 +534,11 @@ class ReportService {
     try {
       final response = await apiService.dio.get('/supervisor/technicians');
       if (response.data['status'] == 'success') {
-        return List<Map<String, dynamic>>.from(response.data['data']);
+        final rawData = response.data['data'];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
       }
       return [];
     } catch (e) {
@@ -506,12 +577,12 @@ class ReportService {
   Future<Report> assignTechnician(
     String reportId,
     int supervisorId,
-    int technicianId,
+    List<int> technicianIds,
   ) async {
     try {
       final response = await apiService.dio.post(
         '/supervisor/reports/$reportId/assign',
-        data: {'supervisorId': supervisorId, 'technicianId': technicianId},
+        data: {'supervisorId': supervisorId, 'technicianIds': technicianIds},
       );
       if (response.data['status'] == 'success') {
         return Report.fromJson(response.data['data']);

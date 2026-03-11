@@ -123,7 +123,7 @@ class _PJGedungProfilePageState extends State<PJGedungProfilePage> {
                         ),
                         Gap(4),
                         Text(
-                          "PJ Lokasi",
+                          "PJ Gedung",
                           style: TextStyle(
                             color: AppTheme.pjGedungColor,
                             fontSize: 12,

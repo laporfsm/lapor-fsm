@@ -57,6 +57,11 @@ export class EmailService {
      * @param isUndip Whether user has UNDIP email
      */
     static async sendActivationEmail(to: string, name: string, activationLink: string, isUndip: boolean) {
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.warn('⚠️ [EMAIL] SMTP_USER or SMTP_PASS is missing. Email service is disabled.');
+            return false;
+        }
+
         try {
             const info = await this.transporter.sendMail({
                 from: `"Lapor FSM" <${process.env.SMTP_USER}>`,

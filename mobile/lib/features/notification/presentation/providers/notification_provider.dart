@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
-import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/features/notification/data/notification_data.dart';
 import 'package:mobile/core/providers/auth_provider.dart';
 
@@ -95,7 +94,7 @@ class NotificationNotifier extends Notifier<NotificationState> {
             .map((json) => NotificationItem.fromJson(json))
             .toList();
 
-        // Filter for Admin: Removed client-side filtering. 
+        // Filter for Admin: Removed client-side filtering.
         // Admin should see all notifications sent by backend (including Reports & Emergency).
         List<NotificationItem> finalItems = fetchedItems;
 
@@ -109,24 +108,8 @@ class NotificationNotifier extends Notifier<NotificationState> {
 
         // Check for new items to alert (Only if there's a new max ID)
         if (!_isFirstLoad && currentMaxId > _lastMaxId) {
-          final newItems = finalItems
-              .where((e) => (int.tryParse(e.id) ?? 0) > _lastMaxId)
-              .toList();
-
-          // Show the most recent one as local notification if many came at once
-          if (newItems.isNotEmpty) {
-            // Sort by time just in case
-            newItems.sort((a, b) => b.time.compareTo(a.time));
-            final latest = newItems.first;
-
-            await NotificationService.showNotification(
-              id: int.tryParse(latest.id) ?? 0,
-              title: latest.title,
-              message: latest.message,
-              isEmergency: latest.type == 'emergency',
-              payload: latest.reportId,
-            );
-          }
+          // Note: Local notification trigger removed to prevent "double notification"
+          // when FCM (Push) is also active. The polling now only updates the UI/unread counts.
         }
 
         if (_isFirstLoad) {

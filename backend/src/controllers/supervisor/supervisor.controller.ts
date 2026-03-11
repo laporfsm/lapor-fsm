@@ -5,6 +5,7 @@ import { eq, desc, and, or, sql, count, gte, lte, isNull, inArray } from 'drizzl
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 
 import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
 
@@ -162,16 +163,14 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reporterName: users.name,
                 reporterEmail: users.email,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
-                supervisorName: verifierStaff.name,
+                supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
-            .leftJoin(verifierStaff, sql`${verifierStaff.id} = COALESCE(${reports.approvedBy}, ${reports.verifiedBy})`)
             .where(whereClause)
             .orderBy(desc(reports.createdAt))
             .limit(limitNum)
@@ -275,6 +274,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.notes || 'Laporan telah diverifikasi',
             });
 
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
             // Notify User
             if (updated[0].userId) {
                 await NotificationService.notifyUser(updated[0].userId, 'Laporan Diverifikasi', `Laporan "${updated[0].title}" telah diverifikasi.`, 'info', reportId);
@@ -299,15 +300,25 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     .post('/reports/:id/assign', async ({ params, body }) => {
         const reportId = parseInt(params.id);
         const supervisorId = body.supervisorId;
+        const technicianIds = body.technicianIds;
 
         try {
             const foundSupervisor = await db.select().from(staff).where(eq(staff.id, supervisorId)).limit(1);
+            
+            // Get technician names for denormalization
+            const assignedStaff = await db
+                .select({ name: staff.name })
+                .from(staff)
+                .where(inArray(staff.id, technicianIds));
+            
+            const handlerNames = assignedStaff.map(s => s.name).join(', ');
 
             const updated = await db
                 .update(reports)
                 .set({
                     status: 'diproses',
-                    assignedTo: body.technicianId,
+                    assignedTo: technicianIds,
+                    handlerNames: handlerNames,
                     assignedAt: new Date(),
                     updatedAt: new Date(),
                 })
@@ -324,15 +335,19 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 action: 'handling',
                 fromStatus: 'terverifikasi',
                 toStatus: 'diproses',
-                reason: `Laporan ditugaskan ke teknisi`,
+                reason: `Laporan ditugaskan ke teknisi: ${handlerNames}`,
             });
 
-            // Notify Technician
-            await NotificationService.notifyStaff(body.technicianId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
+            // Notify all Technicians
+            for (const techId of technicianIds) {
+                await NotificationService.notifyStaff(techId, 'Tugas Baru', `Anda ditugaskan menangani laporan: ${updated[0].title}`, 'info', reportId);
+            }
 
             // Notify User
             if (updated[0].userId) {
-                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi sedang menangani laporan Anda.`, 'info', reportId);
+                await NotificationService.notifyUser(updated[0].userId, 'Laporan Diproses', `Teknisi (${handlerNames}) sedang menangani laporan Anda.`, 'info', reportId);
             }
 
             return {
@@ -349,7 +364,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     }, {
         body: t.Object({
             supervisorId: t.Number(),
-            technicianId: t.Number(),
+            technicianIds: t.Array(t.Number()),
         })
     })
 
@@ -384,9 +399,28 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 reason: body.reason,
             });
 
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
+            // Notify Pelapor (Reporter) about recall
+            if (current[0].userId) {
+                await NotificationService.notifyUser(
+                    current[0].userId,
+                    'Laporan Ditarik Kembali',
+                    `Laporan "${current[0].title}" sedang ditinjau ulang oleh Supervisor. Mohon menunggu hasil peninjauan.`,
+                    'warning',
+                    reportId
+                );
+            }
+
             // Notify Technician (if assigned)
             if (current[0].assignedTo) {
-                await NotificationService.notifyStaff(current[0].assignedTo, 'Tugas Dibatalkan', `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor.`, 'warning', reportId);
+                await NotificationService.notifyStaff(
+                    current[0].assignedTo,
+                    'Tugas Dibatalkan/Direvisi',
+                    `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`,
+                    'warning',
+                    reportId
+                );
             }
 
             return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -434,6 +468,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 toStatus: 'approved',
                 reason: body.notes || 'Penanganan disetujui',
             });
+
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
             // Notify User
             if (updated[0].userId) {
@@ -485,6 +521,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 toStatus: 'ditolak',
                 reason: body.reason,
             });
+
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
             // Notify User
             if (updated[0].userId) {
@@ -586,12 +624,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         await db.insert(reportLogs).values({
             reportId: parent.id,
             actorId: staffId.toString(),
-            actorName: "Supervisor", // Ideally fetch name
+            actorName: "Supervisor",
             actorRole: "supervisor",
             action: 'grouped',
             toStatus: parent.status || 'pending',
             reason: notes || `Digabungkan dengan ${children.length} laporan lain.`,
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, parent.id);
+        for (const childId of childIds) {
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, childId);
+        }
 
         return {
             status: 'success',
@@ -1026,7 +1069,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             const updated = await db.update(reports)
                 .set({
                     status: 'pending',
-                    assignedTo: null, // Clear assignment
+                    assignedTo: [], // Clear assignment
+                    handlerNames: null,
                     updatedAt: new Date(),
                 })
                 .where(eq(reports.id, reportId))
@@ -1138,7 +1182,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         })
             .from(staff)
             .leftJoin(reports, and(
-                eq(reports.assignedTo, staff.id),
+                sql`${staff.id} = ANY(${reports.assignedTo})`,
                 sql`${reports.status} IN ('selesai', 'approved')`
             ))
             .where(eq(staff.role, 'teknisi'))

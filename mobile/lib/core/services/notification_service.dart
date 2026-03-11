@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'dart:ui';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/material.dart';
+import 'package:mobile/core/router/app_router.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -28,10 +31,40 @@ class NotificationService {
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle notification tap if needed
+        // Handle notification tap - navigate to report detail
         debugPrint('Notification tapped: ${response.payload}');
+        _handleNotificationTap(response.payload);
       },
     );
+  }
+
+  static void _handleNotificationTap(String? payload) async {
+    if (payload == null || payload.isEmpty) return;
+
+    try {
+      final reportId = payload;
+      final user = await authService.getCurrentUser();
+      final role = user?['role'];
+
+      String route;
+      switch (role) {
+        case 'teknisi':
+          route = '/teknisi/report/$reportId';
+        case 'supervisor':
+          route = '/supervisor/review/$reportId';
+        case 'pj_gedung':
+          route = '/pj-gedung/report/$reportId';
+        case 'admin':
+          route = '/admin/reports/$reportId';
+        default:
+          route = '/report-detail/$reportId';
+      }
+
+      debugPrint('NotificationService navigating to: $route');
+      appRouter.push(route);
+    } catch (e) {
+      debugPrint('Error handling notification tap: $e');
+    }
   }
 
   static Future<void> showNotification({
@@ -62,6 +95,7 @@ class NotificationService {
           channelDescription: channelDescription,
           importance: Importance.max,
           priority: Priority.high,
+          icon: isEmergency ? 'notifikasi_darurat' : 'notifikasi_non_darurat',
           color: isEmergency
               ? const Color(0xFFFF0000)
               : const Color(0xFF0055A5),

@@ -80,10 +80,11 @@ export const reports = pgTable('reports', {
   mediaUrls: jsonb('media_urls').default([]),
   isEmergency: boolean('is_emergency').default(false),
   status: text('status').default('pending'),
-  // Mobile Enum: pending, terverifikasi, verifikasi, penanganan, onHold, selesai, approved, ditolak, recalled, archived
+  // Mobile Enum: pending, terverifikasi, verifikasi, diproses, penanganan, onHold, selesai, approved, ditolak, recalled, archived
 
   // Handling Details
-  assignedTo: integer('assigned_to').references(() => staff.id),
+  assignedTo: integer('assigned_to').array(), // Array of staff IDs
+  handlerNames: text('handler_names'), // Denormalized list of handler names
   assignedAt: timestamp('assigned_at'),
   handlingStartedAt: timestamp('handling_started_at'),
   handlingCompletedAt: timestamp('handling_completed_at'),

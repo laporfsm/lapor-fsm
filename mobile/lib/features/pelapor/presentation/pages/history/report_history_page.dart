@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
@@ -29,12 +30,66 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
   void initState() {
     super.initState();
     _fetchReports();
+    // Poll every 15 seconds for near-real-time updates
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      _silentRefresh();
+    });
   }
+
+  Timer? _pollTimer;
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Silent background refresh — only updates UI if data actually changed
+  Future<void> _silentRefresh() async {
+    try {
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final response = await reportService.getMyReports(
+          user['id'].toString(),
+          role: user['role'],
+        );
+        if (mounted) {
+          final List<Map<String, dynamic>> reportsData =
+              List<Map<String, dynamic>>.from(response['data'] ?? []);
+          final newReports = reportsData
+              .map((json) {
+                try {
+                  return Report.fromJson(json);
+                } catch (e) {
+                  return null;
+                }
+              })
+              .whereType<Report>()
+              .toList();
+
+          // Only update if count or statuses changed
+          bool changed = newReports.length != _myReports.length;
+          if (!changed) {
+            for (int i = 0; i < newReports.length; i++) {
+              if (newReports[i].status != _myReports[i].status) {
+                changed = true;
+                break;
+              }
+            }
+          }
+
+          if (changed) {
+            setState(() {
+              _myReports = newReports;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // Silent — don't show errors for background polls
+      debugPrint('[HistoryPoll] Silent refresh error: $e');
+    }
   }
 
   Future<void> _fetchReports() async {
@@ -117,11 +172,17 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
       appBar: AppBar(
         title: const Text(
           'Riwayat Laporan Saya',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
+        centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
@@ -152,6 +213,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                                   location: report.location,
                                   locationDetail: report.locationDetail,
                                   status: report.status,
+                                  isEmergency: report.isEmergency,
                                   elapsedTime: DateTime.now().difference(
                                     report.createdAt,
                                   ),
@@ -173,7 +235,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
 
   Widget _buildSearchAndFilter() {
     return Container(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.only(

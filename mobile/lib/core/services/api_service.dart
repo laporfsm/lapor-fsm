@@ -1,23 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:io' show Platform;
 
 class ApiService {
   // Use 10.0.2.2 for Android emulator, 127.0.0.1 for iOS/web/desktop
   // For physical Android device, replace with your computer's local IP (e.g., 192.168.1.100)
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:3000';
-    }
-    // For Android (both emulator and physical device)
-    // Android emulator uses 10.0.2.2 to access host machine's localhost
-    // Physical device needs to use the actual IP address of the host machine
-    if (Platform.isAndroid) {
-      // Change this to your computer's IP if using physical device
-      // e.g., 'http://192.168.1.100:3000'
-      return 'http://10.137.133.58:3000';
-    }
-    return 'http://10.137.133.58:3000'; // Match updated IP for other platforms if needed
+    // Production / Testing server Tim 7 (UP2TI)
+    return 'http://10.137.58.124:20072';
   }
 
   late final Dio _dio;
@@ -26,8 +14,8 @@ class ApiService {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
         headers: {'Content-Type': 'application/json'},
       ),
     );
@@ -49,6 +37,15 @@ class ApiService {
   }
 
   Dio get dio => _dio;
+
+  // Get auth token
+  static String? get token {
+    final auth = apiService.dio.options.headers['Authorization'] as String?;
+    if (auth != null && auth.startsWith('Bearer ')) {
+      return auth.substring(7);
+    }
+    return null;
+  }
 
   // Set auth token
   void setAuthToken(String token) {

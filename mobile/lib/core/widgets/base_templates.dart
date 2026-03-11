@@ -25,11 +25,19 @@ class BaseHelpPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(title),
-        backgroundColor: appBarColor ?? Colors.white,
-        foregroundColor: appBarForegroundColor ?? Colors.black,
-        iconTheme: IconThemeData(color: appBarForegroundColor ?? Colors.black),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: appBarForegroundColor ?? Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        backgroundColor: appBarColor ?? AppTheme.primaryColor,
+        foregroundColor: appBarForegroundColor ?? Colors.white,
+        iconTheme: IconThemeData(color: appBarForegroundColor ?? Colors.white),
         elevation: 0,
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),

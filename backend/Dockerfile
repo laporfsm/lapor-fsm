@@ -7,11 +7,14 @@ WORKDIR /app
 # Copy package files (untuk cache dependencies)
 COPY package.json bun.lock ./
 
-# Install dependencies (production mode)
-RUN bun install --production
+# Install dependencies
+RUN bun install
 
 # Copy sisa source code
 COPY . .
+
+# Ensure uploads directory exists (used as temp buffer for file uploads)
+RUN mkdir -p /app/uploads
 
 # Set Environment Variable untuk Port (Koyeb injects PORT, but good to have default)
 ENV PORT=3000

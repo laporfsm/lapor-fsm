@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/widgets/bouncing_button.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -104,9 +105,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (_isInitialLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_currentUser == null) {
@@ -131,22 +130,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Edit Profil'),
-        backgroundColor: Colors.white,
-        actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveProfile,
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text(
-                    'SIMPAN',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-          ),
-        ],
+        backgroundColor: AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -355,21 +346,52 @@ class _EditProfilePageState extends State<EditProfilePage> {
               const Gap(32),
 
               // Save Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _saveProfile,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
+              BouncingButton(
+                onTap: _isLoading ? null : _saveProfile,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    color: _isLoading ? Colors.grey : AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.save,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                              Gap(8),
+                              Text(
+                                'SIMPAN PERUBAHAN',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                      : const Icon(LucideIcons.save),
-                  label: Text(_isLoading ? 'Menyimpan...' : 'SIMPAN PERUBAHAN'),
+                  ),
                 ),
               ),
               const Gap(16),

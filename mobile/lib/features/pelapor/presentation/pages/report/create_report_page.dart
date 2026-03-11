@@ -96,20 +96,20 @@ class _CreateReportPageState extends State<CreateReportPage> {
     try {
       if (source == ImageSource.gallery) {
         final List<XFile> images = await _imagePicker.pickMultiImage(
-          maxWidth: 1920,
-          maxHeight: 1080,
-          imageQuality: 80,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 70,
         );
 
         if (images.isNotEmpty) {
           for (var image in images) {
             if (_selectedImages.length >= 3) break;
             final bytes = await image.readAsBytes();
-            if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+            if (bytes.lengthInBytes > 50 * 1024 * 1024) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Ukuran file ${image.name} melebihi 100MB'),
+                    content: Text('Ukuran file ${image.name} melebihi 50MB'),
                   ),
                 );
               }
@@ -124,16 +124,16 @@ class _CreateReportPageState extends State<CreateReportPage> {
       } else {
         final XFile? image = await _imagePicker.pickImage(
           source: source,
-          maxWidth: 1920,
-          maxHeight: 1080,
-          imageQuality: 80,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 70,
         );
         if (image != null) {
           final bytes = await image.readAsBytes();
-          if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+          if (bytes.lengthInBytes > 50 * 1024 * 1024) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Ukuran file melebihi 100MB')),
+                const SnackBar(content: Text('Ukuran file melebihi 50MB')),
               );
             }
             return;
@@ -149,18 +149,25 @@ class _CreateReportPageState extends State<CreateReportPage> {
     }
   }
 
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+      _selectedImagesBytes.removeAt(index);
+    });
+  }
+
   Future<void> _pickVideo(ImageSource source) async {
     try {
       final XFile? video = await _imagePicker.pickVideo(
         source: source,
-        maxDuration: const Duration(minutes: 2),
+        maxDuration: const Duration(minutes: 5),
       );
       if (video != null) {
         final bytes = await video.readAsBytes();
-        if (bytes.lengthInBytes > 100 * 1024 * 1024) {
+        if (bytes.lengthInBytes > 50 * 1024 * 1024) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Ukuran video melebihi 100MB')),
+              const SnackBar(content: Text('Ukuran video melebihi 50MB')),
             );
           }
           return;
@@ -173,13 +180,6 @@ class _CreateReportPageState extends State<CreateReportPage> {
     } catch (e) {
       debugPrint('Error picking video: $e');
     }
-  }
-
-  void _removeImage(int index) {
-    setState(() {
-      _selectedImages.removeAt(index);
-      _selectedImagesBytes.removeAt(index);
-    });
   }
 
   void _showImageSourceDialog() {
@@ -221,7 +221,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
               },
             ),
             ListTile(
-              leading: const Icon(LucideIcons.video),
+              leading: const Icon(LucideIcons.film),
               title: const Text('Pilih Video dari Galeri'),
               onTap: () {
                 Navigator.pop(context);
@@ -248,7 +248,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
 
     if (_selectedBuilding == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih lokasi gedung terlebih dahulu!')),
+        const SnackBar(content: Text('Pilih Lokasi terlebih dahulu!')),
       );
       return;
     }
@@ -340,8 +340,14 @@ class _CreateReportPageState extends State<CreateReportPage> {
         title: Text(widget.isEmergency ? "Lapor Darurat" : "Buat Laporan"),
         backgroundColor: widget.isEmergency
             ? AppTheme.emergencyColor
-            : Colors.white,
-        foregroundColor: widget.isEmergency ? Colors.white : Colors.black,
+            : AppTheme.primaryColor,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -389,7 +395,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const Text(
-                "Maksimal 3 foto/video (video Maks 100MB)",
+                "Maksimal 3 foto/video (video Maks 50MB)",
                 style: TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Gap(8),
@@ -536,7 +542,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     .map((b) => DropdownMenuItem(value: b, child: Text(b)))
                     .toList(),
                 onChanged: (value) => setState(() => _selectedBuilding = value),
-                validator: (value) => value == null ? "Pilih gedung" : null,
+                validator: (value) => value == null ? "Pilih Lokasi" : null,
               ),
               const Gap(16),
 
@@ -758,17 +764,6 @@ class _CreateReportPageState extends State<CreateReportPage> {
                     value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
               ),
               const Gap(16),
-
-              // Additional Notes
-              TextFormField(
-                controller: _notesController,
-                maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: "Catatan Tambahan (Opsional)",
-                  hintText: "Informasi tambahan jika ada...",
-                  alignLabelWithHint: true,
-                ),
-              ),
 
               const Gap(32),
               SizedBox(

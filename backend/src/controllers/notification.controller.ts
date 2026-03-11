@@ -2,7 +2,9 @@ import { Elysia, t } from 'elysia';
 import { db } from '../db';
 import { notifications, users, staff } from '../db/schema';
 import { eq, desc, and, or } from 'drizzle-orm';
+import { Stream } from '@elysiajs/stream';
 import { mapToMobileNotification } from '../utils/mapper';
+import { logEventEmitter, NOTIFICATION_EVENTS } from '../utils/events';
 
 export const notificationController = new Elysia({ prefix: '/notifications' })
     // Save FCM Token
@@ -29,30 +31,108 @@ export const notificationController = new Elysia({ prefix: '/notifications' })
         })
     })
 
-    // Get notifications for a user OR staff
-    .get('/:type/:id', async ({ params, set }) => {
+    // SSE Stream for Notifications
+    .get('/stream/:type/:id', ({ params }) => {
         const { type, id } = params;
         const targetId = parseInt(id);
+        let cleanup: (() => void) | undefined;
 
-        if (isNaN(targetId)) {
-            set.status = 400;
-            return { status: 'error', message: 'Invalid ID format' };
+        return new Response(new ReadableStream({
+            start(controller) {
+                const encoder = new TextEncoder();
+                const send = (data: any) => {
+                    try {
+                        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+                    } catch (e) {
+                        // Controller might be closed
+                    }
+                };
+
+                send({ type: 'connected', targetId });
+
+                const listener = (payload: any) => {
+                    // Payload structure: { type: 'user'|'staff', id: number, data: NotificationData }
+                    // Check if the notification is for this connected client
+                    if (payload.type === type && payload.id === targetId) {
+                        send({
+                            type: 'notification',
+                            data: payload.data
+                        });
+                    }
+                };
+
+                logEventEmitter.on(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+
+                // Keep-alive
+                const keepAlive = setInterval(() => {
+                    send({ type: 'ping' });
+                }, 30000);
+
+                // Store cleanup
+                cleanup = () => {
+                    logEventEmitter.off(NOTIFICATION_EVENTS.NEW_NOTIFICATION, listener);
+                    clearInterval(keepAlive);
+                };
+            },
+            cancel() {
+                if (cleanup) cleanup();
+            }
+        }), {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            }
+        });
+    })
+
+    // Get notifications for a user OR staff
+    .get('/:type/:id', async ({ params, set }) => {
+        try {
+            const { type, id } = params;
+            const targetId = parseInt(id);
+
+            if (isNaN(targetId)) {
+                set.status = 400;
+                return { status: 'error', message: 'Invalid ID format' };
+            }
+
+            console.log(`[Notification] Fetching for ${type} ID: ${targetId}`);
+
+            // Fix: ensure correct column usage based on type
+            // Note: Schema has userId (nullable) AND staffId (nullable)
+            // If type is 'user', look for userId. If 'staff', look for staffId.
+            const whereClause = type === 'user'
+                ? eq(notifications.userId, targetId)
+                : eq(notifications.staffId, targetId);
+
+            const result = await db
+                .select()
+                .from(notifications)
+                .where(whereClause)
+                .orderBy(desc(notifications.createdAt));
+
+            console.log(`[Notification] Found ${result.length} notifications`);
+
+            // Use try-catch map to avoid crash on single item error
+            const mappedData = result.map(n => {
+                try {
+                    return mapToMobileNotification(n);
+                } catch (e) {
+                    console.error('[Notification] Mapper error:', e);
+                    return null;
+                }
+            }).filter(n => n !== null);
+
+            return {
+                status: 'success',
+                data: mappedData,
+            };
+        } catch (error) {
+            console.error('[Notification] Error:', error);
+            set.status = 500;
+            return { status: 'error', message: 'Internal Server Error' };
         }
-
-        const whereClause = type === 'user'
-            ? eq(notifications.userId, targetId)
-            : eq(notifications.staffId, targetId);
-
-        const result = await db
-            .select()
-            .from(notifications)
-            .where(whereClause)
-            .orderBy(desc(notifications.createdAt));
-
-        return {
-            status: 'success',
-            data: result.map(n => mapToMobileNotification(n)),
-        };
     })
 
     // Mark notification as read

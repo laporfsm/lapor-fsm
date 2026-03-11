@@ -9,14 +9,14 @@ class PJGedungHelpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const BaseHelpPage(
-      title: 'Bantuan PJ Lokasi',
+      title: 'Bantuan PJ Gedung',
       accentColor: AppTheme.pjGedungColor,
       appBarColor: AppTheme.pjGedungColor,
       appBarForegroundColor: Colors.white,
       topics: [
         HelpTopic(
           icon: LucideIcons.mapPin,
-          title: 'Pemantauan Lokasi',
+          title: 'Pemantauan Gedung',
           description:
               'Pantau laporan yang masuk khusus untuk lokasi yang Anda kelola. Pastikan setiap masalah segera diverifikasi.',
         ),
@@ -28,7 +28,7 @@ class PJGedungHelpPage extends StatelessWidget {
         ),
         HelpTopic(
           icon: LucideIcons.barChart,
-          title: 'Statistik Lokasi',
+          title: 'Statistik Gedung',
           description:
               'Lihat tren kerusakan dan performa penanganan masalah di lokasi Anda melalui dashboard statistik.',
         ),

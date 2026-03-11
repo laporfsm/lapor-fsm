@@ -2,6 +2,7 @@ import { db } from '../db';
 import { notifications, staff, users, reports } from '../db/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { FCMService } from './fcm.service';
+import { logEventEmitter, NOTIFICATION_EVENTS } from '../utils/events';
 
 export class NotificationService {
 
@@ -52,6 +53,12 @@ export class NotificationService {
                 { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
 
+            logEventEmitter.emit(NOTIFICATION_EVENTS.NEW_NOTIFICATION, {
+                type: 'user',
+                id: userId,
+                data: { title, message, type: finalType, reportId, createdAt: new Date() }
+            });
+
             console.log(`[NOTIF-USER] ID:${userId} - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {
             console.error('Failed to notify user', e);
@@ -81,6 +88,12 @@ export class NotificationService {
                 message,
                 { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
+
+            logEventEmitter.emit(NOTIFICATION_EVENTS.NEW_NOTIFICATION, {
+                type: 'staff',
+                id: staffId,
+                data: { title, message, type: finalType, reportId, createdAt: new Date() }
+            });
 
             console.log(`[NOTIF-STAFF] ID:${staffId} - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {
@@ -115,6 +128,15 @@ export class NotificationService {
                 message,
                 { type: finalType, ...(reportId ? { reportId: reportId.toString() } : {}) }
             );
+
+            // Emit SSE event for each staff member
+            roleStaff.forEach(s => {
+                logEventEmitter.emit(NOTIFICATION_EVENTS.NEW_NOTIFICATION, {
+                    type: 'staff',
+                    id: s.id,
+                    data: { title, message, type: finalType, reportId, createdAt: new Date() }
+                });
+            });
 
             console.log(`[NOTIF-ROLE] ${role} (${roleStaff.length}) - ${title}: ${message} (Report: ${reportId}, Type: ${finalType})`);
         } catch (e) {

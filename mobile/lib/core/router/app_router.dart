@@ -1,18 +1,14 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/login_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/register_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/email_verification_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/auth/complete_profile_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/home_page.dart';
+
+import 'package:mobile/features/auth/presentation/pages/login_page.dart';
+import 'package:mobile/features/auth/presentation/pages/register_page.dart';
+import 'package:mobile/features/auth/presentation/pages/email_verification_page.dart';
+import 'package:mobile/features/auth/presentation/pages/complete_profile_page.dart';
+import 'package:mobile/features/auth/presentation/pages/splash_page.dart';
+import 'package:mobile/features/pelapor/presentation/pages/pelapor_home_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/create_report_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/report_success_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/report/report_detail_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/feed/public_feed_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/history/report_history_page.dart';
-import 'package:mobile/features/pelapor/presentation/pages/profile/profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/edit_profile_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/settings_page.dart';
 import 'package:mobile/features/pelapor/presentation/pages/profile/help_page.dart';
@@ -80,11 +76,8 @@ import 'package:mobile/features/auth/presentation/pages/forgot_password_page.dar
 import 'package:mobile/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:mobile/features/notification/presentation/pages/notification_page.dart';
 
-// Navigation key for ShellRoute
-final _shellNavigatorKey = GlobalKey<NavigatorState>();
-
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/splash',
   redirect: (context, state) async {
     final bool loggedIn = await authService.isLoggedIn();
     final String location = state.uri.path;
@@ -97,12 +90,16 @@ final appRouter = GoRouter(
         location == '/reset-password' ||
         location == '/complete-profile';
 
+    final bool isSplashPath = location == '/splash';
+
     if (!loggedIn) {
-      // If not logged in and not on an auth path, go to login
-      return isAuthPath ? null : '/login';
+      // If not logged in and not on an auth path or splash, go to login
+      if (isAuthPath || isSplashPath) return null;
+      return '/login';
     }
 
     // If logged in and on an auth path, redirect to appropriate home
+    // (Excluding /splash to allow SplashPage to handle redirection after animation)
     if (isAuthPath) {
       final user = await authService.getCurrentUser();
       final role = user?['role'];
@@ -130,6 +127,7 @@ final appRouter = GoRouter(
   },
   routes: [
     // Auth - Unified Login & Register
+    GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(
       path: '/register',
@@ -163,88 +161,9 @@ final appRouter = GoRouter(
     ),
 
     // ===============================================
-    // PELAPOR SHELL ROUTE - Persistent Bottom Nav
+    // PELAPOR - Single route with IndexedStack navigation
     // ===============================================
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) {
-        // Determine current index from location
-        int currentIndex = 0;
-        final location = state.uri.path;
-        if (location == '/') {
-          currentIndex = 0;
-        } else if (location == '/feed') {
-          currentIndex = 1;
-        } else if (location == '/history') {
-          currentIndex = 2;
-        } else if (location.startsWith('/profile')) {
-          currentIndex = 3;
-        }
-
-        return Scaffold(
-          body: child,
-          bottomNavigationBar: BottomNavigationBar(
-            selectedItemColor: AppTheme.primaryColor,
-            unselectedItemColor: Colors.grey,
-            showUnselectedLabels: true,
-            type: BottomNavigationBarType.fixed,
-            currentIndex: currentIndex,
-            onTap: (index) {
-              switch (index) {
-                case 0:
-                  context.go('/');
-                  break;
-                case 1:
-                  context.go('/feed');
-                  break;
-                case 2:
-                  context.go('/history');
-                  break;
-                case 3:
-                  context.go('/profile');
-                  break;
-              }
-            },
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.home),
-                label: "Beranda",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.newspaper),
-                label: "Feed",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.fileText),
-                label: "Riwayat",
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(LucideIcons.user),
-                label: "Profil",
-              ),
-            ],
-          ),
-        );
-      },
-      routes: [
-        // Main - Pelapor (inside shell)
-        GoRoute(path: '/', builder: (context, state) => const HomePage()),
-        // Feed & History - Pelapor (inside shell)
-        GoRoute(
-          path: '/feed',
-          builder: (context, state) => const PublicFeedPage(),
-        ),
-        GoRoute(
-          path: '/history',
-          builder: (context, state) => const ReportHistoryPage(),
-        ),
-        // Profile - Pelapor (inside shell)
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => const ProfilePage(),
-        ),
-      ],
-    ),
+    GoRoute(path: '/', builder: (context, state) => const PelaporHomePage()),
 
     // Report Flow - Pelapor (outside shell - no bottom nav during report creation)
     GoRoute(

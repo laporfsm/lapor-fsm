@@ -1,6 +1,14 @@
 import { Elysia } from "elysia";
 import { cors } from '@elysiajs/cors';
 import { staticPlugin } from '@elysiajs/static';
+import { mkdirSync } from 'fs';
+import { checkEnv } from './utils/env_check';
+
+// Perform environment check on startup
+checkEnv();
+
+// Ensure uploads directory exists before static plugin tries to access it
+mkdirSync('uploads', { recursive: true });
 import { reportController } from "./controllers/reporter/report.controller";
 import { authController } from "./controllers/auth.controller";
 import { uploadController } from "./controllers/upload.controller";
@@ -14,14 +22,19 @@ import { categoryController } from "./controllers/admin/category.controller";
 import { locationController } from "./controllers/supervisor/location.controller";
 import { specializationController } from "./controllers/supervisor/specialization.controller";
 import { trackingController } from "./controllers/emergency/tracking.controller";
+import { logStreamController } from "./controllers/reports/logs.controller";
 
-const app = new Elysia()
-  .onError(({ code, error, set }) => {
+const app = new Elysia({
+  serve: {
+    maxRequestBodySize: 1024 * 1024 * 50 // 50MB
+  }
+})
+  .onError(({ code, error, set }: any) => {
     console.error(`[API ERROR] ${code}:`, error);
 
     if (code === 'VALIDATION') {
       set.status = 400;
-      return { status: 'error', message: 'Validasi input gagal', details: error.all };
+      return { status: 'error', message: 'Validasi input gagal', details: (error as any).all };
     }
 
     if (code === 'NOT_FOUND') {
@@ -32,10 +45,13 @@ const app = new Elysia()
     set.status = 500;
     return { status: 'error', message: 'Terjadi kesalahan sistem internal' };
   })
+  .onRequest(({ request }: any) => {
+    console.log(`[REQUEST] ${request.method} ${request.url}`);
+  })
   .use(cors({
     origin: true, // Allow all origins (for development)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control'],
     credentials: true,
   })) // Allow request from Mobile/Web
   .use(staticPlugin({ assets: 'uploads', prefix: '/uploads' })) // Serve uploaded files
@@ -53,12 +69,18 @@ const app = new Elysia()
   .use(locationController)
   .use(specializationController)
   .use(trackingController)
-  .listen({
-    port: process.env.PORT || 3000,
-    hostname: '0.0.0.0'
-  });
+  .use(logStreamController);
+
+console.log(`Configured PORT: ${process.env.PORT || 3000}`);
+
+app.listen({
+  port: process.env.PORT || 3000,
+  hostname: '0.0.0.0',
+  idleTimeout: 60
+});
 
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
+
 

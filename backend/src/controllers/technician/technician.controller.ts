@@ -5,6 +5,7 @@ import { eq, desc, and, or, sql, isNull, gte, count } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { mapToMobileReport } from '../../utils/mapper';
 import { NotificationService } from '../../services/notification.service';
+import { logEventEmitter, LOG_EVENTS } from '../../utils/events';
 
 import { getStartOfWeek, getStartOfMonth, getStartOfDay } from '../../utils/date.utils';
 
@@ -22,7 +23,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 count: count(),
             })
             .from(reports)
-            .where(eq(reports.assignedTo, staffId))
+            .where(sql`${staffId} = ANY(${reports.assignedTo})`)
             .groupBy(reports.status);
 
         const countsMap = statusCounts.reduce((acc, curr) => {
@@ -39,16 +40,16 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 and(
                     eq(reports.status, 'diproses'),
                     or(
-                        eq(reports.assignedTo, staffId),
+                        sql`${staffId} = ANY(${reports.assignedTo})`,
                         isNull(reports.assignedTo) // Include pool
                     )
                 )
             );
 
         // Time based counts - using handlingStartedAt for when technician started working
-        const todayReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfDay)));
-        const weekReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfWeek)));
-        const monthReports = await db.select({ count: count() }).from(reports).where(and(eq(reports.assignedTo, staffId), gte(reports.handlingStartedAt, startOfMonth)));
+        const todayReports = await db.select({ count: count() }).from(reports).where(and(sql`${staffId} = ANY(${reports.assignedTo})`, gte(reports.handlingStartedAt, startOfDay)));
+        const weekReports = await db.select({ count: count() }).from(reports).where(and(sql`${staffId} = ANY(${reports.assignedTo})`, gte(reports.handlingStartedAt, startOfWeek)));
+        const monthReports = await db.select({ count: count() }).from(reports).where(and(sql`${staffId} = ANY(${reports.assignedTo})`, gte(reports.handlingStartedAt, startOfMonth)));
 
         // Emergency pending
         const emergencyCount = await db
@@ -60,7 +61,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         const recalledCount = await db
             .select({ count: count() })
             .from(reports)
-            .where(and(eq(reports.assignedTo, staffId), eq(reports.status, 'recalled')));
+            .where(and(sql`${staffId} = ANY(${reports.assignedTo})`, eq(reports.status, 'recalled')));
 
         return {
             status: 'success',
@@ -110,7 +111,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
         // Filter by assignedTo
         if (query.assignedTo && !isNaN(parseInt(query.assignedTo))) {
-            conditions.push(eq(reports.assignedTo, parseInt(query.assignedTo)));
+            const assignedTechId = parseInt(query.assignedTo);
+            conditions.push(sql`${assignedTechId} = ANY(${reports.assignedTo})`);
         }
 
         // Filter by period (based on handlingStartedAt)
@@ -157,7 +159,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: sql<string>`COALESCE(${users.name}, ${reporterStaff.name})`,
                 reporterPhone: sql<string>`COALESCE(${users.phone}, ${reporterStaff.phone})`,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -166,7 +168,6 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(whereClause)
             .orderBy(desc(reports.isEmergency), desc(reports.createdAt))
             .limit(limitNum)
@@ -201,19 +202,18 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterName: users.name,
                 reporterPhone: users.phone,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
             })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(
                 and(
                     isNull(reports.parentId),
                     or(
                         eq(reports.status, 'diproses'), // Waiting for tech to accept
                         and(
-                            eq(reports.assignedTo, staffId),
+                            sql`${staffId} = ANY(${reports.assignedTo})`,
                             or(
                                 eq(reports.status, 'penanganan'),
                                 eq(reports.status, 'onHold'),
@@ -249,7 +249,6 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .update(reports)
             .set({
                 status: 'penanganan',
-                assignedTo: staffId,
                 handlingStartedAt: new Date(),
                 updatedAt: new Date(),
             })
@@ -267,11 +266,13 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             actorId: staffId.toString(),
             actorName: foundStaff[0].name,
             actorRole: foundStaff[0].role,
-            action: 'handling',
+            action: 'accepted',
             fromStatus: fromStatus,
             toStatus: 'penanganan',
             reason: actionReason,
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify User
         if (updated[0].userId) {
@@ -315,6 +316,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: body.reason,
             mediaUrls: body.photoUrl ? [body.photoUrl] : [],
         });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify User
         if (updated[0].userId) {
@@ -363,6 +366,8 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: 'Pengerjaan dilanjutkan',
         });
 
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+
         // Notify User
         if (updated[0].userId) {
             await NotificationService.notifyUser(updated[0].userId, 'Pengerjaan Dilanjutkan', `Teknisi melanjutkan pengerjaan laporan Anda: ${updated[0].title}`, 'info', reportId);
@@ -394,6 +399,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
 
         if (updated.length === 0) return { status: 'error', message: 'Laporan tidak ditemukan' };
 
+        // Log 1: Selesai oleh Teknisi
         await db.insert(reportLogs).values({
             reportId,
             actorId: staffId.toString(),
@@ -405,6 +411,20 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             reason: body.notes,
             mediaUrls: body.mediaUrls || [],
         });
+
+        // Log 2: Peninjauan Ulang oleh Supervisor
+        await db.insert(reportLogs).values({
+            reportId,
+            actorId: staffId.toString(),
+            actorName: foundStaff[0]?.name || "Technician",
+            actorRole: foundStaff[0]?.role || "teknisi",
+            action: 'reviewing',
+            fromStatus: 'selesai',
+            toStatus: 'selesai',
+            reason: 'Menunggu peninjauan ulang oleh supervisor',
+        });
+
+        logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
 
         // Notify Supervisor
         await NotificationService.notifyRole('supervisor', 'Pengerjaan Selesai', `Teknisi ${foundStaff[0]?.name || ''} telah menyelesaikan laporan: ${updated[0].title}`, 'info', reportId);
@@ -452,7 +472,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
                 reporterEmail: users.email,
                 reporterPhone: users.phone,
                 categoryName: categories.name,
-                handlerName: staff.name,
+                handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
@@ -460,7 +480,6 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .from(reports)
             .leftJoin(users, eq(reports.userId, users.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .leftJoin(staff, eq(reports.assignedTo, staff.id))
             .where(eq(reports.id, reportId))
             .limit(1);
 

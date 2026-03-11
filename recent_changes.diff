@@ -1,0 +1,522 @@
+diff --git a/mobile/analysis.txt b/mobile/analysis.txt
+deleted file mode 100644
+index 5aa9abe..0000000
+Binary files a/mobile/analysis.txt and /dev/null differ
+diff --git a/mobile/analysis_results.txt b/mobile/analysis_results.txt
+deleted file mode 100644
+index 6be9b40..0000000
+Binary files a/mobile/analysis_results.txt and /dev/null differ
+diff --git a/mobile/analyze_output.txt b/mobile/analyze_output.txt
+deleted file mode 100644
+index 73cd315..0000000
+--- a/mobile/analyze_output.txt
++++ /dev/null
+@@ -1,16 +0,0 @@
+-Analyzing mobile...                                             
+-
+-   info - The imported package 'http_parser' isn't a dependency of the importing package - lib\core\services\report_service.dart:4:8 - depend_on_referenced_packages
+-   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:151:9 - curly_braces_in_flow_control_structures
+-   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:153:9 - curly_braces_in_flow_control_structures
+-   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:155:9 - curly_braces_in_flow_control_structures
+-   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:157:9 - curly_braces_in_flow_control_structures
+-   info - Statements in an if should be enclosed in a block - lib\core\services\report_service.dart:159:9 - curly_braces_in_flow_control_structures
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pj_gedung\presentation\pages\setting\pj_gedung_setting_main_page.dart:135:53 - deprecated_member_use
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\pj_gedung\presentation\pages\setting\pj_gedung_setting_main_page.dart:167:53 - deprecated_member_use
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\supervisor\presentation\pages\setting\supervisor_setting_main_page.dart:94:63 - deprecated_member_use
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\supervisor\presentation\pages\setting\supervisor_setting_main_page.dart:129:63 - deprecated_member_use
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\teknisi\presentation\pages\setting\teknisi_setting_main_page.dart:117:54 - deprecated_member_use
+-   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\teknisi\presentation\pages\setting\teknisi_setting_main_page.dart:149:54 - deprecated_member_use
+-
+-12 issues found. (ran in 5.9s)
+diff --git a/mobile/lib/core/services/api_service.dart b/mobile/lib/core/services/api_service.dart
+index abcfe0d..c359c1e 100644
+--- a/mobile/lib/core/services/api_service.dart
++++ b/mobile/lib/core/services/api_service.dart
+@@ -10,7 +10,7 @@ class ApiService {
+       return '${Uri.base.scheme}://${Uri.base.host}:4000';
+     }
+     // Local Dev (Android Emulator use 10.0.2.2)
+-    return 'http://192.168.1.20:4000';
++    return 'http://10.137.129.104:4000';
+     // return 'http://10.0.2.2:3000';
+     // Production (Koyeb)
+     // return 'https://wittering-sosanna-lapor-fsm-c18a18f2.koyeb.app';
+diff --git a/mobile/lib/core/services/fcm_service.dart b/mobile/lib/core/services/fcm_service.dart
+index c4f43f8..f3fb497 100644
+--- a/mobile/lib/core/services/fcm_service.dart
++++ b/mobile/lib/core/services/fcm_service.dart
+@@ -168,7 +168,9 @@ class FCMService {
+             channelDescription:
+                 'This channel is used for important notifications.',
+             icon: android.smallIcon,
+-            color: const Color(0xFF0055A5), // Primary Color
++            color: channelId == 'lapor_fsm_channel_emergency_v3'
++                ? const Color(0xFFFF0000)
++                : const Color(0xFF0055A5),
+             sound: sound != null
+                 ? RawResourceAndroidNotificationSound(sound)
+                 : null,
+diff --git a/mobile/lib/core/services/report_service.dart b/mobile/lib/core/services/report_service.dart
+index 2b1f615..0d9cf15 100644
+--- a/mobile/lib/core/services/report_service.dart
++++ b/mobile/lib/core/services/report_service.dart
+@@ -39,7 +39,11 @@ class ReportService {
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+         return {
+-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
++          'data':
++              (rawData as List?)
++                  ?.map((e) => Map<String, dynamic>.from(e))
++                  .toList() ??
++              [],
+           'total': response.data['total'] ?? 0,
+         };
+       }
+@@ -64,7 +68,11 @@ class ReportService {
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+         return {
+-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
++          'data':
++              (rawData as List?)
++                  ?.map((e) => Map<String, dynamic>.from(e))
++                  .toList() ??
++              [],
+           'total': response.data['total'] ?? 0,
+         };
+       }
+@@ -147,16 +155,17 @@ class ReportService {
+       final fileExtension = fileName.split('.').last.toLowerCase();
+ 
+       String mimeType = 'image/jpeg';
+-      if (fileExtension == 'png')
++      if (fileExtension == 'png') {
+         mimeType = 'image/png';
+-      else if (fileExtension == 'webp')
++      } else if (fileExtension == 'webp') {
+         mimeType = 'image/webp';
+-      else if (fileExtension == 'gif')
++      } else if (fileExtension == 'gif') {
+         mimeType = 'image/gif';
+-      else if (fileExtension == 'mp4')
++      } else if (fileExtension == 'mp4') {
+         mimeType = 'video/mp4';
+-      else if (fileExtension == 'mov' || fileExtension == 'quicktime')
++      } else if (fileExtension == 'mov' || fileExtension == 'quicktime') {
+         mimeType = 'video/quicktime';
++      }
+ 
+       final formData = FormData.fromMap({
+         'file': MultipartFile.fromBytes(
+@@ -211,7 +220,10 @@ class ReportService {
+ 
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
++        return (rawData as List?)
++                ?.map((e) => Map<String, dynamic>.from(e))
++                .toList() ??
++            [];
+       }
+       return [];
+     } catch (e) {
+@@ -281,7 +293,10 @@ class ReportService {
+       );
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
++        return (rawData as List?)
++                ?.map((e) => Map<String, dynamic>.from(e))
++                .toList() ??
++            [];
+       }
+       return [];
+     } catch (e) {
+@@ -408,7 +423,10 @@ class ReportService {
+       final response = await apiService.dio.get('/supervisor/locations');
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
++        return (rawData as List?)
++                ?.map((e) => Map<String, dynamic>.from(e))
++                .toList() ??
++            [];
+       }
+       return null;
+     } catch (e) {
+@@ -427,7 +445,11 @@ class ReportService {
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+         return {
+-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
++          'data':
++              (rawData as List?)
++                  ?.map((e) => Map<String, dynamic>.from(e))
++                  .toList() ??
++              [],
+           'total': response.data['total'] ?? 0,
+         };
+       }
+@@ -493,7 +515,11 @@ class ReportService {
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+         return {
+-          'data': (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [],
++          'data':
++              (rawData as List?)
++                  ?.map((e) => Map<String, dynamic>.from(e))
++                  .toList() ??
++              [],
+           'total': response.data['total'] ?? 0,
+         };
+       }
+@@ -509,7 +535,10 @@ class ReportService {
+       final response = await apiService.dio.get('/supervisor/technicians');
+       if (response.data['status'] == 'success') {
+         final rawData = response.data['data'];
+-        return (rawData as List?)?.map((e) => Map<String, dynamic>.from(e)).toList() ?? [];
++        return (rawData as List?)
++                ?.map((e) => Map<String, dynamic>.from(e))
++                .toList() ??
++            [];
+       }
+       return [];
+     } catch (e) {
+diff --git a/mobile/lib/core/widgets/base_templates.dart b/mobile/lib/core/widgets/base_templates.dart
+index 6082268..e3cc1ba 100644
+--- a/mobile/lib/core/widgets/base_templates.dart
++++ b/mobile/lib/core/widgets/base_templates.dart
+@@ -25,11 +25,19 @@ class BaseHelpPage extends StatelessWidget {
+     return Scaffold(
+       backgroundColor: AppTheme.backgroundColor,
+       appBar: AppBar(
+-        title: Text(title),
+-        backgroundColor: appBarColor ?? Colors.white,
+-        foregroundColor: appBarForegroundColor ?? Colors.black,
+-        iconTheme: IconThemeData(color: appBarForegroundColor ?? Colors.black),
++        title: Text(
++          title,
++          style: TextStyle(
++            color: appBarForegroundColor ?? Colors.white,
++            fontWeight: FontWeight.bold,
++            fontSize: 18,
++          ),
++        ),
++        backgroundColor: appBarColor ?? AppTheme.primaryColor,
++        foregroundColor: appBarForegroundColor ?? Colors.white,
++        iconTheme: IconThemeData(color: appBarForegroundColor ?? Colors.white),
+         elevation: 0,
++        centerTitle: true,
+       ),
+       body: SingleChildScrollView(
+         padding: const EdgeInsets.all(20),
+diff --git a/mobile/lib/features/notification/data/notification_data.dart b/mobile/lib/features/notification/data/notification_data.dart
+index 7bdb9a1..b43d826 100644
+--- a/mobile/lib/features/notification/data/notification_data.dart
++++ b/mobile/lib/features/notification/data/notification_data.dart
+@@ -78,6 +78,7 @@ class NotificationData {
+   static Color getIconColor(String type) {
+     switch (type) {
+       case 'emergency':
++      case 'darurat':
+         return Colors.red;
+       case 'success':
+         return Colors.green;
+@@ -91,6 +92,7 @@ class NotificationData {
+   static IconData getIcon(String type) {
+     switch (type) {
+       case 'emergency':
++      case 'darurat':
+         return LucideIcons.alertTriangle;
+       case 'success':
+         return LucideIcons.checkCircle2;
+@@ -104,6 +106,7 @@ class NotificationData {
+   static Color getBgColor(String type) {
+     switch (type) {
+       case 'emergency':
++      case 'darurat':
+         return Colors.red.withValues(alpha: 0.1);
+       case 'success':
+         return Colors.green.withValues(alpha: 0.1);
+diff --git a/mobile/lib/features/pelapor/presentation/pages/history/report_history_page.dart b/mobile/lib/features/pelapor/presentation/pages/history/report_history_page.dart
+index 241f433..852636f 100644
+--- a/mobile/lib/features/pelapor/presentation/pages/history/report_history_page.dart
++++ b/mobile/lib/features/pelapor/presentation/pages/history/report_history_page.dart
+@@ -158,6 +158,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
+                                   location: report.location,
+                                   locationDetail: report.locationDetail,
+                                   status: report.status,
++                                  isEmergency: report.isEmergency,
+                                   elapsedTime: DateTime.now().difference(
+                                     report.createdAt,
+                                   ),
+@@ -179,7 +180,7 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
+ 
+   Widget _buildSearchAndFilter() {
+     return Container(
+-      padding: const EdgeInsets.only(bottom: 16),
++      padding: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+       decoration: const BoxDecoration(
+         color: Colors.white,
+         borderRadius: BorderRadius.only(
+diff --git a/mobile/lib/features/pelapor/presentation/pages/home_page.dart b/mobile/lib/features/pelapor/presentation/pages/home_page.dart
+index 6f78a7c..8cea967 100644
+--- a/mobile/lib/features/pelapor/presentation/pages/home_page.dart
++++ b/mobile/lib/features/pelapor/presentation/pages/home_page.dart
+@@ -89,14 +89,14 @@ class _HomePageState extends ConsumerState<HomePage> {
+               expandedHeight: 140,
+               floating: false,
+               pinned: true,
+-              backgroundColor: Colors.white,
++              backgroundColor: AppTheme.primaryColor,
+               automaticallyImplyLeading: false,
+               elevation: 0,
+               title: innerBoxIsScrolled
+                   ? const Text(
+                       'Lapor FSM!',
+                       style: TextStyle(
+-                        color: Colors.black,
++                        color: Colors.white,
+                         fontWeight: FontWeight.bold,
+                         fontSize: 18,
+                       ),
+@@ -281,7 +281,7 @@ class _HomePageState extends ConsumerState<HomePage> {
+                       ),
+                       const Gap(16),
+                       _buildMenuGrid(),
+-                      const Gap(32),
++                      const Gap(16),
+ 
+                       // Public Feed Section
+                       Row(
+@@ -303,7 +303,7 @@ class _HomePageState extends ConsumerState<HomePage> {
+                           ),
+                         ],
+                       ),
+-                      const Gap(12),
++                      const Gap(8),
+                       _isLoading
+                           ? const Center(
+                               child: Padding(
+@@ -693,10 +693,11 @@ class _HomePageState extends ConsumerState<HomePage> {
+     }
+ 
+     return ListView.separated(
++      padding: EdgeInsets.zero,
+       shrinkWrap: true,
+       physics: const NeverScrollableScrollPhysics(),
+       itemCount: _recentReports.length,
+-      separatorBuilder: (context, index) => const Gap(12),
++      separatorBuilder: (context, index) => const Gap(16),
+       itemBuilder: (context, index) {
+         final report = _recentReports[index];
+         return UniversalReportCard(
+@@ -706,6 +707,7 @@ class _HomePageState extends ConsumerState<HomePage> {
+           locationDetail: report.locationDetail,
+           category: report.category,
+           status: report.status,
++          isEmergency: report.isEmergency,
+           reporterName: report.reporterName,
+           elapsedTime: DateTime.now().difference(report.createdAt),
+           showStatus: true,
+diff --git a/mobile/lib/features/pelapor/presentation/pages/profile/settings_page.dart b/mobile/lib/features/pelapor/presentation/pages/profile/settings_page.dart
+index 211432e..3014a36 100644
+--- a/mobile/lib/features/pelapor/presentation/pages/profile/settings_page.dart
++++ b/mobile/lib/features/pelapor/presentation/pages/profile/settings_page.dart
+@@ -33,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
+         elevation: 0,
+       ),
+       body: SingleChildScrollView(
++        padding: const EdgeInsets.symmetric(horizontal: 16),
+         child: Column(
+           children: [
+             const Gap(16),
+diff --git a/mobile/lib/features/pj_gedung/presentation/pages/dashboard/pj_gedung_dashboard_page.dart b/mobile/lib/features/pj_gedung/presentation/pages/dashboard/pj_gedung_dashboard_page.dart
+index c881cd7..6e83f14 100644
+--- a/mobile/lib/features/pj_gedung/presentation/pages/dashboard/pj_gedung_dashboard_page.dart
++++ b/mobile/lib/features/pj_gedung/presentation/pages/dashboard/pj_gedung_dashboard_page.dart
+@@ -719,6 +719,7 @@ class _PJGedungDashboardPageState extends State<PJGedungDashboardPage> {
+             locationDetail: report.locationDetail,
+             category: report.category,
+             status: report.status,
++            isEmergency: report.isEmergency,
+             elapsedTime: DateTime.now().difference(report.createdAt),
+             showStatus: true,
+             compact: true,
+diff --git a/mobile/lib/features/pj_gedung/presentation/pages/setting/pj_gedung_setting_main_page.dart b/mobile/lib/features/pj_gedung/presentation/pages/setting/pj_gedung_setting_main_page.dart
+index a1fbecb..1ac0191 100644
+--- a/mobile/lib/features/pj_gedung/presentation/pages/setting/pj_gedung_setting_main_page.dart
++++ b/mobile/lib/features/pj_gedung/presentation/pages/setting/pj_gedung_setting_main_page.dart
+@@ -132,7 +132,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
+                     height: 100,
+                     decoration: BoxDecoration(
+                       shape: BoxShape.circle,
+-                      color: AppTheme.pjGedungColor.withOpacity(0.1),
++                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
+                       border: Border.all(
+                         color: AppTheme.pjGedungColor,
+                         width: 3,
+@@ -164,7 +164,7 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
+                       vertical: 6,
+                     ),
+                     decoration: BoxDecoration(
+-                      color: AppTheme.pjGedungColor.withOpacity(0.1),
++                      color: AppTheme.pjGedungColor.withValues(alpha: 0.1),
+                       borderRadius: BorderRadius.circular(20),
+                     ),
+                     child: const Row(
+diff --git a/mobile/lib/features/supervisor/presentation/pages/dashboard/supervisor_dashboard_page.dart b/mobile/lib/features/supervisor/presentation/pages/dashboard/supervisor_dashboard_page.dart
+index 0b787aa..550a09d 100644
+--- a/mobile/lib/features/supervisor/presentation/pages/dashboard/supervisor_dashboard_page.dart
++++ b/mobile/lib/features/supervisor/presentation/pages/dashboard/supervisor_dashboard_page.dart
+@@ -694,6 +694,7 @@ class _SupervisorDashboardPageState
+           locationDetail: r.locationDetail,
+           category: r.category,
+           status: r.status,
++          isEmergency: r.isEmergency,
+           handledBy: r.handledBy?.join(', '),
+           showStatus: true,
+           showTimer: false,
+@@ -751,6 +752,7 @@ class _SupervisorDashboardPageState
+           locationDetail: r.locationDetail,
+           category: r.category,
+           status: r.status,
++          isEmergency: r.isEmergency,
+           elapsedTime: DateTime.now().difference(r.createdAt),
+           showStatus: true,
+           onTap: () => context.push(
+diff --git a/mobile/lib/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart b/mobile/lib/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart
+index 8672980..d13955f 100644
+--- a/mobile/lib/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart
++++ b/mobile/lib/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart
+@@ -91,7 +91,9 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
+                             height: 100,
+                             decoration: BoxDecoration(
+                               shape: BoxShape.circle,
+-                              color: AppTheme.supervisorColor.withOpacity(0.1),
++                              color: AppTheme.supervisorColor.withValues(
++                                alpha: 0.1,
++                              ),
+                               border: Border.all(
+                                 color: AppTheme.supervisorColor,
+                                 width: 3,
+@@ -126,7 +128,9 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
+                               vertical: 6,
+                             ),
+                             decoration: BoxDecoration(
+-                              color: AppTheme.supervisorColor.withOpacity(0.1),
++                              color: AppTheme.supervisorColor.withValues(
++                                alpha: 0.1,
++                              ),
+                               borderRadius: BorderRadius.circular(20),
+                             ),
+                             child: const Row(
+diff --git a/mobile/lib/features/teknisi/presentation/pages/dashboard/teknisi_dashboard_page.dart b/mobile/lib/features/teknisi/presentation/pages/dashboard/teknisi_dashboard_page.dart
+index 9f70a05..aa1d9f7 100644
+--- a/mobile/lib/features/teknisi/presentation/pages/dashboard/teknisi_dashboard_page.dart
++++ b/mobile/lib/features/teknisi/presentation/pages/dashboard/teknisi_dashboard_page.dart
+@@ -485,6 +485,7 @@ class _TeknisiDashboardPageState extends ConsumerState<TeknisiDashboardPage> {
+                 locationDetail: report.locationDetail,
+                 category: report.category,
+                 status: report.status,
++                isEmergency: report.isEmergency,
+                 elapsedTime: DateTime.now().difference(report.createdAt),
+                 reporterName: report.reporterName,
+                 handledBy: report.handledBy?.join(', '),
+diff --git a/mobile/lib/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart b/mobile/lib/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart
+index ac4a14e..2ec96b6 100644
+--- a/mobile/lib/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart
++++ b/mobile/lib/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart
+@@ -114,7 +114,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
+                     height: 100,
+                     decoration: BoxDecoration(
+                       shape: BoxShape.circle,
+-                      color: AppTheme.secondaryColor.withOpacity(0.1),
++                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
+                       border: Border.all(
+                         color: AppTheme.secondaryColor,
+                         width: 3,
+@@ -146,7 +146,7 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
+                       vertical: 6,
+                     ),
+                     decoration: BoxDecoration(
+-                      color: AppTheme.secondaryColor.withOpacity(0.1),
++                      color: AppTheme.secondaryColor.withValues(alpha: 0.1),
+                       borderRadius: BorderRadius.circular(20),
+                     ),
+                     child: Row(
+diff --git a/mobile/pubspec.lock b/mobile/pubspec.lock
+index 5a352f1..eb466e3 100644
+--- a/mobile/pubspec.lock
++++ b/mobile/pubspec.lock
+@@ -569,7 +569,7 @@ packages:
+     source: hosted
+     version: "3.2.2"
+   http_parser:
+-    dependency: transitive
++    dependency: "direct main"
+     description:
+       name: http_parser
+       sha256: "178d74305e7866013777bab2c3d8726205dc5a4dd935297175b19a23a2e66571"
+@@ -772,10 +772,10 @@ packages:
+     dependency: transitive
+     description:
+       name: meta
+-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
++      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
+       url: "https://pub.dev"
+     source: hosted
+-    version: "1.16.0"
++    version: "1.17.0"
+   mgrs_dart:
+     dependency: transitive
+     description:
+@@ -1225,26 +1225,26 @@ packages:
+     dependency: transitive
+     description:
+       name: test
+-      sha256: "65e29d831719be0591f7b3b1a32a3cda258ec98c58c7b25f7b84241bc31215bb"
++      sha256: "75906bf273541b676716d1ca7627a17e4c4070a3a16272b7a3dc7da3b9f3f6b7"
+       url: "https://pub.dev"
+     source: hosted
+-    version: "1.26.2"
++    version: "1.26.3"
+   test_api:
+     dependency: transitive
+     description:
+       name: test_api
+-      sha256: "522f00f556e73044315fa4585ec3270f1808a4b186c936e612cab0b565ff1e00"
++      sha256: ab2726c1a94d3176a45960b6234466ec367179b87dd74f1611adb1f3b5fb9d55
+       url: "https://pub.dev"
+     source: hosted
+-    version: "0.7.6"
++    version: "0.7.7"
+   test_core:
+     dependency: transitive
+     description:
+       name: test_core
+-      sha256: "80bf5a02b60af04b09e14f6fe68b921aad119493e26e490deaca5993fef1b05a"
++      sha256: "0cc24b5ff94b38d2ae73e1eb43cc302b77964fbf67abad1e296025b78deb53d0"
+       url: "https://pub.dev"
+     source: hosted
+-    version: "0.6.11"
++    version: "0.6.12"
+   timezone:
+     dependency: transitive
+     description:
+diff --git a/mobile/pubspec.yaml b/mobile/pubspec.yaml
+index b07bab3..48b42a3 100644
+--- a/mobile/pubspec.yaml
++++ b/mobile/pubspec.yaml
+@@ -62,6 +62,7 @@ dependencies:
+   video_player: ^2.10.1
+   chewie: ^1.13.0
+   http: ^1.2.1
++  http_parser: ^4.1.0
+ 
+ dev_dependencies:
+   flutter_test:
+diff --git a/recent_changes.diff b/recent_changes.diff
+index 337d7eb..a396c10 100644
+Binary files a/recent_changes.diff and b/recent_changes.diff differ
