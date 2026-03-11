@@ -17,13 +17,13 @@
 
 ---
 
-## 📋 Deskripsi
+## ðŸ“‹ Deskripsi
 
 **Lapor FSM!** adalah platform pelaporan berbasis mobile yang dirancang untuk civitas akademika FSM (Fakultas Sains dan Matematika) Universitas Diponegoro. Aplikasi ini memungkinkan mahasiswa dan dosen untuk melaporkan insiden darurat atau kerusakan fasilitas dengan fitur pelacakan lokasi real-time.
 
-### ✨ Fitur Utama
+### âœ¨ Fitur Utama
 
-#### 🚨 Pelaporan Insiden
+#### ðŸš¨ Pelaporan Insiden
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Panic Button** | Tombol darurat sekali tekan untuk pelaporan cepat dengan pengiriman lokasi otomatis |
@@ -32,22 +32,22 @@
 | **Pemilihan Gedung** | Pilih gedung spesifik tempat kejadian untuk akurasi lokasi |
 | **Kategori Insiden** | Klasifikasi laporan: Emergency (K3, Medis, Keamanan, Bencana) & Non-Emergency (Maintenance, Kebersihan) |
 
-#### 🔴 Real-time Tracking
+#### ðŸ”´ Real-time Tracking
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Emergency Live Tracking** | Streaming lokasi pelapor setiap detik via WebSockets untuk kondisi darurat |
 | **Peta Interaktif** | Teknisi & Supervisor dapat memantau pergerakan pelapor darurat secara real-time tanpa refresh halaman |
 | **Status Tracking** | Pelapor dapat memantau setiap tahap penanganan laporan mereka secara transparan |
 
-#### 🛠️ Penanganan Laporan
+#### ðŸ› ï¸ Penanganan Laporan
 | Fitur | Deskripsi |
 |-------|-----------|
-| **Lifecycle Management** | Alur status: Pending → Verifikasi → Penanganan → Selesai (atau Penanganan Ulang) |
+| **Lifecycle Management** | Alur status: Pending â†’ Verifikasi â†’ Penanganan â†’ Selesai (atau Penanganan Ulang) |
 | **Validasi Teknisi** | Teknisi memvalidasi laporan masuk dan mengelola status lifecycle |
 | **Bukti Penanganan** | Teknisi wajib upload foto/video bukti saat menyelesaikan penanganan |
 | **Recall Teknisi** | Supervisor dapat memanggil kembali teknisi jika penanganan dinilai belum tuntas |
 
-#### 📊 Monitoring & Evaluasi
+#### ðŸ“Š Monitoring & Evaluasi
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Timer Durasi** | Penghitungan waktu otomatis dari laporan masuk hingga selesai untuk evaluasi kinerja |
@@ -55,7 +55,7 @@
 | **Public Feed** | Transparansi laporan aktif dengan fitur filter berdasarkan kategori dan lokasi |
 | **Arsip Laporan** | Riwayat laporan keseluruhan untuk memantau performa pelayanan |
 
-#### 📄 Export & Administrasi
+#### ðŸ“„ Export & Administrasi
 | Fitur | Deskripsi |
 |-------|-----------|
 | **Export Excel** | Unduh data laporan untuk keperluan pengolahan data lebih lanjut |
@@ -65,44 +65,44 @@
 
 ---
 
-## 🏗️ Arsitektur Proyek
+## ðŸ—ï¸ Arsitektur Proyek
 
 Repositori ini menggunakan arsitektur **Monorepo** yang berisi kode untuk Mobile Apps dan Backend API.
 
 ```text
 lapor-fsm/
-├── 📱 mobile/          # Aplikasi Flutter (Android/iOS)
-│   ├── lib/
-│   │   ├── core/       # Router, Services, Theme, Widgets, Utils, Models
-│   │   ├── features/   # Fitur per Role
-│   │   │   ├── admin/         # Panel Admin & Manajemen
-│   │   │   ├── auth/          # Autentikasi Pelapor & Staff
-│   │   │   ├── notification/  # Sistem Notifikasi
-│   │   │   ├── pelapor/       # Fitur Pelapor & Feed Umum
-│   │   │   ├── pj_gedung/     # Dashboard & Verifikasi Gedung
-│   │   │   ├── report_common/ # Komponen Laporan Bersama
-│   │   │   ├── supervisor/    # Dashboard & Review Supervisor
-│   │   │   └── teknisi/       # Panel Penanganan Teknisi
-│   │   └── main.dart
-│   └── assets/         # Logo, Icon, & Gambar
-│
-└── 🖥️ backend/         # Server ElysiaJS + Bun (API)
-    ├── src/
-    │   ├── controllers/    # API Controllers
-    │   │   ├── admin/
-    │   │   ├── reporter/
-    │   │   ├── staff/
-    │   │   ├── supervisor/
-    │   │   ├── technician/
-    │   │   ├── auth.controller.ts
-    │   │   └── notification.controller.ts
-    │   ├── db/             # Schema & Seeding
-    │   └── uploads/        # Media Storage
+â”œâ”€â”€ ðŸ“± mobile/          # Aplikasi Flutter (Android/iOS)
+â”‚   â”œâ”€â”€ lib/
+â”‚   â”‚   â”œâ”€â”€ core/       # Router, Services, Theme, Widgets, Utils, Models
+â”‚   â”‚   â”œâ”€â”€ features/   # Fitur per Role
+â”‚   â”‚   â”‚   â”œâ”€â”€ admin/         # Panel Admin & Manajemen
+â”‚   â”‚   â”‚   â”œâ”€â”€ auth/          # Autentikasi Pelapor & Staff
+â”‚   â”‚   â”‚   â”œâ”€â”€ notification/  # Sistem Notifikasi
+â”‚   â”‚   â”‚   â”œâ”€â”€ pelapor/       # Fitur Pelapor & Feed Umum
+â”‚   â”‚   â”‚   â”œâ”€â”€ pj_gedung/     # Dashboard & Verifikasi Gedung
+â”‚   â”‚   â”‚   â”œâ”€â”€ report_common/ # Komponen Laporan Bersama
+â”‚   â”‚   â”‚   â”œâ”€â”€ supervisor/    # Dashboard & Review Supervisor
+â”‚   â”‚   â”‚   â””â”€â”€ teknisi/       # Panel Penanganan Teknisi
+â”‚   â”‚   â””â”€â”€ main.dart
+â”‚   â””â”€â”€ assets/         # Logo, Icon, & Gambar
+â”‚
+â””â”€â”€ ðŸ–¥ï¸ backend/         # Server ElysiaJS + Bun (API)
+    â”œâ”€â”€ src/
+    â”‚   â”œâ”€â”€ controllers/    # API Controllers
+    â”‚   â”‚   â”œâ”€â”€ admin/
+    â”‚   â”‚   â”œâ”€â”€ reporter/
+    â”‚   â”‚   â”œâ”€â”€ staff/
+    â”‚   â”‚   â”œâ”€â”€ supervisor/
+    â”‚   â”‚   â”œâ”€â”€ technician/
+    â”‚   â”‚   â”œâ”€â”€ auth.controller.ts
+    â”‚   â”‚   â””â”€â”€ notification.controller.ts
+    â”‚   â”œâ”€â”€ db/             # Schema & Seeding
+    â”‚   â””â”€â”€ uploads/        # Media Storage
 ```
 
 ---
 
-## 👥 Role (Peran Pengguna)
+## ðŸ‘¥ Role (Peran Pengguna)
 
 | Role | Deskripsi | Fitur Utama |
 |------|-----------|-------------|
@@ -114,12 +114,12 @@ lapor-fsm/
 
 ---
 
-## 📊 Kategori Laporan
+## ðŸ“Š Kategori Laporan
 
-### 🔴 Emergency
+### ðŸ”´ Emergency
 - **Darurat**: Kategori khusus untuk respon cepat (Kebakaran, Medis, K3, Keamanan).
 
-### 🟢 Non-Emergency
+### ðŸŸ¢ Non-Emergency
 - **Kelistrikan**: Lampu, AC, Stop kontak, dsb.
 - **Sanitasi**: Kran bocor, wastafel, toilet mampet.
 - **Infrastruktur**: Kerusakan bangunan, atap, plafon, pintu.
@@ -130,7 +130,7 @@ lapor-fsm/
 
 ---
 
-## 🛠️ Teknologi
+## ðŸ› ï¸ Teknologi
 
 ### Frontend (Mobile)
 | Teknologi | Versi | Kegunaan |
@@ -155,7 +155,7 @@ lapor-fsm/
 
 ---
 
-## 🎨 UI Design System
+## ðŸŽ¨ UI Design System
 
 Untuk memastikan konsistensi visual di seluruh role, proyek ini menggunakan sekumpulan widget kustom yang terstandarisasi:
 
@@ -166,48 +166,48 @@ Untuk memastikan konsistensi visual di seluruh role, proyek ini menggunakan seku
 
 ---
 
-<!-- ## 🗄️ Database Schema
+<!-- ## ðŸ—„ï¸ Database Schema
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   users     │     │   staff     │     │ categories  │
-│─────────────│     │─────────────│     │─────────────│
-│ id          │     │ id          │     │ id          │
-│ sso_id      │     │ name        │     │ name        │
-│ name        │     │ email       │     │ type        │
-│ email       │     │ password    │     │ icon        │
-│ phone       │     │ role        │     └─────────────┘
-│ faculty     │     │ is_active   │
-│ department  │     └──────┬──────┘
-└──────┬──────┘            │
-       │                   │
-       │    ┌──────────────┴──────────────┐
-       │    │           reports           │
-       │    │─────────────────────────────│
-       └────│ user_id, category_id        │
-            │ title, description          │
-            │ building, latitude, longitude│
-            │ image_url, is_emergency     │
-            │ status, assigned_to         │────┐
-            │ handler_notes, handler_media_url│
-            └──────────────────────────────────┘
-                          │
-                          ▼
-                ┌─────────────────┐
-                │  report_logs    │
-                │─────────────────│
-                │ report_id       │
-                │ staff_id        │
-                │ action          │
-                │ notes           │
-                └─────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”     â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚   users     â”‚     â”‚   staff     â”‚     â”‚ categories  â”‚
+â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚     â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚     â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚
+â”‚ id          â”‚     â”‚ id          â”‚     â”‚ id          â”‚
+â”‚ sso_id      â”‚     â”‚ name        â”‚     â”‚ name        â”‚
+â”‚ name        â”‚     â”‚ email       â”‚     â”‚ type        â”‚
+â”‚ email       â”‚     â”‚ password    â”‚     â”‚ icon        â”‚
+â”‚ phone       â”‚     â”‚ role        â”‚     â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+â”‚ faculty     â”‚     â”‚ is_active   â”‚
+â”‚ department  â”‚     â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”˜
+â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”˜            â”‚
+       â”‚                   â”‚
+       â”‚    â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+       â”‚    â”‚           reports           â”‚
+       â”‚    â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚
+       â””â”€â”€â”€â”€â”‚ user_id, category_id        â”‚
+            â”‚ title, description          â”‚
+            â”‚ building, latitude, longitudeâ”‚
+            â”‚ image_url, is_emergency     â”‚
+            â”‚ status, assigned_to         â”‚â”€â”€â”€â”€â”
+            â”‚ handler_notes, handler_media_urlâ”‚
+            â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                          â”‚
+                          â–¼
+                â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+                â”‚  report_logs    â”‚
+                â”‚â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”‚
+                â”‚ report_id       â”‚
+                â”‚ staff_id        â”‚
+                â”‚ action          â”‚
+                â”‚ notes           â”‚
+                â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ``` -->
 
 ### Status Lifecycle Laporan
 
 Sistem membedakan alur verifikasi berdasarkan tingkat urgensi laporan (Darurat vs Non-Darurat). PENDING dalam Bahasa Indonesia diistilahkan sebagai **"Menunggu"** atau **"Menunggu Verifikasi"**.
 
-#### 🟢 Alur Non-Darurat
+#### ðŸŸ¢ Alur Non-Darurat
 Laporan melewati verifikasi wilayah oleh PJ Gedung sebelum diteruskan ke Supervisor.
 
 > **Catatan:** Untuk laporan **Non-Gedung** (Area Umum, Taman, Parkiran), alur **tidak melalui** PJ Gedung (bypass). Verifikasi dilakukan langsung oleh **Supervisor**.
@@ -215,40 +215,40 @@ Laporan melewati verifikasi wilayah oleh PJ Gedung sebelum diteruskan ke Supervi
 
 ```text
 [Pelapor membuat laporan : PENDING]
-              │
-              ▼
-[PJ Gedung Verifikasi : TERVERIFIKASI] ──► [Laporan tidak valid : TOLAK] ──► [ARSIP]
-              │
-              ▼
+              â”‚
+              â–¼
+[PJ Gedung Verifikasi : TERVERIFIKASI] â”€â”€â–º [Laporan tidak valid : TOLAK] â”€â”€â–º [ARSIP]
+              â”‚
+              â–¼
 [Supervisor alokasi teknisi : DIPROSES]
-              │
-              ▼
-[Teknisi Menerima & Menangani : PENANGANAN] ◄────────────────┐
-              │                                              │
-              ▼                                         (RECALLED)
-[Teknisi Menyelesaikan : SELESAI] ───(Supervisor Re-Review)──┘
-              │
-              ▼
-[Supervisor Approval : APPROVED] ──► [ARSIP]
+              â”‚
+              â–¼
+[Teknisi Menerima & Menangani : PENANGANAN] â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+              â”‚                                              â”‚
+              â–¼                                         (RECALLED)
+[Teknisi Menyelesaikan : SELESAI] â”€â”€â”€(Supervisor Re-Review)â”€â”€â”˜
+              â”‚
+              â–¼
+[Supervisor Approval : APPROVED] â”€â”€â–º [ARSIP]
 ```
 
-#### 🔴 Alur Darurat
+#### ðŸ”´ Alur Darurat
 Laporan melewati tahap PJ Gedung dan langsung masuk ke antrean alokasi Supervisor (Fast-track).
 
 ```text
 [Pelapor membuat laporan : PENDING]
-              │
-              ▼
+              â”‚
+              â–¼
 [Supervisor alokasi teknisi : DIPROSES]
-              │
-              ▼
-[Teknisi Menerima & Menangani : PENANGANAN] ◄────────────────┐
-              │                                              │
-              ▼                                         (RECALLED)
-[Teknisi Menyelesaikan : SELESAI] ───(Supervisor Re-Review)──┘
-              │
-              ▼
-[Supervisor Approval : APPROVED] ──► [ARSIP]
+              â”‚
+              â–¼
+[Teknisi Menerima & Menangani : PENANGANAN] â—„â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+              â”‚                                              â”‚
+              â–¼                                         (RECALLED)
+[Teknisi Menyelesaikan : SELESAI] â”€â”€â”€(Supervisor Re-Review)â”€â”€â”˜
+              â”‚
+              â–¼
+[Supervisor Approval : APPROVED] â”€â”€â–º [ARSIP]
 ```
 
 | Status | Deskripsi |
@@ -266,7 +266,7 @@ Laporan melewati tahap PJ Gedung dan langsung masuk ke antrean alokasi Superviso
 
 ---
 
-## 🚀 Setup & Instalasi
+## ðŸš€ Setup & Instalasi
 
 ### Prerequisites
 
@@ -298,7 +298,7 @@ cp .env.example .env
 bun install
 
 # Jalankan database migration (jika diperlukan)
-bun run drizzle-kit push
+bun run db:push
 
 # Seed data awal (opsional)
 bun run src/db/seed.ts
@@ -329,7 +329,7 @@ Edit konfigurasi API di:
 
 ---
 
-<!-- ## 📖 Dokumentasi API
+<!-- ## ðŸ“– Dokumentasi API
 
 ### Base URL
 ```
@@ -354,54 +354,54 @@ http://localhost:3000
 
 --- -->
 
-## 📱 Fitur Per Role
+## ðŸ“± Fitur Per Role
 
 ### Pelapor (Reporter)
-- ✅ Login & Registrasi Terintegrasi
-- ✅ Verifikasi Email Otomatis (Undip Domain)
-- ✅ Verifikasi Admin Manual (Non-Undip)
-- ✅ Home Page dengan Panic Button
-- ✅ Form Laporan (Camera, GPS, Gedung)
-- ✅ Public Feed dengan Filter
-- ✅ Riwayat Laporan
-- ✅ Detail Laporan dengan Timeline
-- ✅ Halaman Profil
-- ✅ Forgot Password
+- âœ… Login & Registrasi Terintegrasi
+- âœ… Verifikasi Email Otomatis (Undip Domain)
+- âœ… Verifikasi Admin Manual (Non-Undip)
+- âœ… Home Page dengan Panic Button
+- âœ… Form Laporan (Camera, GPS, Gedung)
+- âœ… Public Feed dengan Filter
+- âœ… Riwayat Laporan
+- âœ… Detail Laporan dengan Timeline
+- âœ… Halaman Profil
+- âœ… Forgot Password
 
 ### Teknisi
-- ✅ Dashboard Laporan Masuk
-- ✅ Validasi & Penanganan Laporan
-- ✅ Map View Lokasi Laporan
-- ✅ Upload Bukti Penanganan
-- ✅ Riwayat Penanganan
-- ✅ Profil & Settings
+- âœ… Dashboard Laporan Masuk
+- âœ… Validasi & Penanganan Laporan
+- âœ… Map View Lokasi Laporan
+- âœ… Upload Bukti Penanganan
+- âœ… Riwayat Penanganan
+- âœ… Profil & Settings
 
 ### PJ Gedung
-- ✅ Dashboard Statistik Gedung Terfokus
-- ✅ Manajemen Laporan per Gedung
-- ✅ Validasi Awal Laporan
-- ✅ Halaman Bantuan & Pengaturan Terstandarisasi
-- ✅ Profil PJ Gedung
+- âœ… Dashboard Statistik Gedung Terfokus
+- âœ… Manajemen Laporan per Gedung
+- âœ… Validasi Awal Laporan
+- âœ… Halaman Bantuan & Pengaturan Terstandarisasi
+- âœ… Profil PJ Gedung
 
 ### Supervisor
-- ✅ Dashboard Overview
-- ✅ Review Hasil Penanganan
-- ✅ Recall Teknisi (Penanganan Ulang)
-- ✅ Arsip Laporan
-- ✅ Export PDF/Excel
-- ✅ Monitoring Kinerja Teknisi
+- âœ… Dashboard Overview
+- âœ… Review Hasil Penanganan
+- âœ… Recall Teknisi (Penanganan Ulang)
+- âœ… Arsip Laporan
+- âœ… Export PDF/Excel
+- âœ… Monitoring Kinerja Teknisi
 
 ### Admin
-- ✅ Dashboard Statistik
-- ✅ Manajemen User (Pelapor)
-- ✅ Manajemen Staff (Teknisi, Supervisor)
-- ✅ Manajemen Kategori Laporan
-- ✅ Verifikasi Pendaftaran Baru
-- ✅ Notifikasi Sistem
+- âœ… Dashboard Statistik
+- âœ… Manajemen User (Pelapor)
+- âœ… Manajemen Staff (Teknisi, Supervisor)
+- âœ… Manajemen Kategori Laporan
+- âœ… Verifikasi Pendaftaran Baru
+- âœ… Notifikasi Sistem
 
 ---
 
-## 🔐 Proses Registrasi
+## ðŸ” Proses Registrasi
 
 Aplikasi mendukung dua jalur registrasi:
 
@@ -413,7 +413,7 @@ Aplikasi mendukung dua jalur registrasi:
 
 ---
 
-## 👥 Tim Pengembang
+## ðŸ‘¥ Tim Pengembang
 
 Proyek ini dikembangkan sebagai bagian dari **PKL (Praktek Kerja Lapangan) di UP2TI** oleh:
 
@@ -424,23 +424,23 @@ Proyek ini dikembangkan sebagai bagian dari **PKL (Praktek Kerja Lapangan) di UP
 
 ---
 
-## 📁 Struktur Work Division
+## ðŸ“ Struktur Work Division
 
 ```
 Mobile (Flutter)
-├── Shared: lib/core (router, services), lib/features/auth, lib/features/notification
-├── Syafiq: lib/features/teknisi, lib/features/supervisor
-└── Sulhan: lib/features/pelapor, lib/features/admin, lib/features/pj_gedung
+â”œâ”€â”€ Shared: lib/core (router, services), lib/features/auth, lib/features/notification
+â”œâ”€â”€ Syafiq: lib/features/teknisi, lib/features/supervisor
+â””â”€â”€ Sulhan: lib/features/pelapor, lib/features/admin, lib/features/pj_gedung
 
 Backend (ElysiaJS)
-├── Shared: src/db, src/controllers/auth.controller.ts, src/controllers/notification.controller.ts, src/controllers/upload.controller.ts
-├── Syafiq: src/controllers/technician, src/controllers/supervisor
-└── Sulhan: src/controllers/reporter, src/controllers/admin, src/controllers/staff (PJ Gedung)
+â”œâ”€â”€ Shared: src/db, src/controllers/auth.controller.ts, src/controllers/notification.controller.ts, src/controllers/upload.controller.ts
+â”œâ”€â”€ Syafiq: src/controllers/technician, src/controllers/supervisor
+â””â”€â”€ Sulhan: src/controllers/reporter, src/controllers/admin, src/controllers/staff (PJ Gedung)
 ```
 
 <!-- --- -->
 <!-- 
-## 📋 Metodologi Pengembangan
+## ðŸ“‹ Metodologi Pengembangan
 
 - **Agile Development**: Untuk fleksibilitas pengembangan fitur
 - **ICONIX Process**: Pendekatan berorientasi objek -->
@@ -453,13 +453,13 @@ Backend (ElysiaJS)
 
 <!-- ---
 
-## 📄 License
+## ðŸ“„ License
 
 *Lisensi akan ditentukan kemudian* -->
 
 ---
 
-## 🔗 Links
+## ðŸ”— Links
 
 - **Repository**: `https://github.com/laporfsm/lapor-fsm`
 - **UP2TI FSM Undip**: Unit Pengelola dan Pelayanan Teknologi Informasi Fakultas Sains dan Matematika Universitas Diponegoro Semarang
@@ -469,5 +469,5 @@ Backend (ElysiaJS)
 <p align="center">
   <strong>Fakultas Sains dan Matematika</strong><br/>
   Universitas Diponegoro<br/>
-  © 2026
+  Â© 2026
 </p>
