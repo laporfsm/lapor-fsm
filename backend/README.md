@@ -16,12 +16,17 @@ Backend service for Lapor FSM built with [ElysiaJS](https://elysiajs.com) and [D
     `postgres://user:password@ep-random-name.region.aws.neon.tech/dbname?sslmode=require`
 3.  Create a `.env` file in this directory (copy from `.env.example`).
 4.  Set `DATABASE_URL` to your Neon connection string.
+5.  Set `JWT_SECRET`, `API_URL`, `APP_URL`, and `PORT` for your environment.
+6.  (Optional) Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` for cloud storage.
+7.  (Optional) Configure `SMTP_*` for email notifications.
+8.  (Optional) Configure `FIREBASE_SERVICE_ACCOUNT` for push notifications.
 
 ### Using Local Postgres
 
 1.  Ensure Postgres is running locally.
 2.  Create a database named `laporfsm`.
 3.  Set `DATABASE_URL` in `.env` to your local connection string.
+4.  Set `JWT_SECRET`, `API_URL`, `APP_URL`, and `PORT` for your environment.
 
 ## Development
 
