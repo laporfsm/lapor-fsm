@@ -841,7 +841,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildUserDataStep() {
     return Form(
       key: _formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+      autovalidateMode: AutovalidateMode.disabled,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1091,7 +1091,9 @@ class _RegisterPageState extends State<RegisterPage> {
               if (value == null || value.isEmpty) {
                 return 'Nomor kontak darurat wajib diisi';
               }
-              if (value == _phoneController.text) {
+              if (value.isNotEmpty &&
+                  _phoneController.text.isNotEmpty &&
+                  value == _phoneController.text) {
                 return 'Nomor darurat tidak boleh sama dengan nomor HP Anda';
               }
               return null;
