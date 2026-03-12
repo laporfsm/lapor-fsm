@@ -28,6 +28,7 @@ async function seedVerifUsers() {
         isVerified: false,
         isEmailVerified: true, // Set true agar bisa langsung di-verify admin tanpa nunggu email
         isActive: true,
+        idCardUrl: `https://picsum.photos/seed/${u.email}/800/500`, // Placeholder for testing ID card view
       });
       console.log(`✅ Seeded: ${u.email}`);
     } catch (err) {

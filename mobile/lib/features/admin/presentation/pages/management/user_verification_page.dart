@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/api_service.dart';
 
 class UserVerificationPage extends StatefulWidget {
   final String? searchQuery;
@@ -71,6 +72,36 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
   }
 
   Future<void> _verifyUser(String userId, String name) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Verifikasi User'),
+        content: Text(
+          'Apakah Anda sudah memeriksa kartu identitas dan yakin ingin memverifikasi akun $name?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text('Ya, Verifikasi'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     final success = await adminService.verifyUser(userId);
     if (mounted) {
       if (success) {
@@ -85,6 +116,68 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
         );
       }
     }
+  }
+
+  void _viewIdCard(String? url) {
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kartu identitas tidak tersedia')),
+      );
+      return;
+    }
+
+    // Ensure the URL is absolute
+    final fullUrl =
+        url.startsWith('http') ? url : '${ApiService.baseUrl}/$url';
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: IconButton(
+                icon: const Icon(LucideIcons.x, color: Colors.white, size: 32),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: InteractiveViewer(
+                child: Image.network(
+                  fullUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    width: double.infinity,
+                    color: Colors.white,
+                    padding: const EdgeInsets.all(32),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.imageOff, size: 48, color: Colors.red),
+                        Gap(16),
+                        Text('Gagal memuat gambar kartu identitas'),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -194,6 +287,27 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
                     ),
 
                     const Gap(16),
+                    if (user['idCardUrl'] != null) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _viewIdCard(user['idCardUrl']),
+                          icon: const Icon(LucideIcons.creditCard, size: 18),
+                          label: const Text('Lihat Kartu Identitas'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            side: const BorderSide(
+                              color: AppTheme.primaryColor,
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const Gap(8),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
