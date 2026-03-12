@@ -1128,10 +1128,18 @@ export const adminController = new Elysia({ prefix: '/admin' })
             await NotificationService.notifyUser(updated[0].id, 'Akun Terverifikasi', 'Selamat! Akun Anda telah diverifikasi oleh admin.');
         }
 
-        await db.insert(reportLogs).values({
-            action: 'verified', actorId: 'admin', actorName: 'Admin System', actorRole: 'admin',
-            reason: `Admin memverifikasi user: ${updated[0].name}${isExternal ? ' (External - Activation email sent)' : ''}`,
-        });
+        // Log action (non-blocking)
+        try {
+            await db.insert(reportLogs).values({
+                action: 'verified',
+                actorId: 'admin',
+                actorName: 'Admin System',
+                actorRole: 'admin',
+                reason: `Admin memverifikasi user: ${updated[0].name}${isExternal ? ' (External - Activation email sent)' : ''}`,
+            });
+        } catch (logErr) {
+            console.error('[ADMIN VERIFY] Log insertion failed:', logErr);
+        }
 
         return {
             status: 'success',
@@ -1144,10 +1152,18 @@ export const adminController = new Elysia({ prefix: '/admin' })
         const updated = await db.update(users).set({ isActive: body.isActive }).where(eq(users.id, parseInt(params.id))).returning();
         if (updated.length === 0) return { status: 'error', message: 'User tidak ditemukan' };
         const action = body.isActive ? 'diaktifkan' : 'dinonaktifkan';
-        await db.insert(reportLogs).values({
-            action: body.isActive ? 'activated' : 'suspended', actorId: 'admin', actorName: 'Admin System', actorRole: 'admin',
-            reason: `Admin ${action} user: ${updated[0].name}`,
-        });
+        // Log action (non-blocking)
+        try {
+            await db.insert(reportLogs).values({
+                action: body.isActive ? 'activated' : 'suspended',
+                actorId: 'admin',
+                actorName: 'Admin System',
+                actorRole: 'admin',
+                reason: `Admin ${action} user: ${updated[0].name}`,
+            });
+        } catch (logErr) {
+            console.error('[ADMIN SUSPEND] Log insertion failed:', logErr);
+        }
         return { status: 'success', message: `User berhasil ${action}`, data: mapToMobileUser(updated[0]) };
     }, { body: t.Object({ isActive: t.Boolean() }) })
 
@@ -1165,10 +1181,21 @@ export const adminController = new Elysia({ prefix: '/admin' })
         const updatedReport = await db.update(reports).set({
             status: 'selesai', handlingCompletedAt: new Date(), handlerNotes: `[Admin Force Close] ${body.reason}`,
         }).where(eq(reports.id, reportId)).returning();
-        await db.insert(reportLogs).values({
-            reportId, fromStatus: existingReport[0].status, toStatus: 'selesai', action: 'force_close',
-            actorId: 'admin', actorName: 'Admin System', actorRole: 'admin', reason: body.reason,
-        });
+        // Log action (non-blocking)
+        try {
+            await db.insert(reportLogs).values({
+                reportId,
+                fromStatus: existingReport[0].status,
+                toStatus: 'selesai',
+                action: 'force_close',
+                actorId: 'admin',
+                actorName: 'Admin System',
+                actorRole: 'admin',
+                reason: body.reason,
+            });
+        } catch (logErr) {
+            console.error('[ADMIN FORCE CLOSE] Log insertion failed:', logErr);
+        }
         if (updatedReport[0].userId) {
             await NotificationService.notifyUser(updatedReport[0].userId, 'Laporan Ditutup Admin', `Laporan Anda telah diselesaikan oleh Admin: ${body.reason}`, 'info', reportId);
         }
