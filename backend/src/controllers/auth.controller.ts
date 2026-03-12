@@ -151,16 +151,20 @@ export const authController = new Elysia({ prefix: '/auth' })
         emailVerificationExpiresAt: expiresAt,
       }).returning();
 
-      // Log registration
-      await db.insert(reportLogs).values({
-        action: 'register',
-        actorId: newUser[0].id.toString(),
-        actorName: newUser[0].name,
-        actorRole: 'user',
-        reason: isUndip
-          ? 'User mendaftar (UNDIP Email - Menunggu Aktivasi)'
-          : 'User mendaftar (Non-UNDIP, Menunggu Approval Admin)',
-      });
+      // Log registration (non-blocking)
+      try {
+        await db.insert(reportLogs).values({
+          action: 'register',
+          actorId: newUser[0].id.toString(),
+          actorName: newUser[0].name,
+          actorRole: 'pelapor',
+          reason: isUndip
+            ? 'User mendaftar (UNDIP Email - Menunggu Aktivasi)'
+            : 'User mendaftar (Non-UNDIP, Menunggu Approval Admin)',
+        });
+      } catch (logErr) {
+        console.error('[REGISTER] Log insertion failed (non-critical):', logErr);
+      }
 
       // Notify Admins for non-UNDIP
       if (!isUndip) {
@@ -297,14 +301,18 @@ export const authController = new Elysia({ prefix: '/auth' })
 
     console.log(`[ACTIVATE] User ${user[0].id} activated successfully`);
 
-    // Log activation
-    await db.insert(reportLogs).values({
-      action: 'activate_account',
-      actorId: user[0].id.toString(),
-      actorName: user[0].name,
-      actorRole: 'user',
-      reason: isUndip ? 'User UNDIP mengaktifkan akun' : 'User External verifikasi email',
-    });
+    // Log activation (non-blocking)
+    try {
+      await db.insert(reportLogs).values({
+        action: 'activate_account',
+        actorId: user[0].id.toString(),
+        actorName: user[0].name,
+        actorRole: 'pelapor',
+        reason: isUndip ? 'User UNDIP mengaktifkan akun' : 'User External verifikasi email',
+      });
+    } catch (logErr) {
+      console.error('[ACTIVATE] Log insertion failed (non-critical):', logErr);
+    }
 
     // Notify admin for non-UNDIP
     if (!isUndip) {
@@ -535,14 +543,18 @@ export const authController = new Elysia({ prefix: '/auth' })
 
       console.log('[RESET PASSWORD] Password updated successfully for user:', user[0].email);
 
-      // Log password reset
-      await db.insert(reportLogs).values({
-        action: 'password_reset',
-        actorId: user[0].id.toString(),
-        actorName: user[0].name,
-        actorRole: 'user',
-        reason: 'User mereset password melalui email',
-      });
+      // Log password reset (non-blocking)
+      try {
+        await db.insert(reportLogs).values({
+          action: 'password_reset',
+          actorId: user[0].id.toString(),
+          actorName: user[0].name,
+          actorRole: 'pelapor',
+          reason: 'User mereset password melalui email',
+        });
+      } catch (logErr) {
+        console.error('[RESET_PASSWORD] Log insertion failed (non-critical):', logErr);
+      }
 
       return {
         status: 'success',
