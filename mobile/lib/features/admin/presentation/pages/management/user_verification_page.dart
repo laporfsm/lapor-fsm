@@ -93,14 +93,22 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Verifikasi Sekarang'),
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
-        ],
-      ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(LucideIcons.check, size: 16),
+              Gap(8),
+              Text('Verifikasi', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+      ],
+    ),
     );
 
     if (confirm != true) return;
@@ -388,7 +396,14 @@ class _VerificationCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Terima Registrasi', style: TextStyle(fontSize: 12)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.userCheck, size: 14),
+                        Gap(6),
+                        Text('Verifikasi', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
                 ],
               ),
