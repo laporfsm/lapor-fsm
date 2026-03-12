@@ -49,8 +49,6 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
 
   void _filterData() {
     final query = (widget.searchQuery ?? '').toLowerCase();
-    
-    // Filters
     final filterDept = widget.filters?['department']?.toString().toLowerCase() ?? 'semua';
     
     setState(() {
@@ -59,7 +57,6 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
         final email = (user['email'] ?? '').toString().toLowerCase();
         final dept = (user['department'] ?? '').toString().toLowerCase();
         
-        // Search & Filter
         final matchesSearch = name.contains(query) ||
             email.contains(query) ||
             dept.contains(query);
@@ -75,26 +72,32 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Verifikasi User'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(LucideIcons.shieldCheck, color: Colors.green),
+            const Gap(12),
+            const Text('Konfirmasi Verifikasi'),
+          ],
+        ),
         content: Text(
-          'Apakah Anda sudah memeriksa kartu identitas dan yakin ingin memverifikasi akun $name?',
+          'Pastikan Anda telah memeriksa identitas $name. Berikan akses sistem sekarang?',
+          style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+            child: Text('Nanti Dulu', style: TextStyle(color: Colors.grey.shade600)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Ya, Verifikasi'),
+            child: const Text('Verifikasi Sekarang'),
           ),
         ],
       ),
@@ -106,10 +109,21 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
     if (mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('User $name berhasil diverifikasi')),
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(LucideIcons.checkCircle, color: Colors.white, size: 20),
+                const Gap(12),
+                Text('User $name berhasil diaktifkan'),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green.shade700,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
         );
-        _loadData(); // Refresh list
-        adminService.fetchPendingUserCount(); // Update badge
+        _loadData();
+        adminService.fetchPendingUserCount();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal memverifikasi user')),
@@ -119,59 +133,28 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
   }
 
   void _viewIdCard(String? url) {
-    if (url == null || url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kartu identitas tidak tersedia')),
-      );
-      return;
-    }
-
-    // Ensure the URL is absolute
-    final fullUrl =
-        url.startsWith('http') ? url : '${ApiService.baseUrl}/$url';
+    if (url == null || url.isEmpty) return;
+    final fullUrl = url.startsWith('http') ? url : '${ApiService.baseUrl}/$url';
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
+        insetPadding: const EdgeInsets.all(10),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Align(
               alignment: Alignment.topRight,
               child: IconButton(
-                icon: const Icon(LucideIcons.x, color: Colors.white, size: 32),
+                icon: const Icon(LucideIcons.xCircle, color: Colors.white, size: 36),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(16),
               child: InteractiveViewer(
-                child: Image.network(
-                  fullUrl,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: CircularProgressIndicator(color: Colors.white),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    width: double.infinity,
-                    color: Colors.white,
-                    padding: const EdgeInsets.all(32),
-                    child: const Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(LucideIcons.imageOff, size: 48, color: Colors.red),
-                        Gap(16),
-                        Text('Gagal memuat gambar kartu identitas'),
-                      ],
-                    ),
-                  ),
-                ),
+                child: Image.network(fullUrl, fit: BoxFit.contain),
               ),
             ),
           ],
@@ -185,179 +168,269 @@ class _UserVerificationPageState extends State<UserVerificationPage> {
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : _filteredPendingUsers.isEmpty
-        ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  LucideIcons.searchX,
-                  size: 64,
-                  color: Colors.grey.withValues(alpha: 0.3),
-                ),
-                const Gap(16),
-                Text(
-                  'Tidak ditemukan user pending',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-                Text(
-                  'Coba sesuaikan filter atau pencarian Anda',
-                  style: TextStyle(color: Colors.grey.shade500),
-                ),
-                if (_allPendingUsers.isEmpty && (widget.searchQuery == null || widget.searchQuery!.isEmpty))
-                   // Specialized hint if absolutely no pending users regardless of filter (optional, but keep it simple first)
-                   const SizedBox.shrink(),
-              ],
-            ),
-          )
-        : ListView.separated(
-            padding: const EdgeInsets.all(16),
+        ? _buildEmptyState()
+        : ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: _filteredPendingUsers.length,
-            separatorBuilder: (context, index) => const Gap(12),
             itemBuilder: (context, index) {
               final user = _filteredPendingUsers[index];
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppTheme.primaryColor.withValues(
-                            alpha: 0.1,
-                          ),
-                          child: const Icon(
-                            LucideIcons.user,
-                            color: AppTheme.primaryColor,
-                            size: 20,
-                          ),
-                        ),
-                        const Gap(12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user['name'] ?? 'No Name',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                user['email'] ?? '-',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Divider(height: 24),
-
-                    // Details
-                    _DetailRow(
-                      icon: LucideIcons.hash,
-                      label: 'NIM/NIP',
-                      value: user['nimNip'],
-                    ),
-                    const Gap(8),
-                    _DetailRow(
-                      icon: LucideIcons.building,
-                      label: 'Departemen',
-                      value: user['department'],
-                    ),
-                    const Gap(8),
-                    _DetailRow(
-                      icon: LucideIcons.phone,
-                      label: 'No HP',
-                      value: user['phone'],
-                    ),
-
-                    const Gap(16),
-                    if (user['idCardUrl'] != null) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _viewIdCard(user['idCardUrl']),
-                          icon: const Icon(LucideIcons.creditCard, size: 18),
-                          label: const Text('Lihat Kartu Identitas'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.primaryColor,
-                            side: const BorderSide(
-                              color: AppTheme.primaryColor,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const Gap(8),
-                    ],
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: () => _verifyUser(user['id'], user['name']),
-                        icon: const Icon(LucideIcons.check, size: 18),
-                        label: const Text('Verifikasi Akun'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              return _VerificationCard(
+                user: user,
+                onVerify: () => _verifyUser(user['id'], user['name']),
+                onViewId: () => _viewIdCard(user['idCardUrl']),
               );
             },
           );
   }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              LucideIcons.userPlus,
+              size: 64,
+              color: Colors.grey.shade300,
+            ),
+          ),
+          const Gap(20),
+          Text(
+            'Semua Sudah Bersih!',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const Gap(8),
+          Text(
+            'Tidak ada antrian pendaftaran saat ini.',
+            style: TextStyle(color: Colors.grey.shade500),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? value;
+class _VerificationCard extends StatelessWidget {
+  final Map<String, dynamic> user;
+  final VoidCallback onVerify;
+  final VoidCallback onViewId;
 
-  const _DetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
+  const _VerificationCard({
+    required this.user,
+    required this.onVerify,
+    required this.onViewId,
   });
 
   @override
   Widget build(BuildContext context) {
+    final idCardUrl = user['idCardUrl'];
+    final fullUrl = idCardUrl != null 
+        ? (idCardUrl.startsWith('http') ? idCardUrl : '${ApiService.baseUrl}/$idCardUrl')
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: [
+            // Header: User Info
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    child: Text(
+                      (user['name'] ?? 'U').substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Gap(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user['name'] ?? 'No Name',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          user['email'] ?? '-',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildTypeTag(user['email']),
+                ],
+              ),
+            ),
+
+            // Content Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ID Card Preview Thumbnail
+                  if (fullUrl != null)
+                    GestureDetector(
+                      onTap: onViewId,
+                      child: Container(
+                        width: 100,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade200),
+                          image: DecorationImage(
+                            image: NetworkImage(fullUrl),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            LucideIcons.maximize2,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      width: 100,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(LucideIcons.imageOff, color: Colors.grey.shade300),
+                    ),
+                  
+                  const Gap(16),
+                  
+                  // Vital Details
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _infoSmall(LucideIcons.hash, user['nimNip'] ?? '-'),
+                        const Gap(6),
+                        _infoSmall(LucideIcons.building, user['department'] ?? '-'),
+                        const Gap(6),
+                        _infoSmall(LucideIcons.phone, user['phone'] ?? '-'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const Gap(16),
+
+            // Actions Bar
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              color: Colors.grey.shade50,
+              child: Row(
+                children: [
+                  const Icon(LucideIcons.clock, size: 12, color: Colors.grey),
+                  const Gap(4),
+                  Text(
+                    'Menunggu Verifikasi',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: onVerify,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                      minimumSize: const Size(0, 32),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('Terima Registrasi', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeTag(String? email) {
+    final isUndip = email?.toLowerCase().endsWith('undip.ac.id') ?? false;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: isUndip ? Colors.blue.shade50 : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        isUndip ? 'UNDIP' : 'EXTERNAL',
+        style: TextStyle(
+          color: isUndip ? Colors.blue.shade700 : Colors.orange.shade700,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
+      ),
+    );
+  }
+
+  Widget _infoSmall(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 14, color: Colors.grey),
+        Icon(icon, size: 12, color: Colors.grey.shade400),
         const Gap(8),
-        Text(
-          '$label:',
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
-        ),
-        const Gap(4),
         Expanded(
           child: Text(
-            value ?? '-',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
