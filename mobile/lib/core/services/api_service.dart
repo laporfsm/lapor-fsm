@@ -5,7 +5,7 @@ class ApiService {
   // For physical Android device, replace with your computer's local IP (e.g., 192.168.1.100)
   static String get baseUrl {
     // Production / Testing server Tim 7 (UP2TI)
-    return 'http://10.137.58.124:20072';
+    return 'https://apps-fsm.undip.ac.id/lapor-fsm-api';
   }
 
   late final Dio _dio;
