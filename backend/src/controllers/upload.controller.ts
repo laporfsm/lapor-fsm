@@ -51,43 +51,31 @@ export const uploadController = new Elysia({ prefix: '/upload' })
       // 4. Write file to local temp
       await writeFile(filepath, Buffer.from(buffer));
 
-      const host = request.headers.get('host') || 'localhost:3000';
-      const protocol = request.headers.get('x-forwarded-proto') || 'http';
-      let url = `${protocol}://${host}/uploads/${filename}`;
+      // 5. URL is primarily from Local Storage (Server Kiki)
+      let url = `${API_BASE_URL}/uploads/${filename}`;
 
-      // 5. Try Upload to Supabase Storage
-      try {
-        const bucketName = 'media'; // Make sure this bucket exists in Supabase
-        const folder = file.type.startsWith('image/') ? 'images' : 'videos';
-        const storagePath = `${folder}/${filename}`;
+      // 6. Optional: Upload to Supabase Storage in background for backup
+      // This won't block the response and local URL will be returned.
+      const uploadToSupabase = async () => {
+        try {
+          const bucketName = 'media';
+          const folder = file.type.startsWith('image/') ? 'images' : 'videos';
+          const storagePath = `${folder}/${filename}`;
 
-        const { data, error } = await supabase.storage
-          .from(bucketName)
-          .upload(storagePath, Buffer.from(buffer), {
-            contentType: file.type,
-            upsert: false
-          });
-
-        if (error) {
-          throw error;
+          await supabase.storage
+            .from(bucketName)
+            .upload(storagePath, Buffer.from(buffer), {
+              contentType: file.type,
+              upsert: false
+            });
+          console.log(`☁️ Backup uploaded to Supabase Storage for: ${filename}`);
+        } catch (storageError) {
+          console.error('⚠️ Supabase Storage backup failed:', storageError);
         }
+      };
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(storagePath);
-
-        url = publicUrl;
-        console.log(`☁️ Uploaded to Supabase Storage: ${url}`);
-
-        // Remove local temp file after successful cloud upload
-        await unlink(filepath).catch((err) => {
-          console.warn('⚠️ Failed to remove local temp file:', err);
-        });
-      } catch (storageError) {
-        console.error('⚠️ Supabase Storage upload failed, falling back to local:', storageError);
-        // Keep local file as fallback if cloud upload fails
-      }
+      // Run backup in background
+      uploadToSupabase();
 
       // Return URL (Cloud or Local)
       return {
