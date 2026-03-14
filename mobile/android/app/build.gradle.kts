@@ -67,7 +67,7 @@ android {
         val variantName = name
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "LaporFSM-${variantName}.apk"
+            output.outputFileName = "LaporFSM-v${defaultConfig.versionName}-${variantName}.apk"
         }
     }
 }
