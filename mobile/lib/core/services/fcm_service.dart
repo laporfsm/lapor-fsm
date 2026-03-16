@@ -128,7 +128,17 @@ class FCMService {
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
 
-    await _localNotifications.initialize(initializationSettings);
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Handle taps on local notifications (shown when app is in foreground)
+        final payload = response.payload;
+        debugPrint('[FCM] Local notification tapped, payload: $payload');
+        if (payload != null && payload.isNotEmpty) {
+          _handleMessageTap({'reportId': payload});
+        }
+      },
+    );
 
     // DEBUG: Print Channels
     final List<AndroidNotificationChannel>? channels = await platform
@@ -150,8 +160,9 @@ class FCMService {
       // Determine Channel based on Data payload
       String channelId = 'lapor_fsm_channel_high_v2';
       String? sound;
+      final bool isEmergency = message.data['type'] == 'emergency';
 
-      if (message.data['type'] == 'emergency') {
+      if (isEmergency) {
         channelId = 'lapor_fsm_channel_emergency_v3';
         sound = 'emergency_alert';
       }
@@ -163,15 +174,14 @@ class FCMService {
         NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
-            channelId == 'lapor_fsm_channel_emergency_v3'
-                ? 'Emergency Alerts'
-                : 'High Importance Notifications',
+            isEmergency ? 'Emergency Alerts' : 'High Importance Notifications',
             channelDescription:
                 'This channel is used for important notifications.',
-            icon: channelId == 'lapor_fsm_channel_emergency_v3'
-                ? 'notifikasi_darurat'
-                : 'notifikasi_non_darurat',
-            color: channelId == 'lapor_fsm_channel_emergency_v3'
+            icon: 'ic_notif_small',
+            largeIcon: DrawableResourceAndroidBitmap(
+              isEmergency ? 'notifikasi_darurat' : 'notifikasi_non_darurat',
+            ),
+            color: isEmergency
                 ? const Color(0xFFFF0000)
                 : const Color(0xFF0055A5),
             sound: sound != null
