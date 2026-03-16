@@ -1238,8 +1238,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             data: {
                 summary: [
                     { label: 'Pending', value: summaryMap['pending'] || 0, color: 'grey' },
-                    { label: 'Diproses', value: (summaryMap['diproses'] || 0) + (summaryMap['terverifikasi'] || 0) + (summaryMap['penanganan'] || 0), color: 'blue' },
-                    { label: 'Selesai', value: (summaryMap['selesai'] || 0) + (summaryMap['approved'] || 0), color: 'green' },
+                    { label: 'Diproses', value: (summaryMap['diproses'] || 0) + (summaryMap['terverifikasi'] || 0) + (summaryMap['penanganan'] || 0) + (summaryMap['selesai'] || 0) + (summaryMap['recalled'] || 0), color: 'blue' },
+                    { label: 'Selesai', value: (summaryMap['approved'] || 0) + (summaryMap['ditolak'] || 0), color: 'green' },
                 ],
                 categories: categoriesData,
                 locations: locationStats.map(l => ({
