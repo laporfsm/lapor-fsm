@@ -136,6 +136,8 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Text('Apakah Anda yakin ingin menolak laporan ini?'),
+              const SizedBox(height: 8),
               const Text('Masukkan alasan penolakan:'),
               const SizedBox(height: 12),
               TextField(

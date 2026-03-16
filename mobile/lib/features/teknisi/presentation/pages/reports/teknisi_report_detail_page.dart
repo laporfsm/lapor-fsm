@@ -462,6 +462,8 @@ class _TeknisiReportDetailPageState
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Text('Apakah Anda yakin ingin menunda pengerjaan?'),
+              const Gap(8),
               const Text(
                 'Masukkan alasan penundaan (misal: menunggu sparepart):',
               ),
