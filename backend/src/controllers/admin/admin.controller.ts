@@ -846,6 +846,8 @@ export const adminController = new Elysia({ prefix: '/admin' })
                 user: l.actorName,
                 details: l.reason || `Status changed from ${l.fromStatus} to ${l.toStatus}`,
                 time: l.timestamp,
+                fromStatus: l.fromStatus,
+                toStatus: l.toStatus,
                 type: (l.reportId === null && ['verified', 'activated', 'suspended'].includes(l.action))
                     ? 'Verifikasi'
                     : (l.reportId === null || l.action === 'created') ? 'Admin' : 'Laporan'

@@ -49,7 +49,14 @@ const app = new Elysia({
     console.log(`[REQUEST] ${request.method} ${request.url}`);
   })
   .use(cors({
-    origin: true, // Allow all origins (for development)
+    origin:
+      process.env.CORS_ORIGIN?.split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean) ?? [
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'https://apps-fsm.undip.ac.id',
+      ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Cache-Control'],
     credentials: true,
