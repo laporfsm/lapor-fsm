@@ -5,6 +5,7 @@ import 'package:mobile/core/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/notification_service.dart';
+import 'package:mobile/core/widgets/version_guard.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/services/fcm_service.dart';
@@ -40,6 +41,9 @@ class MyApp extends StatelessWidget {
       title: 'Lapor FSM!',
       theme: AppTheme.lightTheme,
       routerConfig: appRouter, // Use the router
+      builder: (context, child) {
+        return VersionGuard(child: child ?? const SizedBox.shrink());
+      },
       debugShowCheckedModeBanner: false,
     );
   }

@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/widgets/about_app_sheet.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_master_data_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_main_page.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
@@ -297,6 +298,15 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                                 label: "Preferensi & Notifikasi",
                                 onTap: () =>
                                     context.push('/supervisor/settings'),
+                                color: AppTheme.supervisorColor,
+                              ),
+                              ProfileMenuItem(
+                                icon: LucideIcons.info,
+                                label: "Tentang Aplikasi",
+                                onTap: () => showAboutAppSheet(
+                                  context,
+                                  accentColor: AppTheme.supervisorColor,
+                                ),
                                 color: AppTheme.supervisorColor,
                               ),
                               ProfileMenuItem(

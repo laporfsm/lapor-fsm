@@ -63,6 +63,8 @@ dependencies:
   chewie: ^1.13.0
   http: ^1.2.1
   http_parser: ^4.1.0
+  package_info_plus: ^8.0.2
+  pub_semver: ^2.1.4
 
 dev_dependencies:
   flutter_test:
