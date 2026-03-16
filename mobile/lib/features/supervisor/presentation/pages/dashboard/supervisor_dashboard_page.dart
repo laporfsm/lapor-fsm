@@ -4,7 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_main_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/stat_grid_card.dart';
 
@@ -367,7 +367,9 @@ class _SupervisorDashboardPageState
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
-                                  const SupervisorTechnicianMainPage(),
+                                  const SupervisorActivityLogPage(
+                                isEmbedded: false,
+                              ),
                             ),
                           );
                         },

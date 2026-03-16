@@ -28,6 +28,7 @@ class _SupervisorPJGedungFormPageState
   String? _selectedLocation;
   bool _isLoading = false;
   List<String> _buildings = [];
+  Map<String, int> _pjCounts = {};
 
   bool get isEditing => widget.pjGedungId != null;
 
@@ -38,14 +39,18 @@ class _SupervisorPJGedungFormPageState
   }
 
   Future<void> _initData() async {
-    await _fetchLocations();
+    setState(() => _isLoading = true);
+    await Future.wait([
+      _fetchLocations(),
+      _fetchPJCounts(),
+    ]);
     if (isEditing) {
-      _loadPJGedungData();
+      await _loadPJGedungData();
     }
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _fetchLocations() async {
-    setState(() => _isLoading = true);
     try {
       final data = await reportService.getLocations();
       if (mounted) {
@@ -56,17 +61,34 @@ class _SupervisorPJGedungFormPageState
               !isEditing) {
             _selectedLocation = _buildings.first;
           }
-          _isLoading = false;
         });
       }
     } catch (e) {
       debugPrint('Error fetching locations: $e');
-      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _fetchPJCounts() async {
+    try {
+      final pjs = await _supervisorStaffService.getPJGedung();
+      final Map<String, int> counts = {};
+      for (var pj in pjs) {
+        final loc = pj['location'] as String?;
+        if (loc != null) {
+          counts[loc] = (counts[loc] ?? 0) + 1;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _pjCounts = counts;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching PJ counts: $e');
     }
   }
 
   Future<void> _loadPJGedungData() async {
-    setState(() => _isLoading = true);
     try {
       final pj = await _supervisorStaffService.getPJGedungDetail(
         widget.pjGedungId!,
@@ -81,17 +103,14 @@ class _SupervisorPJGedungFormPageState
           if (managedBy != null && _buildings.contains(managedBy)) {
             _selectedLocation = managedBy;
           }
-          _isLoading = false;
         });
       } else if (mounted) {
-        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal memuat data PJ Gedung')),
         );
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoading = false);
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -319,9 +338,13 @@ class _SupervisorPJGedungFormPageState
         filled: true,
         fillColor: Colors.white,
       ),
-      items: _buildings
-          .map((b) => DropdownMenuItem(value: b, child: Text(b)))
-          .toList(),
+      items: _buildings.map((b) {
+        final count = _pjCounts[b] ?? 0;
+        return DropdownMenuItem(
+          value: b,
+          child: Text('$b ($count)'),
+        );
+      }).toList(),
       onChanged: (value) => setState(() => _selectedLocation = value!),
       validator: (v) => v == null ? 'Pilih lokasi' : null,
     );

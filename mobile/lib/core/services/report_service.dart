@@ -233,30 +233,54 @@ class ReportService {
   }
 
   // Create Category
-  Future<bool> createCategory(String name, String icon) async {
+  Future<Map<String, dynamic>> createCategory(String name, String icon) async {
     try {
       final response = await apiService.dio.post(
         '/categories',
         data: {'name': name, 'icon': icon},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal membuat kategori',
+      };
     } catch (e) {
       debugPrint('Error creating category: $e');
-      return false;
+      String msg = 'Gagal membuat kategori.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 
   // Update Category
-  Future<bool> updateCategory(int id, String name, String icon) async {
+  Future<Map<String, dynamic>> updateCategory(
+    int id,
+    String name,
+    String icon,
+  ) async {
     try {
       final response = await apiService.dio.put(
         '/categories/$id',
         data: {'name': name, 'icon': icon},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mengupdate kategori',
+      };
     } catch (e) {
       debugPrint('Error updating category: $e');
-      return false;
+      String msg = 'Gagal mengupdate kategori.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 
@@ -306,30 +330,50 @@ class ReportService {
   }
 
   // Create Location
-  Future<bool> createLocation(String name) async {
+  Future<Map<String, dynamic>> createLocation(String name) async {
     try {
       final response = await apiService.dio.post(
         '/locations',
         data: {'name': name},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal menambahkan lokasi',
+      };
     } catch (e) {
       debugPrint('Error creating location: $e');
-      return false;
+      String msg = 'Gagal menambahkan lokasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 
   // Update Location
-  Future<bool> updateLocation(int id, String name) async {
+  Future<Map<String, dynamic>> updateLocation(int id, String name) async {
     try {
       final response = await apiService.dio.put(
         '/locations/$id',
         data: {'name': name},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mengupdate lokasi',
+      };
     } catch (e) {
       debugPrint('Error updating location: $e');
-      return false;
+      String msg = 'Gagal mengupdate lokasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 
@@ -852,7 +896,7 @@ class ReportService {
   }
 
   // Create Specialization
-  Future<bool> createSpecialization(
+  Future<Map<String, dynamic>> createSpecialization(
     String name,
     String icon,
     String? description,
@@ -862,15 +906,25 @@ class ReportService {
         '/specializations',
         data: {'name': name, 'icon': icon, 'description': description},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal membuat spesialisasi',
+      };
     } catch (e) {
       debugPrint('Error creating specialization: $e');
-      return false;
+      String msg = 'Gagal membuat spesialisasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 
   // Update Specialization
-  Future<bool> updateSpecialization(
+  Future<Map<String, dynamic>> updateSpecialization(
     int id,
     String name,
     String icon,
@@ -881,10 +935,20 @@ class ReportService {
         '/specializations/$id',
         data: {'name': name, 'icon': icon, 'description': description},
       );
-      return response.data['status'] == 'success';
+      if (response.data['status'] == 'success') {
+        return {'success': true, 'message': response.data['message']};
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal mengupdate spesialisasi',
+      };
     } catch (e) {
       debugPrint('Error updating specialization: $e');
-      return false;
+      String msg = 'Gagal mengupdate spesialisasi.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
     }
   }
 

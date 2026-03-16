@@ -148,8 +148,8 @@ class _SupervisorLocationsViewState extends State<SupervisorLocationsView> {
       for (final buildingName in _defaultBuildings) {
         // Check if exists first? strict optimization omitted for speed, API might handle duplicates or just add.
         // Assuming API allows duplicates or we don't care for this simple import.
-        final success = await reportService.createLocation(buildingName);
-        if (success) successCount++;
+        final result = await reportService.createLocation(buildingName);
+        if (result['success']) successCount++;
       }
 
       if (mounted) {
@@ -352,19 +352,19 @@ class _SupervisorLocationsViewState extends State<SupervisorLocationsView> {
                         final navigator = Navigator.of(context);
                         final messenger = ScaffoldMessenger.of(context);
 
-                        bool success;
+                        Map<String, dynamic> result;
                         if (isEditing) {
-                          success = await reportService.updateLocation(
+                          result = await reportService.updateLocation(
                             int.parse(building['id'].toString()),
                             nameController.text.trim(),
                           );
                         } else {
-                          success = await reportService.createLocation(
+                          result = await reportService.createLocation(
                             nameController.text.trim(),
                           );
                         }
 
-                        if (success) {
+                        if (result['success']) {
                           navigator.pop();
                           messenger.showSnackBar(
                             SnackBar(
@@ -379,8 +379,10 @@ class _SupervisorLocationsViewState extends State<SupervisorLocationsView> {
                           _fetchBuildings();
                         } else {
                           messenger.showSnackBar(
-                            const SnackBar(
-                              content: Text('Gagal menyimpan lokasi'),
+                            SnackBar(
+                              content: Text(
+                                result['message'] ?? 'Gagal menyimpan lokasi',
+                              ),
                               backgroundColor: Colors.red,
                             ),
                           );
