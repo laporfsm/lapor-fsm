@@ -23,6 +23,7 @@ import { locationController } from "./controllers/supervisor/location.controller
 import { specializationController } from "./controllers/supervisor/specialization.controller";
 import { trackingController } from "./controllers/emergency/tracking.controller";
 import { logStreamController } from "./controllers/reports/logs.controller";
+import { appController } from "./controllers/app.controller";
 
 const app = new Elysia({
   serve: {
@@ -76,7 +77,8 @@ const app = new Elysia({
   .use(locationController)
   .use(specializationController)
   .use(trackingController)
-  .use(logStreamController);
+  .use(logStreamController)
+  .use(appController);
 
 console.log(`Configured PORT: ${process.env.PORT || 3000}`);
 
