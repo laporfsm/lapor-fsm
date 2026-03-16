@@ -24,6 +24,7 @@ class SupervisorReportsState {
   final String? period;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? selectedStatus;
 
   SupervisorReportsState({
     required this.reports,
@@ -41,6 +42,7 @@ class SupervisorReportsState {
     this.period,
     this.startDate,
     this.endDate,
+    this.selectedStatus,
   });
 
   SupervisorReportsState copyWith({
@@ -59,6 +61,7 @@ class SupervisorReportsState {
     String? period,
     DateTime? startDate,
     DateTime? endDate,
+    String? selectedStatus,
   }) {
     return SupervisorReportsState(
       reports: reports ?? this.reports,
@@ -76,6 +79,7 @@ class SupervisorReportsState {
       period: period ?? this.period,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      selectedStatus: selectedStatus ?? this.selectedStatus,
     );
   }
 }
@@ -111,7 +115,7 @@ class SupervisorReportsNotifier extends Notifier<SupervisorReportsState> {
       // Use getStaffReports with role='supervisor'
       final response = await reportService.getStaffReports(
         role: 'supervisor',
-        status: status,
+        status: state.selectedStatus ?? status,
         page: state.currentPage,
         limit: 10,
         search: state.search,
@@ -183,7 +187,14 @@ class SupervisorReportsNotifier extends Notifier<SupervisorReportsState> {
       period: null,
       startDate: null,
       endDate: null,
+      selectedStatus: null,
     );
+    loadReports(refresh: true);
+  }
+
+  void setSelectedStatus(String? status) {
+    if (state.selectedStatus == status) return;
+    state = state.copyWith(selectedStatus: status);
     loadReports(refresh: true);
   }
 

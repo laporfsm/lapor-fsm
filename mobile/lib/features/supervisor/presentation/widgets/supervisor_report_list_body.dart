@@ -22,6 +22,7 @@ class SupervisorReportListBody extends ConsumerStatefulWidget {
   final DateTime? startDate;
   final DateTime? endDate;
   final Widget? floatingActionButton;
+  final List<Map<String, String>>? statusFilterOptions;
 
   const SupervisorReportListBody({
     super.key,
@@ -35,6 +36,7 @@ class SupervisorReportListBody extends ConsumerStatefulWidget {
     this.startDate,
     this.endDate,
     this.floatingActionButton,
+    this.statusFilterOptions,
   });
 
   @override
@@ -455,86 +457,141 @@ class _SupervisorReportListBodyState
         backgroundColor: AppTheme.backgroundColor,
         body: Column(
           children: [
-            if (widget.showSearch)
+            if (widget.showSearch || (widget.statusFilterOptions != null && widget.statusFilterOptions!.isNotEmpty))
               Container(
-                padding: const EdgeInsets.all(16),
+                width: double.infinity,
                 color: Colors.white,
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        onChanged: (value) => notifier.setSearch(value),
-                        decoration: InputDecoration(
-                          hintText: 'Cari laporan...',
-                          prefixIcon: const Icon(LucideIcons.search, size: 20),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: AppTheme.supervisorColor,
+                    if (widget.showSearch)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                onChanged: (value) => notifier.setSearch(value),
+                                decoration: InputDecoration(
+                                  hintText: 'Cari laporan...',
+                                  prefixIcon: const Icon(LucideIcons.search, size: 20),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: Colors.grey.shade300),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: const BorderSide(
+                                      color: AppTheme.supervisorColor,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                            const Gap(12),
+                            BouncingButton(
+                              onTap: _showCustomDateRangePicker,
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: state.startDate != null
+                                      ? AppTheme.supervisorColor
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: state.startDate != null
+                                        ? AppTheme.supervisorColor
+                                        : Colors.grey.shade300,
+                                  ),
+                                ),
+                                child: Icon(
+                                  LucideIcons.calendarRange,
+                                  color: state.startDate != null
+                                      ? Colors.white
+                                      : Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                            const Gap(8),
+                            BouncingButton(
+                              onTap: _showFilterSheet,
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: hasActiveFilters
+                                        ? AppTheme.supervisorColor
+                                        : Colors.grey.shade300,
+                                    width: hasActiveFilters ? 1.5 : 1.0,
+                                  ),
+                                ),
+                                child: Icon(
+                                  LucideIcons.filter,
+                                  color: hasActiveFilters
+                                      ? AppTheme.supervisorColor
+                                      : Colors.grey.shade600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    if (widget.statusFilterOptions != null && widget.statusFilterOptions!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: widget.statusFilterOptions!.map((option) {
+                              final optionValue = option['value'];
+                              final isSelected = state.selectedStatus == optionValue;
+                              
+                              // Determine color based on status value
+                              // If value contains multiple statuses (like "Semua"), use supervisor color
+                              Color chipColor = AppTheme.supervisorColor;
+                              if (optionValue != null && !optionValue.contains(',')) {
+                                chipColor = AppTheme.getStatusColor(optionValue);
+                              }
+                              
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ChoiceChip(
+                                  label: Text(option['label']!),
+                                  selected: isSelected,
+                                  onSelected: (selected) {
+                                    notifier.setSelectedStatus(selected ? optionValue : null);
+                                  },
+                                  backgroundColor: Colors.grey.shade100,
+                                  selectedColor: chipColor.withValues(alpha: 0.2),
+                                  labelStyle: TextStyle(
+                                    color: isSelected ? chipColor : Colors.grey.shade700,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(
+                                      color: isSelected ? chipColor : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  showCheckmark: false,
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
                       ),
-                    ),
-                    const Gap(12),
-                    BouncingButton(
-                      onTap: _showCustomDateRangePicker,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: state.startDate != null
-                              ? AppTheme.supervisorColor
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: state.startDate != null
-                                ? AppTheme.supervisorColor
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        child: Icon(
-                          LucideIcons.calendarRange,
-                          color: state.startDate != null
-                              ? Colors.white
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                    const Gap(8),
-                    BouncingButton(
-                      onTap: _showFilterSheet,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: hasActiveFilters
-                                ? AppTheme.supervisorColor
-                                : Colors.grey.shade300,
-                            width: hasActiveFilters ? 1.5 : 1.0,
-                          ),
-                        ),
-                        child: Icon(
-                          LucideIcons.filter,
-                          color: hasActiveFilters
-                              ? AppTheme.supervisorColor
-                              : Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
