@@ -41,7 +41,8 @@ class ReportDetailBase extends StatefulWidget {
 }
 
 class _ReportDetailBaseState extends State<ReportDetailBase> {
-  LatLng? _liveLatLng;
+  LatLng? _technicianLatLng;
+  LatLng? _reporterLatLng;
   StreamSubscription? _sseSubscription;
   Timer? _locationBroadcastTimer;
   List<ReportLog> _logs = [];
@@ -50,6 +51,21 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
   void initState() {
     super.initState();
     _logs = widget.report.logs;
+
+    // Load initial live location from cache if available
+    final trackingData = sseService.getTrackingData(widget.report.id);
+    if (trackingData != null) {
+      trackingData.forEach((role, data) {
+        final lat = (data['latitude'] as num).toDouble();
+        final lng = (data['longitude'] as num).toDouble();
+        if (role == 'teknisi') {
+          _technicianLatLng = LatLng(lat, lng);
+        } else {
+          _reporterLatLng = LatLng(lat, lng);
+        }
+      });
+    }
+
     _setupTracking();
     _setupSSE();
   }
@@ -95,15 +111,24 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
         }
       } else if (type == 'tracking') {
         try {
-          setState(() {
-            _liveLatLng = LatLng(
-              event['latitude'] as double,
-              event['longitude'] as double,
-            );
-          });
-          debugPrint('[SSE-TRACKING] Received update: $_liveLatLng');
+          final lat = (event['latitude'] as num).toDouble();
+          final lng = (event['longitude'] as num).toDouble();
+          final role = event['role']?.toString() ?? 'teknisi';
+
+          debugPrint('[SSE-TRACKING] Received $role update for report ${widget.report.id}: $lat, $lng');
+
+          if (mounted) {
+            setState(() {
+              if (role == 'teknisi') {
+                _technicianLatLng = LatLng(lat, lng);
+              } else {
+                // Anyone other than teknisi showing movement is treated as reporter movement
+                _reporterLatLng = LatLng(lat, lng);
+              }
+            });
+          }
         } catch (e) {
-          debugPrint('[SSE-TRACKING] Error parsing: $e');
+          debugPrint('[SSE-TRACKING] Error parsing or updating: $e | Event: $event');
         }
       }
     });
@@ -154,7 +179,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           // Update local UI immediately too
           if (mounted) {
             setState(() {
-              _liveLatLng = LatLng(position.latitude, position.longitude);
+              _reporterLatLng = LatLng(position.latitude, position.longitude);
             });
           }
         }
@@ -194,7 +219,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
             // Update local UI immediately too
             if (mounted) {
               setState(() {
-                _liveLatLng = LatLng(position.latitude, position.longitude);
+                _technicianLatLng = LatLng(position.latitude, position.longitude);
               });
             }
           }
@@ -465,10 +490,10 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                       const Gap(12),
                       _buildMapPreview(
                         context,
-                        latitude:
-                            _liveLatLng?.latitude ?? widget.report.latitude,
-                        longitude:
-                            _liveLatLng?.longitude ?? widget.report.longitude,
+                        reportLat: widget.report.latitude,
+                        reportLng: widget.report.longitude,
+                        technicianLatLng: _technicianLatLng,
+                        reporterLatLng: _reporterLatLng,
                       ),
                     ],
                   ),
@@ -868,10 +893,12 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
 
   Widget _buildMapPreview(
     BuildContext context, {
-    required double? latitude,
-    required double? longitude,
+    required double? reportLat,
+    required double? reportLng,
+    LatLng? technicianLatLng,
+    LatLng? reporterLatLng,
   }) {
-    if (latitude == null || longitude == null) {
+    if (reportLat == null || reportLng == null) {
       return Container(
         height: 150,
         width: double.infinity,
@@ -880,14 +907,47 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
         ),
-        child: Center(
+        child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(LucideIcons.mapPin, size: 32, color: Colors.grey),
-              const Gap(8),
-              const Text('Lokasi tidak tersedia'),
+              Icon(LucideIcons.mapPin, size: 32, color: Colors.grey),
+              Gap(8),
+              Text('Lokasi tidak tersedia'),
             ],
+          ),
+        ),
+      );
+    }
+
+    final reportPos = LatLng(reportLat, reportLng);
+    final markers = <Marker>[];
+
+    // 1. Report Location / Pelapor Marker (Always visible at incident site or updated if moving)
+    markers.add(
+      Marker(
+        point: reporterLatLng ?? reportPos,
+        width: 60,
+        height: 70,
+        child: _buildMarkerIcon(
+          icon: LucideIcons.user,
+          color: AppTheme.emergencyColor, // Red for reporter/report site
+          label: 'Pelapor',
+        ),
+      ),
+    );
+
+    // 2. Technician Marker (Only if live location received)
+    if (technicianLatLng != null) {
+      markers.add(
+        Marker(
+          point: technicianLatLng,
+          width: 60,
+          height: 70,
+          child: _buildMarkerIcon(
+            icon: LucideIcons.wrench,
+            color: Colors.blue,
+            label: 'Teknisi',
           ),
         ),
       );
@@ -896,7 +956,10 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
     return Container(
       height: 150,
       width: double.infinity,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.1)),
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Stack(
@@ -904,7 +967,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
             IgnorePointer(
               child: FlutterMap(
                 options: MapOptions(
-                  initialCenter: LatLng(latitude, longitude),
+                  initialCenter: reportPos,
                   initialZoom: 15,
                   interactionOptions: const InteractionOptions(
                     flags: InteractiveFlag.none,
@@ -916,20 +979,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                     userAgentPackageName: 'com.laporfsm.mobile',
                   ),
-                  MarkerLayer(
-                    markers: [
-                      Marker(
-                        point: LatLng(latitude, longitude),
-                        width: 40,
-                        height: 40,
-                        child: const Icon(
-                          Icons.location_pin,
-                          color: Colors.red,
-                          size: 40,
-                        ),
-                      ),
-                    ],
-                  ),
+                  MarkerLayer(markers: markers),
                 ],
               ),
             ),
@@ -943,9 +993,11 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => FullscreenMapModal(
-                      latitude: latitude,
-                      longitude: longitude,
+                      latitude: reportLat,
+                      longitude: reportLng,
                       locationName: widget.report.location,
+                      technicianLatLng: technicianLatLng,
+                      reporterLatLng: reporterLatLng,
                     ),
                   );
                 },
@@ -965,6 +1017,41 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMarkerIcon({
+    required IconData icon,
+    required Color color,
+    required String label,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        Icon(icon, color: color, size: 30),
+      ],
     );
   }
 }

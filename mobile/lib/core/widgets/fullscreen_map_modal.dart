@@ -11,12 +11,16 @@ class FullscreenMapModal extends StatelessWidget {
   final double latitude;
   final double longitude;
   final String locationName;
+  final LatLng? technicianLatLng;
+  final LatLng? reporterLatLng;
 
   const FullscreenMapModal({
     super.key,
     required this.latitude,
     required this.longitude,
     required this.locationName,
+    this.technicianLatLng,
+    this.reporterLatLng,
   });
 
   void _openInGoogleMaps() async {
@@ -30,6 +34,39 @@ class FullscreenMapModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reportPos = LatLng(latitude, longitude);
+    final markers = <Marker>[];
+
+    // 1. Report/Pelapor Marker
+    markers.add(
+      Marker(
+        point: reporterLatLng ?? reportPos,
+        width: 70,
+        height: 80,
+        child: _buildMarkerIcon(
+          icon: LucideIcons.user,
+          color: AppTheme.emergencyColor,
+          label: 'Pelapor',
+        ),
+      ),
+    );
+
+    // 2. Technician Marker
+    if (technicianLatLng != null) {
+      markers.add(
+        Marker(
+          point: technicianLatLng!,
+          width: 70,
+          height: 80,
+          child: _buildMarkerIcon(
+            icon: LucideIcons.wrench,
+            color: Colors.blue,
+            label: 'Teknisi',
+          ),
+        ),
+      );
+    }
+
     return Container(
       height: MediaQuery.of(context).size.height,
       color: Colors.white,
@@ -39,7 +76,7 @@ class FullscreenMapModal extends StatelessWidget {
             // Full screen map
             FlutterMap(
               options: MapOptions(
-                initialCenter: LatLng(latitude, longitude),
+                initialCenter: reportPos,
                 initialZoom: 17,
               ),
               children: [
@@ -47,20 +84,7 @@ class FullscreenMapModal extends StatelessWidget {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.laporfsm.mobile',
                 ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: LatLng(latitude, longitude),
-                      width: 50,
-                      height: 50,
-                      child: const Icon(
-                        Icons.location_pin,
-                        color: Colors.red,
-                        size: 50,
-                      ),
-                    ),
-                  ],
-                ),
+                MarkerLayer(markers: markers),
               ],
             ),
 
@@ -135,6 +159,41 @@ class FullscreenMapModal extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildMarkerIcon({
+    required IconData icon,
+    required Color color,
+    required String label,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ),
+        Icon(icon, color: color, size: 30),
+      ],
     );
   }
 }
