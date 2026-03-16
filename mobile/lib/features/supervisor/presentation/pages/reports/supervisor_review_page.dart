@@ -247,6 +247,8 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const Text('Apakah Anda yakin ingin menolak laporan ini?'),
+              const Gap(8),
               const Text('Masukkan alasan penolakan:'),
               const Gap(12),
               TextField(
@@ -416,11 +418,18 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       builder: (context) => _AssignTechnicianSheet(
         onAssign: (technicianIds) {
           Navigator.pop(context);
-          _updateReportStatus(
-            ReportStatus.diproses,
-            ReportAction.handling,
-            technicianIds: technicianIds,
-          );
+          _showConfirmDialog(
+            title: 'Tugaskan Teknisi',
+            message: 'Apakah Anda yakin ingin menugaskan teknisi terpilih?',
+            confirmColor: AppTheme.supervisorColor,
+          ).then((confirmed) {
+            if (!confirmed) return;
+            _updateReportStatus(
+              ReportStatus.diproses,
+              ReportAction.handling,
+              technicianIds: technicianIds,
+            );
+          });
         },
       ),
     );
@@ -436,6 +445,8 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text('Apakah Anda yakin ingin recall laporan ini?'),
+            const Gap(8),
             const Text('Berikan alasan atau catatan revisi untuk teknisi:'),
             const Gap(12),
             TextField(
