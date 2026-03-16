@@ -211,7 +211,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     await _handleVerification(context, report, refresh, false, reason: reason);
   }
 
-  void _handleVerification(
+  Future<void> _handleVerification(
     BuildContext context,
     Report report,
     Future<void> Function() refresh,
