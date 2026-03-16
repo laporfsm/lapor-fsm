@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
+import 'package:mobile/core/widgets/custom_dialog.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/admin/services/admin_service.dart';
@@ -43,70 +44,42 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
   }
 
   void _showForceCloseDialog() {
-    final reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Force Close Laporan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Tindakan ini akan membatalkan proses yang sedang berjalan dan status laporan akan menjadi SELESAI. Harap berikan alasan.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+    ReasonDialog.show(
+      context,
+      title: 'Force Close Laporan',
+      message:
+          'Tindakan ini akan membatalkan proses yang sedang berjalan dan status laporan akan menjadi SELESAI. Harap berikan alasan.',
+      hintText: 'Alasan penutupan...',
+      confirmLabel: 'Tutup Paksa',
+      confirmColor: Colors.red,
+    ).then((reason) async {
+      if (reason != null) {
+        final success = await adminService.forceCloseReport(
+          widget.reportId,
+          reason,
+        );
+
+        if (!mounted) return;
+        final messenger = ScaffoldMessenger.of(context);
+
+        if (success) {
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Laporan berhasil ditutup paksa'),
+              backgroundColor: Colors.green,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Alasan Penutupan',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (reasonController.text.isEmpty) return;
-              final navigator = Navigator.of(context);
-              final messenger = ScaffoldMessenger.of(context);
-
-              navigator.pop();
-
-              final success = await adminService.forceCloseReport(
-                widget.reportId,
-                reasonController.text,
-              );
-
-              if (success) {
-                messenger.showSnackBar(
-                  const SnackBar(
-                    content: Text('Laporan berhasil ditutup paksa'),
-                  ),
-                );
-                _fetchReport(silent: true); // Refresh
-              } else {
-                messenger.showSnackBar(
-                  const SnackBar(content: Text('Gagal menutup laporan')),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(
+          );
+          _fetchReport(silent: true); // Refresh
+        } else {
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Gagal menutup laporan'),
               backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
             ),
-            child: const Text('Tutup Paksa'),
-          ),
-        ],
-      ),
-    );
+          );
+        }
+      }
+    });
   }
 
   @override

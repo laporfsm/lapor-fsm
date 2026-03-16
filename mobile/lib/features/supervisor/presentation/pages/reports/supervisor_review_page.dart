@@ -7,6 +7,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/entities/report_log.dart';
 import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
+import 'package:mobile/core/widgets/custom_dialog.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
@@ -203,98 +204,24 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
     required String message,
     Color confirmColor = AppTheme.supervisorColor,
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: confirmColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Lanjutkan'),
-            ),
-          ],
-        );
-      },
-    );
-    return result ?? false;
+    return await ConfirmationDialog.show(
+          context,
+          title: title,
+          message: message,
+          confirmColor: confirmColor,
+        ) ??
+        false;
   }
 
   Future<String?> _showRejectDialog() async {
-    String reason = '';
-    final controller = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: const Text('Tolak Laporan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Apakah Anda yakin ingin menolak laporan ini?'),
-              const Gap(8),
-              const Text('Masukkan alasan penolakan:'),
-              const Gap(12),
-              TextField(
-                controller: controller,
-                onChanged: (value) => reason = value,
-                decoration: const InputDecoration(
-                  hintText: 'Alasan penolakan...',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final trimmed = controller.text.trim();
-                if (trimmed.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Alasan penolakan wajib diisi.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                reason = trimmed;
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Tolak'),
-            ),
-          ],
-        );
-      },
+    return await ReasonDialog.show(
+      context,
+      title: 'Tolak Laporan',
+      message: 'Apakah Anda yakin ingin menolak laporan ini?',
+      hintText: 'Alasan penolakan...',
+      confirmLabel: 'Tolak',
+      confirmColor: Colors.red,
     );
-    if (result != true) return null;
-    return reason;
   }
 
   Future<void> _handleVerifyWithConfirm() async {
@@ -436,50 +363,22 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
   }
 
   void _showRecallDialog() {
-    final reasonController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Recall Laporan'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Apakah Anda yakin ingin recall laporan ini?'),
-            const Gap(8),
-            const Text('Berikan alasan atau catatan revisi untuk teknisi:'),
-            const Gap(12),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: 'Contoh: Foto perbaikan kurang jelas...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (reasonController.text.isEmpty) return;
-              _updateReportStatus(
-                ReportStatus.recalled,
-                ReportAction.recalled,
-                notes: reasonController.text,
-              );
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Recall'),
-          ),
-        ],
-      ),
-    );
+    ReasonDialog.show(
+      context,
+      title: 'Recall Laporan',
+      message: 'Apakah Anda yakin ingin recall laporan ini?',
+      hintText: 'Contoh: Foto perbaikan kurang jelas...',
+      confirmLabel: 'Recall',
+      confirmColor: Colors.orange,
+    ).then((reason) {
+      if (reason != null) {
+        _updateReportStatus(
+          ReportStatus.recalled,
+          ReportAction.recalled,
+          notes: reason,
+        );
+      }
+    });
   }
 }
 
