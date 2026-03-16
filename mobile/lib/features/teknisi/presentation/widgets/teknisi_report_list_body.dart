@@ -16,6 +16,7 @@ class TeknisiReportListBody extends ConsumerStatefulWidget {
   final Function(String reportId, ReportStatus status) onReportTap;
   final Color? themeColor;
   final bool showSearch;
+  final int? assignedTo;
 
   const TeknisiReportListBody({
     super.key,
@@ -23,6 +24,7 @@ class TeknisiReportListBody extends ConsumerStatefulWidget {
     required this.onReportTap,
     this.themeColor,
     this.showSearch = true,
+    this.assignedTo,
   });
 
   @override
@@ -39,7 +41,12 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _fetchFilterData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(teknisiReportsProvider(widget.status).notifier).setFilters(
+            assignedTo: widget.assignedTo,
+          );
+      _fetchFilterData();
+    });
   }
 
   Future<void> _fetchFilterData() async {

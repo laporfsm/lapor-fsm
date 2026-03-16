@@ -58,17 +58,7 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
 
             _activeReports = [...processing, ...onHold];
 
-            // Sort: penanganan first, then onHold. Same status sorted by date.
-            _activeReports.sort((a, b) {
-              if (a.status == ReportStatus.penanganan &&
-                  b.status == ReportStatus.onHold) {
-                return -1;
-              } else if (a.status == ReportStatus.onHold &&
-                  b.status == ReportStatus.penanganan) {
-                return 1;
-              }
-              return b.createdAt.compareTo(a.createdAt);
-            });
+            _activeReports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           });
         }
       }

@@ -123,7 +123,7 @@ class FCMService {
     await platform?.createNotificationChannel(emergencyChannel);
 
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_notif_small');
 
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
