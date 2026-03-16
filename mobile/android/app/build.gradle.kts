@@ -71,7 +71,30 @@ android {
         val variantName = name
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "LaporFSM-v${defaultConfig.versionName}-${variantName}.apk"
+            output.outputFileName = "lapor-fsm-v${defaultConfig.versionName}-${variantName}.apk"
+        }
+    }
+}
+
+afterEvaluate {
+    tasks.named("assembleRelease").configure {
+        doLast {
+            val versionName = android.defaultConfig.versionName ?: "0.0.0"
+            val from = file("$buildDir/outputs/flutter-apk/app-release.apk")
+            val to = file("$buildDir/outputs/flutter-apk/lapor-fsm-v$versionName-release.apk")
+            if (from.exists()) {
+                from.copyTo(to, overwrite = true)
+            }
+        }
+    }
+    tasks.named("bundleRelease").configure {
+        doLast {
+            val versionName = android.defaultConfig.versionName ?: "0.0.0"
+            val from = file("$buildDir/outputs/bundle/release/app-release.aab")
+            val to = file("$buildDir/outputs/bundle/release/lapor-fsm-v$versionName-release.aab")
+            if (from.exists()) {
+                from.copyTo(to, overwrite = true)
+            }
         }
     }
 }
