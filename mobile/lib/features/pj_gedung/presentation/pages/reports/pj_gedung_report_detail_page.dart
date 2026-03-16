@@ -43,7 +43,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
         OutlinedButton.icon(
           onPressed: _isProcessing
               ? null
-              : () => _handleVerification(context, report, refresh, false),
+              : () => _handleRejectWithReason(context, report, refresh),
           icon: const Icon(LucideIcons.xCircle),
           label: const Text('Tolak'),
           style: OutlinedButton.styleFrom(
@@ -58,7 +58,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
         ElevatedButton.icon(
           onPressed: _isProcessing
               ? null
-              : () => _handleVerification(context, report, refresh, true),
+              : () => _handleVerifyWithConfirm(context, report, refresh),
           icon: _isProcessing
               ? const SizedBox(
                   width: 20,
@@ -86,11 +86,136 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     return null;
   }
 
+  Future<bool> _showConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    Color confirmColor = const Color(0xFFF59E0B),
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: confirmColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Lanjutkan'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  Future<String?> _showReasonDialog(BuildContext context) async {
+    String reason = '';
+    final controller = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          title: const Text('Tolak Laporan'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Masukkan alasan penolakan:'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                onChanged: (value) => reason = value,
+                decoration: const InputDecoration(
+                  hintText: 'Alasan penolakan...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final trimmed = controller.text.trim();
+                if (trimmed.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Alasan penolakan wajib diisi.'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                reason = trimmed;
+                Navigator.pop(context, true);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Tolak'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result != true) return null;
+    return reason;
+  }
+
+  Future<void> _handleVerifyWithConfirm(
+    BuildContext context,
+    Report report,
+    Future<void> Function() refresh,
+  ) async {
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: 'Verifikasi Laporan',
+      message: 'Apakah Anda yakin ingin memverifikasi laporan ini?',
+      confirmColor: const Color(0xFFF59E0B),
+    );
+    if (!confirmed) return;
+    await _handleVerification(context, report, refresh, true);
+  }
+
+  Future<void> _handleRejectWithReason(
+    BuildContext context,
+    Report report,
+    Future<void> Function() refresh,
+  ) async {
+    final reason = await _showReasonDialog(context);
+    if (reason == null) return;
+    await _handleVerification(context, report, refresh, false, reason: reason);
+  }
+
   void _handleVerification(
     BuildContext context,
     Report report,
     Future<void> Function() refresh,
-    bool approve,
+    bool approve, {
+    String? reason,
+  }
   ) async {
     setState(() => _isProcessing = true);
 
@@ -106,7 +231,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
           await reportService.rejectReportPJGedung(
             report.id,
             staffId,
-            'Ditolak oleh PJ Gedung',
+            reason ?? 'Ditolak oleh PJ Gedung',
           );
         }
 

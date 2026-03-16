@@ -237,7 +237,7 @@ class _TeknisiReportDetailPageState
         ElevatedButton.icon(
           onPressed: _isTravalLoading || isProcessing
               ? null
-              : _handleAcceptTask,
+              : _handleAcceptWithConfirm,
           icon: _isTravalLoading
               ? const SizedBox(
                   width: 20,
@@ -293,7 +293,7 @@ class _TeknisiReportDetailPageState
         ElevatedButton.icon(
           onPressed: isProcessing
               ? null
-              : () => _handleResume(context, notifier),
+              : () => _handleResumeWithConfirm(context, notifier),
           icon: isProcessing
               ? const SizedBox(
                   width: 20,
@@ -319,7 +319,7 @@ class _TeknisiReportDetailPageState
         ElevatedButton.icon(
           onPressed: isProcessing
               ? null
-              : () => _handleStart(context, notifier),
+              : () => _handleStartWithConfirm(context, notifier),
           icon: isProcessing
               ? const SizedBox(
                   width: 20,
@@ -340,6 +340,81 @@ class _TeknisiReportDetailPageState
       ];
     }
     return [];
+  }
+
+  Future<bool> _showConfirmDialog({
+    required BuildContext context,
+    required String title,
+    required String message,
+    Color confirmColor = AppTheme.primaryColor,
+  }) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Batal'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: confirmColor,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Lanjutkan'),
+            ),
+          ],
+        );
+      },
+    );
+    return result ?? false;
+  }
+
+  Future<void> _handleAcceptWithConfirm() async {
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: 'Terima & Mulai Penanganan',
+      message: 'Apakah Anda yakin ingin menerima dan mulai penanganan?',
+      confirmColor: AppTheme.primaryColor,
+    );
+    if (!confirmed) return;
+    await _handleAcceptTask();
+  }
+
+  Future<void> _handleResumeWithConfirm(
+    BuildContext context,
+    ReportDetailNotifier notifier,
+  ) async {
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: 'Lanjutkan Pekerjaan',
+      message: 'Apakah Anda yakin ingin melanjutkan pekerjaan?',
+      confirmColor: AppTheme.primaryColor,
+    );
+    if (!confirmed) return;
+    await _handleResume(context, notifier);
+  }
+
+  Future<void> _handleStartWithConfirm(
+    BuildContext context,
+    ReportDetailNotifier notifier,
+  ) async {
+    final confirmed = await _showConfirmDialog(
+      context: context,
+      title: 'Mulai Kembali',
+      message: 'Apakah Anda yakin ingin mulai kembali penanganan?',
+      confirmColor: Colors.orange,
+    );
+    if (!confirmed) return;
+    await _handleStart(context, notifier);
   }
 
   Future<void> _handleStart(
@@ -454,6 +529,14 @@ class _TeknisiReportDetailPageState
       }
     } catch (e) {
       debugPrint('Error resuming task: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal melanjutkan pekerjaan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
