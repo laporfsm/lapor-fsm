@@ -302,11 +302,11 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ProfileSection(
-                title: "Pengaturan & Lainnya",
+                title: "Pengaturan & Info",
                 children: [
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Preferensi & Notifikasi",
+                    label: "Pengaturan & Info",
                     onTap: () => context.push('/pj-gedung/settings'),
                     color: AppTheme.pjGedungColor,
                   ),

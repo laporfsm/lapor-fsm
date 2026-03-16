@@ -307,11 +307,11 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                           ),
                           const Gap(24),
                           ProfileSection(
-                            title: "Pengaturan & Lainnya",
+                            title: "Pengaturan & Info",
                             children: [
                               ProfileMenuItem(
                                 icon: LucideIcons.settings,
-                                label: "Preferensi & Notifikasi",
+                                label: "Pengaturan & Info",
                                 onTap: () =>
                                     context.push('/supervisor/settings'),
                                 color: AppTheme.supervisorColor,

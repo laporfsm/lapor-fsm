@@ -291,11 +291,11 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: ProfileSection(
-                title: "Pengaturan & Lainnya",
+                title: "Pengaturan & Info",
                 children: [
                   ProfileMenuItem(
                     icon: LucideIcons.settings,
-                    label: "Preferensi & Notifikasi",
+                    label: "Pengaturan & Info",
                     onTap: () => context.push('/teknisi/settings'),
                     color: AppTheme.secondaryColor,
                   ),

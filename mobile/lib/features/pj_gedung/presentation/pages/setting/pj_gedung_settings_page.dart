@@ -16,14 +16,13 @@ class PJGedungSettingsPage extends StatefulWidget {
 }
 
 class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
-  bool _notificationsEnabled = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Preferensi & Notifikasi'),
+        title: const Text('Pengaturan & Info'),
         backgroundColor: AppTheme.pjGedungColor,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -43,21 +42,6 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
         child: Column(
           children: [
             const Gap(16),
-            ProfileSection(
-              title: 'Notifikasi',
-              children: [
-                SettingsSwitchTile(
-                  icon: LucideIcons.bell,
-                  title: 'Push Notification',
-                  subtitle: 'Terima info laporan baru di lokasi Anda',
-                  value: _notificationsEnabled,
-                  onChanged: (val) =>
-                      setState(() => _notificationsEnabled = val),
-                  activeColor: AppTheme.pjGedungColor,
-                ),
-              ],
-            ),
-            const Gap(24),
             ProfileSection(
               title: 'Privasi & Keamanan',
               children: [
