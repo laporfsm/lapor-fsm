@@ -106,8 +106,8 @@ class _SupervisorStatisticsPageState
                       title: 'Lokasi Paling Bermasalah',
                       child: Column(
                         children: [
-                          if (_stats!['buildings'] == null ||
-                              (_stats!['buildings'] as List).isEmpty)
+                          if (_stats!['locations'] == null ||
+                              (_stats!['locations'] as List).isEmpty)
                             const Padding(
                               padding: EdgeInsets.symmetric(vertical: 16.0),
                               child: Text(
@@ -116,22 +116,26 @@ class _SupervisorStatisticsPageState
                               ),
                             )
                           else
-                            ...(_stats!['buildings'] as List).take(3).map((b) {
+                            ...(_stats!['locations'] as List).take(3).map((b) {
                               return StatsBarChartItem(
-                                label: b['name'],
+                                label: b['name'] ?? 'Tidak Diketahui',
                                 percentage: _calculateBuildingPercentage(
                                   b['count'],
                                 ),
                                 color: Colors.teal,
                                 valueSuffix: '${b['count']}',
-                                onTap: () => context.push(
-                                  Uri(
-                                    path: '/pj-gedung/statistics',
-                                    queryParameters: {
-                                      'locationName': b['name'],
-                                    },
-                                  ).toString(),
-                                ),
+                                onTap: () {
+                                  if (b['name'] != null) {
+                                    context.push(
+                                      Uri(
+                                        path: '/pj-gedung/statistics',
+                                        queryParameters: {
+                                          'locationName': b['name'],
+                                        },
+                                      ).toString(),
+                                    );
+                                  }
+                                },
                               );
                             }),
                           const Gap(8),
@@ -192,8 +196,49 @@ class _SupervisorStatisticsPageState
     );
   }
 
+  Widget _buildFilterDropdown() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedPeriod,
+          isExpanded: true,
+          icon: const Icon(LucideIcons.chevronDown, color: Colors.grey),
+          items: const [
+            DropdownMenuItem(
+              value: 'weekly',
+              child: Text('Minggu Ini (7 Hari Terakhir)'),
+            ),
+            DropdownMenuItem(
+              value: 'monthly',
+              child: Text('Bulan Ini (30 Hari Terakhir)'),
+            ),
+            DropdownMenuItem(
+              value: 'all',
+              child: Text('Semua Data (Keseluruhan)'),
+            ),
+          ],
+          onChanged: (value) {
+            if (value != null && value != _selectedPeriod) {
+              setState(() {
+                _selectedPeriod = value;
+              });
+              _fetchStats();
+            }
+          },
+        ),
+      ),
+    );
+  }
+
   double _calculateBuildingPercentage(int count) {
-    final buildings = _stats!['buildings'] as List?;
+    final buildings = _stats!['locations'] as List?;
     if (buildings == null || buildings.isEmpty) return 0;
     final maxCount = buildings.first['count'] as int;
     return maxCount > 0 ? count / maxCount : 0;
@@ -249,9 +294,13 @@ class _SupervisorStatisticsPageState
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Ringkasan Minggu Ini',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              Text(
+                _selectedPeriod == 'monthly'
+                    ? 'Ringkasan Bulan Ini'
+                    : _selectedPeriod == 'all'
+                        ? 'Ringkasan Semua Waktu'
+                        : 'Ringkasan Minggu Ini',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Chip(
                 label: Text('$total Laporan'),
