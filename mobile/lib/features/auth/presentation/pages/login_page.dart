@@ -260,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const Gap(8),
               Text(
-                'Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika',
+                'Sistem Pelaporan Insiden & Fasilitas\nFSM Universitas Diponegoro',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
