@@ -1295,4 +1295,95 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             status: 'success',
             data: data.sort((a, b) => b.reports - a.reports)
         };
+    })
+
+    // Get Global Activity Logs (for Supervisor)
+    .get('/logs', async ({ query }) => {
+        const { limit = '20', offset = '0', role } = query;
+        const limitNum = parseInt(limit);
+        const offsetNum = parseInt(offset);
+
+        let conditions = [];
+        if (role === 'technician') {
+            conditions.push(eq(reportLogs.actorRole, 'teknisi'));
+        } else if (role === 'pj') {
+            conditions.push(eq(reportLogs.actorRole, 'pj_gedung'));
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        const logs = await db
+            .select({
+                id: reportLogs.id,
+                reportId: reportLogs.reportId,
+                reportTitle: reports.title,
+                actorName: reportLogs.actorName,
+                actorRole: reportLogs.actorRole,
+                action: reportLogs.action,
+                reason: reportLogs.reason,
+                timestamp: reportLogs.timestamp,
+            })
+            .from(reportLogs)
+            .leftJoin(reports, eq(reportLogs.reportId, reports.id))
+            .where(whereClause)
+            .orderBy(desc(reportLogs.timestamp))
+            .limit(limitNum)
+            .offset(offsetNum);
+
+        // If no logs in DB, provide dummy data for UI testing
+        if (logs.length === 0 && offsetNum === 0) {
+            const dummyLogs = [
+                {
+                    id: "d1",
+                    reportId: "1",
+                    reportTitle: "AC Lab Komputer Mati",
+                    actorName: "Budi Teknisi",
+                    actorRole: "teknisi",
+                    action: "accepted",
+                    reason: "Mulai penanganan",
+                    timestamp: new Date(Date.now() - 1000 * 60 * 5) // 5 mins ago
+                },
+                {
+                    id: "d2",
+                    reportId: "2",
+                    reportTitle: "Lampu Koridor Gedung A",
+                    actorName: "Siti PJ",
+                    actorRole: "pj_gedung",
+                    action: "verified",
+                    reason: "Laporan valid",
+                    timestamp: new Date(Date.now() - 1000 * 60 * 15) // 15 mins ago
+                },
+                {
+                    id: "d3",
+                    reportId: "3",
+                    reportTitle: "Pipa Bocor Toilet",
+                    actorName: "Andi Teknisi",
+                    actorRole: "teknisi",
+                    action: "completed",
+                    reason: "Sudah diperbaiki",
+                    timestamp: new Date(Date.now() - 1000 * 60 * 30) // 30 mins ago
+                }
+            ];
+
+            // Filter dummy by role if requested
+            const filteredDummy = role === 'technician' 
+                ? dummyLogs.filter(l => l.actorRole === 'teknisi')
+                : role === 'pj'
+                    ? dummyLogs.filter(l => l.actorRole === 'pj_gedung')
+                    : dummyLogs;
+
+            return {
+                status: 'success',
+                data: filteredDummy
+            };
+        }
+
+        return {
+            status: 'success',
+            data: logs.map(l => ({
+                ...l,
+                id: l.id.toString(),
+                reportId: l.reportId?.toString(),
+            }))
+        };
     });

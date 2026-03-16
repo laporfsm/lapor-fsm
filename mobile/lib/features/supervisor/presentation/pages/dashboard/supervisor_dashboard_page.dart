@@ -3,7 +3,6 @@ import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
-import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
 import 'package:mobile/core/widgets/universal_report_card.dart';
 import 'package:mobile/core/widgets/stat_grid_card.dart';
@@ -54,6 +53,7 @@ class _SupervisorDashboardPageState
   List<Report> _nonGedungReports = [];
   List<Report> _readyToProcessReports = [];
   List<Report> _pendingReviewReports = [];
+  List<Map<String, dynamic>> _activityLogs = [];
 
   Map<String, dynamic> get _stats => _dashboardStats;
 
@@ -91,6 +91,7 @@ class _SupervisorDashboardPageState
             status: 'terverifikasi', // Only terverifikasi for "Siap Diproses"
           ),
           reportService.getStaffReports(role: 'supervisor', status: 'selesai'),
+          reportService.getGlobalLogs(limit: 5), // Global Activity Logs
         ]);
 
         debugPrint('[DASHBOARD] Results received');
@@ -156,8 +157,16 @@ class _SupervisorDashboardPageState
               _pendingReviewReports = [];
             }
 
+            // Activity Logs
+            try {
+              _activityLogs = List<Map<String, dynamic>>.from(results[4] as List);
+            } catch (e) {
+              debugPrint('[DASHBOARD] Error converting activity logs: $e');
+              _activityLogs = [];
+            }
+
             debugPrint(
-              '[DASHBOARD] Final counts - Non-Gedung: ${_nonGedungReports.length}, Ready: ${_readyToProcessReports.length}, Review: ${_pendingReviewReports.length}',
+              '[DASHBOARD] Final counts - Non-Gedung: ${_nonGedungReports.length}, Activity: ${_activityLogs.length}',
             );
             _isLoading = false;
           });
@@ -186,13 +195,25 @@ class _SupervisorDashboardPageState
               expandedHeight: 140,
               floating: false,
               pinned: true,
-              backgroundColor: supervisorColor,
+              backgroundColor: AppTheme.supervisorColor,
               automaticallyImplyLeading: false,
+              elevation: 0,
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Dashboard Supervisor',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
+              centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // 1. Base Gradient Background
+                    // 1. Base Gradient Background (Indigo for Supervisor)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -200,82 +221,89 @@ class _SupervisorDashboardPageState
                           end: Alignment.bottomRight,
                           colors: [
                             AppTheme.supervisorColor,
-                            AppTheme.supervisorColor.withRed(
-                              50,
-                            ), // Slightly different shade
+                            AppTheme.supervisorColor
+                                .withRed(50)
+                                .withBlue(150), // Variation
                           ],
                         ),
                       ),
                     ),
-                    // 2. Decorative Circles (Pattern)
+                    // 2. Decorative Slants (Pattern)
                     Positioned(
-                      top: -50,
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
                       right: -50,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
                         ),
                       ),
                     ),
                     Positioned(
-                      bottom: -30,
-                      left: -30,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
-                    ),
-                    // Gradient Overlay for text readability (optional, but keeps style)
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(
-                              alpha: 0.2,
-                            ), // Subtle shadow at bottom
-                          ],
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
                         ),
                       ),
                     ),
                     // Content
                     SafeArea(
                       child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
+                        child: Opacity(
+                          opacity: 1.0 - (innerBoxIsScrolled ? 1.0 : 0.0),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(50),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.clipboardCheck,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
                                 ),
-                                child: const Icon(
-                                  LucideIcons.clipboardCheck,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const Gap(16),
-                              Expanded(
-                                child: Column(
+                                const Gap(14),
+                                const Column(
                                   mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Dashboard Supervisor',
                                       style: TextStyle(
                                         color: Colors.white,
@@ -283,20 +311,18 @@ class _SupervisorDashboardPageState
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const Gap(4),
+                                    Gap(2),
                                     Text(
                                       'Monitoring & Evaluasi Kinerja',
                                       style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
-                                        ),
-                                        fontSize: 14,
+                                        color: Colors.white70,
+                                        fontSize: 13,
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -769,6 +795,19 @@ class _SupervisorDashboardPageState
   }
 
   Widget _buildActivityLogStub(BuildContext context) {
+    if (_activityLogs.isEmpty) {
+      return Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: Text('Belum ada aktivitas terbaru'),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -776,29 +815,52 @@ class _SupervisorDashboardPageState
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Column(
-        children: [
-          _buildLogItem(
-            'Budi Teknisi',
-            'memulai penanganan',
-            'AC Lab',
-            '5 menit lalu',
-          ),
-          const Divider(),
-          _buildLogItem(
-            'PJ Gedung A',
-            'memverifikasi laporan',
-            'Lampu Koridor',
-            '15 menit lalu',
-          ),
-          const Divider(),
-          _buildLogItem(
-            'Andi Teknisi',
-            'menyelesaikan laporan',
-            'Pipa Toilet',
-            '30 menit lalu',
-          ),
-        ],
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _activityLogs.length,
+        separatorBuilder: (context, index) => const Divider(height: 16),
+        itemBuilder: (context, index) {
+          final log = _activityLogs[index];
+          
+          // Map backend action to human readable string
+          String actionText = log['action'] ?? '';
+          if (actionText == 'verified') actionText = 'memverifikasi';
+          if (actionText == 'handling') actionText = 'menugaskan';
+          if (actionText == 'accepted') actionText = 'menerima tugas';
+          if (actionText == 'completed') actionText = 'menyelesaikan';
+          if (actionText == 'approved') actionText = 'menyetujui';
+          if (actionText == 'rejected') actionText = 'menolak';
+          if (actionText == 'created') actionText = 'membuat';
+          if (actionText == 'recalled') actionText = 'menarik kembali';
+          if (actionText == 'paused') actionText = 'menunda';
+          if (actionText == 'resumed') actionText = 'melanjutkan';
+          
+          // Format time
+          String timeStr = 'Baru saja';
+          if (log['timestamp'] != null) {
+            try {
+              final date = DateTime.parse(log['timestamp']);
+              final diff = DateTime.now().difference(date);
+              if (diff.inDays > 0) {
+                timeStr = '${diff.inDays} hari lalu';
+              } else if (diff.inHours > 0) {
+                timeStr = '${diff.inHours} jam lalu';
+              } else if (diff.inMinutes > 0) {
+                timeStr = '${diff.inMinutes} menit lalu';
+              }
+            } catch (e) {
+              timeStr = '-';
+            }
+          }
+
+          return _buildLogItem(
+            log['actorName'] ?? 'Sistem',
+            actionText,
+            log['reportTitle'] ?? 'laporan',
+            timeStr,
+          );
+        },
       ),
     );
   }

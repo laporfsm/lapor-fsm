@@ -26,6 +26,8 @@ void main() async {
   final token = prefs.getString('auth_token');
   if (token != null) {
     apiService.setAuthToken(token);
+    // Explicitly sync token after auth is restored
+    await FCMService.syncToken();
   }
 
   runApp(const ProviderScope(child: MyApp()));

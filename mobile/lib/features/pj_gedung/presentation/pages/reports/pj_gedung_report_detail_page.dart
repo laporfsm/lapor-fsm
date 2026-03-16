@@ -8,6 +8,8 @@ import 'package:mobile/features/report_common/domain/entities/report.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
 
+import 'package:mobile/core/widgets/custom_dialog.dart';
+
 class PJGedungReportDetailPage extends StatefulWidget {
   final String reportId;
 
@@ -92,98 +94,24 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     required String message,
     Color confirmColor = const Color(0xFFF59E0B),
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: confirmColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Lanjutkan'),
-            ),
-          ],
-        );
-      },
-    );
-    return result ?? false;
+    return await ConfirmationDialog.show(
+          context,
+          title: title,
+          message: message,
+          confirmColor: confirmColor,
+        ) ??
+        false;
   }
 
   Future<String?> _showReasonDialog(BuildContext context) async {
-    String reason = '';
-    final controller = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: const Text('Tolak Laporan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Apakah Anda yakin ingin menolak laporan ini?'),
-              const SizedBox(height: 8),
-              const Text('Masukkan alasan penolakan:'),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                onChanged: (value) => reason = value,
-                decoration: const InputDecoration(
-                  hintText: 'Alasan penolakan...',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final trimmed = controller.text.trim();
-                if (trimmed.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Alasan penolakan wajib diisi.'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                  return;
-                }
-                reason = trimmed;
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Tolak'),
-            ),
-          ],
-        );
-      },
+    return await ReasonDialog.show(
+      context,
+      title: 'Tolak Laporan',
+      message: 'Apakah Anda yakin ingin menolak laporan ini?',
+      hintText: 'Alasan penolakan...',
+      confirmLabel: 'Tolak',
+      confirmColor: Colors.red,
     );
-    if (result != true) return null;
-    return reason;
   }
 
   Future<void> _handleVerifyWithConfirm(

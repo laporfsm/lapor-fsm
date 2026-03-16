@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:mobile/core/services/fcm_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Singleton instance
@@ -269,9 +270,12 @@ class AuthService {
     }
 
     apiService.setAuthToken(token);
+
+    // Sync FCM Token immediately after login
+    FCMService.syncToken();
   }
 
-  // Get current user from local storage
+  /// Get current user from local storage
   Future<Map<String, dynamic>?> getCurrentUser() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getString(_userIdKey);

@@ -16,6 +16,7 @@ import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/features/report_common/domain/enums/user_role.dart';
 import 'package:mobile/features/report_common/presentation/providers/report_detail_provider.dart';
 import 'package:mobile/core/widgets/report_detail_base.dart';
+import 'package:mobile/core/widgets/custom_dialog.dart';
 
 class TeknisiReportDetailPage extends ConsumerStatefulWidget {
   final String reportId;
@@ -348,34 +349,13 @@ class _TeknisiReportDetailPageState
     required String message,
     Color confirmColor = AppTheme.primaryColor,
   }) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Batal'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: confirmColor,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Lanjutkan'),
-            ),
-          ],
-        );
-      },
-    );
-    return result ?? false;
+    return await ConfirmationDialog.show(
+          context,
+          title: title,
+          message: message,
+          confirmColor: confirmColor,
+        ) ??
+        false;
   }
 
   Future<void> _handleAcceptWithConfirm() async {
@@ -455,64 +435,30 @@ class _TeknisiReportDetailPageState
     final staffId = int.tryParse(staffIdStr);
     if (staffId == null) return;
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        String reason = '';
-        return AlertDialog(
-          title: const Text('Tunda Pengerjaan'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Apakah Anda yakin ingin menunda pengerjaan?'),
-              const Gap(8),
-              const Text(
-                'Masukkan alasan penundaan (misal: menunggu sparepart):',
-              ),
-              const Gap(12),
-              TextField(
-                onChanged: (value) => reason = value,
-                decoration: const InputDecoration(
-                  hintText: 'Alasan penundaan...',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Batal'),
+    ReasonDialog.show(
+      context,
+      title: 'Tunda Pengerjaan',
+      message: 'Apakah Anda yakin ingin menunda pengerjaan?',
+      hintText: 'Alasan penundaan (misal: menunggu sparepart)...',
+      confirmLabel: 'Tunda',
+      confirmColor: Colors.orange,
+    ).then((reason) async {
+      if (reason != null) {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          await notifier.pauseTask(staffId, reason);
+          if (!messenger.mounted) return;
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Pengerjaan ditunda (Pause)'),
+              backgroundColor: Colors.orange,
             ),
-            ElevatedButton(
-              onPressed: () async {
-                final navigator = Navigator.of(context);
-                final messenger = ScaffoldMessenger.of(context);
-                navigator.pop();
-                try {
-                  await notifier.pauseTask(staffId, reason);
-                  if (!messenger.mounted) return;
-                  messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text('Pengerjaan ditunda (Pause)'),
-                      backgroundColor: Colors.orange,
-                    ),
-                  );
-                } catch (e) {
-                  debugPrint('Error pausing task: $e');
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Tunda'),
-            ),
-          ],
-        );
-      },
-    );
+          );
+        } catch (e) {
+          debugPrint('Error pausing task: $e');
+        }
+      }
+    });
   }
 
   Future<void> _handleResume(

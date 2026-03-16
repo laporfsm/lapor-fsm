@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 class SupervisorActivityLogPage extends StatefulWidget {
   final bool isEmbedded;
@@ -15,78 +16,37 @@ class SupervisorActivityLogPage extends StatefulWidget {
 
 class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+   late TabController _tabController;
+  bool _isLoading = true;
 
-  final List<Map<String, dynamic>> _technicianLogs = [
-    {
-      'id': 1,
-      'actor': 'Budi Teknisi',
-      'role': 'Teknisi',
-      'action': 'memulai penanganan',
-      'target': 'AC Lab Komputer',
-      'time': '5 menit lalu',
-      'icon': LucideIcons.wrench,
-      'color': Colors.orange,
-    },
-    {
-      'id': 3,
-      'actor': 'Andi Teknisi',
-      'role': 'Teknisi',
-      'action': 'menyelesaikan laporan',
-      'target': 'Pipa Toilet',
-      'time': '30 menit lalu',
-      'icon': LucideIcons.checkCheck,
-      'color': Colors.blue,
-    },
-    {
-      'id': 6,
-      'actor': 'Eko Teknisi',
-      'role': 'Teknisi',
-      'action': 'meminta sparepart',
-      'target': 'Kabel LAN',
-      'time': '3 jam lalu',
-      'icon': LucideIcons.package,
-      'color': Colors.purple,
-    },
-  ];
-
-  final List<Map<String, dynamic>> _pjLogs = [
-    {
-      'id': 2,
-      'actor': 'PJ Gedung A',
-      'role': 'PJ Gedung',
-      'action': 'memverifikasi laporan',
-      'target': 'Lampu Koridor',
-      'time': '15 menit lalu',
-      'icon': LucideIcons.checkCircle,
-      'color': Colors.green,
-    },
-    {
-      'id': 5,
-      'actor': 'PJ Gedung B',
-      'role': 'PJ Gedung',
-      'action': 'memverifikasi laporan',
-      'target': 'Air Keran Macet',
-      'time': '2 jam lalu',
-      'icon': LucideIcons.checkCircle,
-      'color': Colors.green,
-    },
-    {
-      'id': 4,
-      'actor': 'Siti Pelapor',
-      'role': 'PJ Gedung',
-      'action': 'menolak laporan',
-      'target': 'Kursi Patah (Duplikat)',
-      'time': '1 hari lalu',
-      'icon': LucideIcons.xCircle,
-      'color': Colors.red,
-    },
-  ];
+  List<Map<String, dynamic>> _technicianLogs = [];
+  List<Map<String, dynamic>> _pjLogs = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadLogs();
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() => _isLoading = true);
+    try {
+      final results = await Future.wait([
+        reportService.getGlobalLogs(role: 'technician'),
+        reportService.getGlobalLogs(role: 'pj'),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _technicianLogs = results[0];
+          _pjLogs = results[1];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -97,6 +57,19 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        appBar: widget.isEmbedded
+            ? null
+            : AppBar(
+              title: const Text('Aktivitas & Log'),
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+            ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     if (widget.isEmbedded) {
       return Column(
         children: [
@@ -188,7 +161,72 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
     );
   }
 
-  Widget _buildLogCard(Map<String, dynamic> log) {
+   Widget _buildLogCard(Map<String, dynamic> log) {
+    // Map backend action to human readable string
+    String actionText = log['action'] ?? '';
+    IconData icon = LucideIcons.info;
+    Color color = Colors.grey;
+
+    if (actionText == 'verified') {
+      actionText = 'memverifikasi';
+      icon = LucideIcons.checkCircle;
+      color = Colors.green;
+    } else if (actionText == 'handling') {
+      actionText = 'menugaskan';
+      icon = LucideIcons.userPlus;
+      color = Colors.blue;
+    } else if (actionText == 'accepted') {
+      actionText = 'menerima tugas';
+      icon = LucideIcons.wrench;
+      color = Colors.orange;
+    } else if (actionText == 'completed') {
+      actionText = 'menyelesaikan';
+      icon = LucideIcons.checkCheck;
+      color = Colors.blue;
+    } else if (actionText == 'approved') {
+      actionText = 'menyetujui';
+      icon = LucideIcons.award;
+      color = Colors.orange;
+    } else if (actionText == 'rejected') {
+      actionText = 'menolak';
+      icon = LucideIcons.xCircle;
+      color = Colors.red;
+    } else if (actionText == 'created') {
+      actionText = 'membuat';
+      icon = LucideIcons.plusCircle;
+      color = Colors.purple;
+    } else if (actionText == 'paused') {
+      actionText = 'menunda';
+      icon = LucideIcons.pauseCircle;
+      color = Colors.orange;
+    } else if (actionText == 'resumed') {
+      actionText = 'melanjutkan';
+      icon = LucideIcons.playCircle;
+      color = Colors.blue;
+    } else if (actionText == 'recalled') {
+      actionText = 'menarik kembali';
+      icon = LucideIcons.undo;
+      color = Colors.red;
+    }
+
+    // Format time
+    String timeStr = 'Baru saja';
+    if (log['timestamp'] != null) {
+      try {
+        final date = DateTime.parse(log['timestamp']);
+        final diff = DateTime.now().difference(date);
+        if (diff.inDays > 0) {
+          timeStr = '${diff.inDays} hari lalu';
+        } else if (diff.inHours > 0) {
+          timeStr = '${diff.inHours} jam lalu';
+        } else if (diff.inMinutes > 0) {
+          timeStr = '${diff.inMinutes} menit lalu';
+        }
+      } catch (e) {
+        timeStr = '-';
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -206,8 +244,8 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: (log['color'] as Color).withValues(alpha: 0.1),
-            child: Icon(log['icon'], color: log['color'], size: 20),
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(icon, color: color, size: 20),
           ),
           const Gap(16),
           Expanded(
@@ -217,7 +255,7 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
                 Row(
                   children: [
                     Text(
-                      log['actor'],
+                      log['actorName'] ?? 'Sistem',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -235,7 +273,7 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
                         border: Border.all(color: Colors.grey.shade300),
                       ),
                       child: Text(
-                        log['role'],
+                        (log['actorRole'] ?? 'User').toString().toUpperCase(),
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey.shade600,
@@ -250,10 +288,10 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
                   text: TextSpan(
                     style: const TextStyle(color: Colors.black87, fontSize: 13),
                     children: [
-                      TextSpan(text: log['action']),
+                      TextSpan(text: actionText),
                       const TextSpan(text: ' '),
                       TextSpan(
-                        text: log['target'],
+                        text: log['reportTitle'] ?? 'laporan',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -269,7 +307,7 @@ class _SupervisorActivityLogPageState extends State<SupervisorActivityLogPage>
                     ),
                     const Gap(4),
                     Text(
-                      log['time'],
+                      timeStr,
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.grey.shade500,

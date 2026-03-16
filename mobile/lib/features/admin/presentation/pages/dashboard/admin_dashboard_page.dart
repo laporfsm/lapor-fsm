@@ -104,11 +104,23 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
               pinned: true,
               backgroundColor: AppTheme.adminColor,
               automaticallyImplyLeading: false,
+              elevation: 0,
+              title: innerBoxIsScrolled
+                  ? const Text(
+                      'Dashboard Admin',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    )
+                  : null,
+              centerTitle: true,
               flexibleSpace: FlexibleSpaceBar(
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Base Gradient Background
+                    // 1. Base Gradient Background (Purple for Admin)
                     Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -116,103 +128,112 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                           end: Alignment.bottomRight,
                           colors: [
                             AppTheme.adminColor,
-                            AppTheme.adminColor.withRed(
-                              ((AppTheme.adminColor.r * 255).round() + 30)
-                                  .clamp(0, 255),
-                            ),
+                            AppTheme.adminColor
+                                .withRed(50)
+                                .withBlue(150), // Variation
                           ],
                         ),
                       ),
                     ),
-                    // Decorative Circles (Pattern)
+                    // 2. Decorative Slants (Pattern)
                     Positioned(
-                      top: -50,
+                      top: -10,
+                      left: -20,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 80,
+                          color: Colors.white.withAlpha(25),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 70,
+                      left: -100,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 500,
+                          height: 45,
+                          color: Colors.white.withAlpha(18),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: -20,
                       right: -50,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 300,
+                          height: 40,
+                          color: Colors.white.withAlpha(25),
                         ),
                       ),
                     ),
                     Positioned(
-                      bottom: -30,
-                      left: -30,
-                      child: Container(
-                        width: 150,
-                        height: 150,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white.withValues(alpha: 0.05),
-                        ),
-                      ),
-                    ),
-                    // Gradient Overlay for text readability
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.2),
-                          ],
+                      bottom: 40,
+                      left: -40,
+                      child: Transform.rotate(
+                        angle: -0.25,
+                        child: Container(
+                          width: 200,
+                          height: 20,
+                          color: Colors.white.withAlpha(15),
                         ),
                       ),
                     ),
                     // Content
                     SafeArea(
                       child: Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.3),
+                        child: Opacity(
+                          opacity: 1.0 - (innerBoxIsScrolled ? 1.0 : 0.0),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withAlpha(50),
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  child: const Icon(
+                                    LucideIcons.shieldCheck,
+                                    color: Colors.white,
+                                    size: 26,
                                   ),
                                 ),
-                                child: const Icon(
-                                  LucideIcons.shieldCheck,
-                                  color: Colors.white,
-                                  size: 24,
-                                ),
-                              ),
-                              const Gap(16),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Halo, $_userName',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const Gap(4),
-                                    Text(
-                                      'Administrator',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.9,
+                                const Gap(14),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Halo, $_userName',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
                                         ),
-                                        fontSize: 14,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
+                                      const Gap(2),
+                                      Text(
+                                        'Administrator Sistem',
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
