@@ -996,6 +996,7 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                       latitude: reportLat,
                       longitude: reportLng,
                       locationName: widget.report.location,
+                      reportId: widget.report.id,
                       technicianLatLng: technicianLatLng,
                       reporterLatLng: reporterLatLng,
                     ),

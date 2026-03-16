@@ -1,16 +1,19 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:gap/gap.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/sse_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Fullscreen map modal with interactive controls
-class FullscreenMapModal extends StatelessWidget {
+/// Fullscreen map modal with interactive controls and live tracking updates
+class FullscreenMapModal extends StatefulWidget {
   final double latitude;
   final double longitude;
   final String locationName;
+  final String reportId;
   final LatLng? technicianLatLng;
   final LatLng? reporterLatLng;
 
@@ -19,13 +22,60 @@ class FullscreenMapModal extends StatelessWidget {
     required this.latitude,
     required this.longitude,
     required this.locationName,
+    required this.reportId,
     this.technicianLatLng,
     this.reporterLatLng,
   });
 
+  @override
+  State<FullscreenMapModal> createState() => _FullscreenMapModalState();
+}
+
+class _FullscreenMapModalState extends State<FullscreenMapModal> {
+  LatLng? _technicianLatLng;
+  LatLng? _reporterLatLng;
+  StreamSubscription? _sseSubscription;
+  final MapController _mapController = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    _technicianLatLng = widget.technicianLatLng;
+    _reporterLatLng = widget.reporterLatLng;
+
+    // Listen to SSE stream for live location updates
+    _sseSubscription = sseService.stream.listen((event) {
+      if (!mounted) return;
+      if (event['type'] == 'tracking') {
+        try {
+          final lat = (event['latitude'] as num).toDouble();
+          final lng = (event['longitude'] as num).toDouble();
+          final role = event['role']?.toString() ?? 'teknisi';
+
+          setState(() {
+            if (role == 'teknisi') {
+              _technicianLatLng = LatLng(lat, lng);
+            } else {
+              _reporterLatLng = LatLng(lat, lng);
+            }
+          });
+        } catch (e) {
+          debugPrint('[FULLSCREEN-MAP] Error parsing tracking: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sseSubscription?.cancel();
+    _mapController.dispose();
+    super.dispose();
+  }
+
   void _openInGoogleMaps() async {
     final Uri url = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude',
+      'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}',
     );
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -34,13 +84,13 @@ class FullscreenMapModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reportPos = LatLng(latitude, longitude);
+    final reportPos = LatLng(widget.latitude, widget.longitude);
     final markers = <Marker>[];
 
     // 1. Report/Pelapor Marker
     markers.add(
       Marker(
-        point: reporterLatLng ?? reportPos,
+        point: _reporterLatLng ?? reportPos,
         width: 70,
         height: 80,
         child: _buildMarkerIcon(
@@ -52,10 +102,10 @@ class FullscreenMapModal extends StatelessWidget {
     );
 
     // 2. Technician Marker
-    if (technicianLatLng != null) {
+    if (_technicianLatLng != null) {
       markers.add(
         Marker(
-          point: technicianLatLng!,
+          point: _technicianLatLng!,
           width: 70,
           height: 80,
           child: _buildMarkerIcon(
@@ -75,6 +125,7 @@ class FullscreenMapModal extends StatelessWidget {
           children: [
             // Full screen map
             FlutterMap(
+              mapController: _mapController,
               options: MapOptions(
                 initialCenter: reportPos,
                 initialZoom: 17,
@@ -123,7 +174,7 @@ class FullscreenMapModal extends StatelessWidget {
                             style: TextStyle(fontSize: 12, color: Colors.grey),
                           ),
                           Text(
-                            locationName,
+                            widget.locationName,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
