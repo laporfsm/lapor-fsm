@@ -18,14 +18,13 @@ class SupervisorAccountSettingsPage extends StatefulWidget {
 
 class _SupervisorAccountSettingsPageState
     extends State<SupervisorAccountSettingsPage> {
-  bool _pushNotification = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Preferensi & Notifikasi'),
+        title: const Text('Pengaturan & Info'),
         backgroundColor: AppTheme.supervisorColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -46,20 +45,6 @@ class _SupervisorAccountSettingsPageState
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              ProfileSection(
-                title: 'Notifikasi',
-                children: [
-                  SettingsSwitchTile(
-                    icon: LucideIcons.bell,
-                    title: 'Push Notification',
-                    subtitle: 'Notifikasi di aplikasi',
-                    value: _pushNotification,
-                    onChanged: (val) => setState(() => _pushNotification = val),
-                    activeColor: AppTheme.supervisorColor,
-                  ),
-                ],
-              ),
-              const Gap(24),
               ProfileSection(
                 title: 'Privasi & Keamanan',
                 children: [

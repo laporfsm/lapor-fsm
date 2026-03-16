@@ -43,8 +43,8 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
     }
   }
 
-  void _showForceCloseDialog() {
-    ReasonDialog.show(
+  Future<void> _showForceCloseDialog() async {
+    final reason = await ReasonDialog.show(
       context,
       title: 'Force Close Laporan',
       message:
@@ -52,34 +52,34 @@ class _AdminReportDetailPageState extends State<AdminReportDetailPage> {
       hintText: 'Alasan penutupan...',
       confirmLabel: 'Tutup Paksa',
       confirmColor: Colors.red,
-    ).then((reason) async {
-      if (reason != null) {
-        final success = await adminService.forceCloseReport(
-          widget.reportId,
-          reason,
+    );
+
+    if (reason != null) {
+      final success = await adminService.forceCloseReport(
+        widget.reportId,
+        reason,
+      );
+
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+
+      if (success) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Laporan berhasil ditutup paksa'),
+            backgroundColor: Colors.green,
+          ),
         );
-
-        if (!mounted) return;
-        final messenger = ScaffoldMessenger.of(context);
-
-        if (success) {
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Laporan berhasil ditutup paksa'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _fetchReport(silent: true); // Refresh
-        } else {
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Gagal menutup laporan'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        _fetchReport(silent: true); // Refresh
+      } else {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menutup laporan'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
-    });
+    }
   }
 
   @override

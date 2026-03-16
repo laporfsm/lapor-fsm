@@ -16,14 +16,13 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  bool _pushNotifications = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Preferensi & Notifikasi'),
+        title: const Text('Pengaturan & Info'),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
@@ -39,21 +38,6 @@ class _SettingsPageState extends State<SettingsPage> {
         child: Column(
           children: [
             const Gap(16),
-            ProfileSection(
-              title: 'Notifikasi',
-              children: [
-                SettingsSwitchTile(
-                  icon: LucideIcons.bell,
-                  title: 'Push Notification',
-                  subtitle: 'Terima pembaruan tentang laporan Anda',
-                  value: _pushNotifications,
-                  onChanged: (value) =>
-                      setState(() => _pushNotifications = value),
-                  activeColor: AppTheme.primaryColor,
-                ),
-              ],
-            ),
-            const Gap(24),
             ProfileSection(
               title: 'Privasi & Keamanan',
               children: [

@@ -266,7 +266,7 @@ class _TeknisiReportDetailPageState
         OutlinedButton.icon(
           onPressed: isProcessing
               ? null
-              : () => _handlePause(context, notifier, currentStaffId!),
+              : () => _handlePause(notifier, currentStaffId!),
           icon: const Icon(LucideIcons.pauseCircle),
           label: const Text('Pause'),
           style: OutlinedButton.styleFrom(
@@ -294,7 +294,7 @@ class _TeknisiReportDetailPageState
         ElevatedButton.icon(
           onPressed: isProcessing
               ? null
-              : () => _handleResumeWithConfirm(context, notifier),
+              : () => _handleResumeWithConfirm(notifier),
           icon: isProcessing
               ? const SizedBox(
                   width: 20,
@@ -320,7 +320,7 @@ class _TeknisiReportDetailPageState
         ElevatedButton.icon(
           onPressed: isProcessing
               ? null
-              : () => _handleStartWithConfirm(context, notifier),
+              : () => _handleStartWithConfirm(notifier),
           icon: isProcessing
               ? const SizedBox(
                   width: 20,
@@ -370,7 +370,6 @@ class _TeknisiReportDetailPageState
   }
 
   Future<void> _handleResumeWithConfirm(
-    BuildContext context,
     ReportDetailNotifier notifier,
   ) async {
     final confirmed = await _showConfirmDialog(
@@ -380,12 +379,11 @@ class _TeknisiReportDetailPageState
       confirmColor: AppTheme.primaryColor,
     );
     if (!confirmed) return;
-    if (!context.mounted) return;
-    await _handleResume(context, notifier);
+    if (!mounted) return;
+    await _handleResume(notifier);
   }
 
   Future<void> _handleStartWithConfirm(
-    BuildContext context,
     ReportDetailNotifier notifier,
   ) async {
     final confirmed = await _showConfirmDialog(
@@ -395,19 +393,18 @@ class _TeknisiReportDetailPageState
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
-    if (!context.mounted) return;
-    await _handleStart(context, notifier);
+    if (!mounted) return;
+    await _handleStart(notifier);
   }
 
   Future<void> _handleStart(
-    BuildContext context,
     ReportDetailNotifier notifier,
   ) async {
     try {
       final staffId = await _getStaffId(notifier);
       if (staffId != null) {
         await notifier.acceptTask(staffId);
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Penanganan dimulai'),
@@ -416,7 +413,7 @@ class _TeknisiReportDetailPageState
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal memulai penanganan: $e'),
@@ -428,48 +425,47 @@ class _TeknisiReportDetailPageState
   }
 
   Future<void> _handlePause(
-    BuildContext context,
     ReportDetailNotifier notifier,
     String staffIdStr,
   ) async {
     final staffId = int.tryParse(staffIdStr);
     if (staffId == null) return;
 
-    ReasonDialog.show(
+    final reason = await ReasonDialog.show(
       context,
       title: 'Tunda Pengerjaan',
       message: 'Apakah Anda yakin ingin menunda pengerjaan?',
       hintText: 'Alasan penundaan (misal: menunggu sparepart)...',
       confirmLabel: 'Tunda',
       confirmColor: Colors.orange,
-    ).then((reason) async {
-      if (reason != null) {
-        final messenger = ScaffoldMessenger.of(context);
-        try {
-          await notifier.pauseTask(staffId, reason);
-          if (!messenger.mounted) return;
-          messenger.showSnackBar(
-            const SnackBar(
-              content: Text('Pengerjaan ditunda (Pause)'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        } catch (e) {
-          debugPrint('Error pausing task: $e');
-        }
+    );
+
+    if (reason != null) {
+      if (!mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      try {
+        await notifier.pauseTask(staffId, reason);
+        if (!messenger.mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Pengerjaan ditunda (Pause)'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } catch (e) {
+        debugPrint('Error pausing task: $e');
       }
-    });
+    }
   }
 
   Future<void> _handleResume(
-    BuildContext context,
     ReportDetailNotifier notifier,
   ) async {
     try {
       final staffId = await _getStaffId(notifier);
       if (staffId != null) {
         await notifier.resumeTask(staffId);
-        if (!context.mounted) return;
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Pengerjaan dilanjutkan'),
@@ -479,7 +475,7 @@ class _TeknisiReportDetailPageState
       }
     } catch (e) {
       debugPrint('Error resuming task: $e');
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal melanjutkan pekerjaan: $e'),
