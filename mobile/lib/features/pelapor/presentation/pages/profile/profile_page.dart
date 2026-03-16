@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/widgets/about_app_sheet.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/services/report_service.dart';
@@ -339,6 +340,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: LucideIcons.settings,
                     label: "Preferensi & Notifikasi",
                     onTap: () => context.push('/settings'),
+                    color: AppTheme.primaryColor,
+                  ),
+                  ProfileMenuItem(
+                    icon: LucideIcons.info,
+                    label: "Tentang Aplikasi",
+                    onTap: () => showAboutAppSheet(
+                      context,
+                      accentColor: AppTheme.primaryColor,
+                    ),
                     color: AppTheme.primaryColor,
                   ),
                   ProfileMenuItem(

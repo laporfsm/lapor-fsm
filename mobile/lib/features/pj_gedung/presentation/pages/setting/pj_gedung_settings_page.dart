@@ -3,6 +3,8 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/services/app_update_checker.dart';
+import 'package:mobile/core/widgets/app_version_widgets.dart';
 import 'package:mobile/core/widgets/settings_widgets.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 
@@ -81,11 +83,11 @@ class _PJGedungSettingsPageState extends State<PJGedungSettingsPage> {
             ProfileSection(
               title: 'Tentang',
               children: [
-                const SettingsTile(
-                  icon: LucideIcons.info,
-                  title: 'Versi Aplikasi',
-                  subtitle: '1.0.0 (Build 1)',
-                  trailing: SizedBox.shrink(),
+                const AppVersionTile(icon: LucideIcons.info),
+                SettingsTile(
+                  icon: LucideIcons.refreshCw,
+                  title: 'Cek Update',
+                  onTap: () => AppUpdateChecker.checkForUpdate(context),
                 ),
                 const SettingsTile(
                   icon: LucideIcons.code,
