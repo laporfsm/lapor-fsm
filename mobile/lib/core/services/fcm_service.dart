@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:mobile/core/services/auth_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/router/app_router.dart';
 
@@ -29,7 +29,6 @@ class FCMService {
         debugPrint('User granted permission');
       } else {
         debugPrint('User declined or has not accepted permission');
-        return;
       }
 
       // 2. Setup Background Handler (Mobile only usually, but handled by package)
@@ -72,24 +71,26 @@ class FCMService {
         });
       }
 
-      // 5. Get Token & Save
-      // On Web, this might fail with AbortError if push service is unavailable
-      try {
-        String? token = await _firebaseMessaging.getToken();
-        if (token != null) {
-          debugPrint('FCM Token: $token');
-          await _saveTokenToBackend(token);
-        }
-      } catch (e) {
-        debugPrint('FCM Token Error (e.g. Web Push Service issue): $e');
-      }
-
-      // 6. Listen for token refresh
+      // 5. Setup token refresh listener
       _firebaseMessaging.onTokenRefresh.listen((newToken) {
-        _saveTokenToBackend(newToken);
+        _syncTokenToBackend(newToken);
       });
     } catch (e) {
       debugPrint('FCM Initialization Error: $e');
+    }
+  }
+
+  /// Explicitly fetch and sync token to backend
+  static Future<void> syncToken() async {
+    try {
+      // On Web, this might fail with AbortError if push service is unavailable
+      String? token = await _firebaseMessaging.getToken();
+      if (token != null) {
+        debugPrint('FCM Token: $token');
+        await _syncTokenToBackend(token);
+      }
+    } catch (e) {
+      debugPrint('FCM Token Error: $e');
     }
   }
 
@@ -192,43 +193,47 @@ class FCMService {
     }
 
     try {
-      final user = await authService.getCurrentUser();
-      final role = user?['role'];
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      final role = prefs.getString('user_role');
 
-      String route;
-      switch (role) {
-        case 'teknisi':
-          route = '/teknisi/report/$reportId';
-        case 'supervisor':
-          route = '/supervisor/review/$reportId';
-        case 'pj_gedung':
-          route = '/pj-gedung/report/$reportId';
-        case 'admin':
-          route = '/admin/reports/$reportId';
-        default:
-          route = '/report-detail/$reportId';
+      if (userId != null && role != null) {
+        String route;
+        switch (role) {
+          case 'teknisi':
+            route = '/teknisi/report/$reportId';
+          case 'supervisor':
+            route = '/supervisor/review/$reportId';
+          case 'pj_gedung':
+            route = '/pj-gedung/report/$reportId';
+          case 'admin':
+            route = '/admin/reports/$reportId';
+          default:
+            route = '/report-detail/$reportId';
+        }
+
+        debugPrint('Navigating to: $route');
+        appRouter.push(route);
       }
-
-      debugPrint('Navigating to: $route');
-      appRouter.push(route);
     } catch (e) {
       debugPrint('Error handling notification tap: $e');
     }
   }
 
-  static Future<void> _saveTokenToBackend(String token) async {
+  static Future<void> _syncTokenToBackend(String token) async {
     try {
-      final user = await authService.getCurrentUser();
-      if (user != null) {
-        final userId = user['id'];
-        final role = user['role'];
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_id');
+      final role = prefs.getString('user_role');
+
+      if (userId != null && role != null) {
         final type = (role == 'pelapor' || role == 'user') ? 'user' : 'staff';
 
         await apiService.dio.post(
           '/notifications/fcm-token',
           data: {'userId': userId, 'role': type, 'token': token},
         );
-        debugPrint('FCM Token synced to backend');
+        debugPrint('FCM Token synced to backend for $type $userId');
       }
     } catch (e) {
       debugPrint('Failed to save FCM Token: $e');

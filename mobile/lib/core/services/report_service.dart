@@ -1003,6 +1003,36 @@ class ReportService {
       return {'success': false, 'message': msg};
     }
   }
+
+  // Get global activity logs for supervisor
+  Future<List<Map<String, dynamic>>> getGlobalLogs({
+    String? role,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final response = await apiService.dio.get(
+        '/supervisor/logs',
+        queryParameters: {
+          if (role != null) 'role': role,
+          'limit': limit.toString(),
+          'offset': offset.toString(),
+        },
+      );
+
+      if (response.data['status'] == 'success') {
+        final rawData = response.data['data'];
+        return (rawData as List?)
+                ?.map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
+      }
+      return [];
+    } catch (e) {
+      debugPrint('Error fetching global logs: $e');
+      return [];
+    }
+  }
 }
 
 // Singleton instance
