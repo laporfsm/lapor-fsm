@@ -32,13 +32,13 @@ class _TeknisiStatisticsPageState extends ConsumerState<TeknisiStatisticsPage> {
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     final user = await authService.getCurrentUser();
-    if (user == null || user['staffId'] == null) {
+    if (user == null || user['id'] == null) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
 
     final data = await reportService.getTechnicianStatistics(
-      user['staffId'].toString(),
+      user['id'].toString(),
       period: _selectedPeriod,
     );
 
