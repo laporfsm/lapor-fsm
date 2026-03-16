@@ -24,6 +24,17 @@ class SSEService {
   final _logsController = StreamController<List<ReportLog>>.broadcast();
   Stream<List<ReportLog>> get logsStream => _logsController.stream;
 
+  // Tracking Cache: reportId -> role -> trackingData
+  final Map<String, Map<String, Map<String, dynamic>>> _trackingCache = {};
+  Map<String, Map<String, dynamic>>? getTrackingData(String reportId) => _trackingCache[reportId];
+
+  // Legacy helper
+  Map<String, dynamic>? getLatestTracking(String reportId) {
+    final data = _trackingCache[reportId];
+    if (data == null) return null;
+    return data['teknisi'] ?? data['pelapor'];
+  }
+
   // Notification Stream
   StreamSubscription? _notificationSubscription;
   http.Client? _notificationClient;
@@ -55,6 +66,14 @@ class SSEService {
             _logsController.add(logsList);
           } catch (e) {
             debugPrint('[SSE-LOGS] Parse error: $e');
+          }
+        } else if (data['type'] == 'tracking') {
+          // Cache the latest tracking info by reportId and role
+          final String reportId = data['reportId']?.toString() ?? '';
+          final String role = data['role']?.toString() ?? 'teknisi';
+          if (reportId.isNotEmpty) {
+            _trackingCache.putIfAbsent(reportId, () => {});
+            _trackingCache[reportId]![role] = data;
           }
         }
       },
