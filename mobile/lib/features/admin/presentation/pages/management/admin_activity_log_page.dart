@@ -18,6 +18,10 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
   late TabController _tabController;
   String _searchQuery = '';
   String _dateFilter = 'Semua';
+  int _activeTabIndex = 0;
+  String _adminCategoryFilter = 'Semua';
+  String _verificationCategoryFilter = 'Semua';
+  String _reportCategoryFilter = 'Semua';
   List<Map<String, dynamic>> _allLogs = [];
   bool _isLoading = true;
 
@@ -25,6 +29,12 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (mounted) {
+        setState(() => _activeTabIndex = _tabController.index);
+      }
+    });
     _loadData();
   }
 
@@ -49,8 +59,9 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
           log['action'].toLowerCase().contains(_searchQuery.toLowerCase());
 
       final matchesType = log['type'] == type;
+      final matchesCategory = _matchesCategoryFilter(log, type);
 
-      return matchesSearch && matchesType && matchesDate;
+      return matchesSearch && matchesType && matchesDate && matchesCategory;
     }).toList();
   }
 
@@ -80,6 +91,58 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
     final cutoffDays = _dateFilter == '7 hari' ? 7 : 30;
     final cutoff = now.subtract(Duration(days: cutoffDays));
     return !time.isBefore(cutoff);
+  }
+
+  bool _matchesCategoryFilter(Map<String, dynamic> log, String type) {
+    final selected = _getSelectedCategory(type);
+    if (selected == 'Semua') return true;
+    final category = _getCategoryValue(log, type);
+    return category == selected;
+  }
+
+  String _getSelectedCategory(String type) {
+    switch (type) {
+      case 'Admin':
+        return _adminCategoryFilter;
+      case 'Verifikasi':
+        return _verificationCategoryFilter;
+      case 'Laporan':
+        return _reportCategoryFilter;
+      default:
+        return 'Semua';
+    }
+  }
+
+  String _getCategoryValue(Map<String, dynamic> log, String type) {
+    if (type == 'Laporan') {
+      final from = log['fromStatus']?.toString();
+      final to = log['toStatus']?.toString();
+      if (from != null && to != null && from.isNotEmpty && to.isNotEmpty) {
+        return '$from → $to';
+      }
+
+      final details = log['details']?.toString() ?? '';
+      final match = RegExp(
+        r'Status changed from ([^ ]+) to ([^ ]+)',
+        caseSensitive: false,
+      ).firstMatch(details);
+      if (match != null) {
+        return '${match.group(1)} → ${match.group(2)}';
+      }
+    }
+
+    return log['action']?.toString() ?? 'Lainnya';
+  }
+
+  List<String> _getCategoriesForType(String type) {
+    final categories = _allLogs
+        .where((log) => log['type'] == type)
+        .map((log) => _getCategoryValue(log, type))
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    return ['Semua', ...categories];
   }
 
   @override
@@ -190,6 +253,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
               ],
             ),
           ),
+          _buildCategoryFilterRow(),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -239,6 +303,77 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         onSelected: (value) {
           if (!value) return;
           setState(() => _dateFilter = label);
+        },
+        selectedColor: AppTheme.adminColor.withValues(alpha: 0.15),
+        labelStyle: TextStyle(
+          color: selected ? AppTheme.adminColor : Colors.grey.shade700,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryFilterRow() {
+    final type = _activeTabIndex == 0
+        ? 'Admin'
+        : _activeTabIndex == 1
+            ? 'Verifikasi'
+            : 'Laporan';
+    if (type == 'Verifikasi') {
+      return const SizedBox.shrink();
+    }
+    final categories = _getCategoriesForType(type);
+    if (categories.length <= 1) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.white,
+      child: Row(
+        children: [
+          const Icon(LucideIcons.tags, size: 18),
+          const Gap(8),
+          Text(
+            type == 'Admin'
+                ? 'Status:'
+                : 'Perubahan:',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const Gap(12),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: categories
+                    .map((category) => _buildCategoryChip(category, type))
+                    .toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String label, String type) {
+    final selected = _getSelectedCategory(type) == label;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (value) {
+          if (!value) return;
+          setState(() {
+            if (type == 'Admin') {
+              _adminCategoryFilter = label;
+            } else if (type == 'Verifikasi') {
+              _verificationCategoryFilter = label;
+            } else {
+              _reportCategoryFilter = label;
+            }
+          });
         },
         selectedColor: AppTheme.adminColor.withValues(alpha: 0.15),
         labelStyle: TextStyle(
