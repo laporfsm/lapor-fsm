@@ -6,7 +6,6 @@ import 'package:latlong2/latlong.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/sse_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// Fullscreen map modal with interactive controls and live tracking updates
 class FullscreenMapModal extends StatefulWidget {
@@ -73,12 +72,33 @@ class _FullscreenMapModalState extends State<FullscreenMapModal> {
     super.dispose();
   }
 
-  void _openInGoogleMaps() async {
-    final Uri url = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${widget.latitude},${widget.longitude}',
-    );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+  void _refreshMap() {
+    debugPrint('[FULLSCREEN-MAP] Manual refresh triggered');
+
+    // 1. Recenter camera
+    _mapController.move(LatLng(widget.latitude, widget.longitude), 17);
+
+    // 2. Refresh tracking data from cache (if any updates happened while map was open)
+    final trackingData = sseService.getTrackingData(widget.reportId);
+    if (trackingData != null) {
+      debugPrint('[FULLSCREEN-MAP] Updating markers from cache: ${trackingData.keys.toList()}');
+      setState(() {
+        trackingData.forEach((role, data) {
+          try {
+            final lat = (data['latitude'] as num).toDouble();
+            final lng = (data['longitude'] as num).toDouble();
+            if (role == 'teknisi') {
+              _technicianLatLng = LatLng(lat, lng);
+            } else {
+              _reporterLatLng = LatLng(lat, lng);
+            }
+          } catch (e) {
+            debugPrint('[FULLSCREEN-MAP] Error refreshing cache: $e');
+          }
+        });
+      });
+    } else {
+      debugPrint('[FULLSCREEN-MAP] No tracking data in cache to refresh');
     }
   }
 
@@ -141,18 +161,19 @@ class _FullscreenMapModalState extends State<FullscreenMapModal> {
 
             // Top bar with close button and location name
             Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
+              top: 12,
+              left: 12,
+              right: 12,
               child: Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 15,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
@@ -160,7 +181,7 @@ class _FullscreenMapModalState extends State<FullscreenMapModal> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(LucideIcons.arrowLeft),
+                      icon: const Icon(LucideIcons.arrowLeft, size: 20),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -168,10 +189,15 @@ class _FullscreenMapModalState extends State<FullscreenMapModal> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Text(
                             'Lokasi Laporan',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                           Text(
                             widget.locationName,
@@ -188,15 +214,15 @@ class _FullscreenMapModalState extends State<FullscreenMapModal> {
               ),
             ),
 
-            // Bottom button to open in Google Maps
+            // Bottom button to refresh/recenter map
             Positioned(
               bottom: 24,
               left: 16,
               right: 16,
               child: ElevatedButton.icon(
-                onPressed: _openInGoogleMaps,
-                icon: const Icon(LucideIcons.navigation),
-                label: const Text('Buka di Google Maps'),
+                onPressed: _refreshMap,
+                icon: const Icon(LucideIcons.refreshCw),
+                label: const Text('Refresh Peta'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryColor,
                   foregroundColor: Colors.white,

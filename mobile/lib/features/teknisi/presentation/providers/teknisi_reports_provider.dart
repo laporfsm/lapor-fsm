@@ -19,6 +19,7 @@ class TeknisiReportsState {
   final String? period;
   final DateTime? startDate;
   final DateTime? endDate;
+  final int? assignedTo;
 
   TeknisiReportsState({
     required this.reports,
@@ -34,6 +35,7 @@ class TeknisiReportsState {
     this.period,
     this.startDate,
     this.endDate,
+    this.assignedTo,
   });
 
   TeknisiReportsState copyWith({
@@ -50,6 +52,7 @@ class TeknisiReportsState {
     String? period,
     DateTime? startDate,
     DateTime? endDate,
+    int? assignedTo,
   }) {
     return TeknisiReportsState(
       reports: reports ?? this.reports,
@@ -65,6 +68,7 @@ class TeknisiReportsState {
       period: period ?? this.period,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
+      assignedTo: assignedTo ?? this.assignedTo,
     );
   }
 }
@@ -107,6 +111,7 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
         period: state.period,
         startDate: state.startDate?.toIso8601String(),
         endDate: state.endDate?.toIso8601String(),
+        assignedTo: state.assignedTo,
       );
 
       final List<dynamic> docs = response['data'] ?? [];
@@ -148,6 +153,7 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
     String? period,
     DateTime? startDate,
     DateTime? endDate,
+    int? assignedTo,
   }) {
     state = state.copyWith(
       category: category,
@@ -156,6 +162,7 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
       period: period,
       startDate: startDate,
       endDate: endDate,
+      assignedTo: assignedTo,
     );
     loadReports(refresh: true);
   }
@@ -169,6 +176,7 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
       period: null,
       startDate: null,
       endDate: null,
+      assignedTo: null,
     );
     loadReports(refresh: true);
   }

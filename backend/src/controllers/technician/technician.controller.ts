@@ -281,7 +281,7 @@ export const technicianController = new Elysia({ prefix: '/technician' })
             .leftJoin(reporterStaff, eq(reports.staffId, reporterStaff.id))
             .leftJoin(categories, eq(reports.categoryId, categories.id))
             .where(whereClause)
-            .orderBy(desc(reports.isEmergency), desc(reports.createdAt))
+            .orderBy(desc(reports.createdAt))
             .limit(limitNum)
             .offset(offsetNum);
 
