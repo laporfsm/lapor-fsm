@@ -531,6 +531,21 @@ class _CreateReportPageState extends State<CreateReportPage> {
               ),
               const Gap(16),
 
+              // Description
+              TextFormField(
+                controller: _descController,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: "Deskripsi Detail *",
+                  hintText:
+                      "Jelaskan kronologi atau kondisi kerusakan secara detail...",
+                  alignLabelWithHint: true,
+                ),
+                validator: (value) =>
+                    value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
+              ),
+              const Gap(16),
+
               // Building Selection
               DropdownButtonFormField<String>(
                 initialValue: _selectedBuilding,
@@ -746,22 +761,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
                         ],
                       ],
                     ),
-                  ),
                 ),
-              const Gap(16),
-
-              // Description
-              TextFormField(
-                controller: _descController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: "Deskripsi Detail *",
-                  hintText:
-                      "Jelaskan kronologi atau kondisi kerusakan secara detail...",
-                  alignLabelWithHint: true,
-                ),
-                validator: (value) =>
-                    value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
               ),
               const Gap(16),
 

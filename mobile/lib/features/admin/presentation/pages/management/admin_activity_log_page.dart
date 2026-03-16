@@ -17,6 +17,7 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
   final TextEditingController _searchController = TextEditingController();
   late TabController _tabController;
   String _searchQuery = '';
+  String _dateFilter = 'Semua';
   List<Map<String, dynamic>> _allLogs = [];
   bool _isLoading = true;
 
@@ -40,6 +41,8 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
 
   List<Map<String, dynamic>> _getFilteredLogs(String type) {
     return _allLogs.where((log) {
+      final logTime = _getLogTime(log);
+      final matchesDate = _matchesDateFilter(logTime);
       final matchesSearch =
           log['user'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
           log['details'].toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -47,8 +50,36 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
 
       final matchesType = log['type'] == type;
 
-      return matchesSearch && matchesType;
+      return matchesSearch && matchesType && matchesDate;
     }).toList();
+  }
+
+  DateTime? _getLogTime(Map<String, dynamic> log) {
+    final time = log['time'];
+    if (time is DateTime) {
+      return time;
+    }
+    if (time is String) {
+      return DateTime.tryParse(time);
+    }
+    return null;
+  }
+
+  bool _matchesDateFilter(DateTime? time) {
+    if (_dateFilter == 'Semua' || time == null) {
+      return true;
+    }
+
+    final now = DateTime.now();
+    if (_dateFilter == 'Hari ini') {
+      return time.year == now.year &&
+          time.month == now.month &&
+          time.day == now.day;
+    }
+
+    final cutoffDays = _dateFilter == '7 hari' ? 7 : 30;
+    final cutoff = now.subtract(Duration(days: cutoffDays));
+    return !time.isBefore(cutoff);
   }
 
   @override
@@ -131,6 +162,34 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
               },
             ),
           ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.white,
+            child: Row(
+              children: [
+                const Icon(LucideIcons.filter, size: 18),
+                const Gap(8),
+                const Text(
+                  'Filter:',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip('Semua'),
+                        _buildFilterChip('Hari ini'),
+                        _buildFilterChip('7 hari'),
+                        _buildFilterChip('30 hari'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -167,6 +226,26 @@ class _AdminActivityLogPageState extends State<AdminActivityLogPage> with Single
         final log = filtered[index];
         return _buildLogItem(log);
       },
+    );
+  }
+
+  Widget _buildFilterChip(String label) {
+    final selected = _dateFilter == label;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        onSelected: (value) {
+          if (!value) return;
+          setState(() => _dateFilter = label);
+        },
+        selectedColor: AppTheme.adminColor.withValues(alpha: 0.15),
+        labelStyle: TextStyle(
+          color: selected ? AppTheme.adminColor : Colors.grey.shade700,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
     );
   }
 
