@@ -246,9 +246,8 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                               ),
                               ProfileMenuItem(
                                 icon: LucideIcons.lock,
-                                label: "Ubah Password",
-                                onTap: () =>
-                                    context.push('/supervisor/settings'),
+                                label: "Reset Password",
+                                onTap: () => context.push('/forgot-password'),
                                 color: AppTheme.supervisorColor,
                               ),
                             ],

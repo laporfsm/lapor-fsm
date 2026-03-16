@@ -46,32 +46,32 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       // Call backend API to send reset password email
       final result = await authService.sendPasswordResetLink(email: email);
 
-      if (mounted) {
-        if (result['success'] == true) {
-          setState(() {
-            _emailSent = true;
-            _isLoading = false;
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message'] ?? 'Gagal mengirim link reset'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          setState(() => _isLoading = false);
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (result['success'] == true) {
+        setState(() {
+          _emailSent = true;
+          _isLoading = false;
+        });
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengirim link reset: $e'),
+            content: Text(result['message'] ?? 'Gagal mengirim link reset'),
             backgroundColor: Colors.red,
           ),
         );
         setState(() => _isLoading = false);
       }
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal mengirim link reset: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() => _isLoading = false);
     }
   }
 
@@ -84,7 +84,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Lupa Password'),
+        title: const Text('Reset Password'),
         backgroundColor: Colors.white,
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft),
@@ -126,18 +126,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           // Title
           const Text(
             'Reset Password',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const Gap(12),
           Text(
             'Masukkan email yang terdaftar. Kami akan mengirimkan link untuk mereset password Anda.',
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const Gap(40),
@@ -212,9 +206,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       ),
                     )
                   : const Text(
-                      'Kirim Link Reset',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      'Submit',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
             ),
           ),
@@ -224,7 +220,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           TextButton(
             onPressed: () => context.go('/login'),
             child: Text(
-              'Kembali ke Login',
+              'Kembali',
               style: TextStyle(color: Colors.grey.shade600),
             ),
           ),
@@ -257,18 +253,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         // Title
         const Text(
           'Email Terkirim!',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const Gap(12),
         Text(
           'Kami telah mengirimkan link reset password ke:',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
           textAlign: TextAlign.center,
         ),
         const Gap(8),
@@ -336,14 +326,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.alertTriangle,
-                  color: Colors.orange.shade700, size: 18),
+              Icon(
+                LucideIcons.alertTriangle,
+                color: Colors.orange.shade700,
+                size: 18,
+              ),
               const Gap(8),
               Expanded(
                 child: Text(
                   'Tidak menerima email? Cek folder spam atau junk.',
-                  style:
-                      TextStyle(color: Colors.orange.shade700, fontSize: 12),
+                  style: TextStyle(color: Colors.orange.shade700, fontSize: 12),
                 ),
               ),
             ],
@@ -357,7 +349,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: OutlinedButton.icon(
             onPressed: _resendEmail,
             icon: const Icon(LucideIcons.refreshCw, size: 18),
-            label: const Text('Kirim Ulang Email'),
+            label: const Text('Kirim Ulang'),
             style: OutlinedButton.styleFrom(
               foregroundColor: AppTheme.primaryColor,
               padding: const EdgeInsets.symmetric(vertical: 14),

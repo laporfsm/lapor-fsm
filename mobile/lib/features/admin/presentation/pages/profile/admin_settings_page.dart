@@ -46,9 +46,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                 ),
                 SettingsTile(
                   icon: LucideIcons.lock,
-                  title: 'Ubah Password',
-                  onTap: () =>
-                      _showSnackBar('Fitur Ubah Password akan segera hadir!'),
+                  title: 'Reset Password',
+                  onTap: () => context.push('/forgot-password'),
                 ),
               ],
             ),

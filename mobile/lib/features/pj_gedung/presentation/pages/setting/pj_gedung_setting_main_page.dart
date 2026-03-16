@@ -289,12 +289,8 @@ class _PJGedungSettingMainPageState extends State<PJGedungSettingMainPage> {
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.lock,
-                    label:
-                        "Ubah Password", // Reused /settings route or new route?
-                    // Technician uses /teknisi/settings for password change entry?
-                    // Actually technician uses /teknisi/settings for complete settings including pass?
-                    // Let's verify route later. For now stick to existing pattern.
-                    onTap: () => context.push('/pj-gedung/settings'),
+                    label: "Reset Password",
+                    onTap: () => context.push('/forgot-password'),
                     color: AppTheme.pjGedungColor,
                   ),
                 ],

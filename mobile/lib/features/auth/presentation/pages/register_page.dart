@@ -226,6 +226,8 @@ class _RegisterPageState extends State<RegisterPage> {
         final xFile = XFile.fromData(_idCardBytes!, name: 'id_card.jpg');
         idCardUrl = await reportService.uploadImage(xFile);
 
+        if (!mounted) return;
+
         if (idCardUrl == null) {
           throw 'Gagal mengunggah kartu identitas. Silakan coba lagi.';
         }
@@ -246,25 +248,25 @@ class _RegisterPageState extends State<RegisterPage> {
         idCardUrl: idCardUrl,
       );
 
-      if (mounted) {
-        if (result['success']) {
-          // All users need to check email and activate account
-          // Show activation required dialog
-          _showActivationRequiredDialog(
-            result['isUndip'] == true,
-            result['needsAdminApproval'] == true,
-          );
+      if (!mounted) return;
+
+      if (result['success']) {
+        // All users need to check email and activate account
+        // Show activation required dialog
+        _showActivationRequiredDialog(
+          result['isUndip'] == true,
+          result['needsAdminApproval'] == true,
+        );
+      } else {
+        final message = result['message'] ?? 'Registrasi gagal';
+        if (message.toString().toLowerCase().contains(
+          'email sudah terdaftar',
+        )) {
+          _showEmailAlreadyRegisteredDialog();
         } else {
-          final message = result['message'] ?? 'Registrasi gagal';
-          if (message.toString().toLowerCase().contains(
-            'email sudah terdaftar',
-          )) {
-            _showEmailAlreadyRegisteredDialog();
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message), backgroundColor: Colors.red),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(message), backgroundColor: Colors.red),
+          );
         }
       }
     } catch (e) {

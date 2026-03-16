@@ -15,7 +15,9 @@ class AppUpdateChecker {
   }) async {
     final info = await AppVersionService().fetchVersionInfo();
     if (info == null) {
-      _showSnackBar(context, 'Gagal memeriksa update. Coba lagi.');
+      if (context.mounted) {
+        _showSnackBar(context, 'Gagal memeriksa update. Coba lagi.');
+      }
       return;
     }
 

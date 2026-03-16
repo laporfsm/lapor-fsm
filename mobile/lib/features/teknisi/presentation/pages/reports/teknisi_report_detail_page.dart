@@ -400,6 +400,7 @@ class _TeknisiReportDetailPageState
       confirmColor: AppTheme.primaryColor,
     );
     if (!confirmed) return;
+    if (!context.mounted) return;
     await _handleResume(context, notifier);
   }
 
@@ -414,6 +415,7 @@ class _TeknisiReportDetailPageState
       confirmColor: Colors.orange,
     );
     if (!confirmed) return;
+    if (!context.mounted) return;
     await _handleStart(context, notifier);
   }
 

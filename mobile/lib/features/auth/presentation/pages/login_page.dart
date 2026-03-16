@@ -169,7 +169,9 @@ class _LoginPageState extends State<LoginPage> {
         result = await authService.login(email: email, password: password);
       }
 
-      if (mounted && result['success']) {
+      if (!mounted) return;
+
+      if (result['success']) {
         final role = result['role'];
         String redirectPath = '/';
 
@@ -188,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           context.go(redirectPath);
         }
-      } else if (mounted) {
+      } else if (context.mounted) {
         _showErrorModal(
           result['message'] ?? 'Email atau password salah. Silakan coba lagi.',
         );
