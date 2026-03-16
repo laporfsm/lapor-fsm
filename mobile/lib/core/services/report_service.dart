@@ -448,9 +448,14 @@ class ReportService {
   }
 
   // Get Supervisor Detailed Statistics
-  Future<Map<String, dynamic>?> getSupervisorStatistics() async {
+  Future<Map<String, dynamic>?> getSupervisorStatistics({
+    String? period,
+  }) async {
     try {
-      final response = await apiService.dio.get('/supervisor/statistics');
+      final response = await apiService.dio.get(
+        '/supervisor/statistics',
+        queryParameters: period != null ? {'period': period} : null,
+      );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
       }

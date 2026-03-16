@@ -19,6 +19,7 @@ class _SupervisorStatisticsPageState
     extends ConsumerState<SupervisorStatisticsPage> {
   bool _isLoading = true;
   Map<String, dynamic>? _stats;
+  String _selectedPeriod = 'weekly';
 
   @override
   void initState() {
@@ -28,7 +29,9 @@ class _SupervisorStatisticsPageState
 
   Future<void> _fetchStats() async {
     setState(() => _isLoading = true);
-    final data = await reportService.getSupervisorStatistics();
+    final data = await reportService.getSupervisorStatistics(
+      period: _selectedPeriod,
+    );
     if (mounted) {
       setState(() {
         _stats = data;
@@ -81,19 +84,21 @@ class _SupervisorStatisticsPageState
                 physics: const AlwaysScrollableScrollPhysics(),
                 child: Column(
                   children: [
-                    _buildSummaryCard(_stats!['summary']),
+                    _buildFilterDropdown(),
+                    const Gap(16),
+                    _buildSummaryCard(_stats!['summary'] ?? []),
                     const Gap(16),
                     StatsSectionCard(
                       title: 'Berdasarkan Kategori',
                       child: Column(
-                        children: (_stats!['categories'] as List).map((c) {
+                        children: (_stats!['categories'] as List?)?.map((c) {
                           return StatsBarChartItem(
                             label: c['label'],
                             percentage: (c['percentage'] as num).toDouble(),
                             color: _getCategoryColor(c['label']),
                             valueSuffix: '${c['count']}',
                           );
-                        }).toList(),
+                        }).toList() ?? [],
                       ),
                     ),
                     const Gap(16),
@@ -101,28 +106,40 @@ class _SupervisorStatisticsPageState
                       title: 'Lokasi Paling Bermasalah',
                       child: Column(
                         children: [
-                          ...(_stats!['buildings'] as List).map((b) {
-                            return StatsBarChartItem(
-                              label: b['name'],
-                              percentage: _calculateBuildingPercentage(
-                                b['count'],
+                          if (_stats!['buildings'] == null ||
+                              (_stats!['buildings'] as List).isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
+                              child: Text(
+                                'Belum ada data lokasi',
+                                style: TextStyle(color: Colors.grey),
                               ),
-                              color: Colors.teal,
-                              valueSuffix: '${b['count']}',
-                              onTap: () => context.push(
-                                Uri(
-                                  path: '/pj-gedung/statistics',
-                                  queryParameters: {'buildingName': b['name']},
-                                ).toString(),
-                              ),
-                            );
-                          }),
+                            )
+                          else
+                            ...(_stats!['buildings'] as List).take(3).map((b) {
+                              return StatsBarChartItem(
+                                label: b['name'],
+                                percentage: _calculateBuildingPercentage(
+                                  b['count'],
+                                ),
+                                color: Colors.teal,
+                                valueSuffix: '${b['count']}',
+                                onTap: () => context.push(
+                                  Uri(
+                                    path: '/pj-gedung/statistics',
+                                    queryParameters: {
+                                      'locationName': b['name'],
+                                    },
+                                  ).toString(),
+                                ),
+                              );
+                            }),
                           const Gap(8),
                           SizedBox(
                             width: double.infinity,
                             child: OutlinedButton(
                               onPressed: () =>
-                                  context.push('/supervisor/buildings'),
+                                  context.push('/supervisor/locations'),
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(
                                   color: AppTheme.primaryColor.withValues(
@@ -145,26 +162,26 @@ class _SupervisorStatisticsPageState
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: (_stats!['dailyTrends'] as List).map((t) {
+                        children: (_stats!['dailyTrends'] as List?)?.map((t) {
                           return StatsTrendBar(
                             label: t['day'],
                             heightFactor: _calculateTrendFactor(t['value']),
                             activeColor: AppTheme.supervisorColor,
                           );
-                        }).toList(),
+                        }).toList() ?? [],
                       ),
                     ),
                     const Gap(16),
                     StatsSectionCard(
                       title: 'Performa Teknisi (Top)',
                       child: Column(
-                        children: (_stats!['technicians'] as List).map((t) {
+                        children: (_stats!['technicians'] as List?)?.map((t) {
                           return _buildTechItem(
                             t['name'],
                             t['completedCount'].toString(),
                             t['status'],
                           );
-                        }).toList(),
+                        }).toList() ?? [],
                       ),
                     ),
                     const Gap(32),
@@ -176,15 +193,15 @@ class _SupervisorStatisticsPageState
   }
 
   double _calculateBuildingPercentage(int count) {
-    final buildings = _stats!['buildings'] as List;
-    if (buildings.isEmpty) return 0;
+    final buildings = _stats!['buildings'] as List?;
+    if (buildings == null || buildings.isEmpty) return 0;
     final maxCount = buildings.first['count'] as int;
     return maxCount > 0 ? count / maxCount : 0;
   }
 
   double _calculateTrendFactor(int value) {
-    final trends = _stats!['dailyTrends'] as List;
-    if (trends.isEmpty) return 0;
+    final trends = _stats!['dailyTrends'] as List?;
+    if (trends == null || trends.isEmpty) return 0;
     int maxValue = 1;
     for (var t in trends) {
       if ((t['value'] as int) > maxValue) maxValue = t['value'];

@@ -54,6 +54,7 @@ import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supe
 import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_location_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_pj_gedung_form_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/profile/supervisor_edit_profile_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/stats/supervisor_statistics_page.dart';
 
 // Admin imports
 import 'package:mobile/features/admin/presentation/widgets/admin_shell.dart';
@@ -390,6 +391,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/supervisor/edit-profile',
       builder: (context, state) => const SupervisorEditProfilePage(),
+    ),
+    GoRoute(
+      path: '/supervisor/statistics',
+      builder: (context, state) => const SupervisorStatisticsPage(),
     ),
 
     GoRoute(
