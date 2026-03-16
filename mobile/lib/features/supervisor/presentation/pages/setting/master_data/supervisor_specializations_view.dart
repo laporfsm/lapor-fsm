@@ -375,25 +375,23 @@ class _SupervisorSpecializationsViewState
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(context);
 
-                            bool success;
+                            Map<String, dynamic> result;
                             if (isEditing) {
-                              success = await reportService
-                                  .updateSpecialization(
-                                    int.parse(spec['id'].toString()),
-                                    nameController.text.trim(),
-                                    selectedIcon,
-                                    descController.text.trim(),
-                                  );
+                              result = await reportService.updateSpecialization(
+                                int.parse(spec['id'].toString()),
+                                nameController.text.trim(),
+                                selectedIcon,
+                                descController.text.trim(),
+                              );
                             } else {
-                              success = await reportService
-                                  .createSpecialization(
-                                    nameController.text.trim(),
-                                    selectedIcon,
-                                    descController.text.trim(),
-                                  );
+                              result = await reportService.createSpecialization(
+                                nameController.text.trim(),
+                                selectedIcon,
+                                descController.text.trim(),
+                              );
                             }
 
-                            if (success) {
+                            if (result['success']) {
                               nav.pop();
                               messenger.showSnackBar(
                                 SnackBar(
@@ -406,6 +404,16 @@ class _SupervisorSpecializationsViewState
                                 ),
                               );
                               _fetchSpecializations();
+                            } else {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ??
+                                        'Gagal menyimpan spesialisasi',
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
                           },
                           style: ElevatedButton.styleFrom(

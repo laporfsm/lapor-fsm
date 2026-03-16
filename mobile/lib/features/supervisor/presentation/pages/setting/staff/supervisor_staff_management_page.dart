@@ -8,7 +8,8 @@ import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/supervisor/data/services/supervisor_staff_service.dart';
 
 class SupervisorStaffManagementPage extends StatefulWidget {
-  const SupervisorStaffManagementPage({super.key});
+  final bool isEmbedded;
+  const SupervisorStaffManagementPage({super.key, this.isEmbedded = true});
 
   @override
   State<SupervisorStaffManagementPage> createState() =>
@@ -68,13 +69,43 @@ class _SupervisorStaffManagementPageState
     super.dispose();
   }
 
+  List<Map<String, dynamic>> get _filteredTechnicians {
+    final query = _searchController.text.toLowerCase();
+    return _technicians.where((t) {
+      final matchesSearch = t['name'].toString().toLowerCase().contains(query) ||
+          t['email'].toString().toLowerCase().contains(query);
+
+      if (!matchesSearch) return false;
+
+      if (_selectedFilter == 'Semua') return true;
+      if (_selectedFilter == 'Aktif') return t['isActive'] != false;
+      if (_selectedFilter == 'Nonaktif') return t['isActive'] == false;
+
+      // Specialization filter
+      return t['specialization'] == _selectedFilter;
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredPJGedung {
+    final query = _searchController.text.toLowerCase();
+    return _pjGedung.where((p) {
+      final matchesSearch = p['name'].toString().toLowerCase().contains(query) ||
+          p['email'].toString().toLowerCase().contains(query) ||
+          (p['location'] ?? '').toString().toLowerCase().contains(query);
+
+      return matchesSearch;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return widget.isEmbedded
+          ? const Center(child: CircularProgressIndicator())
+          : const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Column(
+    final content = Column(
       children: [
         Container(
           color: Colors.white,
@@ -83,9 +114,9 @@ class _SupervisorStaffManagementPageState
             labelColor: AppTheme.primaryColor,
             unselectedLabelColor: Colors.grey,
             indicatorColor: AppTheme.primaryColor,
-            tabs: const [
-              Tab(text: 'Teknisi'),
-              Tab(text: 'PJ Gedung'),
+            tabs: [
+              Tab(text: 'Teknisi (${_filteredTechnicians.length})'),
+              Tab(text: 'PJ Gedung (${_filteredPJGedung.length})'),
             ],
           ),
         ),
@@ -96,6 +127,24 @@ class _SupervisorStaffManagementPageState
           ),
         ),
       ],
+    );
+
+    if (widget.isEmbedded) return content;
+
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        title: const Text('Manajemen Staff'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        centerTitle: true,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: content,
     );
   }
 
@@ -114,6 +163,7 @@ class _SupervisorStaffManagementPageState
             ),
             child: TextField(
               controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 hintText: 'Cari teknisi...',
                 prefixIcon: Icon(LucideIcons.search, color: Colors.grey),
@@ -130,16 +180,30 @@ class _SupervisorStaffManagementPageState
         Expanded(
           child: RefreshIndicator(
             onRefresh: _fetchData,
-            child: _technicians.isEmpty
-                ? const Center(child: Text('Belum ada teknisi'))
+            child: _filteredTechnicians.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.users, size: 48, color: Colors.grey.shade300),
+                        const Gap(16),
+                        Text(
+                          _searchController.text.isEmpty
+                              ? 'Belum ada teknisi'
+                              : 'Tidak ada teknisi ditemukan',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.separated(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _technicians.length,
+                    itemCount: _filteredTechnicians.length,
                     separatorBuilder: (context, index) => const Gap(12),
                     itemBuilder: (context, index) {
                       return _buildStaffCard(
                         context,
-                        _technicians[index],
+                        _filteredTechnicians[index],
                         isTechnician: true,
                       );
                     },
@@ -187,7 +251,8 @@ class _SupervisorStaffManagementPageState
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: TextField(
-              controller: _searchController, // Note: Sharing controller for now
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 hintText: 'Cari PJ Gedung...',
                 prefixIcon: Icon(LucideIcons.search, color: Colors.grey),
@@ -203,16 +268,30 @@ class _SupervisorStaffManagementPageState
         Expanded(
           child: RefreshIndicator(
             onRefresh: _fetchData,
-            child: _pjGedung.isEmpty
-                ? const Center(child: Text('Belum ada PJ Gedung'))
+            child: _filteredPJGedung.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(LucideIcons.building, size: 48, color: Colors.grey.shade300),
+                        const Gap(16),
+                        Text(
+                          _searchController.text.isEmpty
+                              ? 'Belum ada PJ Gedung'
+                              : 'Tidak ada PJ Gedung ditemukan',
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.separated(
                     padding: const EdgeInsets.all(16),
-                    itemCount: _pjGedung.length,
+                    itemCount: _filteredPJGedung.length,
                     separatorBuilder: (context, index) => const Gap(12),
                     itemBuilder: (context, index) {
                       return _buildStaffCard(
                         context,
-                        _pjGedung[index],
+                        _filteredPJGedung[index],
                         isTechnician: false,
                       );
                     },

@@ -7,7 +7,8 @@ import 'package:mobile/core/services/api_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
 import 'package:mobile/core/widgets/about_app_sheet.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/master_data/supervisor_master_data_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_main_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_activity_log_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_staff_management_page.dart';
 import 'package:mobile/core/widgets/profile_widgets.dart';
 import 'package:mobile/core/widgets/statistics_widgets.dart';
 
@@ -269,13 +270,29 @@ class _SupervisorSettingMainPageState extends State<SupervisorSettingMainPage> {
                                 color: AppTheme.supervisorColor,
                               ),
                               ProfileMenuItem(
-                                icon: LucideIcons.users,
-                                label: "Menu Staff",
+                                icon: LucideIcons.activity,
+                                label: "Log Aktivitas",
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) =>
-                                        const SupervisorTechnicianMainPage(),
+                                        const SupervisorActivityLogPage(
+                                      isEmbedded: false,
+                                    ),
+                                  ),
+                                ),
+                                color: AppTheme.supervisorColor,
+                              ),
+                              ProfileMenuItem(
+                                icon: LucideIcons.users,
+                                label: "Manajemen Staff",
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const SupervisorStaffManagementPage(
+                                      isEmbedded: false,
+                                    ),
                                   ),
                                 ),
                                 color: AppTheme.supervisorColor,

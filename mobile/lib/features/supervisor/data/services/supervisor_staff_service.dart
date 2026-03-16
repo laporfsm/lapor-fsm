@@ -19,7 +19,7 @@ class SupervisorStaffService {
 
   Future<List<Map<String, dynamic>>> getPJGedung() async {
     try {
-      final response = await _apiService.dio.get('/supervisor/pj-location');
+      final response = await _apiService.dio.get('/supervisor/pj-gedung');
       if (response.data['status'] == 'success') {
         return List<Map<String, dynamic>>.from(response.data['data']);
       }
@@ -92,7 +92,7 @@ class SupervisorStaffService {
   // Get PJ Gedung Detail
   Future<Map<String, dynamic>?> getPJGedungDetail(String id) async {
     try {
-      final response = await _apiService.dio.get('/supervisor/pj-location/$id');
+      final response = await _apiService.dio.get('/supervisor/pj-gedung/$id');
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
       }
@@ -107,7 +107,7 @@ class SupervisorStaffService {
   Future<bool> createPJGedung(Map<String, dynamic> data) async {
     try {
       final response = await _apiService.dio.post(
-        '/supervisor/pj-location',
+        '/supervisor/pj-gedung',
         data: data,
       );
       return response.data['status'] == 'success';
@@ -121,7 +121,7 @@ class SupervisorStaffService {
   Future<bool> updatePJGedung(String id, Map<String, dynamic> data) async {
     try {
       final response = await _apiService.dio.put(
-        '/supervisor/pj-location/$id',
+        '/supervisor/pj-gedung/$id',
         data: data,
       );
       return response.data['status'] == 'success';
@@ -135,7 +135,7 @@ class SupervisorStaffService {
   Future<bool> deletePJGedung(String id) async {
     try {
       final response = await _apiService.dio.delete(
-        '/supervisor/pj-location/$id',
+        '/supervisor/pj-gedung/$id',
       );
       return response.data['status'] == 'success';
     } catch (e) {

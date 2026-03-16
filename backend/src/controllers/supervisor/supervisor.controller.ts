@@ -413,14 +413,16 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             }
 
             // Notify Technician (if assigned)
-            if (current[0].assignedTo) {
-                await NotificationService.notifyStaff(
-                    current[0].assignedTo,
-                    'Tugas Dibatalkan/Direvisi',
-                    `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`,
-                    'warning',
-                    reportId
-                );
+            if (current[0].assignedTo && current[0].assignedTo.length > 0) {
+                for (const techId of current[0].assignedTo) {
+                    await NotificationService.notifyStaff(
+                        techId,
+                        'Tugas Dibatalkan/Direvisi',
+                        `Tugas "${current[0].title}" telah ditarik kembali oleh Supervisor untuk peninjauan ulang.`,
+                        'warning',
+                        reportId
+                    );
+                }
             }
 
             return { status: 'success', data: mapToMobileReport(updated[0]) };
@@ -1098,33 +1100,57 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
     })
 
     // Get detailed statistics (for SupervisorStatisticsPage)
-    .get('/statistics', async () => {
-        // 1. Weekly Stats (Pending, Diproses, Selesai)
-        const startOfWeek = new Date();
-        startOfWeek.setDate(startOfWeek.getDate() - 7);
-        startOfWeek.setHours(0, 0, 0, 0);
+    .get('/statistics', async ({ query }) => {
+        const period = query.period || 'weekly';
+        
+        // Define date constraints based on period
+        let startDate: Date | undefined;
+        let endDate: Date | undefined = new Date(); // Current date/time
+        
+        if (period === 'weekly') {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+            startDate.setHours(0, 0, 0, 0);
+        } else if (period === 'monthly') {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 30);
+            startDate.setHours(0, 0, 0, 0);
+        }
+        // If 'all', startDate remains undefined
 
-        const weeklyStats = await db.select({
+        const dateFilter = startDate ? gte(reports.createdAt, startDate) : undefined;
+
+        // 1. Status Stats (Pending, Diproses, Selesai)
+        let statusQuery = db.select({
             status: reports.status,
             count: count()
         })
-            .from(reports)
-            .where(gte(reports.createdAt, startOfWeek))
-            .groupBy(reports.status);
+            .from(reports);
+            
+        if (dateFilter) {
+            statusQuery = statusQuery.where(dateFilter) as any;
+        }
+        
+        const statusStats = await statusQuery.groupBy(reports.status);
 
-        const weeklyMap = weeklyStats.reduce((acc, curr) => {
+        const summaryMap = statusStats.reduce((acc, curr) => {
             acc[curr.status || 'unknown'] = curr.count;
             return acc;
         }, {} as Record<string, number>);
 
         // 2. Category Breakdown
-        const categoryStats = await db.select({
+        let categoryQuery = db.select({
             name: categories.name,
             count: count()
         })
             .from(reports)
-            .leftJoin(categories, eq(reports.categoryId, categories.id))
-            .groupBy(categories.name);
+            .leftJoin(categories, eq(reports.categoryId, categories.id));
+            
+        if (dateFilter) {
+            categoryQuery = categoryQuery.where(dateFilter) as any;
+        }
+        
+        const categoryStats = await categoryQuery.groupBy(categories.name);
 
         const totalReports = categoryStats.reduce((sum, c) => sum + c.count, 0);
         const categoriesData = categoryStats.map(c => ({
@@ -1134,26 +1160,33 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         }));
 
         // 3. Issues by Location
+        let locationConditions: any[] = [
+            sql`${reports.location} IS NOT NULL`,
+            sql`${reports.location} != ''`
+        ];
+        if (dateFilter) locationConditions.push(dateFilter);
+        
         const locationStats = await db.select({
             location: reports.location,
             count: count()
         })
             .from(reports)
-            .where(and(
-                sql`${reports.location} IS NOT NULL`,
-                sql`${reports.location} != ''`
-            ))
+            .where(and(...locationConditions))
             .groupBy(reports.location)
             .orderBy(desc(count()))
             .limit(5);
 
-        // 4. Daily Trends (Last 7 Days)
+        // 4. Daily Trends (Always Last 7 Days for visual consistency in sparkline)
+        const trendStart = new Date();
+        trendStart.setDate(trendStart.getDate() - 7);
+        trendStart.setHours(0, 0, 0, 0);
+
         const dailyRaw = await db.select({
             dateStr: sql<string>`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`,
             count: count()
         })
             .from(reports)
-            .where(gte(reports.createdAt, startOfWeek))
+            .where(gte(reports.createdAt, trendStart))
             .groupBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`)
             .orderBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`);
 
@@ -1174,6 +1207,12 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         }
 
         // 5. Technician Performance (Top based on completed reports)
+        let techConditions: any[] = [
+            sql`${staff.id} = ANY(${reports.assignedTo})`,
+            sql`${reports.status} IN ('selesai', 'approved')`
+        ];
+        if (dateFilter) techConditions.push(dateFilter);
+
         const techStats = await db.select({
             id: staff.id,
             name: staff.name,
@@ -1181,10 +1220,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             completedCount: count(reports.id)
         })
             .from(staff)
-            .leftJoin(reports, and(
-                sql`${staff.id} = ANY(${reports.assignedTo})`,
-                sql`${reports.status} IN ('selesai', 'approved')`
-            ))
+            .leftJoin(reports, and(...techConditions))
             .where(eq(staff.role, 'teknisi'))
             .groupBy(staff.id, staff.name, staff.isActive)
             .orderBy(desc(count(reports.id)))
@@ -1201,9 +1237,9 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             status: 'success',
             data: {
                 summary: [
-                    { label: 'Pending', value: weeklyMap['pending'] || 0, color: 'grey' },
-                    { label: 'Diproses', value: (weeklyMap['diproses'] || 0) + (weeklyMap['terverifikasi'] || 0) + (weeklyMap['penanganan'] || 0), color: 'blue' },
-                    { label: 'Selesai', value: (weeklyMap['selesai'] || 0) + (weeklyMap['approved'] || 0), color: 'green' },
+                    { label: 'Pending', value: summaryMap['pending'] || 0, color: 'grey' },
+                    { label: 'Diproses', value: (summaryMap['diproses'] || 0) + (summaryMap['terverifikasi'] || 0) + (summaryMap['penanganan'] || 0), color: 'blue' },
+                    { label: 'Selesai', value: (summaryMap['selesai'] || 0) + (summaryMap['approved'] || 0), color: 'green' },
                 ],
                 categories: categoriesData,
                 locations: locationStats.map(l => ({

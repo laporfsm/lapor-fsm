@@ -159,7 +159,7 @@ class _SupervisorLocationListPageState
           context.push(
             Uri(
               path: '/pj-gedung/statistics',
-              queryParameters: {'buildingName': building['name']},
+              queryParameters: {'locationName': building['name']},
             ).toString(),
           );
         },

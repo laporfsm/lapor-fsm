@@ -405,9 +405,9 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                           onPressed: () async {
                             final messenger = ScaffoldMessenger.of(context);
 
-                            bool success;
+                            Map<String, dynamic> result;
                             if (isEditing) {
-                              success = await reportService.updateCategory(
+                              result = await reportService.updateCategory(
                                 category['id'] is String
                                     ? int.parse(category['id'])
                                     : category['id'],
@@ -415,13 +415,13 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                                 selectedIcon,
                               );
                             } else {
-                              success = await reportService.createCategory(
+                              result = await reportService.createCategory(
                                 nameController.text.trim(),
                                 selectedIcon,
                               );
                             }
 
-                            if (success) {
+                            if (result['success']) {
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -436,8 +436,10 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                             } else {
                               setState(() => _isLoading = false);
                               messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Gagal menyimpan kategori'),
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ?? 'Gagal menyimpan kategori',
+                                  ),
                                   backgroundColor: Colors.red,
                                 ),
                               );

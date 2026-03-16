@@ -413,23 +413,21 @@ class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
                             final messenger = ScaffoldMessenger.of(context);
                             final nav = Navigator.of(context);
 
-                            bool success;
+                            Map<String, dynamic> result;
                             if (isEditing) {
-                              success = await reportService.updateCategory(
-                                category['id'] is String
-                                    ? int.parse(category['id'])
-                                    : category['id'],
+                              result = await reportService.updateCategory(
+                                int.parse(category['id'].toString()),
                                 nameController.text.trim(),
                                 selectedIcon,
                               );
                             } else {
-                              success = await reportService.createCategory(
+                              result = await reportService.createCategory(
                                 nameController.text.trim(),
                                 selectedIcon,
                               );
                             }
 
-                            if (success) {
+                            if (result['success']) {
                               nav.pop(); // Close sheet
                               messenger.showSnackBar(
                                 SnackBar(
@@ -444,8 +442,10 @@ class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
                               _fetchCategories();
                             } else {
                               messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Gagal menyimpan kategori'),
+                                SnackBar(
+                                  content: Text(
+                                    result['message'] ?? 'Gagal menyimpan kategori',
+                                  ),
                                   backgroundColor: Colors.red,
                                 ),
                               );
