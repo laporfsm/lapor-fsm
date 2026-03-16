@@ -244,6 +244,38 @@ class _TeknisiDashboardPageState extends ConsumerState<TeknisiDashboardPage> {
                         ),
                       ),
 
+                      const Gap(16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton(
+                          onPressed: () => context.push('/teknisi/statistics'),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                LucideIcons.barChart2,
+                                size: 18,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const Gap(8),
+                              Text(
+                                'Lihat Statistik Lengkap',
+                                style: TextStyle(color: AppTheme.primaryColor),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
                       // Quick Actions (Semua Laporan)
                       const Gap(16),
                       _buildQuickActions(context),

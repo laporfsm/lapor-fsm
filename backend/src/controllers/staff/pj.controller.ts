@@ -315,7 +315,7 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
 
     // Get statistics for PJ Lokasi (Dynamic & Correctly Filtered)
     .get('/statistics', async ({ query, managedLocation }) => {
-        const { location } = query;
+        const { location, period } = query;
 
         let locationFilter = managedLocation || location;
         if (!locationFilter) {
@@ -323,11 +323,34 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         }
 
         // Strict Match if managing, otherwise loose match for admin/general
-        let whereClause = managedLocation
+        let baseWhere = managedLocation
             ? eq(reports.location, managedLocation)
             : sql`${reports.location} ILIKE ${locationFilter}`;
 
-        // 1. Issue Categories
+        let conditions = [baseWhere];
+        if (period === 'weekly') {
+            conditions.push(gte(reports.createdAt, getStartOfWeek()));
+        } else if (period === 'monthly') {
+            conditions.push(gte(reports.createdAt, getStartOfMonth()));
+        }
+        const whereClause = and(...conditions);
+
+        // 1. Summary
+        const statusCounts = await db
+            .select({
+                status: reports.status,
+                count: count(),
+            })
+            .from(reports)
+            .where(whereClause)
+            .groupBy(reports.status);
+
+        const summaryMap = statusCounts.reduce((acc, curr) => {
+            acc[curr.status || 'unknown'] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        // 2. Issue Categories
         const categoryStats = await db.select({
             name: categories.name,
             count: count()
@@ -335,89 +358,53 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
             .from(reports)
             .leftJoin(categories, eq(reports.categoryId, categories.id))
             .where(whereClause)
-            .groupBy(categories.name);
+            .groupBy(categories.name)
+            .orderBy(desc(count()))
+            .limit(5);
 
-        // 2. Weekly Trend (last 7 days) - utilizing DB for date grouping
-        // Retrieve counts for the last 7 days from the DB based on YYYY-MM-DD
-        const weeklyRaw = await db.select({
+        // 3. Daily Trends (Always Last 7 Days)
+        const trendStart = new Date();
+        trendStart.setDate(trendStart.getDate() - 7);
+        trendStart.setHours(0, 0, 0, 0);
+
+        const dailyRaw = await db.select({
             dateStr: sql<string>`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`,
             count: count()
         })
             .from(reports)
-            .where(and(
-                whereClause,
-                sql`${reports.createdAt} >= CURRENT_DATE - INTERVAL '6 days'` // Last 7 days including today
-            ))
+            .where(and(baseWhere, gte(reports.createdAt, trendStart)))
             .groupBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`)
             .orderBy(sql`TO_CHAR(${reports.createdAt}, 'YYYY-MM-DD')`);
 
-        // Transform into full 7-day array
-        const weeklyMap = weeklyRaw.reduce((acc, curr) => {
+        const dailyMap = dailyRaw.reduce((acc, curr) => {
             acc[curr.dateStr] = Number(curr.count);
             return acc;
         }, {} as Record<string, number>);
 
-        const fullWeeklyTrend = [];
+        const dailyTrends = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            const dateStr = `${yyyy}-${mm}-${dd}`;
-
-            fullWeeklyTrend.push({
+            const dateStr = d.toISOString().split('T')[0];
+            dailyTrends.push({
                 day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
-                value: weeklyMap[dateStr] || 0
+                value: dailyMap[dateStr] || 0
             });
         }
-
-        // 3. Comparison (This Month vs Last Month) DOING IT IN SQL
-        const thisMonthCount = await db.select({ count: count() })
-            .from(reports)
-            .where(and(
-                whereClause,
-                sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`
-            ));
-
-        const lastMonthCount = await db.select({ count: count() })
-            .from(reports)
-            .where(and(
-                whereClause,
-                sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')`
-            ));
-
-        // 4. Monthly Progress (Distribution within the current month)
-        const monthlyProgressRaw = await db.select({
-            week1: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) BETWEEN 1 AND 7 THEN 1 ELSE 0 END)`,
-            week2: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) BETWEEN 8 AND 14 THEN 1 ELSE 0 END)`,
-            week3: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) BETWEEN 15 AND 21 THEN 1 ELSE 0 END)`,
-            week4: sql<number>`SUM(CASE WHEN EXTRACT(DAY FROM ${reports.createdAt}) >= 22 THEN 1 ELSE 0 END)`,
-        })
-            .from(reports)
-            .where(and(
-                whereClause,
-                sql`DATE_TRUNC('month', ${reports.createdAt}) = DATE_TRUNC('month', CURRENT_DATE)`
-            ));
-
-        const mp = monthlyProgressRaw[0];
 
         return {
             status: 'success',
             data: {
+                summary: [
+                    { label: 'Pending', value: summaryMap['pending'] || 0, color: 'grey' },
+                    { label: 'Terverifikasi', value: summaryMap['terverifikasi'] || 0, color: 'blue' },
+                    { label: 'Ditolak', value: summaryMap['ditolak'] || 0, color: 'red' },
+                ],
                 categories: categoryStats.map(c => ({
-                    label: c.name || 'Lainnya',
+                    name: c.name || 'Lainnya',
                     count: Number(c.count)
                 })),
-                weeklyTrend: fullWeeklyTrend,
-                thisMonth: Number(thisMonthCount[0]?.count || 0),
-                lastMonth: Number(lastMonthCount[0]?.count || 0),
-                monthlyProgress: [
-                    Number(mp?.week1 || 0),
-                    Number(mp?.week2 || 0),
-                    Number(mp?.week3 || 0),
-                    Number(mp?.week4 || 0),
-                ]
+                dailyTrends
             }
         };
     })

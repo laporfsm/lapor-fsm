@@ -413,11 +413,17 @@ class ReportService {
   }
 
   // Get PJ Gedung Statistics
-  Future<Map<String, dynamic>?> getPJStatistics({String? locationName}) async {
+  Future<Map<String, dynamic>?> getPJStatistics({
+    String? locationName,
+    String? period,
+  }) async {
     try {
       final response = await apiService.dio.get(
         '/pj-gedung/statistics',
-        queryParameters: {if (locationName != null) 'location': locationName},
+        queryParameters: {
+          if (locationName != null) 'location': locationName,
+          if (period != null) 'period': period,
+        },
       );
       if (response.data['status'] == 'success') {
         return Map<String, dynamic>.from(response.data['data']);
@@ -523,6 +529,28 @@ class ReportService {
       return null;
     } catch (e) {
       debugPrint('Error fetching Technician dashboard stats: $e');
+      return null;
+    }
+  }
+
+  // Get Technician Statistics (Detailed)
+  Future<Map<String, dynamic>?> getTechnicianStatistics(
+    String staffId, {
+    String? period,
+  }) async {
+    try {
+      final response = await apiService.dio.get(
+        '/technician/statistics/$staffId',
+        queryParameters: {
+          if (period != null) 'period': period,
+        },
+      );
+      if (response.data['status'] == 'success') {
+        return Map<String, dynamic>.from(response.data['data']);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Error fetching Technician statistics: $e');
       return null;
     }
   }

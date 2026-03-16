@@ -80,6 +80,118 @@ export const technicianController = new Elysia({ prefix: '/technician' })
         };
     })
 
+    // Get statistics for Technician (Dynamic & Filtered)
+    .get('/statistics/:staffId', async ({ params, query }) => {
+        const staffId = parseInt(params.staffId);
+        const { period } = query;
+
+        let conditions = [
+            sql`${staffId} = ANY(${reports.assignedTo})`
+        ];
+
+        let trendsCondition = [...conditions]; // base condition for trends before date filtering
+
+        if (period === 'weekly') {
+            conditions.push(gte(reports.handlingStartedAt, getStartOfWeek()));
+        } else if (period === 'monthly') {
+            conditions.push(gte(reports.handlingStartedAt, getStartOfMonth()));
+        }
+
+        const whereClause = and(...conditions);
+
+        // 1. Summary
+        // For Technician: Diproses/waiting, Penanganan/active, Selesai/completed
+        const statusCounts = await db
+            .select({
+                status: reports.status,
+                count: count(),
+            })
+            .from(reports)
+            .where(whereClause)
+            .groupBy(reports.status);
+
+        const summaryMap = statusCounts.reduce((acc, curr) => {
+            acc[curr.status || 'unknown'] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        // For diproses, use createdAt instead of handlingStartedAt because they haven't handled it yet.
+        let diprosesCondition = [
+            eq(reports.status, 'diproses'),
+            or(sql`${staffId} = ANY(${reports.assignedTo})`, isNull(reports.assignedTo))
+        ];
+        if (period === 'weekly') {
+            diprosesCondition.push(gte(reports.createdAt, getStartOfWeek()));
+        } else if (period === 'monthly') {
+            diprosesCondition.push(gte(reports.createdAt, getStartOfMonth()));
+        }
+        
+        const diprosesCountData = await db
+            .select({ count: count() })
+            .from(reports)
+            .where(and(...diprosesCondition));
+            
+        const diprosesCount = Number(diprosesCountData[0]?.count || 0);
+
+        // 2. Issue Categories
+        const categoryStats = await db.select({
+            name: categories.name,
+            count: count()
+        })
+            .from(reports)
+            .leftJoin(categories, eq(reports.categoryId, categories.id))
+            .where(whereClause)
+            .groupBy(categories.name)
+            .orderBy(desc(count()))
+            .limit(5);
+
+        // 3. Daily Trends (Always Last 7 Days, using handlingStartedAt)
+        const trendStart = new Date();
+        trendStart.setDate(trendStart.getDate() - 7);
+        trendStart.setHours(0, 0, 0, 0);
+
+        const dailyRaw = await db.select({
+            dateStr: sql<string>`TO_CHAR(${reports.handlingStartedAt}, 'YYYY-MM-DD')`,
+            count: count()
+        })
+            .from(reports)
+            .where(and(...trendsCondition, gte(reports.handlingStartedAt, trendStart)))
+            .groupBy(sql`TO_CHAR(${reports.handlingStartedAt}, 'YYYY-MM-DD')`)
+            .orderBy(sql`TO_CHAR(${reports.handlingStartedAt}, 'YYYY-MM-DD')`);
+
+        const dailyMap = dailyRaw.reduce((acc, curr) => {
+            acc[curr.dateStr] = Number(curr.count);
+            return acc;
+        }, {} as Record<string, number>);
+
+        const dailyTrends = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            dailyTrends.push({
+                day: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+                value: dailyMap[dateStr] || 0
+            });
+        }
+
+        return {
+            status: 'success',
+            data: {
+                summary: [
+                    { label: 'Menunggu', value: diprosesCount, color: 'orange' },
+                    { label: 'Ditangani', value: (summaryMap['penanganan'] || 0) + (summaryMap['onHold'] || 0) + (summaryMap['recalled'] || 0), color: 'blue' },
+                    { label: 'Diselesaikan', value: (summaryMap['selesai'] || 0) + (summaryMap['approved'] || 0), color: 'green' },
+                ],
+                categories: categoryStats.map(c => ({
+                    name: c.name || 'Lainnya',
+                    count: Number(c.count)
+                })),
+                dailyTrends
+            }
+        };
+    })
+
     // Get reports for technician with query parameters (consistent with other roles)
     .get('/reports', async ({ query }) => {
         const { status, isEmergency, page = '1', limit = '50' } = query;

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/statistics_widgets.dart';
 import 'package:mobile/core/services/report_service.dart';
+import 'package:mobile/core/services/auth_service.dart';
 
-class PJGedungStatisticsPage extends StatefulWidget {
-  final String? locationName;
-
-  const PJGedungStatisticsPage({super.key, this.locationName});
+class TeknisiStatisticsPage extends ConsumerStatefulWidget {
+  const TeknisiStatisticsPage({super.key});
 
   @override
-  State<PJGedungStatisticsPage> createState() => _PJGedungStatisticsPageState();
+  ConsumerState<TeknisiStatisticsPage> createState() =>
+      _TeknisiStatisticsPageState();
 }
 
-class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
+class _TeknisiStatisticsPageState extends ConsumerState<TeknisiStatisticsPage> {
   Map<String, dynamic>? _stats;
   bool _isLoading = true;
   String _selectedPeriod = 'weekly';
@@ -23,15 +24,24 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    final data = await reportService.getPJStatistics(
-      locationName: widget.locationName,
+    final user = await authService.getCurrentUser();
+    if (user == null || user['staffId'] == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    final data = await reportService.getTechnicianStatistics(
+      user['staffId'].toString(),
       period: _selectedPeriod,
     );
+
     if (mounted) {
       setState(() {
         _stats = data;
@@ -45,22 +55,14 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: Text(
-          widget.locationName != null
-              ? 'Statistik ${widget.locationName}'
-              : 'Statistik Lokasi',
-        ),
-        backgroundColor: AppTheme.pjGedungColor,
+        title: const Text('Statistik Pekerjaan'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         centerTitle: true,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft, color: Colors.white),
+          icon: const Icon(LucideIcons.arrowLeft, color: Colors.black),
           onPressed: () => context.pop(),
-        ),
-        titleTextStyle: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: 18,
         ),
       ),
       body: _isLoading
@@ -80,6 +82,9 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
                               const Gap(16),
                               ElevatedButton(
                                 onPressed: _loadData,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppTheme.primaryColor,
+                                ),
                                 child: const Text('Coba Lagi'),
                               ),
                             ],
@@ -137,7 +142,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
               setState(() {
                 _selectedPeriod = value;
               });
-              _loadData(); // Re-fetch data
+              _loadData();
             }
           },
         ),
@@ -151,7 +156,6 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
     if (_selectedPeriod == 'monthly') title = 'Ringkasan Bulan Ini';
     if (_selectedPeriod == 'all') title = 'Ringkasan Semua Waktu';
 
-    // Sum all values for the total
     int totalReports = 0;
     for (var item in summaryItems) {
       totalReports += (item['value'] as num).toInt();
@@ -180,10 +184,10 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               Chip(
-                label: Text('$totalReports Total'),
-                backgroundColor: const Color(0xFFD1FAE5),
+                label: Text('$totalReports Pekerjaan'),
+                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                 labelStyle: const TextStyle(
-                  color: AppTheme.pjGedungColor,
+                  color: AppTheme.primaryColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
                 ),
@@ -226,7 +230,6 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       );
     }
 
-    // Find max for percentage calculation
     int maxCount = 0;
     for (var cat in categoriesData) {
       final count = (cat['count'] as num).toInt();
@@ -270,14 +273,12 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
       );
     }
 
-    // Find max for height calculation
     int maxVal = 0;
     for (var t in trendData) {
       final val = (t['value'] as num).toInt();
       if (val > maxVal) maxVal = val;
     }
 
-    // Match Supervisor style where stats trend bars are lined up along bottom
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -286,7 +287,7 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
         return StatsTrendBar(
           label: t['day'] ?? '',
           heightFactor: maxVal > 0 ? val / maxVal : 0.05,
-          activeColor: AppTheme.pjGedungColor,
+          activeColor: AppTheme.primaryColor,
         );
       }).toList(),
     );
@@ -299,14 +300,17 @@ class _PJGedungStatisticsPageState extends State<PJGedungStatisticsPage> {
         return Colors.grey;
       case 'blue':
       case 'terverifikasi':
+      case 'penanganan':
         return Colors.blue;
       case 'green':
       case 'selesai':
+      case 'approved':
         return Colors.green;
       case 'red':
       case 'ditolak':
         return Colors.red;
       case 'orange':
+      case 'diproses':
         return Colors.orange;
       default:
         return Colors.orange;

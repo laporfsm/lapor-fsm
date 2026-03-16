@@ -23,6 +23,7 @@ import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_edit_
 import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_setting_main_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_settings_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/setting/teknisi_help_page.dart';
+import 'package:mobile/features/teknisi/presentation/pages/setting/stats/teknisi_statistics_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_all_reports_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_siap_dimulai_page.dart';
 import 'package:mobile/features/teknisi/presentation/pages/reports/teknisi_sedang_dikerjakan_page.dart';
@@ -247,6 +248,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/teknisi/setting',
       builder: (context, state) => const TeknisiSettingMainPage(),
+    ),
+    GoRoute(
+      path: '/teknisi/statistics',
+      builder: (context, state) => const TeknisiStatisticsPage(),
     ),
     GoRoute(
       path: '/teknisi/edit-profile',
