@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,9 @@ class FCMService {
       FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  /// Pending notification data to process after router is ready
+  static Map<String, dynamic>? _pendingNotificationData;
 
   static Future<void> init() async {
     try {
@@ -65,10 +70,8 @@ class FCMService {
         debugPrint(
           'App opened from terminated via notification: ${initialMessage.data}',
         );
-        // Delay to ensure router is ready
-        Future.delayed(const Duration(milliseconds: 800), () {
-          _handleMessageTap(initialMessage.data);
-        });
+        // Store as pending — will be processed after router is ready
+        _pendingNotificationData = Map<String, dynamic>.from(initialMessage.data);
       }
 
       // 5. Setup token refresh listener
@@ -77,6 +80,19 @@ class FCMService {
       });
     } catch (e) {
       debugPrint('FCM Initialization Error: $e');
+    }
+  }
+
+  /// Process any pending notification that was received while app was terminated.
+  /// Call this from main after the router and app are fully initialized.
+  static void processPendingNotification() {
+    if (_pendingNotificationData != null) {
+      debugPrint('[FCM] Processing pending notification: $_pendingNotificationData');
+      // Delay slightly to ensure navigation stack is fully ready
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        _handleMessageTap(_pendingNotificationData!);
+        _pendingNotificationData = null;
+      });
     }
   }
 
@@ -131,12 +147,8 @@ class FCMService {
     await _localNotifications.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
-        // Handle taps on local notifications (shown when app is in foreground)
-        final payload = response.payload;
-        debugPrint('[FCM] Local notification tapped, payload: $payload');
-        if (payload != null && payload.isNotEmpty) {
-          _handleMessageTap({'reportId': payload});
-        }
+        debugPrint('[FCM] Local notification tapped, payload: ${response.payload}');
+        _onLocalNotificationTapped(response.payload);
       },
     );
 
@@ -149,6 +161,26 @@ class FCMService {
           'CHANNEL: ${c.id}, Name: ${c.name}, Sound: ${c.sound?.sound}, Importance: ${c.importance}',
         );
       }
+    }
+  }
+
+  /// Handle tap on local notification (foreground notifications).
+  /// The payload is a JSON string containing the data map from the FCM message.
+  static void _onLocalNotificationTapped(String? payload) {
+    if (payload == null || payload.isEmpty) {
+      debugPrint('[FCM] No payload in local notification tap');
+      return;
+    }
+
+    try {
+      // Try parsing as JSON first (new format)
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      debugPrint('[FCM] Parsed notification payload: $data');
+      _handleMessageTap(data);
+    } catch (_) {
+      // Fallback: payload is just a reportId string (old format)
+      debugPrint('[FCM] Payload is plain reportId: $payload');
+      _handleMessageTap({'reportId': payload});
     }
   }
 
@@ -166,6 +198,10 @@ class FCMService {
         channelId = 'lapor_fsm_channel_emergency_v3';
         sound = 'emergency_alert';
       }
+
+      // Encode the entire data map as JSON for the payload
+      // so we can recover all fields (reportId, type, etc.) on tap
+      final String payloadJson = jsonEncode(message.data);
 
       _localNotifications.show(
         notification.hashCode,
@@ -189,7 +225,7 @@ class FCMService {
                 : null,
           ),
         ),
-        payload: message.data['reportId']?.toString(),
+        payload: payloadJson,
       );
     }
   }
@@ -197,8 +233,10 @@ class FCMService {
   /// Handle notification tap — navigate to report detail based on user role
   static void _handleMessageTap(Map<String, dynamic> data) async {
     final reportId = data['reportId'];
+    debugPrint('[FCM] _handleMessageTap called with data: $data');
+
     if (reportId == null) {
-      debugPrint('No reportId in notification data, skipping navigation');
+      debugPrint('[FCM] No reportId in notification data, skipping navigation');
       return;
     }
 
@@ -206,6 +244,8 @@ class FCMService {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_id');
       final role = prefs.getString('user_role');
+
+      debugPrint('[FCM] User: $userId, Role: $role, ReportId: $reportId');
 
       if (userId != null && role != null) {
         String route;
@@ -222,11 +262,17 @@ class FCMService {
             route = '/report-detail/$reportId';
         }
 
-        debugPrint('Navigating to: $route');
+        debugPrint('[FCM] Navigating to: $route');
+        
+        // Use appRouter.push with a small delay to ensure the router is ready
+        await Future.delayed(const Duration(milliseconds: 300));
         appRouter.push(route);
+        debugPrint('[FCM] Navigation push completed for: $route');
+      } else {
+        debugPrint('[FCM] No user/role found, cannot navigate');
       }
     } catch (e) {
-      debugPrint('Error handling notification tap: $e');
+      debugPrint('[FCM] Error handling notification tap: $e');
     }
   }
 
@@ -250,3 +296,4 @@ class FCMService {
     }
   }
 }
+

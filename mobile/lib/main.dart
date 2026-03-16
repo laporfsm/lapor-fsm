@@ -31,6 +31,9 @@ void main() async {
   }
 
   runApp(const ProviderScope(child: MyApp()));
+
+  // Process any pending notification that opened the app from terminated state
+  FCMService.processPendingNotification();
 }
 
 class MyApp extends StatelessWidget {
