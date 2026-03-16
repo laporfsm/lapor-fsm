@@ -16,6 +16,8 @@ import 'package:mobile/core/services/report_service.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mobile/features/supervisor/presentation/providers/supervisor_reports_provider.dart';
+import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
 
 /// Dashboard page for Supervisor (tab 0 in shell)
 /// This page contains the main dashboard content WITHOUT bottom navigation bar
@@ -336,12 +338,7 @@ class _SupervisorDashboardPageState
                         context,
                         'Siap Diproses',
                         'Lihat Semua',
-                        () => context.push(
-                          Uri(
-                            path: '/supervisor/reports/filter',
-                            queryParameters: {'status': 'terverifikasi'},
-                          ).toString(),
-                        ),
+                        () => _navigateToStatus(context, 'terverifikasi'),
                         count: _stats['terverifikasi'] ?? 0,
                       ),
                       const Gap(12),
@@ -353,12 +350,7 @@ class _SupervisorDashboardPageState
                         context,
                         'Menunggu Approval',
                         'Lihat Semua',
-                        () => context.push(
-                          Uri(
-                            path: '/supervisor/reports/filter',
-                            queryParameters: {'status': 'selesai'},
-                          ).toString(),
-                        ),
+                        () => _navigateToStatus(context, 'selesai'),
                         count: _stats['selesai'] ?? 0,
                       ),
                       const Gap(12),
@@ -397,12 +389,13 @@ class _SupervisorDashboardPageState
     if (emergencyCount == 0) return const SizedBox.shrink();
 
     return BouncingButton(
-      onTap: () => context.push(
-        Uri(
-          path: '/supervisor/reports/filter',
-          queryParameters: {'emergency': 'true'},
-        ).toString(),
-      ),
+      onTap: () {
+        // Since "Active" page already shows emergency status or filters, 
+        // we set the emergency filter on the Active Reports provider
+        ref.read(supervisorReportsProvider('pending,terverifikasi,diproses,penanganan,onHold,selesai,recalled').notifier)
+           .setFilters(isEmergency: true);
+        ref.read(supervisorNavigationProvider.notifier).setBottomNavIndex(1); // Go to Active Reports
+      },
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -549,12 +542,20 @@ class _SupervisorDashboardPageState
   }
 
   void _navigateToStatus(BuildContext context, String status) {
-    context.push(
-      Uri(
-        path: '/supervisor/reports/filter',
-        queryParameters: {'status': status},
-      ).toString(),
-    );
+    // Map status to tab and filter group
+    int tabIndex = 1; // Default to Active
+    String groupStatus = 'pending,terverifikasi,verifikasi,diproses,penanganan,onHold,selesai,recalled';
+    
+    if (status == 'approved' || status == 'ditolak') {
+      tabIndex = 2; // History
+      groupStatus = 'approved,ditolak';
+    }
+
+    // 1. Set the status filter in the corresponding provider
+    ref.read(supervisorReportsProvider(groupStatus).notifier).setSelectedStatus(status);
+    
+    // 2. Switch the bottom navigation tab
+    ref.read(supervisorNavigationProvider.notifier).setBottomNavIndex(tabIndex);
   }
 
   Widget _buildSectionHeader(

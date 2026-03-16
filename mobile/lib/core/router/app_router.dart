@@ -38,7 +38,6 @@ import 'package:mobile/features/pj_gedung/presentation/pages/setting/pj_gedung_e
 
 // Supervisor imports
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_shell_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_reports_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_review_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_archive_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_rejected_reports_page.dart';
@@ -46,7 +45,6 @@ import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor
 import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_non_gedung_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_list_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_detail_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/setting/stats/supervisor_statistics_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/staff/supervisor_technician_form_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/supervisor_account_settings_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/support/supervisor_help_page.dart';
@@ -309,22 +307,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/supervisor',
       builder: (context, state) => const SupervisorShellPage(),
-    ),
-    // Detail page (opened on top of shell, has back button)
-    GoRoute(
-      path: '/supervisor/reports',
-      builder: (context, state) =>
-          SupervisorReportsPage(queryParams: state.uri.queryParameters),
-    ),
-    GoRoute(
-      path: '/supervisor/statistics',
-      builder: (context, state) => const SupervisorStatisticsPage(),
-    ),
-    // Filtered reports page with query parameters
-    GoRoute(
-      path: '/supervisor/reports/filter',
-      builder: (context, state) =>
-          SupervisorReportsPage(queryParams: state.uri.queryParameters),
     ),
     GoRoute(
       path: '/supervisor/review/:id',

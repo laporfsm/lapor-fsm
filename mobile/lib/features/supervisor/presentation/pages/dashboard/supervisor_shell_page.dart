@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/features/supervisor/presentation/pages/dashboard/supervisor_dashboard_page.dart';
 import 'package:mobile/features/supervisor/presentation/pages/setting/supervisor_setting_main_page.dart';
-import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_reports_container_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_active_reports_page.dart';
+import 'package:mobile/features/supervisor/presentation/pages/reports/supervisor_history_reports_page.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/features/supervisor/presentation/providers/supervisor_navigation_provider.dart';
@@ -27,8 +28,9 @@ class _SupervisorShellPageState extends ConsumerState<SupervisorShellPage> {
 
   final List<Widget> _pages = const [
     SupervisorDashboardPage(), // Tab 0: Dashboard
-    SupervisorReportsContainerPage(), // Tab 1: Laporan
-    SupervisorSettingMainPage(), // Tab 2: Setting
+    SupervisorActiveReportsPage(), // Tab 1: Aktif
+    SupervisorHistoryReportsPage(), // Tab 2: Riwayat
+    SupervisorSettingMainPage(), // Tab 3: Setting
   ];
 
   @override
@@ -56,8 +58,9 @@ class _SupervisorShellPageState extends ConsumerState<SupervisorShellPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, LucideIcons.layoutDashboard, 'Dashboard'),
-                _buildNavItem(1, LucideIcons.clipboardList, 'Laporan'),
-                _buildNavItem(2, LucideIcons.settings, 'Setting'),
+                _buildNavItem(1, LucideIcons.clipboardList, 'Aktif'),
+                _buildNavItem(2, LucideIcons.history, 'Riwayat'),
+                _buildNavItem(3, LucideIcons.settings, 'Setting'),
               ],
             ),
           ),
