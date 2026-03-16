@@ -43,7 +43,10 @@ class NotificationService {
           channelDescription: channelDescription,
           importance: Importance.max,
           priority: Priority.high,
-          icon: isEmergency ? 'notifikasi_darurat' : 'notifikasi_non_darurat',
+          icon: 'ic_notif_small',
+          largeIcon: DrawableResourceAndroidBitmap(
+            isEmergency ? 'notifikasi_darurat' : 'notifikasi_non_darurat',
+          ),
           color: isEmergency
               ? const Color(0xFFFF0000)
               : const Color(0xFF0055A5),
