@@ -169,7 +169,9 @@ class _LoginPageState extends State<LoginPage> {
         result = await authService.login(email: email, password: password);
       }
 
-      if (mounted && result['success']) {
+      if (!mounted) return;
+
+      if (result['success']) {
         final role = result['role'];
         String redirectPath = '/';
 
@@ -188,7 +190,7 @@ class _LoginPageState extends State<LoginPage> {
         } else {
           context.go(redirectPath);
         }
-      } else if (mounted) {
+      } else if (context.mounted) {
         _showErrorModal(
           result['message'] ?? 'Email atau password salah. Silakan coba lagi.',
         );
@@ -258,7 +260,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const Gap(8),
               Text(
-                'Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika',
+                'Sistem Pelaporan Insiden & Fasilitas\nFSM Universitas Diponegoro',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
                 textAlign: TextAlign.center,
               ),

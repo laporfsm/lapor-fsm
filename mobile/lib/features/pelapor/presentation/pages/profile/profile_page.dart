@@ -318,7 +318,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.lock,
-                    label: "Ubah Password",
+                    label: "Reset Password",
                     onTap: () {
                       // Note: Usually uses forgot password flow or dedicated reset page
                       context.push('/forgot-password');

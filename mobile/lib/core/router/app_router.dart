@@ -100,7 +100,10 @@ final appRouter = GoRouter(
 
     // If logged in and on an auth path, redirect to appropriate home
     // (Excluding /splash to allow SplashPage to handle redirection after animation)
-    if (isAuthPath) {
+    // Allow accessing forgot/reset password even while logged in.
+    if (isAuthPath &&
+        location != '/forgot-password' &&
+        location != '/reset-password') {
       final user = await authService.getCurrentUser();
       final role = user?['role'];
 

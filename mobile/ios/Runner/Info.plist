@@ -51,5 +51,18 @@
 	<string>Aplikasi membutuhkan izin lokasi untuk fitur pelacakan darurat.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Aplikasi membutuhkan izin lokasi untuk melampirkan koordinat pada laporan Anda.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.laporfsm.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>laporfsm</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

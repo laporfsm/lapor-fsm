@@ -461,9 +461,9 @@ export const authController = new Elysia({ prefix: '/auth' })
         })
         .where(eq(users.id, user[0].id));
 
-      // Construct reset link (using app URL from env or default)
-      const appUrl = process.env.APP_URL || 'http://localhost:8080';
-      const resetLink = `${appUrl}/#/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+      // Construct reset link (using API URL instead of App URL to hit our bridge page)
+      const apiUrl = process.env.API_URL || 'http://localhost:3000';
+      const resetLink = `${apiUrl}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
       // Send email
       try {
@@ -482,6 +482,51 @@ export const authController = new Elysia({ prefix: '/auth' })
   }, {
     body: t.Object({
       email: t.String()
+    })
+  })
+
+  // Reset Password Bridge Page (Web to App bridge)
+  .get('/reset-password', async ({ query, set }) => {
+    const { token, email } = query;
+
+    set.headers['Content-Type'] = 'text/html';
+    return `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - Lapor FSM</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .icon { width: 80px; height: 80px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
+        .icon svg { width: 40px; height: 40px; fill: white; }
+        h1 { color: #1f2937; font-size: 24px; margin-bottom: 16px; font-weight: 700; }
+        p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
+        .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; transition: all 0.3s; }
+        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        </div>
+        <h1>Reset Password</h1>
+        <p>Anda telah meminta untuk mereset password akun Lapor FSM. Klik tombol di bawah untuk melanjutkan ke aplikasi.</p>
+        <a href="laporfsm://reset-password?token=${token}&email=${encodeURIComponent(email)}" class="btn">Buka Aplikasi</a>
+        <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">Jika tombol tidak bekerja, pastikan aplikasi Lapor FSM sudah terinstal.</p>
+        <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
+    </div>
+</body>
+</html>`;
+  }, {
+    query: t.Object({
+      token: t.String(),
+      email: t.String(),
     })
   })
 

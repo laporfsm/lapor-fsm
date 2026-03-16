@@ -198,6 +198,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
       confirmColor: const Color(0xFFF59E0B),
     );
     if (!confirmed) return;
+    if (!context.mounted) return;
     await _handleVerification(context, report, refresh, true);
   }
 
@@ -208,6 +209,7 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
   ) async {
     final reason = await _showReasonDialog(context);
     if (reason == null) return;
+    if (!context.mounted) return;
     await _handleVerification(context, report, refresh, false, reason: reason);
   }
 

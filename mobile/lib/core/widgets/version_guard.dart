@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mobile/core/models/app_version_info.dart';
 import 'package:mobile/core/services/app_update_checker.dart';
 import 'package:mobile/core/services/app_version_service.dart';
 import 'package:mobile/core/utils/app_info.dart';
@@ -69,6 +67,7 @@ class _VersionGuardState extends State<VersionGuard>
         return;
       }
 
+      if (!mounted) return;
       _dialogShowing = true;
       await AppUpdateChecker.showUpdateDialog(
         context,

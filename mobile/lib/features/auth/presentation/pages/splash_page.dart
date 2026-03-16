@@ -104,7 +104,7 @@ class _SplashPageState extends State<SplashPage> {
             const Gap(12),
             // Description
             Text(
-              'Sistem Pelaporan Fasilitas\nFakultas Sains & Matematika',
+              'Sistem Pelaporan Insiden & Fasilitas\nFSM Universitas Diponegoro',
               style: TextStyle(
                 color: Colors.grey.shade600,
                 fontSize: 15,

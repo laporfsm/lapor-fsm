@@ -19,7 +19,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
@@ -72,7 +72,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
       if (mounted) {
         setState(() => _isLoading = false);
-        
+
         if (result['success'] == true) {
           setState(() => _isSuccess = true);
         } else {
@@ -115,7 +115,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     color: Colors.green.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(LucideIcons.checkCircle, size: 64, color: Colors.green),
+                  child: const Icon(
+                    LucideIcons.checkCircle,
+                    size: 64,
+                    color: Colors.green,
+                  ),
                 ),
                 const Gap(24),
                 const Text(
@@ -178,7 +182,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                 const Gap(32),
 
                 // New Password Field
-                const Text('Password Baru', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Password Baru',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const Gap(8),
                 TextFormField(
                   controller: _passwordController,
@@ -187,8 +194,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     hintText: 'Minimal 8 karakter',
                     prefixIcon: const Icon(LucideIcons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(_isPasswordVisible ? LucideIcons.eye : LucideIcons.eyeOff),
-                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      icon: Icon(
+                        _isPasswordVisible
+                            ? LucideIcons.eye
+                            : LucideIcons.eyeOff,
+                      ),
+                      onPressed: () => setState(
+                        () => _isPasswordVisible = !_isPasswordVisible,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -198,15 +211,22 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Password wajib diisi';
-                    if (value.length < 8) return 'Password minimal 8 karakter';
+                    if (value == null || value.isEmpty) {
+                      return 'Password wajib diisi';
+                    }
+                    if (value.length < 8) {
+                      return 'Password minimal 8 karakter';
+                    }
                     return null;
                   },
                 ),
                 const Gap(24),
 
                 // Confirm Password Field
-                const Text('Konfirmasi Password', style: TextStyle(fontWeight: FontWeight.w600)),
+                const Text(
+                  'Konfirmasi Password',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const Gap(8),
                 TextFormField(
                   controller: _confirmPasswordController,
@@ -215,8 +235,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     hintText: 'Ulangi password baru',
                     prefixIcon: const Icon(LucideIcons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(_isConfirmPasswordVisible ? LucideIcons.eye : LucideIcons.eyeOff),
-                      onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+                      icon: Icon(
+                        _isConfirmPasswordVisible
+                            ? LucideIcons.eye
+                            : LucideIcons.eyeOff,
+                      ),
+                      onPressed: () => setState(
+                        () => _isConfirmPasswordVisible =
+                            !_isConfirmPasswordVisible,
+                      ),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -226,8 +253,12 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Konfirmasi password wajib diisi';
-                    if (value != _passwordController.text) return 'Password tidak sama';
+                    if (value == null || value.isEmpty) {
+                      return 'Konfirmasi password wajib diisi';
+                    }
+                    if (value != _passwordController.text) {
+                      return 'Password tidak sama';
+                    }
                     return null;
                   },
                 ),
@@ -252,12 +283,17 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           )
                         : const Text(
                             'Reset Password',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                 ),

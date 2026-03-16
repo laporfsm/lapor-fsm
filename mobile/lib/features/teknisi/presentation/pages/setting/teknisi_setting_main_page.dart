@@ -278,8 +278,8 @@ class _TeknisiSettingMainPageState extends State<TeknisiSettingMainPage> {
                   ),
                   ProfileMenuItem(
                     icon: LucideIcons.lock,
-                    label: "Ubah Password",
-                    onTap: () => context.push('/teknisi/settings'),
+                    label: "Reset Password",
+                    onTap: () => context.push('/forgot-password'),
                     color: AppTheme.secondaryColor,
                   ),
                 ],
