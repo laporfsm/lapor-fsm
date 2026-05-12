@@ -222,6 +222,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   }
 
   Future<void> _submitEmergencyReport() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) return;
 
     if (_selectedImages.isEmpty) {
@@ -294,9 +295,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
       debugPrint('Error submitting emergency report: $e');
       if (mounted) {
         setState(() => _isSubmitting = false);
+        final errorMessage = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mengirim laporan: $e'),
+            content: Text('Gagal mengirim laporan: $errorMessage'),
             backgroundColor: Colors.red,
           ),
         );

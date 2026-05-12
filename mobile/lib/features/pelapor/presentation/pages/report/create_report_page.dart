@@ -235,6 +235,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
   }
 
   Future<void> _submitReport() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -326,9 +327,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        final errorMessage = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
   }

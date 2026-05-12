@@ -138,13 +138,17 @@ class ReportService {
 
       final response = await apiService.dio.post('/reports', data: requestBody);
 
-      if (response.data['status'] == 'created') {
+      if (response.data['status'] == 'created' || response.data['status'] == 'success') {
         return response.data['data'];
       }
       return null;
+    } on DioException catch (e) {
+      debugPrint('Error creating report: ${e.response?.data}');
+      final message = e.response?.data?['message'] ?? 'Gagal membuat laporan. Silakan coba lagi.';
+      throw Exception(message);
     } catch (e) {
       debugPrint('Error creating report: $e');
-      return null;
+      throw Exception('Terjadi kesalahan saat mengirim laporan.');
     }
   }
 

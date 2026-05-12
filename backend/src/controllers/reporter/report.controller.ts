@@ -297,7 +297,37 @@ export const reportController = new Elysia({ prefix: '/reports' })
   })
 
   // Create New Report
-  .post('/', async ({ body }) => {
+  .post('/', async ({ body, set }) => {
+    // --- COLLISION CHECK ---
+    // Prevent duplicate submissions from the same user within 15 seconds
+    const now = new Date();
+    const fifteenSecondsAgo = new Date(now.getTime() - 15 * 1000);
+
+    const existingReport = await db.select({ id: reports.id })
+      .from(reports)
+      .where(
+        and(
+          body.userId 
+            ? eq(reports.userId, body.userId) 
+            : body.staffId 
+              ? eq(reports.staffId, body.staffId) 
+              : sql`TRUE`,
+          eq(reports.title, body.title),
+          eq(reports.description, body.description),
+          gte(reports.createdAt, fifteenSecondsAgo)
+        )
+      )
+      .limit(1);
+
+    if (existingReport.length > 0) {
+      set.status = 409;
+      return {
+        status: 'error',
+        message: 'Laporan serupa baru saja dikirim. Mohon tunggu sebentar (15 detik) sebelum mengirim ulang.'
+      };
+    }
+    // ------------------------
+
     const finalMediaUrls = [...(body.mediaUrls || [])];
     if (body.imageUrl && !finalMediaUrls.includes(body.imageUrl)) {
       finalMediaUrls.push(body.imageUrl);
