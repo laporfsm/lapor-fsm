@@ -409,7 +409,7 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
               ),
               const Gap(12),
               const Text(
-                'Placeholder Input Deskripsi',
+                'Contoh Subjek Laporan (Placeholder)',
                 style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
               ),
               const Gap(6),

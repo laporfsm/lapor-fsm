@@ -257,6 +257,8 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
   void _showCategorySheet(Map<String, dynamic>? category) {
     final isEditing = category != null;
     final nameController = TextEditingController(text: category?['name'] ?? '');
+    final placeholderController =
+        TextEditingController(text: category?['placeholder'] ?? '');
     String selectedIcon = category?['icon'] ?? 'help-circle';
 
     showModalBottomSheet(
@@ -382,6 +384,37 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                     ),
                   ),
 
+                  const Gap(16),
+                  const Text(
+                    'Contoh Subjek Laporan (Placeholder)',
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
+                  const Gap(6),
+                  TextField(
+                    controller: placeholderController,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      hintText:
+                          'Contoh: Lampu mati di ruang E101, kabel terkelupas, dsb.',
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
+                      filled: true,
+                      fillColor: const Color(0xFFF8FAFC),
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 14,
+                        horizontal: 14,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade200),
+                      ),
+                    ),
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Saran teks yang muncul di input deskripsi laporan.',
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                  ),
+
                   const Gap(24),
 
                   // Actions
@@ -413,15 +446,18 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                                     : category['id'],
                                 nameController.text.trim(),
                                 selectedIcon,
+                                placeholder: placeholderController.text.trim(),
                               );
                             } else {
                               result = await reportService.createCategory(
                                 nameController.text.trim(),
                                 selectedIcon,
+                                placeholder: placeholderController.text.trim(),
                               );
                             }
 
                             if (result['success']) {
+                              if (mounted) Navigator.pop(context);
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
@@ -434,11 +470,11 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                               );
                               _fetchCategories();
                             } else {
-                              setState(() => _isLoading = false);
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(
-                                    result['message'] ?? 'Gagal menyimpan kategori',
+                                    result['message'] ??
+                                        'Gagal menyimpan kategori',
                                   ),
                                   backgroundColor: Colors.red,
                                 ),
