@@ -176,7 +176,7 @@ class ReportService {
       });
 
       debugPrint(
-        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}/upload',
+        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}upload',
       );
 
       final response = await apiService.dio.post(

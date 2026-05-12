@@ -5,7 +5,8 @@ class ApiService {
   // For physical Android device, replace with your computer's local IP (e.g., 192.168.1.100)
   static String get baseUrl {
     // Production / Testing server Tim 7 (UP2TI)
-    return 'https://apps-fsm.undip.ac.id/lapor-fsm-api';
+    // Adjusted for Public Access via Reverse Proxy
+    return 'https://apps-fsm.undip.ac.id/lapor-fsm-api/';
   }
 
   late final Dio _dio;
@@ -20,20 +21,17 @@ class ApiService {
       ),
     );
 
-    // Logging is currently DISABLED for security/cleanliness preference.
-    // Uncomment the block below to enable logs in Debug mode only.
-    /*
-    if (kDebugMode) {
-      _dio.interceptors.add(
-        LogInterceptor(
-          requestBody: true,
-          responseBody: true,
-          requestHeader: false, // Hide headers (Auth tokens)
-          responseHeader: false,
-        ),
-      );
-    }
-    */
+    // Add interceptor to strip leading slash from paths when using subpath baseUrl
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path.startsWith('/')) {
+            options.path = options.path.substring(1);
+          }
+          return handler.next(options);
+        },
+      ),
+    );
   }
 
   Dio get dio => _dio;

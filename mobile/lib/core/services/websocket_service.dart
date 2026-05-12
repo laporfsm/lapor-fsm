@@ -25,7 +25,7 @@ class WebSocketService {
     required String reportId,
   }) async {
     final token = ApiService.token;
-    final url = Uri.parse('${ApiService.baseUrl}/tracking/$reportId');
+    final url = Uri.parse('${ApiService.baseUrl}tracking/$reportId');
 
     final message = jsonEncode({
       'latitude': latitude,
