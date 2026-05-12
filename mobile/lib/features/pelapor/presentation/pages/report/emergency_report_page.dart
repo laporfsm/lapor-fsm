@@ -12,6 +12,7 @@ import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/media_viewer_modal.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/widgets/location_picker_modal.dart';
 
 /// Simplified Emergency Report Page for faster reporting.
 /// Minimal required fields: Photo + Location (auto-detected).
@@ -35,6 +36,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   double? _longitude;
   bool _isSubmitting = false;
   bool _isFetchingLocation = false;
+  final MapController _mapController = MapController();
 
   // Fetched from API
   List<String> _buildings = [];
@@ -76,6 +78,31 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
       if (mounted) {
         setState(() => _isFetchingLocation = false);
       }
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    if (_latitude == null || _longitude == null) return;
+
+    final LatLng? result = await showModalBottomSheet<LatLng>(
+      context: context,
+      isScrollControlled: true,
+      enableDrag: false,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationPickerModal(
+        initialLatitude: _latitude!,
+        initialLongitude: _longitude!,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+      });
+      // Move map to new location
+      _mapController.move(result, 17);
     }
   }
 
@@ -585,7 +612,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         ),
                         const Gap(4),
                         Text(
-                          'Geser peta untuk menyesuaikan lokasi',
+                          'Klik tombol di bawah untuk menyesuaikan lokasi',
                           style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,
@@ -594,7 +621,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         const Gap(8),
                         if (_latitude != null &&
                             _longitude != null &&
-                            !_isFetchingLocation)
+                            !_isFetchingLocation) ...[
                           Container(
                             height: 200,
                             width: double.infinity,
@@ -610,23 +637,17 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                               child: Stack(
                                 children: [
                                   FlutterMap(
+                                    mapController: _mapController,
                                     options: MapOptions(
                                       initialCenter: LatLng(
                                         _latitude!,
                                         _longitude!,
                                       ),
                                       initialZoom: 17,
-                                      onPositionChanged:
-                                          (position, hasGesture) {
-                                            if (hasGesture) {
-                                              setState(() {
-                                                _latitude =
-                                                    position.center.latitude;
-                                                _longitude =
-                                                    position.center.longitude;
-                                              });
-                                            }
-                                          },
+                                      interactionOptions:
+                                          const InteractionOptions(
+                                        flags: InteractiveFlag.none,
+                                      ),
                                     ),
                                     children: [
                                       TileLayer(
@@ -713,45 +734,29 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                                       ),
                                     ),
                                   ),
-                                  // Drag hint overlay
-                                  Positioned(
-                                    top: 8,
-                                    left: 8,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(
-                                          alpha: 0.6,
-                                        ),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            LucideIcons.move,
-                                            color: Colors.white,
-                                            size: 12,
-                                          ),
-                                          Gap(4),
-                                          Text(
-                                            'Geser peta',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
                                 ],
                               ),
                             ),
-                          )
+                          ),
+                        const Gap(8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _openLocationPicker,
+                            icon: const Icon(LucideIcons.map, size: 18),
+                            label: const Text("Sesuaikan Lokasi Pin"),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppTheme.primaryColor,
+                              side: const BorderSide(
+                                  color: AppTheme.primaryColor),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ]
                         else
                           Container(
                             height: 150,
