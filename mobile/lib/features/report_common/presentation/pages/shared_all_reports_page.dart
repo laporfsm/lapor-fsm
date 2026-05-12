@@ -424,7 +424,6 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     super.dispose();
   }
 
-  List<String> get _categories => _categoryNames;
 
   List<String> _buildings = [];
 
@@ -581,30 +580,24 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                       }),
                     ),
                   ),
-                  if (_selectedCategory != null)
-                    Padding(
+                  ..._selectedCategories.map(
+                    (cat) => Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        _selectedCategory!,
-                        Colors.purple,
-                        () {
-                          setState(() => _selectedCategory = null);
-                          _fetchReports();
-                        },
-                      ),
+                      child: _buildFilterChip(cat, Colors.purple, () {
+                        setState(() => _selectedCategories.remove(cat));
+                        _fetchReports();
+                      }),
                     ),
-                  if (_selectedBuilding != null)
-                    Padding(
+                  ),
+                  ..._selectedBuildings.map(
+                    (building) => Padding(
                       padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        _selectedBuilding!,
-                        Colors.teal,
-                        () {
-                          setState(() => _selectedBuilding = null);
-                          _fetchReports();
-                        },
-                      ),
+                      child: _buildFilterChip(building, Colors.teal, () {
+                        setState(() => _selectedBuildings.remove(building));
+                        _fetchReports();
+                      }),
                     ),
+                  ),
                   if (_emergencyOnly)
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
