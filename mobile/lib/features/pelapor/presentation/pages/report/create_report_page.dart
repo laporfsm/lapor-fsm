@@ -49,6 +49,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
   double? _longitude;
   bool _isSubmitting = false;
   bool _isFetchingLocation = false;
+  String? _dynamicPlaceholder;
   final MapController _mapController = MapController();
 
   // Data gedung FSM
@@ -59,6 +60,25 @@ class _CreateReportPageState extends State<CreateReportPage> {
     super.initState();
     _fetchCurrentLocation();
     _fetchBuildings();
+    _fetchCategoryDetails();
+  }
+
+  Future<void> _fetchCategoryDetails() async {
+    if (widget.categoryId == null) return;
+    try {
+      final categories = await reportService.getCategories();
+      final category = categories.cast<Map<String, dynamic>?>().firstWhere(
+        (c) => c != null && c['id'].toString() == widget.categoryId,
+        orElse: () => null,
+      );
+      if (category != null && mounted) {
+        setState(() {
+          _dynamicPlaceholder = category['placeholder'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching category details: $e');
+    }
   }
 
   Future<void> _fetchBuildings() async {
@@ -564,9 +584,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
               TextFormField(
                 controller: _descController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Deskripsi Detail *",
-                  hintText:
+                  hintText: _dynamicPlaceholder ??
                       "Jelaskan kronologi atau kondisi kerusakan secara detail...",
                   alignLabelWithHint: true,
                 ),

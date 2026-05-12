@@ -237,11 +237,11 @@ class ReportService {
   }
 
   // Create Category
-  Future<Map<String, dynamic>> createCategory(String name, String icon) async {
+  Future<Map<String, dynamic>> createCategory(String name, String icon, {String? placeholder}) async {
     try {
       final response = await apiService.dio.post(
         '/categories',
-        data: {'name': name, 'icon': icon},
+        data: {'name': name, 'icon': icon, 'placeholder': placeholder},
       );
       if (response.data['status'] == 'success') {
         return {'success': true, 'message': response.data['message']};
@@ -264,12 +264,13 @@ class ReportService {
   Future<Map<String, dynamic>> updateCategory(
     int id,
     String name,
-    String icon,
-  ) async {
+    String icon, {
+    String? placeholder,
+  }) async {
     try {
       final response = await apiService.dio.put(
         '/categories/$id',
-        data: {'name': name, 'icon': icon},
+        data: {'name': name, 'icon': icon, 'placeholder': placeholder},
       );
       if (response.data['status'] == 'success') {
         return {'success': true, 'message': response.data['message']};

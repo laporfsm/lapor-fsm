@@ -36,6 +36,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
   double? _longitude;
   bool _isSubmitting = false;
   bool _isFetchingLocation = false;
+  String? _dynamicPlaceholder;
   final MapController _mapController = MapController();
 
   // Fetched from API
@@ -46,6 +47,24 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
     super.initState();
     _fetchCurrentLocation();
     _fetchBuildings();
+    _fetchEmergencyCategoryPlaceholder();
+  }
+
+  Future<void> _fetchEmergencyCategoryPlaceholder() async {
+    try {
+      final categories = await reportService.getCategories();
+      final emergencyCat = categories.cast<Map<String, dynamic>?>().firstWhere(
+        (c) => c != null && c['name'].toString().toLowerCase().contains('darurat'),
+        orElse: () => null,
+      );
+      if (emergencyCat != null && mounted) {
+        setState(() {
+          _dynamicPlaceholder = emergencyCat['placeholder'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching emergency category placeholder: $e');
+    }
   }
 
   Future<void> _fetchBuildings() async {
@@ -395,7 +414,7 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         TextFormField(
                           controller: _titleController,
                           decoration: InputDecoration(
-                            hintText: "Contoh: Kebakaran di Lab Kimia",
+                            hintText: _dynamicPlaceholder ?? "Contoh: Kebakaran di Lab Kimia",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
