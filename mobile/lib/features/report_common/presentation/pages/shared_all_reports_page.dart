@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/widgets/report_filter_sheet.dart';
 
 /// A shared page for displaying a list of reports with filters and search.
 /// Can be used by both Supervisor and Technician.
@@ -70,8 +71,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   final ScrollController _scrollController = ScrollController();
 
   Set<ReportStatus> _selectedStatuses = {};
-  String? _selectedCategory;
-  String? _selectedBuilding;
+  Set<String> _selectedCategories = {};
+  Set<String> _selectedBuildings = {};
   bool _emergencyOnly = false;
 
   String? _selectedPeriod; // 'today', 'week', 'month'
@@ -346,9 +347,12 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
               : widget.allowedStatuses?.map((s) => s.name).join(','),
           isEmergency: _emergencyOnly ? true : null,
           period: _selectedPeriod,
-          search: _searchQuery.isNotEmpty ? _searchQuery : null,
-          category: _selectedCategory,
-          location: _selectedBuilding,
+          category: _selectedCategories.isNotEmpty
+              ? _selectedCategories.join(',')
+              : null,
+          location: _selectedBuildings.isNotEmpty
+              ? _selectedBuildings.join(',')
+              : null,
           assignedTo: widget.assignedTo,
           page: _currentPage,
           limit: _limit,
@@ -360,8 +364,12 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
           status: _selectedStatuses.isNotEmpty
               ? _selectedStatuses.map((s) => s.name).join(',')
               : widget.allowedStatuses?.map((s) => s.name).join(','),
-          category: _selectedCategory,
-          location: _selectedBuilding,
+          category: _selectedCategories.isNotEmpty
+              ? _selectedCategories.join(',')
+              : null,
+          location: _selectedBuildings.isNotEmpty
+              ? _selectedBuildings.join(',')
+              : null,
           isEmergency: _emergencyOnly,
           period: _selectedPeriod,
           startDate: _selectedDateRange?.start.toIso8601String(),
@@ -426,8 +434,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       hasDateFilter = _selectedPeriod != null || _selectedDateRange != null;
     }
     return _selectedStatuses.isNotEmpty ||
-        _selectedCategory != null ||
-        _selectedBuilding != null ||
+        _selectedCategories.isNotEmpty ||
+        _selectedBuildings.isNotEmpty ||
         hasDateFilter ||
         _emergencyOnly;
   }
@@ -917,8 +925,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
   void _clearAllFilters() {
     setState(() {
       _selectedStatuses.clear();
-      _selectedCategory = null;
-      _selectedBuilding = null;
+      _selectedCategories.clear();
+      _selectedBuildings.clear();
       _emergencyOnly = false;
       _selectedPeriod = null;
       _selectedDateRange = null;
@@ -933,248 +941,43 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            maxChildSize: 0.9,
-            minChildSize: 0.5,
-            expand: false,
-            builder: (context, scrollController) {
-              return Column(
-                children: [
-                  const Gap(16),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const Gap(16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            setModalState(() {
-                              _selectedStatuses.clear();
-                              _selectedCategory = null;
-                              _selectedBuilding = null;
-                              _emergencyOnly = false;
-                              _selectedPeriod = null;
-                              _selectedDateRange = null;
-                            });
-                            setState(() {});
-                          },
-                          child: const Text(
-                            'Reset',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        const Text(
-                          'Filter Laporan',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _fetchReports();
-                          },
-                          child: Text(
-                            'Terapkan',
-                            style: TextStyle(
-                              color: widget.appBarColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Hanya Darurat'),
-                          secondary: Icon(
-                            LucideIcons.alertTriangle,
-                            color: _emergencyOnly
-                                ? AppTheme.emergencyColor
-                                : Colors.grey,
-                          ),
-                          value: _emergencyOnly,
-                          onChanged: (value) {
-                            setModalState(() => _emergencyOnly = value);
-                            setState(() => _emergencyOnly = value);
-                          },
-                        ),
-                        const Divider(),
-                        const Gap(12),
-                        const Text(
-                          'Rentang Waktu',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendar,
-                                size: 16,
-                              ),
-                              label: const Text('Hari Ini'),
-                              selected: _selectedPeriod == 'today',
-                              onSelected: (selected) {
-                                setModalState(
-                                  () => _selectedPeriod = selected
-                                      ? 'today'
-                                      : null,
-                                );
-                                setState(() {});
-                              },
-                            ),
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarDays,
-                                size: 16,
-                              ),
-                              label: const Text('Minggu Ini'),
-                              selected: _selectedPeriod == 'week',
-                              onSelected: (selected) {
-                                setModalState(
-                                  () => _selectedPeriod = selected
-                                      ? 'week'
-                                      : null,
-                                );
-                                setState(() {});
-                              },
-                            ),
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarRange,
-                                size: 16,
-                              ),
-                              label: const Text('Bulan Ini'),
-                              selected: _selectedPeriod == 'month',
-                              onSelected: (selected) {
-                                setModalState(
-                                  () => _selectedPeriod = selected
-                                      ? 'month'
-                                      : null,
-                                );
-                                setState(() {});
-                              },
-                            ),
-                          ],
-                        ),
-                        const Gap(20),
-                        const Text(
-                          'Status',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children:
-                              (widget.allowedStatuses ??
-                                      ReportStatus.values.where(
-                                        (s) =>
-                                            s.name != 'verifikasi' &&
-                                            s.name != 'archived',
-                                      ))
-                                  .map((status) {
-                                    final isSelected = _selectedStatuses
-                                        .contains(status);
-                                    return FilterChip(
-                                      label: Text(status.label),
-                                      selected: isSelected,
-                                      selectedColor: status.color.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      checkmarkColor: status.color,
-                                      onSelected: (selected) {
-                                        setModalState(() {
-                                          if (selected) {
-                                            _selectedStatuses.add(status);
-                                          } else {
-                                            _selectedStatuses.remove(status);
-                                          }
-                                        });
-                                        setState(() {});
-                                      },
-                                    );
-                                  })
-                                  .toList(),
-                        ),
-                        const Gap(20),
-                        const Text(
-                          'Kategori',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _categories.map((cat) {
-                            return ChoiceChip(
-                              label: Text(cat),
-                              selected: _selectedCategory == cat,
-                              onSelected: (selected) {
-                                setModalState(
-                                  () =>
-                                      _selectedCategory = selected ? cat : null,
-                                );
-                                setState(() {});
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const Gap(20),
-                        const Text(
-                          'Lokasi',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _buildings.map((building) {
-                            return ChoiceChip(
-                              label: Text(building),
-                              selected: _selectedBuilding == building,
-                              onSelected: (selected) {
-                                setModalState(
-                                  () => _selectedBuilding = selected
-                                      ? building
-                                      : null,
-                                );
-                                setState(() {});
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const Gap(20),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
+      builder: (context) => ReportFilterSheet(
+        selectedStatuses: _selectedStatuses,
+        selectedCategories: _selectedCategories,
+        selectedBuildings: _selectedBuildings,
+        isEmergency: _emergencyOnly,
+        selectedPeriod: _selectedPeriod,
+        selectedDateRange: _selectedDateRange,
+        availableCategories: _categoryNames,
+        availableBuildings: _buildings,
+        themeColor: widget.appBarColor == Colors.white
+            ? AppTheme.primaryColor
+            : widget.appBarColor,
+        allowedStatuses: widget.allowedStatuses,
+        onReset: _clearAllFilters,
+        onChanged: ({
+          buildings,
+          categories,
+          dateRange,
+          isEmergency,
+          period,
+          statuses,
+        }) {
+          setState(() {
+            if (statuses != null) _selectedStatuses = statuses;
+            if (categories != null) _selectedCategories = categories;
+            if (buildings != null) _selectedBuildings = buildings;
+            if (isEmergency != null) _emergencyOnly = isEmergency;
+            if (period != null) {
+              _selectedPeriod = period;
+              _selectedDateRange = null;
+            }
+            if (dateRange != null) {
+              _selectedDateRange = dateRange;
+              _selectedPeriod = null;
+            }
+          });
+          _fetchReports();
         },
       ),
     );
