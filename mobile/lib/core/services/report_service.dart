@@ -138,13 +138,17 @@ class ReportService {
 
       final response = await apiService.dio.post('/reports', data: requestBody);
 
-      if (response.data['status'] == 'created') {
+      if (response.data['status'] == 'created' || response.data['status'] == 'success') {
         return response.data['data'];
       }
       return null;
+    } on DioException catch (e) {
+      debugPrint('Error creating report: ${e.response?.data}');
+      final message = e.response?.data?['message'] ?? 'Gagal membuat laporan. Silakan coba lagi.';
+      throw Exception(message);
     } catch (e) {
       debugPrint('Error creating report: $e');
-      return null;
+      throw Exception('Terjadi kesalahan saat mengirim laporan.');
     }
   }
 
@@ -176,7 +180,7 @@ class ReportService {
       });
 
       debugPrint(
-        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}/upload',
+        'Uploading file: $fileName ($mimeType) to ${apiService.dio.options.baseUrl}upload',
       );
 
       final response = await apiService.dio.post(
@@ -233,11 +237,11 @@ class ReportService {
   }
 
   // Create Category
-  Future<Map<String, dynamic>> createCategory(String name, String icon) async {
+  Future<Map<String, dynamic>> createCategory(String name, String icon, {String? placeholder}) async {
     try {
       final response = await apiService.dio.post(
         '/categories',
-        data: {'name': name, 'icon': icon},
+        data: {'name': name, 'icon': icon, 'placeholder': placeholder},
       );
       if (response.data['status'] == 'success') {
         return {'success': true, 'message': response.data['message']};
@@ -260,12 +264,13 @@ class ReportService {
   Future<Map<String, dynamic>> updateCategory(
     int id,
     String name,
-    String icon,
-  ) async {
+    String icon, {
+    String? placeholder,
+  }) async {
     try {
       final response = await apiService.dio.put(
         '/categories/$id',
-        data: {'name': name, 'icon': icon},
+        data: {'name': name, 'icon': icon, 'placeholder': placeholder},
       );
       if (response.data['status'] == 'success') {
         return {'success': true, 'message': response.data['message']};

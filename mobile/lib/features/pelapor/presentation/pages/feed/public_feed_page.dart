@@ -20,7 +20,7 @@ class PublicFeedPage extends StatelessWidget {
         fontSize: 18,
       ),
       showBackButton: false, // Main tab, no back button
-      enableDateFilter: false, // Hide calendar as requested
+      enableDateFilter: true, // Show calendar for manual filtering
       onReportTap: (reportId, status) {
         context.push('/report-detail/$reportId');
       },

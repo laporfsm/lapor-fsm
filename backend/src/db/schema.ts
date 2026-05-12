@@ -62,6 +62,7 @@ export const categories = pgTable('categories', {
   type: text('type').notNull(), // 'emergency' or 'non-emergency'
   icon: text('icon'),
   description: text('description'),
+  placeholder: text('placeholder'),
 });
 
 // Reports table

@@ -428,56 +428,64 @@ async function seed() {
       "name": "Listrik",
       "type": "non-emergency",
       "icon": "zap",
-      "description": "Masalah instalasi listrik."
+      "description": "Masalah instalasi listrik.",
+      "placeholder": "Contoh: Lampu mati di ruang E101, kabel terkelupas, dsb."
     },
     {
       "id": 231,
       "name": "Air",
       "type": "non-emergency",
       "icon": "droplet",
-      "description": "Masalah air dan pipa."
+      "description": "Masalah air dan pipa.",
+      "placeholder": "Contoh: Keran bocor di wastafel lt 2, air tidak mengalir, dsb."
     },
     {
       "id": 232,
       "name": "Bangunan",
       "type": "non-emergency",
       "icon": "building",
-      "description": "Bangunan dan ruang."
+      "description": "Bangunan dan ruang.",
+      "placeholder": "Contoh: Atap bocor, ubin pecah, pintu tidak bisa dikunci, dsb."
     },
     {
       "id": 233,
       "name": "Kebersihan",
       "type": "non-emergency",
       "icon": "trash",
-      "description": "Sampah dan kotoran."
+      "description": "Sampah dan kotoran.",
+      "placeholder": "Contoh: Tempat sampah penuh, lantai sangat kotor, dsb."
     },
     {
       "id": 234,
       "name": "Fasilitas Umum",
       "type": "non-emergency",
       "icon": "box",
-      "description": "Fasilitas publik."
+      "description": "Fasilitas publik.",
+      "placeholder": "Contoh: Lift macet, kursi taman patah, dsb."
     },
     {
       "id": 235,
       "name": "Jaringan",
       "type": "non-emergency",
       "icon": "wifi",
-      "description": "Jaringan dan IT."
+      "description": "Jaringan dan IT.",
+      "placeholder": "Contoh: WiFi tidak bisa konek, kabel LAN putus, dsb."
     },
     {
       "id": 236,
       "name": "Lainnya",
       "type": "non-emergency",
       "icon": "help-circle",
-      "description": "Lain-lain."
+      "description": "Lain-lain.",
+      "placeholder": "Masukkan deskripsi laporan Anda secara detail..."
     },
     {
       "id": 237,
       "name": "Darurat",
       "type": "emergency",
       "icon": "alert-triangle",
-      "description": "Darurat."
+      "description": "Darurat.",
+      "placeholder": "Jelaskan situasi darurat yang terjadi!"
     }
   ] as any);
 

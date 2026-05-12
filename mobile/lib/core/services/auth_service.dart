@@ -30,6 +30,9 @@ class AuthService {
     required String password,
   }) async {
     try {
+      // Clear existing token before login to avoid header conflicts with stale tokens
+      apiService.clearAuthToken();
+
       final response = await apiService.dio.post(
         '/auth/login',
         data: {'email': email, 'password': password},
@@ -184,6 +187,9 @@ class AuthService {
     required String password,
   }) async {
     try {
+      // Clear existing token before login to avoid header conflicts with stale tokens
+      apiService.clearAuthToken();
+
       final response = await apiService.dio.post(
         '/auth/staff-login',
         data: {'email': email, 'password': password},

@@ -26,6 +26,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
                 type: 'non-emergency', // Default type
                 icon: body.icon,
                 description: 'Kategori kustom',
+                placeholder: body.placeholder,
             }).returning();
 
             return {
@@ -40,6 +41,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
         body: t.Object({
             name: t.String({ maxLength: 20 }), // Validate max length here too
             icon: t.String(),
+            placeholder: t.Optional(t.String()),
         })
     })
 
@@ -51,6 +53,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
                 .set({
                     name: body.name,
                     icon: body.icon,
+                    placeholder: body.placeholder,
                 })
                 .where(eq(categories.id, id))
                 .returning();
@@ -71,6 +74,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
         body: t.Object({
             name: t.String({ maxLength: 20 }),
             icon: t.String(),
+            placeholder: t.Optional(t.String()),
         })
     })
 

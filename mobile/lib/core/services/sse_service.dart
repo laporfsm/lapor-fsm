@@ -52,7 +52,7 @@ class SSEService {
   void connectToReport(String reportId) {
     _isReportManualDisconnect = false;
     _startSSEConnection(
-      url: '$_baseUrl/reports/$reportId/logs/stream',
+      url: '${_baseUrl}reports/$reportId/logs/stream',
       clientField: 'report',
       onData: (data) {
         // Push to global event stream
@@ -86,7 +86,7 @@ class SSEService {
   void connectToNotifications(String type, String id) {
     _isNotificationManualDisconnect = false;
     _startSSEConnection(
-      url: '$_baseUrl/notifications/stream/$type/$id',
+      url: '${_baseUrl}notifications/stream/$type/$id',
       clientField: 'notification',
       onData: (data) {
         if (data['type'] == 'notification' && data['data'] != null) {

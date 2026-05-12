@@ -12,6 +12,7 @@ import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/widgets/media_viewer_modal.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/widgets/location_picker_modal.dart';
 
 class CreateReportPage extends StatefulWidget {
   final String category;
@@ -48,6 +49,8 @@ class _CreateReportPageState extends State<CreateReportPage> {
   double? _longitude;
   bool _isSubmitting = false;
   bool _isFetchingLocation = false;
+  String? _dynamicPlaceholder;
+  final MapController _mapController = MapController();
 
   // Data gedung FSM
   List<String> _buildings = [];
@@ -57,6 +60,25 @@ class _CreateReportPageState extends State<CreateReportPage> {
     super.initState();
     _fetchCurrentLocation();
     _fetchBuildings();
+    _fetchCategoryDetails();
+  }
+
+  Future<void> _fetchCategoryDetails() async {
+    if (widget.categoryId == null) return;
+    try {
+      final categories = await reportService.getCategories();
+      final category = categories.cast<Map<String, dynamic>?>().firstWhere(
+        (c) => c != null && c['id'].toString() == widget.categoryId,
+        orElse: () => null,
+      );
+      if (category != null && mounted) {
+        setState(() {
+          _dynamicPlaceholder = category['placeholder'] as String?;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching category details: $e');
+    }
   }
 
   Future<void> _fetchBuildings() async {
@@ -89,6 +111,31 @@ class _CreateReportPageState extends State<CreateReportPage> {
       if (mounted) {
         setState(() => _isFetchingLocation = false);
       }
+    }
+  }
+
+  Future<void> _openLocationPicker() async {
+    if (_latitude == null || _longitude == null) return;
+
+    final LatLng? result = await showModalBottomSheet<LatLng>(
+      context: context,
+      isScrollControlled: true,
+      enableDrag: false,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => LocationPickerModal(
+        initialLatitude: _latitude!,
+        initialLongitude: _longitude!,
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        _latitude = result.latitude;
+        _longitude = result.longitude;
+      });
+      // Move map to new location
+      _mapController.move(result, 17);
     }
   }
 
@@ -235,6 +282,7 @@ class _CreateReportPageState extends State<CreateReportPage> {
   }
 
   Future<void> _submitReport() async {
+    if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -326,9 +374,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
+        final errorMessage = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
       }
     }
   }
@@ -535,9 +584,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
               TextFormField(
                 controller: _descController,
                 maxLines: 4,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Deskripsi Detail *",
-                  hintText:
+                  hintText: _dynamicPlaceholder ??
                       "Jelaskan kronologi atau kondisi kerusakan secara detail...",
                   alignLabelWithHint: true,
                 ),
@@ -581,36 +630,32 @@ class _CreateReportPageState extends State<CreateReportPage> {
               ),
               const Gap(4),
               Text(
-                'Geser peta untuk menyesuaikan lokasi',
+                'Klik tombol di bawah untuk menyesuaikan lokasi',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
               const Gap(8),
               if (_latitude != null &&
                   _longitude != null &&
-                  !_isFetchingLocation)
+                  !_isFetchingLocation) ...[
                 Container(
                   height: 200,
                   width: double.infinity,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.primaryColor, width: 2),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
                     child: Stack(
                       children: [
                         FlutterMap(
+                          mapController: _mapController,
                           options: MapOptions(
                             initialCenter: LatLng(_latitude!, _longitude!),
                             initialZoom: 17,
-                            onPositionChanged: (position, hasGesture) {
-                              if (hasGesture) {
-                                setState(() {
-                                  _latitude = position.center.latitude;
-                                  _longitude = position.center.longitude;
-                                });
-                              }
-                            },
+                            interactionOptions: const InteractionOptions(
+                              flags: InteractiveFlag.none,
+                            ),
                           ),
                           children: [
                             TileLayer(
@@ -635,54 +680,40 @@ class _CreateReportPageState extends State<CreateReportPage> {
                           right: 0,
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 6,
-                            ),
+                                horizontal: 8, vertical: 6),
                             color: Colors.black.withValues(alpha: 0.7),
                             child: Row(
                               children: [
-                                const Icon(
-                                  LucideIcons.mapPin,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
+                                const Icon(LucideIcons.mapPin,
+                                    color: Colors.white, size: 14),
                                 const Gap(6),
                                 Expanded(
                                   child: Text(
                                     'Lat: ${_latitude!.toStringAsFixed(6)}, Lng: ${_longitude!.toStringAsFixed(6)}',
                                     style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                    ),
+                                        color: Colors.white, fontSize: 10),
                                   ),
                                 ),
                                 GestureDetector(
                                   onTap: _fetchCurrentLocation,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
+                                        horizontal: 8, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.2,
-                                      ),
+                                      color:
+                                          Colors.white.withValues(alpha: 0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: const Row(
                                       children: [
-                                        Icon(
-                                          LucideIcons.locate,
-                                          color: Colors.white,
-                                          size: 12,
-                                        ),
+                                        Icon(LucideIcons.locate,
+                                            color: Colors.white, size: 12),
                                         Gap(4),
                                         Text(
                                           'Reset',
                                           style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                          ),
+                                              color: Colors.white,
+                                              fontSize: 10),
                                         ),
                                       ],
                                     ),
@@ -692,44 +723,28 @@ class _CreateReportPageState extends State<CreateReportPage> {
                             ),
                           ),
                         ),
-                        // Drag hint overlay
-                        Positioned(
-                          top: 8,
-                          left: 8,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  LucideIcons.move,
-                                  color: Colors.white,
-                                  size: 12,
-                                ),
-                                Gap(4),
-                                Text(
-                                  'Geser peta',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                )
-              else
+                ),
+                const Gap(8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _openLocationPicker,
+                    icon: const Icon(LucideIcons.map, size: 18),
+                    label: const Text("Sesuaikan Lokasi Pin"),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.primaryColor,
+                      side: const BorderSide(color: AppTheme.primaryColor),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ] else
                 Container(
                   height: 150,
                   width: double.infinity,
@@ -761,11 +776,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
                         ],
                       ],
                     ),
+                  ),
                 ),
-              ),
-              const Gap(16),
-
               const Gap(32),
+
               SizedBox(
                 width: double.infinity,
                 child: BouncingButton(

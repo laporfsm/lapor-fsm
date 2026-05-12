@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/services/report_service.dart';
 
 class AdminCategoriesPage extends StatefulWidget {
   const AdminCategoriesPage({super.key});
@@ -12,17 +13,34 @@ class AdminCategoriesPage extends StatefulWidget {
 
 class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
   final TextEditingController _searchController = TextEditingController();
+  final ReportService _reportService = ReportService();
+  final List<Map<String, dynamic>> _categories = [];
+  bool _isLoading = true;
 
-  // Mock data
-  final List<Map<String, dynamic>> _categories = [
-    {'id': 1, 'name': 'Kelistrikan', 'icon': '⚡', 'reportsCount': 23},
-    {'id': 2, 'name': 'Sanitasi / Air', 'icon': '🚿', 'reportsCount': 18},
-    {'id': 3, 'name': 'Sipil & Bangunan', 'icon': '🏗️', 'reportsCount': 45},
-    {'id': 4, 'name': 'Fasilitas Umum', 'icon': '🪑', 'reportsCount': 32},
-    {'id': 5, 'name': 'Kebersihan', 'icon': '🧹', 'reportsCount': 27},
-    {'id': 6, 'name': 'Keamanan', 'icon': '🔒', 'reportsCount': 11},
-    {'id': 7, 'name': 'Taman & Lingkungan', 'icon': '🌳', 'reportsCount': 8},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    setState(() => _isLoading = true);
+    try {
+      final cats = await _reportService.getCategories();
+      setState(() {
+        _categories.clear();
+        _categories.addAll(cats);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil kategori: $e')),
+        );
+      }
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredCategories {
     if (_searchController.text.isEmpty) return _categories;
@@ -92,14 +110,16 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
 
           // List
           Expanded(
-            child: _filteredCategories.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _filteredCategories.length,
-                    itemBuilder: (context, index) =>
-                        _buildCategoryCard(_filteredCategories[index]),
-                  ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredCategories.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredCategories.length,
+                        itemBuilder: (context, index) =>
+                            _buildCategoryCard(_filteredCategories[index]),
+                      ),
           ),
         ],
       ),
@@ -247,6 +267,9 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
         TextEditingController(text: category?['name'] ?? '');
     final iconController =
         TextEditingController(text: category?['icon'] ?? '');
+    final placeholderController =
+        TextEditingController(text: category?['placeholder'] ?? '');
+    bool isSaving = false;
 
     showModalBottomSheet(
       context: context,
@@ -364,11 +387,13 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                                 vertical: 14, horizontal: 14),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(color: Colors.grey.shade200),
+                              borderSide:
+                                  BorderSide(color: Colors.grey.shade200),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -381,6 +406,42 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                     ),
                   ),
                 ],
+              ),
+              const Gap(12),
+              const Text(
+                'Placeholder Input Deskripsi',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              ),
+              const Gap(6),
+              TextField(
+                controller: placeholderController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText:
+                      'Contoh: Lampu mati di ruang E101, kabel terkelupas, dsb.',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFF059669)),
+                  ),
+                ),
+              ),
+              const Gap(8),
+              Text(
+                'Saran teks yang muncul di input deskripsi laporan.',
+                style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
               ),
               const Gap(8),
               Text(
@@ -406,69 +467,114 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                   ),
                   const Gap(12),
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Nama kategori tidak boleh kosong'),
-                              backgroundColor: Color(0xFFEF4444),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                          return;
-                        }
+                    child: StatefulBuilder(builder: (context, setSheetState) {
+                      return ElevatedButton(
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                final name = nameController.text.trim();
+                                if (name.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          'Nama kategori tidak boleh kosong'),
+                                      backgroundColor: Color(0xFFEF4444),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                        Navigator.pop(context);
+                                setSheetState(() => isSaving = true);
 
-                        final icon = iconController.text.trim().isEmpty
-                            ? '📌'
-                            : iconController.text.trim();
+                                final icon = iconController.text.trim().isEmpty
+                                    ? '📌'
+                                    : iconController.text.trim();
+                                final placeholder =
+                                    placeholderController.text.trim().isEmpty
+                                        ? null
+                                        : placeholderController.text.trim();
 
-                        if (isEditing) {
-                          setState(() {
-                            category['name'] = nameController.text.trim();
-                            category['icon'] = icon;
-                          });
-                        } else {
-                          setState(() {
-                            _categories.add({
-                              'id': DateTime.now().millisecondsSinceEpoch,
-                              'name': nameController.text.trim(),
-                              'icon': icon,
-                              'reportsCount': 0,
-                            });
-                          });
-                        }
+                                try {
+                                  Map<String, dynamic> result;
+                                  if (isEditing) {
+                                    result = await _reportService
+                                        .updateCategory(
+                                            category['id'] as int, name, icon,
+                                            placeholder: placeholder);
+                                  } else {
+                                    result = await _reportService
+                                        .createCategory(name, icon,
+                                            placeholder: placeholder);
+                                  }
 
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(LucideIcons.checkCircle,
-                                    color: Colors.white, size: 18),
-                                const Gap(10),
-                                Text(isEditing
-                                    ? 'Kategori diperbarui'
-                                    : 'Kategori ditambahkan'),
-                              ],
-                            ),
-                            backgroundColor: const Color(0xFF22C55E),
-                            behavior: SnackBarBehavior.floating,
+                                  if (result['success'] == true) {
+                                    if (context.mounted) Navigator.pop(context);
+                                    _fetchCategories();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Row(
+                                            children: [
+                                              const Icon(
+                                                  LucideIcons.checkCircle,
+                                                  color: Colors.white,
+                                                  size: 18),
+                                              const Gap(10),
+                                              Text(isEditing
+                                                  ? 'Kategori diperbarui'
+                                                  : 'Kategori ditambahkan'),
+                                            ],
+                                          ),
+                                          backgroundColor:
+                                              const Color(0xFF22C55E),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  } else {
+                                    setSheetState(() => isSaving = false);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(result['message'] ??
+                                              'Terjadi kesalahan'),
+                                          backgroundColor:
+                                              const Color(0xFFEF4444),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                } catch (e) {
+                                  setSheetState(() => isSaving = false);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(content: Text('Error: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF059669),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF059669),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: Text(isEditing ? 'Simpan' : 'Tambah'),
-                    ),
+                        child: isSaving
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    color: Colors.white, strokeWidth: 2))
+                            : Text(isEditing ? 'Simpan' : 'Tambah'),
+                      );
+                    }),
                   ),
                 ],
               ),
@@ -572,26 +678,48 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                 const Gap(12),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        _categories
-                            .removeWhere((c) => c['id'] == category['id']);
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(LucideIcons.trash2,
-                                  color: Colors.white, size: 18),
-                              const Gap(10),
-                              Text('${category['name']} dihapus'),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFFEF4444),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                    onPressed: () async {
+                      try {
+                        final result = await _reportService
+                            .deleteCategory(category['id'] as int);
+                        if (result['success'] == true) {
+                          if (context.mounted) Navigator.pop(context);
+                          _fetchCategories();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Row(
+                                  children: [
+                                    const Icon(LucideIcons.trash2,
+                                        color: Colors.white, size: 18),
+                                    const Gap(10),
+                                    Text('${category['name']} dihapus'),
+                                  ],
+                                ),
+                                backgroundColor: const Color(0xFFEF4444),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } else {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result['message'] ??
+                                    'Gagal menghapus kategori'),
+                                backgroundColor: const Color(0xFFEF4444),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error: $e')),
+                          );
+                        }
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFEF4444),
