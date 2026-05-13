@@ -620,6 +620,10 @@ class _SupervisorReportListBodyState
                             status: report.status,
                             isEmergency: report.isEmergency,
                             elapsedTime: report.elapsed,
+                            createdAt: report.createdAt,
+                            pausedAt: report.pausedAt,
+                            totalPausedDurationSeconds:
+                                report.totalPausedDurationSeconds,
                             reporterName: report.reporterName,
                             assignedTo: report.assignedTo,
                             handledBy: report.handledBy,

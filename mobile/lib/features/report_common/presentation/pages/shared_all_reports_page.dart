@@ -722,9 +722,11 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               reporterName: report.reporterName,
                               assignedTo: report.assignedTo,
                               handledBy: report.handledBy,
-                              elapsedTime: DateTime.now().difference(
-                                report.createdAt,
-                              ),
+                              elapsedTime: report.elapsed,
+                              createdAt: report.createdAt,
+                              pausedAt: report.pausedAt,
+                              totalPausedDurationSeconds:
+                                  report.totalPausedDurationSeconds,
                               showStatus: true,
                               showTimer: true,
                               selectionMode: _isSelectionMode,

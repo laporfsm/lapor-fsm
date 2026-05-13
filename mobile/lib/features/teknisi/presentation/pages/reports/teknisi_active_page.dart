@@ -150,7 +150,6 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                 itemCount: _activeReports.length,
                 itemBuilder: (context, index) {
                   final report = _activeReports[index];
-                  final elapsed = DateTime.now().difference(report.createdAt);
 
                   return UniversalReportCard(
                     id: report.id,
@@ -160,7 +159,10 @@ class _TeknisiActivePageState extends State<TeknisiActivePage> {
                     category: report.category,
                     status: report.status,
                     isEmergency: report.isEmergency,
-                    elapsedTime: elapsed,
+                    elapsedTime: report.elapsed,
+                    createdAt: report.createdAt,
+                    pausedAt: report.pausedAt,
+                    totalPausedDurationSeconds: report.totalPausedDurationSeconds,
                     showStatus: true,
                     showTimer: true,
                     onTap: () async {

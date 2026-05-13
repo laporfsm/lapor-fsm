@@ -4,6 +4,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 import 'package:mobile/features/report_common/domain/enums/report_status.dart';
 import 'package:mobile/core/theme.dart';
+import 'package:mobile/core/widgets/realtime_timer_label.dart';
 
 /// Universal Report Card widget for consistent display across the app.
 /// Use this for all report list displays (Teknisi, Supervisor, Pelapor).
@@ -21,6 +22,9 @@ class UniversalReportCard extends StatelessWidget {
   final List<String>? handledBy;
   final List<String>? assignedTo;
   final String? reporterName; // New field
+  final DateTime? createdAt; // New for realtime timer
+  final DateTime? pausedAt; // New for realtime timer
+  final int? totalPausedDurationSeconds; // New for realtime timer
   final VoidCallback? onTap;
   final Widget? actionButton;
   final bool showStatus;
@@ -45,6 +49,9 @@ class UniversalReportCard extends StatelessWidget {
     this.handledBy,
     this.assignedTo,
     this.reporterName,
+    this.createdAt,
+    this.pausedAt,
+    this.totalPausedDurationSeconds,
     this.onTap,
     this.actionButton,
     this.showStatus = false,
@@ -259,23 +266,38 @@ class UniversalReportCard extends StatelessWidget {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(
-                                    LucideIcons.timer,
-                                    size: 12,
-                                    color: _timerColor,
-                                  ),
-                                  const Gap(4),
-                                  Text(
-                                    _formatDuration(elapsedTime!),
-                                    style: TextStyle(
+                                    Icon(
+                                      LucideIcons.timer,
+                                      size: 12,
                                       color: _timerColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
                                     ),
-                                  ),
-                                ],
+                                    const Gap(4),
+                                    if (createdAt != null &&
+                                        status != null &&
+                                        !status!.isFinal &&
+                                        status != ReportStatus.selesai)
+                                      RealtimeTimerLabel(
+                                        createdAt: createdAt!,
+                                        style: TextStyle(
+                                          color: _timerColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                        color: _timerColor,
+                                      )
+                                    else
+                                      Text(
+                                        _formatDuration(
+                                            elapsedTime ?? Duration.zero),
+                                        style: TextStyle(
+                                          color: _timerColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
                         ],
                       ),
 

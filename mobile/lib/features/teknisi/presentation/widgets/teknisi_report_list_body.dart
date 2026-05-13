@@ -512,9 +512,11 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
                         reporterName: report.reporterName,
                         assignedTo: report.assignedTo,
                         handledBy: report.handledBy,
-                        elapsedTime: DateTime.now().difference(
-                          report.createdAt,
-                        ),
+                        elapsedTime: report.elapsed,
+                        createdAt: report.createdAt,
+                        pausedAt: report.pausedAt,
+                        totalPausedDurationSeconds:
+                            report.totalPausedDurationSeconds,
                         showStatus: true,
                         showTimer: true,
                         onTap: () =>
