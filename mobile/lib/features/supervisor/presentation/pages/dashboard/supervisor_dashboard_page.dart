@@ -116,6 +116,7 @@ class _SupervisorDashboardPageState
                 'weekReports': rawStats['weekReports'] ?? 0,
                 'monthReports': rawStats['monthReports'] ?? 0,
               };
+              debugPrint('[DASHBOARD] Stats Loaded: $_dashboardStats');
             }
 
             // Non-Gedung Reports
@@ -492,12 +493,15 @@ class _SupervisorDashboardPageState
           todayCount: _stats['todayReports'] ?? 0,
           weekCount: _stats['weekReports'] ?? 0,
           monthCount: _stats['monthReports'] ?? 0,
-          onTap: (period) => context.push(
-            Uri(
-              path: '/supervisor/reports/filter',
-              queryParameters: {'period': period},
-            ).toString(),
-          ),
+          onTap: (period) {
+            // 1. Set the period filter in the Active Reports provider
+            const activeStatus = 'pending,terverifikasi,verifikasi,diproses,penanganan,onHold,selesai,recalled';
+            ref.read(supervisorReportsProvider(activeStatus).notifier)
+               .setFilters(period: period);
+            
+            // 2. Switch the bottom navigation tab to "Aktif" (index 1)
+            ref.read(supervisorNavigationProvider.notifier).setBottomNavIndex(1);
+          },
         ),
         const Gap(12),
 

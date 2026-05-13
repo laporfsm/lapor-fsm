@@ -30,10 +30,12 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
             return acc;
         }, {} as Record<string, number>);
 
-        // Time based counts
-        const todayReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfDay));
-        const weekReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfWeek));
-        const monthReports = await db.select({ count: count() }).from(reports).where(gte(reports.createdAt, startOfMonth));
+        // Time based counts (filtering by parentId IS NULL to count unique reports)
+        const todayReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfDay), isNull(reports.parentId)));
+        const weekReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfWeek), isNull(reports.parentId)));
+        const monthReports = await db.select({ count: count() }).from(reports).where(and(gte(reports.createdAt, startOfMonth), isNull(reports.parentId)));
+        
+        console.log('[DEBUG] Dashboard Stats - Today:', todayReports[0]?.count, 'Week:', weekReports[0]?.count, 'Month:', monthReports[0]?.count);
 
         // Emergency: All emergency reports except approved
         const emergencyCount = await db
@@ -107,8 +109,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
     // Get all reports with filters
     .get('/reports', async ({ query }) => {
-        const { status, location, isEmergency, page = '1', limit = '50' } = query;
-        console.log('[DEBUG] Supervisor /reports endpoint - status query:', status);
+        const { status, location, isEmergency, period, page = '1', limit = '50' } = query;
+        console.log('[DEBUG] Supervisor /reports endpoint - query:', JSON.stringify(query));
         const pageNum = isNaN(parseInt(page)) ? 1 : parseInt(page);
         const limitNum = isNaN(parseInt(limit)) ? 50 : parseInt(limit);
         const offset = (pageNum - 1) * limitNum;
@@ -129,6 +131,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
 
         if (location) conditions.push(sql`${reports.location} ILIKE ${'%' + location + '%'}`);
         if (isEmergency === 'true') conditions.push(eq(reports.isEmergency, true));
+
+        // Handle period filtering
+        if (period) {
+            if (period === 'today') {
+                conditions.push(gte(reports.createdAt, getStartOfDay()));
+            } else if (period === 'week') {
+                conditions.push(gte(reports.createdAt, getStartOfWeek()));
+            } else if (period === 'month') {
+                conditions.push(gte(reports.createdAt, getStartOfMonth()));
+            }
+        }
 
         // Hide child reports from main list
         conditions.push(isNull(reports.parentId));
