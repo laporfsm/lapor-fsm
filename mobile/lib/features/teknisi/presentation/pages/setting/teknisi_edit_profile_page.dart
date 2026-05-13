@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -223,10 +224,13 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 15,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Nomor HP *',
                   hintText: '08xxxxxxxxxx',
                   prefixIcon: Icon(LucideIcons.phone),
+                  counterText: "",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -241,11 +245,13 @@ class _TeknisiEditProfilePageState extends State<TeknisiEditProfilePage> {
               // Address
               TextFormField(
                 controller: _addressController,
-                maxLines: 2,
+                maxLines: 4,
+                maxLength: 255,
                 decoration: const InputDecoration(
                   labelText: 'Alamat',
                   hintText: 'Alamat domisili',
                   prefixIcon: Icon(LucideIcons.mapPin),
+                  alignLabelWithHint: true,
                 ),
               ),
               const Gap(32),
