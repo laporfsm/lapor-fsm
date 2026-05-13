@@ -570,9 +570,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
               // Subject
               TextFormField(
                 controller: _subjectController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: "Subjek Laporan *",
-                  hintText: "Contoh: AC Bocor di Ruang E102",
+                  hintText: _dynamicPlaceholder ?? "Contoh: AC Bocor di Ruang E102",
                   helperText: "Tuliskan deskripsi singkat masalah",
                 ),
                 validator: (value) =>
@@ -584,9 +584,9 @@ class _CreateReportPageState extends State<CreateReportPage> {
               TextFormField(
                 controller: _descController,
                 maxLines: 4,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Deskripsi Detail *",
-                  hintText: _dynamicPlaceholder ??
+                  hintText:
                       "Jelaskan kronologi atau kondisi kerusakan secara detail...",
                   alignLabelWithHint: true,
                 ),

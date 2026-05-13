@@ -436,6 +436,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
+                            final navigator = Navigator.of(context);
                             final messenger = ScaffoldMessenger.of(context);
 
                             Map<String, dynamic> result;
@@ -457,7 +458,7 @@ class _SupervisorCategoriesPageState extends State<SupervisorCategoriesPage> {
                             }
 
                             if (result['success']) {
-                              if (mounted) Navigator.pop(context);
+                              if (navigator.context.mounted) navigator.pop();
                               messenger.showSnackBar(
                                 SnackBar(
                                   content: Text(

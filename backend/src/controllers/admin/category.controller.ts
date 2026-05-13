@@ -41,7 +41,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
         body: t.Object({
             name: t.String({ maxLength: 20 }), // Validate max length here too
             icon: t.String(),
-            placeholder: t.Optional(t.String()),
+            placeholder: t.Optional(t.Nullable(t.String())),
         })
     })
 
@@ -74,7 +74,7 @@ export const categoryController = new Elysia({ prefix: '/categories' })
         body: t.Object({
             name: t.String({ maxLength: 20 }),
             icon: t.String(),
-            placeholder: t.Optional(t.String()),
+            placeholder: t.Optional(t.Nullable(t.String())),
         })
     })
 

@@ -440,7 +440,7 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
               ),
               const Gap(8),
               Text(
-                'Saran teks yang muncul di input deskripsi laporan.',
+                'Saran teks yang muncul di input subjek laporan.',
                 style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
               ),
               const Gap(8),
