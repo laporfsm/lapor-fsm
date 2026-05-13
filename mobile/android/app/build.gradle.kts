@@ -71,7 +71,12 @@ android {
         val variantName = name
         outputs.all {
             val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
-            output.outputFileName = "lapor-fsm-v${defaultConfig.versionName}-${variantName}.apk"
+            val abi = output.filters.find { it.filterType == "ABI" }?.identifier
+            if (abi != null) {
+                output.outputFileName = "lapor-fsm-v${defaultConfig.versionName}-${abi}-${variantName}.apk"
+            } else {
+                output.outputFileName = "lapor-fsm-v${defaultConfig.versionName}-${variantName}.apk"
+            }
         }
     }
 }
