@@ -18,8 +18,8 @@ class SupervisorReportsState {
 
   // Filters
   final String search;
-  final String? category;
-  final String? location;
+  final List<String> categories;
+  final List<String> locations;
   final bool? isEmergency;
   final String? period;
   final DateTime? startDate;
@@ -36,8 +36,8 @@ class SupervisorReportsState {
     this.isSelectionMode = false,
     this.selectedReportIds = const {},
     this.search = '',
-    this.category,
-    this.location,
+    this.categories = const [],
+    this.locations = const [],
     this.isEmergency,
     this.period,
     this.startDate,
@@ -55,13 +55,18 @@ class SupervisorReportsState {
     bool? isSelectionMode,
     Set<String>? selectedReportIds,
     String? search,
-    String? category,
-    String? location,
+    List<String>? categories,
+    List<String>? locations,
     bool? isEmergency,
+    bool clearEmergency = false,
     String? period,
+    bool clearPeriod = false,
     DateTime? startDate,
+    bool clearStartDate = false,
     DateTime? endDate,
+    bool clearEndDate = false,
     String? selectedStatus,
+    bool clearSelectedStatus = false,
   }) {
     return SupervisorReportsState(
       reports: reports ?? this.reports,
@@ -73,13 +78,13 @@ class SupervisorReportsState {
       isSelectionMode: isSelectionMode ?? this.isSelectionMode,
       selectedReportIds: selectedReportIds ?? this.selectedReportIds,
       search: search ?? this.search,
-      category: category ?? this.category,
-      location: location ?? this.location,
-      isEmergency: isEmergency ?? this.isEmergency,
-      period: period ?? this.period,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      selectedStatus: selectedStatus ?? this.selectedStatus,
+      categories: categories ?? this.categories,
+      locations: locations ?? this.locations,
+      isEmergency: clearEmergency ? null : (isEmergency ?? this.isEmergency),
+      period: clearPeriod ? null : (period ?? this.period),
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
+      selectedStatus: clearSelectedStatus ? null : (selectedStatus ?? this.selectedStatus),
     );
   }
 }
@@ -119,8 +124,8 @@ class SupervisorReportsNotifier extends Notifier<SupervisorReportsState> {
         page: state.currentPage,
         limit: 10,
         search: state.search,
-        category: state.category,
-        location: state.location,
+        category: state.categories.isNotEmpty ? state.categories.join(',') : null,
+        location: state.locations.isNotEmpty ? state.locations.join(',') : null,
         isEmergency: state.isEmergency,
         period: state.period,
         startDate: state.startDate?.toIso8601String(),
@@ -160,29 +165,44 @@ class SupervisorReportsNotifier extends Notifier<SupervisorReportsState> {
   }
 
   void setFilters({
-    String? category,
-    String? location,
+    List<String>? categories,
+    List<String>? locations,
     bool? isEmergency,
     String? period,
     DateTime? startDate,
     DateTime? endDate,
+    String? selectedStatus,
   }) {
     state = state.copyWith(
-      category: category,
-      location: location,
+      categories: categories ?? state.categories,
+      locations: locations ?? state.locations,
       isEmergency: isEmergency,
+      clearEmergency: isEmergency == null,
       period: period,
+      clearPeriod: period == null,
       startDate: startDate,
+      clearStartDate: startDate == null,
       endDate: endDate,
+      clearEndDate: endDate == null,
+      selectedStatus: selectedStatus ?? state.selectedStatus,
+      clearSelectedStatus: selectedStatus == null,
     );
     loadReports(refresh: true);
   }
 
   void clearFilters() {
-    state = state.copyWith(
+    state = SupervisorReportsState(
+      reports: state.reports,
+      isLoading: state.isLoading,
+      isLoadingMore: state.isLoadingMore,
+      hasMore: state.hasMore,
+      currentPage: state.currentPage,
+      error: state.error,
+      isSelectionMode: state.isSelectionMode,
+      selectedReportIds: state.selectedReportIds,
       search: '',
-      category: null,
-      location: null,
+      categories: [],
+      locations: [],
       isEmergency: null,
       period: null,
       startDate: null,

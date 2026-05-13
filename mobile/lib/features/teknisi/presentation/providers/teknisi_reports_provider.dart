@@ -13,13 +13,14 @@ class TeknisiReportsState {
 
   // Filters
   final String search;
-  final String? category;
-  final String? location;
+  final List<String> categories;
+  final List<String> locations;
   final bool? isEmergency;
   final String? period;
   final DateTime? startDate;
   final DateTime? endDate;
   final int? assignedTo;
+  final String? selectedStatus;
 
   TeknisiReportsState({
     required this.reports,
@@ -29,13 +30,14 @@ class TeknisiReportsState {
     this.currentPage = 1,
     this.error,
     this.search = '',
-    this.category,
-    this.location,
+    this.categories = const [],
+    this.locations = const [],
     this.isEmergency,
     this.period,
     this.startDate,
     this.endDate,
     this.assignedTo,
+    this.selectedStatus,
   });
 
   TeknisiReportsState copyWith({
@@ -46,13 +48,19 @@ class TeknisiReportsState {
     int? currentPage,
     String? error,
     String? search,
-    String? category,
-    String? location,
+    List<String>? categories,
+    List<String>? locations,
     bool? isEmergency,
+    bool clearEmergency = false,
     String? period,
+    bool clearPeriod = false,
     DateTime? startDate,
+    bool clearStartDate = false,
     DateTime? endDate,
+    bool clearEndDate = false,
     int? assignedTo,
+    String? selectedStatus,
+    bool clearSelectedStatus = false,
   }) {
     return TeknisiReportsState(
       reports: reports ?? this.reports,
@@ -62,13 +70,14 @@ class TeknisiReportsState {
       currentPage: currentPage ?? this.currentPage,
       error: error ?? this.error,
       search: search ?? this.search,
-      category: category ?? this.category,
-      location: location ?? this.location,
-      isEmergency: isEmergency ?? this.isEmergency,
-      period: period ?? this.period,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
+      categories: categories ?? this.categories,
+      locations: locations ?? this.locations,
+      isEmergency: clearEmergency ? null : (isEmergency ?? this.isEmergency),
+      period: clearPeriod ? null : (period ?? this.period),
+      startDate: clearStartDate ? null : (startDate ?? this.startDate),
+      endDate: clearEndDate ? null : (endDate ?? this.endDate),
       assignedTo: assignedTo ?? this.assignedTo,
+      selectedStatus: clearSelectedStatus ? null : (selectedStatus ?? this.selectedStatus),
     );
   }
 }
@@ -101,12 +110,12 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
     try {
       final response = await reportService.getStaffReports(
         role: 'technician',
-        status: status,
+        status: state.selectedStatus ?? status,
         page: state.currentPage,
         limit: 10,
         search: state.search.isNotEmpty ? state.search : null,
-        category: state.category,
-        location: state.location,
+        category: state.categories.isNotEmpty ? state.categories.join(',') : null,
+        location: state.locations.isNotEmpty ? state.locations.join(',') : null,
         isEmergency: state.isEmergency,
         period: state.period,
         startDate: state.startDate?.toIso8601String(),
@@ -147,36 +156,50 @@ class TeknisiReportsNotifier extends Notifier<TeknisiReportsState> {
   }
 
   void setFilters({
-    String? category,
-    String? location,
+    List<String>? categories,
+    List<String>? locations,
     bool? isEmergency,
     String? period,
     DateTime? startDate,
     DateTime? endDate,
     int? assignedTo,
+    String? selectedStatus,
   }) {
     state = state.copyWith(
-      category: category,
-      location: location,
+      categories: categories ?? state.categories,
+      locations: locations ?? state.locations,
       isEmergency: isEmergency,
+      clearEmergency: isEmergency == null,
       period: period,
+      clearPeriod: period == null,
       startDate: startDate,
+      clearStartDate: startDate == null,
       endDate: endDate,
-      assignedTo: assignedTo,
+      clearEndDate: endDate == null,
+      assignedTo: assignedTo ?? state.assignedTo,
+      selectedStatus: selectedStatus ?? state.selectedStatus,
+      clearSelectedStatus: selectedStatus == null,
     );
     loadReports(refresh: true);
   }
 
   void clearFilters() {
-    state = state.copyWith(
+    state = TeknisiReportsState(
+      reports: state.reports,
+      isLoading: state.isLoading,
+      isLoadingMore: state.isLoadingMore,
+      hasMore: state.hasMore,
+      currentPage: state.currentPage,
+      error: state.error,
+      assignedTo: state.assignedTo,
       search: '',
-      category: null,
-      location: null,
+      categories: [],
+      locations: [],
       isEmergency: null,
       period: null,
       startDate: null,
       endDate: null,
-      assignedTo: null,
+      selectedStatus: null,
     );
     loadReports(refresh: true);
   }
