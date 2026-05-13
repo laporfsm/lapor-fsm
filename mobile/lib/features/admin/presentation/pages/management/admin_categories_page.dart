@@ -321,7 +321,6 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Icon input (small)
                   SizedBox(
                     width: 80,
                     child: Column(
@@ -336,9 +335,11 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                         TextField(
                           controller: iconController,
                           textAlign: TextAlign.center,
+                          maxLength: 10,
                           style: const TextStyle(fontSize: 24),
                           decoration: InputDecoration(
                             hintText: '📌',
+                            counterText: "",
                             hintStyle: TextStyle(
                                 fontSize: 24, color: Colors.grey.shade300),
                             filled: true,
@@ -378,8 +379,10 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
                         const Gap(6),
                         TextField(
                           controller: nameController,
+                          maxLength: 20,
                           decoration: InputDecoration(
                             hintText: 'Contoh: Kelistrikan',
+                            counterText: "",
                             hintStyle: TextStyle(color: Colors.grey.shade400),
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
@@ -416,9 +419,11 @@ class _AdminCategoriesPageState extends State<AdminCategoriesPage> {
               TextField(
                 controller: placeholderController,
                 maxLines: 2,
+                maxLength: 100,
                 decoration: InputDecoration(
                   hintText:
                       'Contoh: Lampu mati di ruang E101, kabel terkelupas, dsb.',
+                  counterText: "",
                   hintStyle: TextStyle(color: Colors.grey.shade400),
                   filled: true,
                   fillColor: const Color(0xFFF8FAFC),

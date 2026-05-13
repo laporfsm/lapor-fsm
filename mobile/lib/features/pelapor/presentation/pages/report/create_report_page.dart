@@ -570,13 +570,22 @@ class _CreateReportPageState extends State<CreateReportPage> {
               // Subject
               TextFormField(
                 controller: _subjectController,
+                maxLength: 100,
                 decoration: InputDecoration(
                   labelText: "Subjek Laporan *",
                   hintText: _dynamicPlaceholder ?? "Contoh: AC Bocor di Ruang E102",
                   helperText: "Tuliskan deskripsi singkat masalah",
+                  counterText: "", // Sembunyikan counter untuk judul agar lebih bersih
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? "Subjek tidak boleh kosong" : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Subjek tidak boleh kosong";
+                  }
+                  if (value.length < 5) {
+                    return "Subjek minimal 5 karakter";
+                  }
+                  return null;
+                },
               ),
               const Gap(16),
 
@@ -584,14 +593,22 @@ class _CreateReportPageState extends State<CreateReportPage> {
               TextFormField(
                 controller: _descController,
                 maxLines: 4,
+                maxLength: 2000,
                 decoration: const InputDecoration(
                   labelText: "Deskripsi Detail *",
                   hintText:
                       "Jelaskan kronologi atau kondisi kerusakan secara detail...",
                   alignLabelWithHint: true,
                 ),
-                validator: (value) =>
-                    value!.isEmpty ? "Deskripsi tidak boleh kosong" : null,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Deskripsi tidak boleh kosong";
+                  }
+                  if (value.length < 10) {
+                    return "Deskripsi minimal 10 karakter";
+                  }
+                  return null;
+                },
               ),
               const Gap(16),
 
@@ -613,13 +630,19 @@ class _CreateReportPageState extends State<CreateReportPage> {
               // Location Detail (New)
               TextFormField(
                 controller: _locationDetailController,
-                maxLength: 50,
+                maxLength: 200,
                 decoration: const InputDecoration(
-                  labelText: "Detail Lokasi (Opsional)",
-                  hintText: "Contoh: Lt 2, Ruang 204",
-                  helperText: "Lantai atau nama ruangan spesifik",
-                  prefixIcon: Icon(LucideIcons.mapPin),
+                  labelText: "Detail Lokasi *",
+                  hintText: "Contoh: Lantai 2, Sebelah Lift",
+                  helperText: "Patokan lokasi spesifik",
+                  counterText: "",
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Lokasi tidak boleh kosong";
+                  }
+                  return null;
+                },
               ),
               const Gap(16),
 

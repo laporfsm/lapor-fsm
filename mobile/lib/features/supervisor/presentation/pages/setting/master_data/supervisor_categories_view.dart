@@ -400,6 +400,7 @@ class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
                   TextField(
                     controller: placeholderController,
                     maxLines: 2,
+                    maxLength: 100,
                     decoration: InputDecoration(
                       hintText:
                           'Contoh: Lampu mati di ruang E101, kabel terkelupas, dsb.',
@@ -414,6 +415,7 @@ class _SupervisorCategoriesViewState extends State<SupervisorCategoriesView> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade200),
                       ),
+                      counterText: "",
                     ),
                   ),
                   const Gap(8),
