@@ -222,7 +222,6 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
         itemCount: reports.length,
         itemBuilder: (context, index) {
           final report = reports[index];
-          final elapsed = DateTime.now().difference(report.createdAt);
 
           return UniversalReportCard(
             id: report.id,
@@ -232,7 +231,10 @@ class _TeknisiIncomingPageState extends State<TeknisiIncomingPage>
             category: report.category,
             status: report.status,
             isEmergency: report.isEmergency,
-            elapsedTime: elapsed,
+            elapsedTime: report.elapsed,
+            createdAt: report.createdAt,
+            pausedAt: report.pausedAt,
+            totalPausedDurationSeconds: report.totalPausedDurationSeconds,
             showStatus: true,
             showTimer: true,
             onTap: () async {

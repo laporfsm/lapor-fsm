@@ -12,7 +12,7 @@ async function seed() {
     {
       "id": 33,
       "name": "Andi Mhs",
-      "email": "andi@student.undip.ac.id",
+      "email": "andi@students.undip.ac.id",
       "password": "$argon2id$v=19$m=65536,t=2,p=1$aVVuya8cwR0/wMfCYi/HX+m9BWPFfZ2v9fePXrLePks$siNT7ONjjrrpPmzgCjS/Io+zWd7BIKBNlHBnVViMv84",
       "phone": "08123456780",
       "nimNip": null,

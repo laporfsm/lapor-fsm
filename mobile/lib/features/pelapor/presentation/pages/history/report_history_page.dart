@@ -214,9 +214,12 @@ class _ReportHistoryPageState extends State<ReportHistoryPage> {
                                   locationDetail: report.locationDetail,
                                   status: report.status,
                                   isEmergency: report.isEmergency,
-                                  elapsedTime: DateTime.now().difference(
-                                    report.createdAt,
-                                  ),
+                                  elapsedTime: report.elapsed,
+                                  createdAt: report.createdAt,
+                                  pausedAt: report.pausedAt,
+                                  totalPausedDurationSeconds:
+                                      report.totalPausedDurationSeconds,
+                                  showTimer: true,
                                   showStatus: true,
                                   compact: false,
                                   onTap: () => context.push(

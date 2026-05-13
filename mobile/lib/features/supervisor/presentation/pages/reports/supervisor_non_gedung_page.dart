@@ -174,7 +174,11 @@ class _SupervisorNonGedungPageState extends State<SupervisorNonGedungPage> {
               isEmergency: report.isEmergency,
               reporterName: report.reporterName,
               showStatus: true,
-              elapsedTime: DateTime.now().difference(report.createdAt),
+              showTimer: true,
+              elapsedTime: report.elapsed,
+              createdAt: report.createdAt,
+              pausedAt: report.pausedAt,
+              totalPausedDurationSeconds: report.totalPausedDurationSeconds,
               onTap: () {
                 context.push('/supervisor/review/${report.id}');
               },

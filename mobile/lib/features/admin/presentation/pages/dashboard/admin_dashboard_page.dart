@@ -359,7 +359,12 @@ class _AdminDashboardPageState extends ConsumerState<AdminDashboardPage> {
                               status: report.status,
                               isEmergency: report.isEmergency,
                               reporterName: report.reporterName,
+                              elapsedTime: report.elapsed,
+                              createdAt: report.createdAt,
+                              pausedAt: report.pausedAt,
+                              totalPausedDurationSeconds: report.totalPausedDurationSeconds,
                               showStatus: true,
+                              showTimer: true,
                               onTap: () {
                                 context.push('/admin/reports/${report.id}');
                               },

@@ -84,7 +84,10 @@ class _PJGedungVerificationPageState extends State<PJGedungVerificationPage> {
                     category: report.category,
                     status: report.status,
                     isEmergency: report.isEmergency,
-                    elapsedTime: DateTime.now().difference(report.createdAt),
+                    elapsedTime: report.elapsed,
+                    createdAt: report.createdAt,
+                    pausedAt: report.pausedAt,
+                    totalPausedDurationSeconds: report.totalPausedDurationSeconds,
                     showStatus: true,
                     showTimer: true,
                     onTap: () => context

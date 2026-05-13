@@ -413,8 +413,10 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                         const Gap(8),
                         TextFormField(
                           controller: _titleController,
+                          maxLength: 100,
                           decoration: InputDecoration(
                             hintText: _dynamicPlaceholder ?? "Contoh: Kebakaran di Lab Kimia",
+                            counterText: "",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -424,6 +426,9 @@ class _EmergencyReportPageState extends State<EmergencyReportPage> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Subjek wajib diisi';
+                            }
+                            if (value.length < 5) {
+                              return 'Subjek minimal 5 karakter';
                             }
                             return null;
                           },

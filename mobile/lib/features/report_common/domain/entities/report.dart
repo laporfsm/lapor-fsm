@@ -98,18 +98,11 @@ class Report {
 
   /// Get elapsed time since creation (accounting for pauses)
   Duration get elapsed {
-    final now = DateTime.now();
-    final rawDuration = now.difference(createdAt);
-
-    // If currently paused, subtract the time since pause started
-    final currentPauseDuration = pausedAt != null
-        ? now.difference(pausedAt!)
-        : Duration.zero;
-
-    final totalPause =
-        Duration(seconds: totalPausedDurationSeconds) + currentPauseDuration;
-
-    return rawDuration - totalPause;
+    // Timer stops only if status is 'selesai' or 'final' (approved/ditolak/archived)
+    final bool isStopped = status == ReportStatus.selesai || status.isFinal;
+    
+    final endTime = (isStopped && completedAt != null) ? completedAt! : DateTime.now();
+    return endTime.difference(createdAt);
   }
 
   /// Check if report is being actively handled

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -19,10 +20,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
   // Controllers - Editable fields only
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
-  final _departmentController = TextEditingController();
-  final _facultyController = TextEditingController();
   final _emergencyNameController = TextEditingController();
   final _emergencyPhoneController = TextEditingController();
+
+  String? _selectedDepartment;
+  final List<String> _departments = [
+    'Matematika',
+    'Biologi',
+    'Kimia',
+    'Fisika',
+    'Statistika',
+    'Informatika',
+    'Bioteknologi',
+  ];
 
   Map<String, dynamic>? _currentUser;
   bool _isLoading = false;
@@ -41,8 +51,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _currentUser = user;
         _phoneController.text = user['phone'] ?? '';
         _addressController.text = user['address'] ?? '';
-        _departmentController.text = user['department'] ?? '';
-        _facultyController.text = user['faculty'] ?? '';
+        _selectedDepartment = user['department'];
+        // Ensure _selectedDepartment is one of the valid options, otherwise null
+        if (_selectedDepartment != null &&
+            !_departments.contains(_selectedDepartment)) {
+          _selectedDepartment = null;
+        }
         _emergencyNameController.text = user['emergencyName'] ?? '';
         _emergencyPhoneController.text = user['emergencyPhone'] ?? '';
         _isInitialLoading = false;
@@ -63,8 +77,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       role: _currentUser!['role'] ?? 'pelapor',
       phone: _phoneController.text,
       address: _addressController.text,
-      department: _departmentController.text,
-      faculty: _facultyController.text,
+      department: _selectedDepartment ?? '',
+      faculty: _currentUser!['faculty'] ?? 'Sains dan Matematika',
       emergencyName: _emergencyNameController.text,
       emergencyPhone: _emergencyPhoneController.text,
     );
@@ -95,8 +109,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _phoneController.dispose();
     _addressController.dispose();
-    _departmentController.dispose();
-    _facultyController.dispose();
     _emergencyNameController.dispose();
     _emergencyPhoneController.dispose();
     super.dispose();
@@ -211,6 +223,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       value: _currentUser!['nimNip'] ?? '-',
                       icon: LucideIcons.hash,
                     ),
+                    const Gap(12),
+                    _ReadOnlyField(
+                      label: 'Fakultas',
+                      value: _currentUser!['faculty'] ?? 'Sains dan Matematika',
+                      icon: LucideIcons.building,
+                    ),
                   ],
                 ),
               ),
@@ -232,10 +250,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 15,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Nomor HP *',
                   hintText: '08xxxxxxxxxx',
                   prefixIcon: Icon(LucideIcons.phone),
+                  counterText: "",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -250,33 +271,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
               // Address
               TextFormField(
                 controller: _addressController,
-                maxLines: 2,
+                maxLines: 4,
+                maxLength: 255,
+                keyboardType: TextInputType.multiline,
                 decoration: const InputDecoration(
                   labelText: 'Alamat',
-                  hintText: 'Alamat domisili',
+                  hintText: 'Alamat domisili saat ini',
                   prefixIcon: Icon(LucideIcons.mapPin),
-                ),
-              ),
-              // Department
-              const Gap(16),
-              TextFormField(
-                controller: _departmentController,
-                decoration: const InputDecoration(
-                  labelText: 'Departemen / Prodi',
-                  hintText: 'Program Studi Anda',
-                  prefixIcon: Icon(LucideIcons.school),
+                  alignLabelWithHint: true,
                 ),
               ),
               const Gap(16),
 
-              // Faculty
-              TextFormField(
-                controller: _facultyController,
+              // Department Dropdown
+              DropdownButtonFormField<String>(
+                initialValue: _selectedDepartment,
                 decoration: const InputDecoration(
-                  labelText: 'Fakultas',
-                  hintText: 'Fakultas Anda',
-                  prefixIcon: Icon(LucideIcons.building),
+                  labelText: 'Departemen / Prodi',
+                  prefixIcon: Icon(LucideIcons.school),
                 ),
+                hint: const Text('Pilih Departemen'),
+                items: _departments.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedDepartment = newValue;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Departemen wajib dipilih';
+                  }
+                  return null;
+                },
               ),
               const Gap(24),
 
@@ -313,10 +344,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
               // Emergency Contact Name
               TextFormField(
                 controller: _emergencyNameController,
+                maxLength: 100,
                 decoration: const InputDecoration(
                   labelText: 'Nama Kontak Darurat *',
                   hintText: 'Nama orang yang bisa dihubungi',
                   prefixIcon: Icon(LucideIcons.userCircle),
+                  counterText: "",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -331,10 +364,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
               TextFormField(
                 controller: _emergencyPhoneController,
                 keyboardType: TextInputType.phone,
+                maxLength: 15,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 decoration: const InputDecoration(
                   labelText: 'Nomor Kontak Darurat *',
                   hintText: '08xxxxxxxxxx',
                   prefixIcon: Icon(LucideIcons.phoneCall),
+                  counterText: "",
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {

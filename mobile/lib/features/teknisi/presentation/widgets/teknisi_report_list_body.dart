@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/report_service.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
+import 'package:mobile/core/widgets/report_filter_sheet.dart';
 import 'package:mobile/core/widgets/custom_date_range_picker.dart';
 
 class TeknisiReportListBody extends ConsumerStatefulWidget {
@@ -90,36 +91,55 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
     }
   }
 
-  Widget _buildFilterChip(String label, Color color, VoidCallback onRemove) {
+  Widget _buildFilterChip(
+    String label,
+    Color color,
+    IconData icon,
+    VoidCallback onRemove,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
+      margin: const EdgeInsets.only(right: 8),
+      child: Material(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+        child: InkWell(
+          onTap: onRemove,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: color),
+                const Gap(6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Gap(6),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.x, size: 10, color: color),
+                ),
+              ],
             ),
           ),
-          const Gap(4),
-          GestureDetector(
-            onTap: onRemove,
-            child: Icon(LucideIcons.x, size: 14, color: color),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   void _showFilterSheet() {
     final notifier = ref.read(teknisiReportsProvider(widget.status).notifier);
+    final currentState = ref.watch(teknisiReportsProvider(widget.status));
     final themeColor = widget.themeColor ?? AppTheme.secondaryColor;
 
     showModalBottomSheet(
@@ -128,222 +148,41 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) {
-          final currentState = ref.watch(teknisiReportsProvider(widget.status));
-
-          return DraggableScrollableSheet(
-            initialChildSize: 0.7,
-            maxChildSize: 0.9,
-            minChildSize: 0.5,
-            expand: false,
-            builder: (context, scrollController) {
-              return Column(
-                children: [
-                  const Gap(16),
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const Gap(16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () {
-                            notifier.clearFilters();
-                            Navigator.pop(context);
-                          },
-                          child: const Text(
-                            'Reset',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                        const Text(
-                          'Filter Laporan',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text(
-                            'Tutup',
-                            style: TextStyle(
-                              color: themeColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(),
-                  Expanded(
-                    child: ListView(
-                      controller: scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        SwitchListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text('Hanya Darurat'),
-                          secondary: Icon(
-                            LucideIcons.alertTriangle,
-                            color: (currentState.isEmergency ?? false)
-                                ? AppTheme.emergencyColor
-                                : Colors.grey,
-                          ),
-                          value: currentState.isEmergency ?? false,
-                          onChanged: (value) {
-                            notifier.setFilters(
-                              category: currentState.category,
-                              location: currentState.location,
-                              isEmergency: value,
-                              period: currentState.period,
-                              startDate: currentState.startDate,
-                              endDate: currentState.endDate,
-                            );
-                            setModalState(() {});
-                          },
-                        ),
-                        const Divider(),
-                        const Gap(12),
-                        const Text(
-                          'Rentang Waktu',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendar,
-                                size: 16,
-                              ),
-                              label: const Text('Hari Ini'),
-                              selected: currentState.period == 'today',
-                              onSelected: (selected) {
-                                notifier.setFilters(
-                                  category: currentState.category,
-                                  location: currentState.location,
-                                  isEmergency: currentState.isEmergency,
-                                  period: selected ? 'today' : null,
-                                  startDate: null,
-                                  endDate: null,
-                                );
-                                setModalState(() {});
-                              },
-                            ),
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarDays,
-                                size: 16,
-                              ),
-                              label: const Text('Minggu Ini'),
-                              selected: currentState.period == 'week',
-                              onSelected: (selected) {
-                                notifier.setFilters(
-                                  category: currentState.category,
-                                  location: currentState.location,
-                                  isEmergency: currentState.isEmergency,
-                                  period: selected ? 'week' : null,
-                                  startDate: null,
-                                  endDate: null,
-                                );
-                                setModalState(() {});
-                              },
-                            ),
-                            ChoiceChip(
-                              avatar: const Icon(
-                                LucideIcons.calendarRange,
-                                size: 16,
-                              ),
-                              label: const Text('Bulan Ini'),
-                              selected: currentState.period == 'month',
-                              onSelected: (selected) {
-                                notifier.setFilters(
-                                  category: currentState.category,
-                                  location: currentState.location,
-                                  isEmergency: currentState.isEmergency,
-                                  period: selected ? 'month' : null,
-                                  startDate: null,
-                                  endDate: null,
-                                );
-                                setModalState(() {});
-                              },
-                            ),
-                          ],
-                        ),
-                        const Gap(20),
-                        const Text(
-                          'Kategori',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _categories.map((cat) {
-                            return ChoiceChip(
-                              label: Text(cat),
-                              selected: currentState.category == cat,
-                              onSelected: (selected) {
-                                notifier.setFilters(
-                                  category: selected ? cat : null,
-                                  location: currentState.location,
-                                  isEmergency: currentState.isEmergency,
-                                  period: currentState.period,
-                                  startDate: currentState.startDate,
-                                  endDate: currentState.endDate,
-                                );
-                                setModalState(() {});
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const Gap(20),
-                        const Text(
-                          'Lokasi',
-                          style: TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        const Gap(8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _locations.map((loc) {
-                            return ChoiceChip(
-                              label: Text(loc),
-                              selected: currentState.location == loc,
-                              onSelected: (selected) {
-                                notifier.setFilters(
-                                  category: currentState.category,
-                                  location: selected ? loc : null,
-                                  isEmergency: currentState.isEmergency,
-                                  period: currentState.period,
-                                  startDate: currentState.startDate,
-                                  endDate: currentState.endDate,
-                                );
-                                setModalState(() {});
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const Gap(40),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+      builder: (context) => ReportFilterSheet(
+        selectedStatuses: currentState.selectedStatus != null
+            ? ReportStatus.values
+                .where((s) => currentState.selectedStatus!.split(',').contains(s.name))
+                .toSet()
+            : {},
+        selectedCategories: currentState.categories.toSet(),
+        selectedBuildings: currentState.locations.toSet(),
+        isEmergency: currentState.isEmergency ?? false,
+        selectedPeriod: currentState.period,
+        selectedDateRange: (currentState.startDate != null && currentState.endDate != null)
+            ? DateTimeRange(start: currentState.startDate!, end: currentState.endDate!)
+            : null,
+        availableCategories: _categories,
+        availableBuildings: _locations,
+        themeColor: themeColor,
+        onReset: () => notifier.clearFilters(),
+        onChanged: ({
+          buildings,
+          categories,
+          dateRange,
+          isEmergency,
+          period,
+          statuses,
+        }) {
+          notifier.setFilters(
+            categories: categories?.toList(),
+            locations: buildings?.toList(),
+            isEmergency: isEmergency,
+            period: period,
+            startDate: dateRange?.start,
+            endDate: dateRange?.end,
+            selectedStatus: statuses?.isEmpty ?? true
+                ? null
+                : statuses!.map((s) => s.name).join(','),
           );
         },
       ),
@@ -369,8 +208,8 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
 
     if (newDateRange != null) {
       notifier.setFilters(
-        category: state.category,
-        location: state.location,
+        categories: state.categories,
+        locations: state.locations,
         isEmergency: state.isEmergency,
         period: null,
         startDate: newDateRange.start,
@@ -385,12 +224,12 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
     final notifier = ref.read(teknisiReportsProvider(widget.status).notifier);
     final themeColor = widget.themeColor ?? AppTheme.secondaryColor;
 
-    final hasActiveFilters =
-        state.category != null ||
-        state.location != null ||
+    final hasActiveFilters = state.categories.isNotEmpty ||
+        state.locations.isNotEmpty ||
         (state.isEmergency ?? false) ||
         state.period != null ||
-        state.startDate != null;
+        state.startDate != null ||
+        (state.selectedStatus != null);
 
     return RefreshIndicator(
       onRefresh: () =>
@@ -479,7 +318,6 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
               ),
             ),
 
-          // Active Filters Bar
           if (hasActiveFilters)
             Container(
               width: double.infinity,
@@ -492,95 +330,117 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    if (state.category != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          state.category!,
-                          Colors.purple,
+                    if (state.selectedStatus != null &&
+                        state.selectedStatus != widget.status)
+                      ...state.selectedStatus!.split(',').map((statusName) {
+                        final status = ReportStatus.values.firstWhere(
+                          (s) => s.name == statusName,
+                          orElse: () => ReportStatus.pending,
+                        );
+                        return _buildFilterChip(
+                          status.label,
+                          status.color,
+                          LucideIcons.info,
                           () {
+                            final currentStatuses =
+                                state.selectedStatus!.split(',');
+                            currentStatuses.remove(statusName);
                             notifier.setFilters(
-                              category: null,
-                              location: state.location,
-                              isEmergency: state.isEmergency,
-                              period: state.period,
-                              startDate: state.startDate,
-                              endDate: state.endDate,
+                              selectedStatus: currentStatuses.isEmpty
+                                  ? null
+                                  : currentStatuses.join(','),
                             );
                           },
-                        ),
+                        );
+                      }),
+                    ...state.categories.map(
+                      (cat) => _buildFilterChip(
+                        cat,
+                        Colors.purple,
+                        LucideIcons.tag,
+                        () {
+                          final newCats = List<String>.from(state.categories)..remove(cat);
+                          notifier.setFilters(
+                            categories: newCats,
+                            locations: state.locations,
+                            isEmergency: state.isEmergency,
+                            period: state.period,
+                            startDate: state.startDate,
+                            endDate: state.endDate,
+                            assignedTo: state.assignedTo,
+                          );
+                        },
                       ),
-                    if (state.location != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          state.location!,
-                          Colors.teal,
-                          () {
-                            notifier.setFilters(
-                              category: state.category,
-                              location: null,
-                              isEmergency: state.isEmergency,
-                              period: state.period,
-                              startDate: state.startDate,
-                              endDate: state.endDate,
-                            );
-                          },
-                        ),
+                    ),
+                    ...state.locations.map(
+                      (loc) => _buildFilterChip(
+                        loc,
+                        Colors.teal,
+                        LucideIcons.mapPin,
+                        () {
+                          final newLocs = List<String>.from(state.locations)..remove(loc);
+                          notifier.setFilters(
+                            categories: state.categories,
+                            locations: newLocs,
+                            isEmergency: state.isEmergency,
+                            period: state.period,
+                            startDate: state.startDate,
+                            endDate: state.endDate,
+                            assignedTo: state.assignedTo,
+                          );
+                        },
                       ),
+                    ),
                     if (state.isEmergency ?? false)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          'Darurat',
-                          AppTheme.emergencyColor,
-                          () {
-                            notifier.setFilters(
-                              category: state.category,
-                              location: state.location,
-                              isEmergency: false,
-                              period: state.period,
-                              startDate: state.startDate,
-                              endDate: state.endDate,
-                            );
-                          },
-                        ),
+                      _buildFilterChip(
+                        'Darurat',
+                        AppTheme.emergencyColor,
+                        LucideIcons.alertTriangle,
+                        () {
+                          notifier.setFilters(
+                            categories: state.categories,
+                            locations: state.locations,
+                            isEmergency: false,
+                            period: state.period,
+                            startDate: state.startDate,
+                            endDate: state.endDate,
+                            assignedTo: state.assignedTo,
+                          );
+                        },
                       ),
                     if (state.period != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          _getPeriodLabel(state.period!),
-                          Colors.blue,
-                          () {
-                            notifier.setFilters(
-                              category: state.category,
-                              location: state.location,
-                              isEmergency: state.isEmergency,
-                              period: null,
-                              startDate: state.startDate,
-                              endDate: state.endDate,
-                            );
-                          },
-                        ),
+                      _buildFilterChip(
+                        _getPeriodLabel(state.period!),
+                        Colors.blue,
+                        LucideIcons.calendar,
+                        () {
+                          notifier.setFilters(
+                            categories: state.categories,
+                            locations: state.locations,
+                            isEmergency: state.isEmergency,
+                            period: null,
+                            startDate: state.startDate,
+                            endDate: state.endDate,
+                            assignedTo: state.assignedTo,
+                          );
+                        },
                       ),
                     if (state.startDate != null && state.endDate != null)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _buildFilterChip(
-                          '${DateFormat('dd MMM').format(state.startDate!)} - ${DateFormat('dd MMM').format(state.endDate!)}',
-                          themeColor,
-                          () {
-                            notifier.setFilters(
-                              category: state.category,
-                              location: state.location,
-                              isEmergency: state.isEmergency,
-                              period: state.period,
-                              startDate: null,
-                              endDate: null,
-                            );
-                          },
-                        ),
+                      _buildFilterChip(
+                        '${DateFormat('dd MMM').format(state.startDate!)} - ${DateFormat('dd MMM').format(state.endDate!)}',
+                        themeColor,
+                        LucideIcons.calendarRange,
+                        () {
+                          notifier.setFilters(
+                            categories: state.categories,
+                            locations: state.locations,
+                            isEmergency: state.isEmergency,
+                            period: state.period,
+                            startDate: null,
+                            endDate: null,
+                            assignedTo: state.assignedTo,
+                          );
+                        },
                       ),
                     TextButton(
                       onPressed: () => notifier.clearFilters(),
@@ -652,9 +512,11 @@ class _TeknisiReportListBodyState extends ConsumerState<TeknisiReportListBody> {
                         reporterName: report.reporterName,
                         assignedTo: report.assignedTo,
                         handledBy: report.handledBy,
-                        elapsedTime: DateTime.now().difference(
-                          report.createdAt,
-                        ),
+                        elapsedTime: report.elapsed,
+                        createdAt: report.createdAt,
+                        pausedAt: report.pausedAt,
+                        totalPausedDurationSeconds:
+                            report.totalPausedDurationSeconds,
                         showStatus: true,
                         showTimer: true,
                         onTap: () =>

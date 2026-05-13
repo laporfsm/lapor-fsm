@@ -572,67 +572,54 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
               child: Row(
                 children: [
                   ..._selectedStatuses.map(
-                    (s) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(s.label, s.color, () {
-                        setState(() => _selectedStatuses.remove(s));
-                        _fetchReports();
-                      }),
-                    ),
+                    (s) => _buildFilterChip(s.label, s.color, LucideIcons.info, () {
+                      setState(() => _selectedStatuses.remove(s));
+                      _fetchReports();
+                    }),
                   ),
                   ..._selectedCategories.map(
-                    (cat) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(cat, Colors.purple, () {
-                        setState(() => _selectedCategories.remove(cat));
-                        _fetchReports();
-                      }),
-                    ),
+                    (cat) => _buildFilterChip(cat, Colors.purple, LucideIcons.tag, () {
+                      setState(() => _selectedCategories.remove(cat));
+                      _fetchReports();
+                    }),
                   ),
                   ..._selectedBuildings.map(
-                    (building) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(building, Colors.teal, () {
-                        setState(() => _selectedBuildings.remove(building));
-                        _fetchReports();
-                      }),
-                    ),
+                    (building) => _buildFilterChip(building, Colors.teal, LucideIcons.mapPin, () {
+                      setState(() => _selectedBuildings.remove(building));
+                      _fetchReports();
+                    }),
                   ),
                   if (_emergencyOnly)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        'Darurat',
-                        AppTheme.emergencyColor,
-                        () {
-                          setState(() => _emergencyOnly = false);
-                          _fetchReports();
-                        },
-                      ),
+                    _buildFilterChip(
+                      'Darurat',
+                      AppTheme.emergencyColor,
+                      LucideIcons.alertTriangle,
+                      () {
+                        setState(() => _emergencyOnly = false);
+                        _fetchReports();
+                      },
                     ),
                   if (_selectedPeriod != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        _getPeriodLabel(_selectedPeriod!),
-                        Colors.blue,
-                        () {
-                          setState(() => _selectedPeriod = null);
-                          _fetchReports();
-                        },
-                      ),
+                    _buildFilterChip(
+                      _getPeriodLabel(_selectedPeriod!),
+                      Colors.blue,
+                      LucideIcons.calendar,
+                      () {
+                        setState(() => _selectedPeriod = null);
+                        _fetchReports();
+                      },
                     ),
                   if (_selectedDateRange != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _buildFilterChip(
-                        '${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}',
-                        widget.appBarColor,
-                        () {
-                          setState(() => _selectedDateRange = null);
-                          _fetchReports();
-                        },
-                      ),
+                    _buildFilterChip(
+                      '${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM').format(_selectedDateRange!.end)}',
+                      widget.appBarColor == Colors.white || widget.appBarColor == Colors.transparent
+                          ? AppTheme.primaryColor
+                          : widget.appBarColor,
+                      LucideIcons.calendarRange,
+                      () {
+                        setState(() => _selectedDateRange = null);
+                        _fetchReports();
+                      },
                     ),
                   TextButton(
                     onPressed: _clearAllFilters,
@@ -735,9 +722,11 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               reporterName: report.reporterName,
                               assignedTo: report.assignedTo,
                               handledBy: report.handledBy,
-                              elapsedTime: DateTime.now().difference(
-                                report.createdAt,
-                              ),
+                              elapsedTime: report.elapsed,
+                              createdAt: report.createdAt,
+                              pausedAt: report.pausedAt,
+                              totalPausedDurationSeconds:
+                                  report.totalPausedDurationSeconds,
                               showStatus: true,
                               showTimer: true,
                               selectionMode: _isSelectionMode,
@@ -887,30 +876,48 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     }
   }
 
-  Widget _buildFilterChip(String label, Color color, VoidCallback onRemove) {
+  Widget _buildFilterChip(
+    String label,
+    Color color,
+    IconData icon,
+    VoidCallback onRemove,
+  ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
+      margin: const EdgeInsets.only(right: 8),
+      child: Material(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+        child: InkWell(
+          onTap: onRemove,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: color),
+                const Gap(6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Gap(6),
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(LucideIcons.x, size: 12, color: color),
+                ),
+              ],
             ),
           ),
-          const Gap(4),
-          GestureDetector(
-            onTap: onRemove,
-            child: Icon(LucideIcons.x, size: 14, color: color),
-          ),
-        ],
+        ),
       ),
     );
   }
