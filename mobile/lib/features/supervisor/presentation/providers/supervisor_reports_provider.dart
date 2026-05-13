@@ -214,7 +214,10 @@ class SupervisorReportsNotifier extends Notifier<SupervisorReportsState> {
 
   void setSelectedStatus(String? status) {
     if (state.selectedStatus == status) return;
-    state = state.copyWith(selectedStatus: status);
+    state = state.copyWith(
+      selectedStatus: status,
+      clearSelectedStatus: status == null,
+    );
     loadReports(refresh: true);
   }
 
