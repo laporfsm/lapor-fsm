@@ -14,7 +14,7 @@ class DeepLinkService {
   bool _initialized = false;
 
   Future<void> init() async {
-    if (_initialized || kIsWeb) return;
+    if (_initialized || _subscription != null || kIsWeb) return;
     _initialized = true;
 
     try {
