@@ -2,21 +2,56 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 
 class LocationService {
+  bool get isMobilePlatform {
+    if (kIsWeb) return false;
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+  }
+
+  Future<bool> isLocationServiceEnabled() async {
+    if (!isMobilePlatform) return true;
+    return Geolocator.isLocationServiceEnabled();
+  }
+
+  Future<LocationPermission> checkPermission() async {
+    if (!isMobilePlatform) return LocationPermission.always;
+    return Geolocator.checkPermission();
+  }
+
+  Future<LocationPermission> requestPermission() async {
+    if (!isMobilePlatform) return LocationPermission.always;
+    return Geolocator.requestPermission();
+  }
+
+  bool isPermissionGranted(LocationPermission permission) {
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  Future<void> openLocationSettings() async {
+    await Geolocator.openLocationSettings();
+  }
+
+  Future<void> openAppSettings() async {
+    await Geolocator.openAppSettings();
+  }
+
   /// Check and request location permissions
   Future<bool> handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    if (!isMobilePlatform) return true;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    final serviceEnabled = await isLocationServiceEnabled();
     if (!serviceEnabled) {
       debugPrint('Location services are disabled.');
       return false;
     }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+    var permission = await checkPermission();
+    if (!isPermissionGranted(permission)) {
       if (permission == LocationPermission.denied) {
+        permission = await requestPermission();
+      }
+      if (!isPermissionGranted(permission)) {
         debugPrint('Location permissions are denied');
         return false;
       }

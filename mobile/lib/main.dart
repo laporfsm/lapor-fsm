@@ -4,8 +4,10 @@ import 'package:mobile/core/router/app_router.dart'; // Add Router Import
 import 'package:mobile/core/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:mobile/core/services/deep_link_service.dart';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/core/widgets/version_guard.dart';
+import 'package:mobile/core/widgets/gps_access_guard.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile/core/services/fcm_service.dart';
@@ -32,6 +34,9 @@ void main() async {
 
   runApp(const ProviderScope(child: MyApp()));
 
+  // Initialize deep-link listener (e.g. laporfsm://reset-password?...).
+  await DeepLinkService.instance.init();
+
   // Process any pending notification that opened the app from terminated state
   FCMService.processPendingNotification();
 }
@@ -47,7 +52,9 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       routerConfig: appRouter, // Use the router
       builder: (context, child) {
-        return VersionGuard(child: child ?? const SizedBox.shrink());
+        return GpsAccessGuard(
+          child: VersionGuard(child: child ?? const SizedBox.shrink()),
+        );
       },
       debugShowCheckedModeBanner: false,
     );
