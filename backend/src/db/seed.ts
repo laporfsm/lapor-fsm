@@ -1,6 +1,7 @@
 import { db } from './index';
 import { users, staff, categories, reports, reportLogs, notifications, locations, specializations } from './schema';
 import { sql } from 'drizzle-orm';
+import { syncAllSerialSequences } from './sequence';
 
 async function seed() {
   console.log('🌱 Start seeding from dump...');
@@ -4639,6 +4640,8 @@ async function seed() {
     { name: 'Jaringan', icon: 'wifi', description: 'Masalah internet dan infrastruktur IT' },
   ]);
 
+  await syncAllSerialSequences();
+  console.log('🔁 Serial sequences synchronized after seed.');
   console.log('✅ Seeding completed!');
 }
 

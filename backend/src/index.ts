@@ -24,6 +24,7 @@ import { specializationController } from "./controllers/supervisor/specializatio
 import { trackingController } from "./controllers/emergency/tracking.controller";
 import { logStreamController } from "./controllers/reports/logs.controller";
 import { appController } from "./controllers/app.controller";
+import { syncAllSerialSequences } from "./db/sequence";
 
 const app = new Elysia({
   serve: {
@@ -80,6 +81,14 @@ const app = new Elysia({
   .use(logStreamController)
   .use(appController);
 
+// Defensive sequence sync: prevents duplicate key errors after manual import/seed.
+try {
+  await syncAllSerialSequences();
+  console.log('✅ Serial sequences synchronized');
+} catch (error) {
+  console.error('⚠️ Failed to sync serial sequences:', error);
+}
+
 console.log(`Configured PORT: ${process.env.PORT || 3000}`);
 
 app.listen({
@@ -91,5 +100,4 @@ app.listen({
 console.log(
   `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
 );
-
 
