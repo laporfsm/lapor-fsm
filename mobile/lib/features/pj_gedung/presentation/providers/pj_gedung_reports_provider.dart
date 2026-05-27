@@ -134,7 +134,7 @@ class PjGedungReportsNotifier extends Notifier<PjGedungReportsState> {
         } else {
           // Fallback default if needed, though usually statusArg will be provided or empty means "all"
           statusQuery =
-              'terverifikasi,verifikasi,diproses,penanganan,onHold,selesai,approved,ditolak,recalled,archived';
+              'pending,terverifikasi,verifikasi,diproses,penanganan,onHold,selesai,approved,ditolak,recalled,archived';
         }
 
         final response = await reportService.getStaffReports(
