@@ -34,6 +34,8 @@ export const staff = pgTable('staff', {
   address: text('address'),
   fcmToken: text('fcm_token'),
   password: text('password').notNull(), // Hashed password
+  passwordResetToken: text('password_reset_token'),
+  passwordResetExpiresAt: timestamp('password_reset_expires_at'),
   role: text('role').notNull(), // 'teknisi', 'supervisor', 'admin', 'pj_gedung'
   specialization: text('specialization'), // e.g., 'Kelistrikan', 'Sanitasi'
   isActive: boolean('is_active').default(true),
@@ -158,4 +160,3 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Location = typeof locations.$inferSelect;
 export type NewLocation = typeof locations.$inferInsert;
-

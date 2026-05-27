@@ -418,32 +418,18 @@ export const authController = new Elysia({ prefix: '/auth' })
     const { email } = body;
     console.log('[FORGOT PASSWORD] Receiving request for:', email);
 
-    // Check in users table first
-    let user = await db.select().from(users).where(eq(users.email, email)).limit(1);
-    console.log('[FORGOT PASSWORD] User found in users table:', user.length > 0);
+    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const staffUser = user.length === 0
+      ? await db.select().from(staff).where(eq(staff.email, email)).limit(1)
+      : [];
 
-    let isStaff = false;
-
-    // If not found in users, check in staff table
-    if (user.length === 0) {
-      const staffUser = await db.select().from(staff).where(eq(staff.email, email)).limit(1);
-      if (staffUser.length === 0) {
-        // PERUBAHAN: Memberitahu user jika email tidak ditemukan untuk UX yang lebih baik
-        console.log('[FORGOT PASSWORD] User NOT found (returning 404):', email);
-        set.status = 404;
-        return {
-          status: 'error',
-          message: 'Email tidak terdaftar dalam sistem.'
-        };
-      }
-      isStaff = true;
-      // For staff, we'll use a different approach since staff table doesn't have reset token fields
-      // For now, let's keep it simple or implement staff specific logic later
-      // But for this request, we proceed assuming user table logic primarily or adapt
-      // NOTE: Current implementation assumes user table structure for token updates.
-      // If staff needs reset, they should contact admin or we need to add fields to staff table.
-      set.status = 400;
-      return { status: 'error', message: 'Fitur reset password untuk staff belum tersedia. Hubungi admin.' };
+    if (user.length === 0 && staffUser.length === 0) {
+      console.log('[FORGOT PASSWORD] User NOT found (returning 404):', email);
+      set.status = 404;
+      return {
+        status: 'error',
+        message: 'Email tidak terdaftar dalam sistem.'
+      };
     }
 
     // Generate reset token
@@ -452,28 +438,37 @@ export const authController = new Elysia({ prefix: '/auth' })
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
 
-    if (!isStaff && user.length > 0) {
-      // Update user with reset token
+    const isStaffAccount = staffUser.length > 0;
+    const accountName = isStaffAccount ? staffUser[0].name : user[0].name;
+
+    if (isStaffAccount) {
+      await db.update(staff)
+        .set({
+          passwordResetToken: resetToken,
+          passwordResetExpiresAt: expiresAt
+        })
+        .where(eq(staff.id, staffUser[0].id));
+    } else {
       await db.update(users)
         .set({
           passwordResetToken: resetToken,
           passwordResetExpiresAt: expiresAt
         })
         .where(eq(users.id, user[0].id));
-
-      // Construct reset link (using API URL instead of App URL to hit our bridge page)
-      const apiUrl = process.env.API_URL || 'http://localhost:3000';
-      const resetLink = `${apiUrl}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
-
-      // Send email
-      try {
-        await EmailService.sendPasswordResetEmail(email, user[0].name, resetLink);
-      } catch (err) {
-        console.error('[AUTH] Failed to send password reset email:', err);
-      }
-
-      console.log(`[AUTH] Password reset token for ${email}: ${resetToken}`);
     }
+
+    // Construct reset link (using API URL instead of App URL to hit our bridge page)
+    const apiUrl = process.env.API_URL || 'http://localhost:3000';
+    const resetLink = `${apiUrl}/auth/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+
+    // Send email
+    try {
+      await EmailService.sendPasswordResetEmail(email, accountName, resetLink);
+    } catch (err) {
+      console.error('[AUTH] Failed to send password reset email:', err);
+    }
+
+    console.log(`[AUTH] Password reset token for ${email}: ${resetToken}`);
 
     return {
       status: 'success',
@@ -488,6 +483,8 @@ export const authController = new Elysia({ prefix: '/auth' })
   // Reset Password Bridge Page (Web to App bridge)
   .get('/reset-password', async ({ query, set }) => {
     const { token, email } = query;
+    const encodedToken = encodeURIComponent(token);
+    const encodedEmail = encodeURIComponent(email);
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -507,6 +504,16 @@ export const authController = new Elysia({ prefix: '/auth' })
         p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
         .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; transition: all 0.3s; }
         .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
+        .fallback { margin-top: 24px; text-align: left; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+        .fallback h2 { margin-bottom: 10px; font-size: 16px; color: #1f2937; }
+        .field { margin-bottom: 10px; }
+        .field label { display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px; }
+        .field input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .small { color: #6b7280; font-size: 12px; margin-top: 4px; }
+        .danger { color: #dc2626; font-size: 13px; margin-top: 8px; display: none; }
+        .success { color: #059669; font-size: 13px; margin-top: 8px; display: none; }
+        .btn-secondary { margin-top: 10px; width: 100%; border: 0; background: #111827; color: white; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
         .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
     </style>
 </head>
@@ -517,10 +524,75 @@ export const authController = new Elysia({ prefix: '/auth' })
         </div>
         <h1>Reset Password</h1>
         <p>Anda telah meminta untuk mereset password akun Lapor FSM. Klik tombol di bawah untuk melanjutkan ke aplikasi.</p>
-        <a href="laporfsm://reset-password?token=${token}&email=${encodeURIComponent(email)}" class="btn">Buka Aplikasi</a>
+        <a href="laporfsm://reset-password?token=${encodedToken}&email=${encodedEmail}" class="btn">Buka Aplikasi</a>
         <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">Jika tombol tidak bekerja, pastikan aplikasi Lapor FSM sudah terinstal.</p>
+        <div class="fallback">
+          <h2>Atau reset langsung dari halaman ini</h2>
+          <div class="field">
+            <label for="newPassword">Password Baru</label>
+            <input id="newPassword" type="password" minlength="8" placeholder="Minimal 8 karakter" />
+          </div>
+          <div class="field">
+            <label for="confirmPassword">Konfirmasi Password</label>
+            <input id="confirmPassword" type="password" minlength="8" placeholder="Ulangi password baru" />
+          </div>
+          <button id="submitResetBtn" class="btn-secondary">Reset Password via Web</button>
+          <div id="fallbackError" class="danger"></div>
+          <div id="fallbackSuccess" class="success"></div>
+        </div>
         <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
+    <script>
+      const btn = document.getElementById('submitResetBtn');
+      const err = document.getElementById('fallbackError');
+      const ok = document.getElementById('fallbackSuccess');
+      const email = decodeURIComponent('${encodedEmail}');
+      const token = decodeURIComponent('${encodedToken}');
+
+      btn.addEventListener('click', async () => {
+        err.style.display = 'none';
+        ok.style.display = 'none';
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (!newPassword || newPassword.length < 8) {
+          err.textContent = 'Password baru minimal 8 karakter.';
+          err.style.display = 'block';
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          err.textContent = 'Konfirmasi password tidak sama.';
+          err.style.display = 'block';
+          return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Memproses...';
+
+        try {
+          const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, token, newPassword }),
+          });
+
+          const payload = await response.json();
+          if (!response.ok || payload.status !== 'success') {
+            err.textContent = payload.message || 'Gagal mereset password.';
+            err.style.display = 'block';
+          } else {
+            ok.textContent = 'Password berhasil direset. Silakan login di aplikasi.';
+            ok.style.display = 'block';
+          }
+        } catch (e) {
+          err.textContent = 'Terjadi gangguan koneksi saat reset password.';
+          err.style.display = 'block';
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Reset Password via Web';
+        }
+      });
+    </script>
 </body>
 </html>`;
   }, {
@@ -538,25 +610,35 @@ export const authController = new Elysia({ prefix: '/auth' })
     console.log('[RESET PASSWORD] Token received:', token);
 
     try {
-      // Find user with valid reset token
       const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const staffUser = user.length === 0
+        ? await db.select().from(staff).where(eq(staff.email, email)).limit(1)
+        : [];
+      const isStaffAccount = staffUser.length > 0;
 
-      if (user.length === 0) {
+      if (user.length === 0 && staffUser.length === 0) {
         console.log('[RESET PASSWORD] User not found for email:', email);
         set.status = 400;
         return { status: 'error', message: 'Link reset password tidak valid.' };
       }
 
-      console.log('[RESET PASSWORD] User found:', user[0].email);
-      console.log('[RESET PASSWORD] Token in DB:', user[0].passwordResetToken);
-      console.log('[RESET PASSWORD] Token matches:', user[0].passwordResetToken === token);
+      const currentAccount = isStaffAccount ? staffUser[0] : user[0];
+      const savedToken = currentAccount.passwordResetToken;
+      const tokenExpiry = currentAccount.passwordResetExpiresAt;
+      const actorRole = isStaffAccount ? staffUser[0].role : 'pelapor';
+      const actorId = currentAccount.id.toString();
+      const actorName = currentAccount.name;
 
-      if (user[0].passwordResetToken !== token) {
+      console.log('[RESET PASSWORD] Account found:', currentAccount.email);
+      console.log('[RESET PASSWORD] Token in DB:', savedToken);
+      console.log('[RESET PASSWORD] Token matches:', savedToken === token);
+
+      if (savedToken !== token) {
         set.status = 400;
         return { status: 'error', message: 'Link reset password tidak valid atau sudah digunakan.' };
       }
 
-      if (user[0].passwordResetExpiresAt && new Date() > new Date(user[0].passwordResetExpiresAt)) {
+      if (tokenExpiry && new Date() > new Date(tokenExpiry)) {
         console.log('[RESET PASSWORD] Token expired');
         set.status = 400;
         return { status: 'error', message: 'Link reset password sudah kedaluwarsa. Silakan minta link baru.' };
@@ -567,16 +649,25 @@ export const authController = new Elysia({ prefix: '/auth' })
       const hashedPassword = await Bun.password.hash(newPassword);
       console.log('[RESET PASSWORD] Password hashed successfully');
 
-      console.log('[RESET PASSWORD] Updating user password in database...');
-      const updateResult = await db.update(users)
-        .set({
-          password: hashedPassword,
-          passwordResetToken: null,
-          passwordResetExpiresAt: null,
-          isEmailVerified: true // Implicitly verify email on successful password reset
-        })
-        .where(eq(users.id, user[0].id))
-        .returning();
+      console.log('[RESET PASSWORD] Updating account password in database...');
+      const updateResult = isStaffAccount
+        ? await db.update(staff)
+          .set({
+            password: hashedPassword,
+            passwordResetToken: null,
+            passwordResetExpiresAt: null,
+          })
+          .where(eq(staff.id, currentAccount.id))
+          .returning()
+        : await db.update(users)
+          .set({
+            password: hashedPassword,
+            passwordResetToken: null,
+            passwordResetExpiresAt: null,
+            isEmailVerified: true // Implicitly verify email on successful password reset
+          })
+          .where(eq(users.id, currentAccount.id))
+          .returning();
 
       console.log('[RESET PASSWORD] Update result:', updateResult);
 
@@ -586,15 +677,15 @@ export const authController = new Elysia({ prefix: '/auth' })
         return { status: 'error', message: 'Gagal mengupdate password di database' };
       }
 
-      console.log('[RESET PASSWORD] Password updated successfully for user:', user[0].email);
+      console.log('[RESET PASSWORD] Password updated successfully for account:', currentAccount.email);
 
       // Log password reset (non-blocking)
       try {
         await db.insert(reportLogs).values({
           action: 'password_reset',
-          actorId: user[0].id.toString(),
-          actorName: user[0].name,
-          actorRole: 'pelapor',
+          actorId,
+          actorName,
+          actorRole,
           reason: 'User mereset password melalui email',
         });
       } catch (logErr) {

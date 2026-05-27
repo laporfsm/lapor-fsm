@@ -4,6 +4,7 @@ import 'package:mobile/core/router/app_router.dart'; // Add Router Import
 import 'package:mobile/core/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/core/services/api_service.dart';
+import 'package:mobile/core/services/deep_link_service.dart';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/core/widgets/version_guard.dart';
 import 'package:mobile/core/widgets/gps_access_guard.dart';
@@ -32,6 +33,9 @@ void main() async {
   }
 
   runApp(const ProviderScope(child: MyApp()));
+
+  // Initialize deep-link listener (e.g. laporfsm://reset-password?...).
+  await DeepLinkService.instance.init();
 
   // Process any pending notification that opened the app from terminated state
   FCMService.processPendingNotification();
