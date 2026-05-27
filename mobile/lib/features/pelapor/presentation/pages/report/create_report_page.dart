@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -281,6 +282,43 @@ class _CreateReportPageState extends State<CreateReportPage> {
     );
   }
 
+  Future<bool> _ensureLocationReadyForSubmit() async {
+    if (!locationService.isMobilePlatform) return true;
+
+    final serviceEnabled = await locationService.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('GPS belum aktif. Aktifkan GPS terlebih dahulu.'),
+        ),
+      );
+      return false;
+    }
+
+    var permission = await locationService.checkPermission();
+    if (!locationService.isPermissionGranted(permission)) {
+      if (permission == LocationPermission.denied) {
+        permission = await locationService.requestPermission();
+      }
+      if (!locationService.isPermissionGranted(permission)) {
+        if (!mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              permission == LocationPermission.deniedForever
+                  ? 'Izin lokasi ditolak permanen. Buka pengaturan aplikasi.'
+                  : 'Izin lokasi wajib diberikan untuk mengirim laporan.',
+            ),
+          ),
+        );
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   Future<void> _submitReport() async {
     if (_isSubmitting) return;
     if (!_formKey.currentState!.validate()) {
@@ -298,6 +336,10 @@ class _CreateReportPageState extends State<CreateReportPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pilih Lokasi terlebih dahulu!')),
       );
+      return;
+    }
+
+    if (!await _ensureLocationReadyForSubmit()) {
       return;
     }
 
