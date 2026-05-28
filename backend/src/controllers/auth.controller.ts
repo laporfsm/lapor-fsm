@@ -561,17 +561,6 @@ export const authController = new Elysia({ prefix: '/auth' })
           border-radius: 10px;
           box-shadow: 0 6px 18px rgba(11, 31, 82, 0.12);
         }
-        .hero-icon {
-          width: 104px;
-          height: 104px;
-          margin: 0 auto 20px;
-          border-radius: 999px;
-          background: rgba(30, 58, 138, 0.1);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .hero-icon svg { width: 50px; height: 50px; fill: var(--primary); }
         h1 {
           color: #0F172A;
           text-align: center;
@@ -725,12 +714,6 @@ export const authController = new Elysia({ prefix: '/auth' })
           }
           .brand { margin-bottom: 12px; }
           .brand-logo { width: 86px; }
-          .hero-icon {
-            width: 112px;
-            height: 112px;
-            margin-bottom: 20px;
-          }
-          .hero-icon svg { width: 52px; height: 52px; }
           h1 { font-size: 24px; margin-bottom: 10px; }
           .subtitle { font-size: 14px; margin-bottom: 26px; line-height: 1.55; }
           .card {
@@ -773,9 +756,6 @@ export const authController = new Elysia({ prefix: '/auth' })
     <div class="container">
         <div class="brand">
           ${logoSrc ? `<img src="${logoSrc}" alt="Logo Lapor FSM" class="brand-logo" />` : ''}
-        </div>
-        <div class="hero-icon">
-          <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
         </div>
         <h1>Reset Password</h1>
         <p class="subtitle">Masukkan password baru Anda di halaman ini. Setelah berhasil, silakan langsung login lewat aplikasi.</p>
