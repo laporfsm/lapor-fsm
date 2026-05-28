@@ -138,6 +138,12 @@ export class EmailService {
      */
     static async sendPasswordResetEmail(to: string, name: string, resetLink: string) {
         try {
+            const escapedResetLink = resetLink
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
             const info = await this.transporter.sendMail({
                 from: `"Lapor FSM" <${process.env.SMTP_USER}>`,
                 to: to,
@@ -147,12 +153,16 @@ export class EmailService {
                         <h2 style="color: #0d47a1;">Reset Password Anda</h2>
                         <p>Halo <strong>${name}</strong>,</p>
                         <p>Kami menerima permintaan untuk mereset password akun <strong>Lapor FSM</strong> Anda.</p>
-                        <p>Klik tombol di bawah ini untuk mereset password Anda:</p>
+                        <p>Klik tombol di bawah ini untuk membuka halaman reset password:</p>
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${resetLink}" style="background-color: #0d47a1; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
-                                Reset Password
+                                Buka Halaman Reset Password
                             </a>
                         </div>
+                        <p style="margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #1f2937;">Jika tombol tidak bisa diklik (misalnya di Outlook), salin link ini ke browser:</p>
+                        <p style="word-break: break-all; background: #f3f4f6; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #111827;">
+                            <a href="${resetLink}" style="color: #0d47a1; text-decoration: underline;">${escapedResetLink}</a>
+                        </p>
                         <p style="margin-top: 20px;"><strong>Link ini akan kedaluwarsa dalam 1 jam.</strong></p>
                         <p>Jika Anda tidak meminta reset password, abaikan email ini. Password Anda akan tetap aman.</p>
                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">

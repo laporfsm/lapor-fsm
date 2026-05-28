@@ -480,11 +480,14 @@ export const authController = new Elysia({ prefix: '/auth' })
     })
   })
 
-  // Reset Password Bridge Page (Web to App bridge)
+  // Reset Password Web Page (web-first flow)
   .get('/reset-password', async ({ query, set }) => {
     const { token, email } = query;
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
+    const apiUrl = process.env.API_URL || 'http://localhost:3000';
+    const appUrl = process.env.APP_URL || apiUrl.replace(/\/lapor-fsm-api\/?$/, '/lapor-fsm');
+    const loginWebUrl = `${appUrl}/#/login`;
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -496,24 +499,25 @@ export const authController = new Elysia({ prefix: '/auth' })
     <title>Reset Password - Lapor FSM</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; border-radius: 20px; padding: 40px; max-width: 500px; width: 100%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        body { font-family: sans-serif; background: linear-gradient(135deg, #3559b8 0%, #162f74 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .container { background: white; border-radius: 20px; padding: 34px; max-width: 560px; width: 100%; text-align: left; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .icon { width: 80px; height: 80px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
         .icon svg { width: 40px; height: 40px; fill: white; }
-        h1 { color: #1f2937; font-size: 24px; margin-bottom: 16px; font-weight: 700; }
-        p { color: #6b7280; font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
-        .btn { display: inline-block; background: #3b82f6; color: white; text-decoration: none; padding: 14px 32px; border-radius: 10px; font-weight: 600; font-size: 16px; transition: all 0.3s; }
-        .btn:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); }
-        .fallback { margin-top: 24px; text-align: left; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
-        .fallback h2 { margin-bottom: 10px; font-size: 16px; color: #1f2937; }
-        .field { margin-bottom: 10px; }
+        h1 { color: #1f2937; font-size: 26px; margin-bottom: 10px; font-weight: 700; text-align: center; }
+        p { color: #6b7280; font-size: 15px; line-height: 1.6; margin-bottom: 16px; text-align: center; }
+        .card { margin-top: 18px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+        .field { margin-bottom: 12px; }
         .field label { display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px; }
         .field input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
-        .small { color: #6b7280; font-size: 12px; margin-top: 4px; }
-        .danger { color: #dc2626; font-size: 13px; margin-top: 8px; display: none; }
-        .success { color: #059669; font-size: 13px; margin-top: 8px; display: none; }
-        .btn-secondary { margin-top: 10px; width: 100%; border: 0; background: #111827; color: white; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        .btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .small { color: #6b7280; font-size: 12px; margin-top: 4px; text-align: left; }
+        .danger { color: #dc2626; font-size: 13px; margin-top: 10px; display: none; text-align: left; }
+        .success { color: #059669; font-size: 13px; margin-top: 10px; display: none; text-align: left; }
+        .btn-primary { margin-top: 10px; width: 100%; border: 0; background: #1d4ed8; color: white; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .actions { margin-top: 20px; display: none; gap: 10px; flex-direction: column; }
+        .btn-open-app, .btn-open-web { display: block; text-decoration: none; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 15px; }
+        .btn-open-app { background: #1d4ed8; color: #fff; }
+        .btn-open-web { background: #f3f4f6; color: #111827; border: 1px solid #d1d5db; }
         .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
     </style>
 </head>
@@ -523,11 +527,8 @@ export const authController = new Elysia({ prefix: '/auth' })
             <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
         </div>
         <h1>Reset Password</h1>
-        <p>Anda telah meminta untuk mereset password akun Lapor FSM. Klik tombol di bawah untuk melanjutkan ke aplikasi.</p>
-        <a href="laporfsm://reset-password?token=${encodedToken}&email=${encodedEmail}" class="btn">Buka Aplikasi</a>
-        <p style="color: #9ca3af; font-size: 13px; margin-top: 16px;">Jika tombol tidak bekerja, pastikan aplikasi Lapor FSM sudah terinstal.</p>
-        <div class="fallback">
-          <h2>Atau reset langsung dari halaman ini</h2>
+        <p>Masukkan password baru Anda di halaman ini. Setelah berhasil, Anda bisa langsung membuka aplikasi untuk login.</p>
+        <div class="card" id="resetFormCard">
           <div class="field">
             <label for="newPassword">Password Baru</label>
             <input id="newPassword" type="password" minlength="8" placeholder="Minimal 8 karakter" />
@@ -536,9 +537,13 @@ export const authController = new Elysia({ prefix: '/auth' })
             <label for="confirmPassword">Konfirmasi Password</label>
             <input id="confirmPassword" type="password" minlength="8" placeholder="Ulangi password baru" />
           </div>
-          <button id="submitResetBtn" class="btn-secondary">Reset Password via Web</button>
+          <button id="submitResetBtn" class="btn-primary">Reset Password</button>
           <div id="fallbackError" class="danger"></div>
           <div id="fallbackSuccess" class="success"></div>
+        </div>
+        <div class="actions" id="successActions">
+          <a href="laporfsm://login" class="btn-open-app">Buka Aplikasi</a>
+          <a href="${loginWebUrl}" class="btn-open-web">Buka Login Web</a>
         </div>
         <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
@@ -546,6 +551,8 @@ export const authController = new Elysia({ prefix: '/auth' })
       const btn = document.getElementById('submitResetBtn');
       const err = document.getElementById('fallbackError');
       const ok = document.getElementById('fallbackSuccess');
+      const actions = document.getElementById('successActions');
+      const formCard = document.getElementById('resetFormCard');
       const email = decodeURIComponent('${encodedEmail}');
       const token = decodeURIComponent('${encodedToken}');
 
@@ -570,7 +577,7 @@ export const authController = new Elysia({ prefix: '/auth' })
         btn.textContent = 'Memproses...';
 
         try {
-          const response = await fetch(window.location.pathname, {
+          const response = await fetch(window.location.origin + window.location.pathname, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, token, newPassword }),
@@ -581,15 +588,21 @@ export const authController = new Elysia({ prefix: '/auth' })
             err.textContent = payload.message || 'Gagal mereset password.';
             err.style.display = 'block';
           } else {
-            ok.textContent = 'Password berhasil direset. Silakan login di aplikasi.';
+            ok.textContent = 'Password berhasil direset. Sekarang buka aplikasi atau login lewat web.';
             ok.style.display = 'block';
+            actions.style.display = 'flex';
+            formCard.style.borderColor = '#86efac';
+            formCard.style.background = '#f0fdf4';
+            btn.style.display = 'none';
           }
         } catch (e) {
           err.textContent = 'Terjadi gangguan koneksi saat reset password.';
           err.style.display = 'block';
         } finally {
-          btn.disabled = false;
-          btn.textContent = 'Reset Password via Web';
+          if (btn.style.display !== 'none') {
+            btn.disabled = false;
+            btn.textContent = 'Reset Password';
+          }
         }
       });
     </script>
