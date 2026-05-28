@@ -37,3 +37,5 @@ backend/dist/
 backend/.env*
 backend/uploads/
 
+# Local release artifacts
+releases/

@@ -14,6 +14,21 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+val requiredReleaseSigningKeys = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val hasCompleteReleaseSigning = keystorePropertiesFile.exists() &&
+        requiredReleaseSigningKeys.all { key ->
+            (keystoreProperties[key] as? String)?.isNotBlank() == true
+        }
+val isReleaseTaskRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.contains("release", ignoreCase = true) ||
+            taskName.contains("bundle", ignoreCase = true)
+}
+if (isReleaseTaskRequested && !hasCompleteReleaseSigning) {
+    throw org.gradle.api.GradleException(
+        "Release signing is required. Ensure android/key.properties contains storeFile, " +
+                "storePassword, keyAlias, keyPassword, and the keystore file exists."
+    )
+}
 
 android {
     namespace = "com.laporfsm.app"
@@ -43,8 +58,12 @@ android {
 
     signingConfigs {
         create("release") {
-            if (keystorePropertiesFile.exists()) {
-                storeFile = file(keystoreProperties["storeFile"] as String)
+            if (hasCompleteReleaseSigning) {
+                val configuredStoreFile = rootProject.file(keystoreProperties["storeFile"] as String)
+                if (!configuredStoreFile.exists()) {
+                    throw org.gradle.api.GradleException("Keystore file not found: ${configuredStoreFile.path}")
+                }
+                storeFile = configuredStoreFile
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
@@ -57,13 +76,7 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            
-            signingConfig = if (keystorePropertiesFile.exists()) {
-                signingConfigs.getByName("release")
-            } else {
-                // Fallback for local release builds; Play Store requires a real keystore.
-                signingConfigs.getByName("debug")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -111,5 +124,4 @@ dependencies {
 flutter {
     source = "../.."
 }
-
 

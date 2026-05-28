@@ -22,6 +22,13 @@ flutter pub get
 flutter build appbundle --release
 ```
 
+### Android (APK Split ABI)
+```bash
+cd mobile
+flutter pub get
+flutter build apk --release --split-per-abi
+```
+
 ### iOS (IPA)
 ```bash
 cd mobile
@@ -42,7 +49,33 @@ keyAlias=your-key-alias
 keyPassword=your-key-password
 ```
 
+Important:
+- Release build must never fallback to debug signing.
+- If signing config is incomplete/invalid, release build must fail and be fixed first.
+
+### Verify Signature Consistency
+Verify keystore fingerprint:
+```bash
+keytool -list -v \
+  -keystore mobile/android/app/your-keystore.jks \
+  -alias your-key-alias
+```
+
+Verify APK signer fingerprint:
+```bash
+apksigner verify --print-certs path/to/your-release.apk
+```
+
+Ensure SHA-1/SHA-256 fingerprints match.
+
 ## 3) Final Verification
 - Install release builds on real devices.
 - Verify login, report creation, upload, notifications, and exports.
 - Confirm API base URL in `mobile/lib/core/services` points to production.
+- If user gets `package conflicts with an existing package`, do one-time uninstall of old app, then install latest APK.
+
+## 4) Post-Release Cleanup
+After assets are uploaded to GitHub Release:
+```bash
+rm -rf releases/
+```
