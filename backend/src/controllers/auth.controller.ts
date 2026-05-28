@@ -485,9 +485,6 @@ export const authController = new Elysia({ prefix: '/auth' })
     const { token, email } = query;
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
-    const apiUrl = process.env.API_URL || 'http://localhost:3000';
-    const appUrl = process.env.APP_URL || apiUrl.replace(/\/lapor-fsm-api\/?$/, '/lapor-fsm');
-    const loginWebUrl = `${appUrl}/#/login`;
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -498,27 +495,198 @@ export const authController = new Elysia({ prefix: '/auth' })
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password - Lapor FSM</title>
     <style>
+        :root {
+          --primary: #1E3A8A;
+          --primary-soft: #DBEAFE;
+          --bg: #F3F4F6;
+          --card: #FFFFFF;
+          --text: #111827;
+          --muted: #6B7280;
+          --border: #D1D5DB;
+          --radius: 12px;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background: linear-gradient(135deg, #3559b8 0%, #162f74 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        .container { background: white; border-radius: 20px; padding: 34px; max-width: 560px; width: 100%; text-align: left; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
-        .icon { width: 80px; height: 80px; background: #3b82f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; }
-        .icon svg { width: 40px; height: 40px; fill: white; }
-        h1 { color: #1f2937; font-size: 26px; margin-bottom: 10px; font-weight: 700; text-align: center; }
-        p { color: #6b7280; font-size: 15px; line-height: 1.6; margin-bottom: 16px; text-align: center; }
-        .card { margin-top: 18px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f9fafb; }
+        body {
+          font-family: "Nunito Sans", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+          color: var(--text);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 26px;
+          background:
+            radial-gradient(circle at 15% 20%, rgba(255,255,255,0.26) 0, rgba(255,255,255,0) 35%),
+            radial-gradient(circle at 85% 80%, rgba(255,255,255,0.16) 0, rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, #2D4BA7 0%, var(--primary) 70%);
+        }
+        .container {
+          width: 100%;
+          max-width: 552px;
+          background: var(--card);
+          border-radius: 18px;
+          padding: 34px 30px 30px;
+          box-shadow: 0 18px 48px rgba(13, 27, 67, 0.28);
+        }
+        .icon {
+          width: 72px;
+          height: 72px;
+          background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 16px;
+        }
+        .icon svg { width: 34px; height: 34px; fill: #FFFFFF; }
+        h1 {
+          color: #0F172A;
+          text-align: center;
+          font-size: 34px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          color: var(--muted);
+          text-align: center;
+          font-size: 15px;
+          line-height: 1.6;
+          margin-bottom: 20px;
+        }
+        .card {
+          border: 1px solid #E5E7EB;
+          border-radius: var(--radius);
+          background: var(--bg);
+          padding: 18px;
+          transition: all 0.2s ease;
+        }
+        .card.success-state {
+          background: #ECFDF5;
+          border-color: #86EFAC;
+        }
         .field { margin-bottom: 12px; }
-        .field label { display: block; margin-bottom: 6px; color: #374151; font-weight: 600; font-size: 14px; }
-        .field input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
-        .small { color: #6b7280; font-size: 12px; margin-top: 4px; text-align: left; }
-        .danger { color: #dc2626; font-size: 13px; margin-top: 10px; display: none; text-align: left; }
-        .success { color: #059669; font-size: 13px; margin-top: 10px; display: none; text-align: left; }
-        .btn-primary { margin-top: 10px; width: 100%; border: 0; background: #1d4ed8; color: white; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; }
-        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .actions { margin-top: 20px; display: none; gap: 10px; flex-direction: column; }
-        .btn-open-app, .btn-open-web { display: block; text-decoration: none; text-align: center; padding: 12px; border-radius: 8px; font-weight: 600; font-size: 15px; }
-        .btn-open-app { background: #1d4ed8; color: #fff; }
-        .btn-open-web { background: #f3f4f6; color: #111827; border: 1px solid #d1d5db; }
-        .footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; color: #9ca3af; font-size: 14px; }
+        .field label {
+          display: block;
+          margin-bottom: 6px;
+          color: #374151;
+          font-size: 13px;
+          font-weight: 700;
+        }
+        .input-wrap {
+          display: flex;
+          align-items: center;
+          border: 1px solid var(--border);
+          border-radius: var(--radius);
+          background: #FFFFFF;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .input-wrap:focus-within {
+          border-color: var(--primary);
+          box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.14);
+        }
+        .input-wrap input {
+          width: 100%;
+          border: 0;
+          outline: 0;
+          background: transparent;
+          padding: 12px 14px;
+          color: #111827;
+          font-size: 15px;
+        }
+        .toggle-visibility {
+          border: 0;
+          background: transparent;
+          color: #6B7280;
+          width: 42px;
+          height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          border-radius: 10px;
+          margin-right: 4px;
+        }
+        .toggle-visibility:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: 1px;
+        }
+        .toggle-visibility svg { width: 20px; height: 20px; fill: currentColor; }
+        .hint {
+          color: #6B7280;
+          font-size: 12px;
+          margin-top: 6px;
+        }
+        .danger, .success {
+          margin-top: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          font-size: 13px;
+          display: none;
+        }
+        .danger {
+          color: #B91C1C;
+          background: #FEF2F2;
+          border: 1px solid #FECACA;
+        }
+        .success {
+          color: #166534;
+          background: #F0FDF4;
+          border: 1px solid #BBF7D0;
+        }
+        .btn-primary {
+          margin-top: 14px;
+          width: 100%;
+          border: 0;
+          border-radius: var(--radius);
+          background: var(--primary);
+          color: #FFFFFF;
+          padding: 13px 16px;
+          font-size: 16px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: opacity 0.2s ease;
+        }
+        .btn-primary:disabled { opacity: 0.72; cursor: not-allowed; }
+        .actions { margin-top: 14px; display: none; }
+        .btn-open-app {
+          display: inline-flex;
+          width: 100%;
+          text-decoration: none;
+          align-items: center;
+          justify-content: center;
+          border-radius: var(--radius);
+          background: var(--primary);
+          color: #FFFFFF;
+          font-size: 16px;
+          font-weight: 700;
+          padding: 13px 16px;
+        }
+        .hidden { display: none; }
+        .footer {
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid #E5E7EB;
+          color: #9CA3AF;
+          font-size: 12px;
+          line-height: 1.45;
+          text-align: left;
+        }
+        @media (max-width: 480px) {
+          body { padding: 14px; align-items: flex-start; }
+          .container {
+            margin-top: 18px;
+            margin-bottom: 18px;
+            border-radius: 14px;
+            padding: 24px 18px 18px;
+          }
+          .icon { width: 62px; height: 62px; margin-bottom: 14px; }
+          .icon svg { width: 30px; height: 30px; }
+          h1 { font-size: 28px; }
+          .subtitle { font-size: 14px; margin-bottom: 16px; }
+          .card { padding: 14px; }
+          .input-wrap input { font-size: 14px; padding: 11px 12px; }
+          .btn-primary, .btn-open-app { font-size: 15px; padding: 12px 14px; }
+        }
     </style>
 </head>
 <body>
@@ -527,15 +695,26 @@ export const authController = new Elysia({ prefix: '/auth' })
             <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
         </div>
         <h1>Reset Password</h1>
-        <p>Masukkan password baru Anda di halaman ini. Setelah berhasil, Anda bisa langsung membuka aplikasi untuk login.</p>
+        <p class="subtitle">Masukkan password baru Anda di halaman ini. Setelah berhasil, silakan langsung login lewat aplikasi.</p>
         <div class="card" id="resetFormCard">
           <div class="field">
             <label for="newPassword">Password Baru</label>
-            <input id="newPassword" type="password" minlength="8" placeholder="Minimal 8 karakter" />
+            <div class="input-wrap">
+              <input id="newPassword" type="password" minlength="8" placeholder="Minimal 8 karakter" />
+              <button type="button" class="toggle-visibility" aria-label="Tampilkan password" data-target="newPassword">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5.05 0-9.27 3.11-11 7 1.73 3.89 5.95 7 11 7s9.27-3.11 11-7c-1.73-3.89-5.95-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6.5A2.5 2.5 0 1 0 12 14a2.5 2.5 0 0 0 0-5z"/></svg>
+              </button>
+            </div>
+            <div class="hint">Gunakan minimal 8 karakter.</div>
           </div>
           <div class="field">
             <label for="confirmPassword">Konfirmasi Password</label>
-            <input id="confirmPassword" type="password" minlength="8" placeholder="Ulangi password baru" />
+            <div class="input-wrap">
+              <input id="confirmPassword" type="password" minlength="8" placeholder="Ulangi password baru" />
+              <button type="button" class="toggle-visibility" aria-label="Tampilkan password" data-target="confirmPassword">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5.05 0-9.27 3.11-11 7 1.73 3.89 5.95 7 11 7s9.27-3.11 11-7c-1.73-3.89-5.95-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6.5A2.5 2.5 0 1 0 12 14a2.5 2.5 0 0 0 0-5z"/></svg>
+              </button>
+            </div>
           </div>
           <button id="submitResetBtn" class="btn-primary">Reset Password</button>
           <div id="fallbackError" class="danger"></div>
@@ -543,7 +722,6 @@ export const authController = new Elysia({ prefix: '/auth' })
         </div>
         <div class="actions" id="successActions">
           <a href="laporfsm://login" class="btn-open-app">Buka Aplikasi</a>
-          <a href="${loginWebUrl}" class="btn-open-web">Buka Login Web</a>
         </div>
         <div class="footer">Lapor FSM - Fakultas Sains dan Matematika<br>Universitas Diponegoro</div>
     </div>
@@ -555,6 +733,19 @@ export const authController = new Elysia({ prefix: '/auth' })
       const formCard = document.getElementById('resetFormCard');
       const email = decodeURIComponent('${encodedEmail}');
       const token = decodeURIComponent('${encodedToken}');
+      const eyeOpenIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5c-5.05 0-9.27 3.11-11 7 1.73 3.89 5.95 7 11 7s9.27-3.11 11-7c-1.73-3.89-5.95-7-11-7zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm0-6.5A2.5 2.5 0 1 0 12 14a2.5 2.5 0 0 0 0-5z"/></svg>';
+      const eyeClosedIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.7 3.7a1 1 0 0 1 1.4 0l16.2 16.2a1 1 0 1 1-1.4 1.4l-2.15-2.15A11.93 11.93 0 0 1 12 20c-5.05 0-9.27-3.11-11-7a12.66 12.66 0 0 1 4.12-4.85L2.7 5.12a1 1 0 0 1 0-1.42zm5.3 7.72A4 4 0 0 0 12.58 16l-1.56-1.56a2.5 2.5 0 0 1-3.02-3.02L8 11.42zm8.95 5.12-1.48-1.48A4 4 0 0 0 8.94 8.6L7.23 6.89A12.1 12.1 0 0 1 12 6c5.05 0 9.27 3.11 11 7a12.73 12.73 0 0 1-6.05 3.54z"/></svg>';
+
+      document.querySelectorAll('.toggle-visibility').forEach((toggleBtn) => {
+        toggleBtn.addEventListener('click', () => {
+          const targetId = toggleBtn.getAttribute('data-target');
+          const input = document.getElementById(targetId);
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+          toggleBtn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+          toggleBtn.innerHTML = isPassword ? eyeClosedIcon : eyeOpenIcon;
+        });
+      });
 
       btn.addEventListener('click', async () => {
         err.style.display = 'none';
@@ -588,12 +779,12 @@ export const authController = new Elysia({ prefix: '/auth' })
             err.textContent = payload.message || 'Gagal mereset password.';
             err.style.display = 'block';
           } else {
-            ok.textContent = 'Password berhasil direset. Sekarang buka aplikasi atau login lewat web.';
+            ok.textContent = 'Password berhasil direset. Silakan coba login di aplikasi.';
             ok.style.display = 'block';
             actions.style.display = 'flex';
-            formCard.style.borderColor = '#86efac';
-            formCard.style.background = '#f0fdf4';
+            formCard.classList.add('success-state');
             btn.style.display = 'none';
+            document.querySelectorAll('.field').forEach((field) => field.classList.add('hidden'));
           }
         } catch (e) {
           err.textContent = 'Terjadi gangguan koneksi saat reset password.';
