@@ -6,33 +6,6 @@ import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
 import { NotificationService } from '../services/notification.service';
 import { EmailService } from '../services/email.service';
-import { resolve } from 'node:path';
-
-let resetPasswordLogoCache: string | null = null;
-
-const getResetPasswordLogo = async (): Promise<string> => {
-  if (resetPasswordLogoCache !== null) {
-    return resetPasswordLogoCache;
-  }
-
-  const candidatePaths = [
-    resolve(process.cwd(), '../mobile/assets/images/logo.png'),
-    resolve(process.cwd(), 'mobile/assets/images/logo.png'),
-    resolve(process.cwd(), '../../mobile/assets/images/logo.png'),
-  ];
-
-  for (const candidatePath of candidatePaths) {
-    const file = Bun.file(candidatePath);
-    if (await file.exists()) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      resetPasswordLogoCache = `data:image/png;base64,${buffer.toString('base64')}`;
-      return resetPasswordLogoCache;
-    }
-  }
-
-  resetPasswordLogoCache = '';
-  return resetPasswordLogoCache;
-};
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -512,7 +485,6 @@ export const authController = new Elysia({ prefix: '/auth' })
     const { token, email } = query;
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
-    const logoSrc = await getResetPasswordLogo();
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -541,109 +513,80 @@ export const authController = new Elysia({ prefix: '/auth' })
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 26px;
-          background:
-            radial-gradient(circle at 15% 20%, rgba(255,255,255,0.26) 0, rgba(255,255,255,0) 35%),
-            radial-gradient(circle at 85% 80%, rgba(255,255,255,0.16) 0, rgba(255,255,255,0) 42%),
-            linear-gradient(180deg, #2D4BA7 0%, var(--primary) 70%);
+          padding: 20px;
+          background: linear-gradient(180deg, #f7f8fc 0%, #eef2f8 100%);
         }
         .container {
           width: 100%;
-          max-width: 552px;
+          max-width: 510px;
           background: var(--card);
-          border-radius: 18px;
-          padding: 34px 30px 30px;
-          box-shadow: 0 18px 48px rgba(13, 27, 67, 0.28);
-        }
-        .icon {
-          width: 72px;
-          height: 72px;
-          background: linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%);
-          border-radius: 999px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin: 0 auto 16px;
-        }
-        .icon svg { width: 34px; height: 34px; fill: #FFFFFF; }
-        .brand {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 14px;
-        }
-        .brand-logo {
-          width: 122px;
-          height: auto;
-          display: block;
-        }
-        .brand-fallback {
-          color: var(--primary);
-          font-size: 20px;
-          font-weight: 800;
-          letter-spacing: 0.06em;
+          border-radius: 24px;
+          border: 1px solid #dde5f5;
+          padding: 28px 24px 22px;
+          box-shadow: 0 18px 40px rgba(18, 37, 82, 0.11);
         }
         h1 {
           color: #0F172A;
           text-align: center;
-          font-size: 34px;
+          font-size: 36px;
           font-weight: 800;
           letter-spacing: -0.02em;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
         }
         .subtitle {
           color: var(--muted);
           text-align: center;
           font-size: 15px;
           line-height: 1.6;
-          margin-bottom: 20px;
+          margin-bottom: 22px;
         }
         .card {
-          border: 1px solid #E5E7EB;
-          border-radius: var(--radius);
-          background: var(--bg);
-          padding: 18px;
+          border: 0;
+          border-radius: 0;
+          background: transparent;
+          padding: 0;
           transition: all 0.2s ease;
         }
         .card.success-state {
           background: #ECFDF5;
           border-color: #86EFAC;
         }
-        .field { margin-bottom: 12px; }
+        .field { margin-bottom: 14px; }
         .field label {
           display: block;
           margin-bottom: 6px;
           color: #374151;
-          font-size: 13px;
+          font-size: 15px;
           font-weight: 700;
         }
         .input-wrap {
           display: flex;
           align-items: center;
-          border: 1px solid var(--border);
-          border-radius: var(--radius);
+          border: 1.5px solid #b5c4eb;
+          border-radius: 18px;
           background: #FFFFFF;
+          min-height: 60px;
           transition: border-color 0.15s ease, box-shadow 0.15s ease;
         }
         .input-wrap:focus-within {
           border-color: var(--primary);
-          box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.14);
+          box-shadow: 0 0 0 4px rgba(30, 58, 138, 0.14);
         }
         .input-wrap input {
           width: 100%;
           border: 0;
           outline: 0;
           background: transparent;
-          padding: 12px 14px;
+          padding: 15px 16px;
           color: #111827;
-          font-size: 15px;
+          font-size: 17px;
         }
         .toggle-visibility {
           border: 0;
           background: transparent;
           color: #6B7280;
-          width: 42px;
-          height: 42px;
+          width: 48px;
+          height: 48px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -655,7 +598,7 @@ export const authController = new Elysia({ prefix: '/auth' })
           outline: 2px solid var(--primary);
           outline-offset: 1px;
         }
-        .toggle-visibility svg { width: 20px; height: 20px; fill: currentColor; }
+        .toggle-visibility svg { width: 22px; height: 22px; fill: currentColor; }
         .hint {
           color: #6B7280;
           font-size: 12px;
@@ -679,14 +622,14 @@ export const authController = new Elysia({ prefix: '/auth' })
           border: 1px solid #BBF7D0;
         }
         .btn-primary {
-          margin-top: 14px;
+          margin-top: 16px;
           width: 100%;
           border: 0;
-          border-radius: var(--radius);
+          border-radius: 18px;
           background: var(--primary);
           color: #FFFFFF;
-          padding: 13px 16px;
-          font-size: 16px;
+          padding: 16px 16px;
+          font-size: 18px;
           font-weight: 700;
           cursor: pointer;
           transition: opacity 0.2s ease;
@@ -699,12 +642,12 @@ export const authController = new Elysia({ prefix: '/auth' })
           text-decoration: none;
           align-items: center;
           justify-content: center;
-          border-radius: var(--radius);
+          border-radius: 18px;
           background: var(--primary);
           color: #FFFFFF;
-          font-size: 16px;
+          font-size: 17px;
           font-weight: 700;
-          padding: 13px 16px;
+          padding: 16px 16px;
         }
         .hidden { display: none; }
         .footer {
@@ -720,38 +663,34 @@ export const authController = new Elysia({ prefix: '/auth' })
           body {
             padding: 0;
             display: block;
-            background: #E5E7EB;
+            background: #eef2f8;
             min-height: 100dvh;
           }
           .container {
             max-width: 100%;
-            min-height: 100dvh;
-            margin: 0;
-            border-radius: 0;
-            padding: 28px 20px 30px;
+            min-height: calc(100dvh - 12px);
+            margin: 12px 12px 0;
+            border-radius: 24px;
+            padding: 26px 20px 24px;
             box-shadow: none;
-            background: transparent;
+            background: #fff;
           }
-          .brand { margin-bottom: 18px; }
-          .brand-logo { width: 140px; }
-          .icon { width: 96px; height: 96px; margin-bottom: 16px; background: #D9DDEC; }
-          .icon svg { width: 52px; height: 52px; fill: var(--primary); }
-          h1 { font-size: 42px; margin-bottom: 10px; }
-          .subtitle { font-size: 16px; margin-bottom: 22px; line-height: 1.5; }
+          h1 { font-size: 44px; margin-bottom: 12px; }
+          .subtitle { font-size: 17px; margin-bottom: 22px; line-height: 1.52; }
           .card {
             padding: 0;
             border: 0;
             border-radius: 0;
             background: transparent;
           }
-          .field { margin-bottom: 14px; }
-          .field label { font-size: 16px; margin-bottom: 8px; }
+          .field { margin-bottom: 16px; }
+          .field label { font-size: 16px; margin-bottom: 9px; }
           .input-wrap {
             border-radius: 22px;
-            border-color: #1E3A8A;
+            border-color: #a9bbe8;
           }
           .input-wrap input {
-            font-size: 18px;
+            font-size: 17px;
             padding: 16px 18px;
           }
           .toggle-visibility {
@@ -776,12 +715,6 @@ export const authController = new Elysia({ prefix: '/auth' })
 </head>
 <body>
     <div class="container">
-        <div class="brand">
-          ${logoSrc ? `<img src="${logoSrc}" alt="Logo Lapor FSM" class="brand-logo" />` : '<div class="brand-fallback">LAPOR FSM</div>'}
-        </div>
-        <div class="icon">
-            <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
-        </div>
         <h1>Reset Password</h1>
         <p class="subtitle">Masukkan password baru Anda di halaman ini. Setelah berhasil, silakan langsung login lewat aplikasi.</p>
         <div class="card" id="resetFormCard">
