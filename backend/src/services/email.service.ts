@@ -159,6 +159,9 @@ export class EmailService {
                                 Buka Halaman Reset Password
                             </a>
                         </div>
+                        <p style="margin-top: 14px; padding: 10px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: #1e3a8a; font-size: 13px; line-height: 1.5;">
+                          Rekomendasi: buka link reset ini lewat browser di handphone (Android/iOS) agar setelah reset password Anda bisa langsung lanjut login di aplikasi.
+                        </p>
                         <p style="margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #1f2937;">Jika tombol tidak bisa diklik (misalnya di Outlook), salin link ini ke browser:</p>
                         <p style="word-break: break-all; background: #f3f4f6; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: #111827;">
                             <a href="${resetLink}" style="color: #0d47a1; text-decoration: underline;">${escapedResetLink}</a>

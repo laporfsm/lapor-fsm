@@ -6,6 +6,33 @@ import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
 import { NotificationService } from '../services/notification.service';
 import { EmailService } from '../services/email.service';
+import { resolve } from 'node:path';
+
+let resetPasswordLogoCache: string | null = null;
+
+const getResetPasswordLogo = async (): Promise<string> => {
+  if (resetPasswordLogoCache !== null) {
+    return resetPasswordLogoCache;
+  }
+
+  const candidatePaths = [
+    resolve(process.cwd(), '../mobile/assets/images/logo.png'),
+    resolve(process.cwd(), 'mobile/assets/images/logo.png'),
+    resolve(process.cwd(), '../../mobile/assets/images/logo.png'),
+  ];
+
+  for (const candidatePath of candidatePaths) {
+    const file = Bun.file(candidatePath);
+    if (await file.exists()) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      resetPasswordLogoCache = `data:image/png;base64,${buffer.toString('base64')}`;
+      return resetPasswordLogoCache;
+    }
+  }
+
+  resetPasswordLogoCache = '';
+  return resetPasswordLogoCache;
+};
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -485,6 +512,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     const { token, email } = query;
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
+    const logoSrc = await getResetPasswordLogo();
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -538,6 +566,23 @@ export const authController = new Elysia({ prefix: '/auth' })
           margin: 0 auto 16px;
         }
         .icon svg { width: 34px; height: 34px; fill: #FFFFFF; }
+        .brand {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 14px;
+        }
+        .brand-logo {
+          width: 122px;
+          height: auto;
+          display: block;
+        }
+        .brand-fallback {
+          color: var(--primary);
+          font-size: 20px;
+          font-weight: 800;
+          letter-spacing: 0.06em;
+        }
         h1 {
           color: #0F172A;
           text-align: center;
@@ -672,25 +717,68 @@ export const authController = new Elysia({ prefix: '/auth' })
           text-align: left;
         }
         @media (max-width: 480px) {
-          body { padding: 14px; align-items: flex-start; }
-          .container {
-            margin-top: 18px;
-            margin-bottom: 18px;
-            border-radius: 14px;
-            padding: 24px 18px 18px;
+          body {
+            padding: 0;
+            display: block;
+            background: #E5E7EB;
+            min-height: 100dvh;
           }
-          .icon { width: 62px; height: 62px; margin-bottom: 14px; }
-          .icon svg { width: 30px; height: 30px; }
-          h1 { font-size: 28px; }
-          .subtitle { font-size: 14px; margin-bottom: 16px; }
-          .card { padding: 14px; }
-          .input-wrap input { font-size: 14px; padding: 11px 12px; }
-          .btn-primary, .btn-open-app { font-size: 15px; padding: 12px 14px; }
+          .container {
+            max-width: 100%;
+            min-height: 100dvh;
+            margin: 0;
+            border-radius: 0;
+            padding: 28px 20px 30px;
+            box-shadow: none;
+            background: transparent;
+          }
+          .brand { margin-bottom: 18px; }
+          .brand-logo { width: 140px; }
+          .icon { width: 96px; height: 96px; margin-bottom: 16px; background: #D9DDEC; }
+          .icon svg { width: 52px; height: 52px; fill: var(--primary); }
+          h1 { font-size: 42px; margin-bottom: 10px; }
+          .subtitle { font-size: 16px; margin-bottom: 22px; line-height: 1.5; }
+          .card {
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+          }
+          .field { margin-bottom: 14px; }
+          .field label { font-size: 16px; margin-bottom: 8px; }
+          .input-wrap {
+            border-radius: 22px;
+            border-color: #1E3A8A;
+          }
+          .input-wrap input {
+            font-size: 18px;
+            padding: 16px 18px;
+          }
+          .toggle-visibility {
+            width: 48px;
+            height: 48px;
+          }
+          .toggle-visibility svg { width: 24px; height: 24px; }
+          .hint { font-size: 13px; margin-top: 7px; }
+          .btn-primary, .btn-open-app {
+            font-size: 18px;
+            border-radius: 20px;
+            padding: 17px 16px;
+            margin-top: 18px;
+          }
+          .danger, .success { font-size: 14px; }
+          .footer {
+            margin-top: 36px;
+            font-size: 13px;
+          }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <div class="brand">
+          ${logoSrc ? `<img src="${logoSrc}" alt="Logo Lapor FSM" class="brand-logo" />` : '<div class="brand-fallback">LAPOR FSM</div>'}
+        </div>
         <div class="icon">
             <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
         </div>
