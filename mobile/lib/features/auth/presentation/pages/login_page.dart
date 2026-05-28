@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/deep_link_service.dart';
 import 'package:mobile/core/widgets/bouncing_button.dart';
 
 /// Unified Login Page for all roles
@@ -21,6 +22,18 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pendingResetRoute = DeepLinkService.instance.consumePendingResetRoute();
+      if (pendingResetRoute != null) {
+        context.go(pendingResetRoute);
+      }
+    });
+  }
 
   @override
   void dispose() {

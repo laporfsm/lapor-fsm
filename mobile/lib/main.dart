@@ -36,6 +36,9 @@ void main() async {
 
   // Initialize deep-link listener (e.g. laporfsm://reset-password?...).
   await DeepLinkService.instance.init();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    DeepLinkService.instance.openPendingResetRouteIfAny();
+  });
 
   // Process any pending notification that opened the app from terminated state
   FCMService.processPendingNotification();

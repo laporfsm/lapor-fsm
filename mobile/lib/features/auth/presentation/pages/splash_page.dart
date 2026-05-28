@@ -3,6 +3,7 @@ import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/core/services/auth_service.dart';
+import 'package:mobile/core/services/deep_link_service.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 
 class SplashPage extends StatefulWidget {
@@ -24,6 +25,13 @@ class _SplashPageState extends State<SplashPage> {
     await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
+
+    // Prioritize password reset deep-link route if present.
+    final pendingResetRoute = DeepLinkService.instance.consumePendingResetRoute();
+    if (pendingResetRoute != null) {
+      context.go(pendingResetRoute);
+      return;
+    }
 
     final isLoggedIn = await authService.isLoggedIn();
 

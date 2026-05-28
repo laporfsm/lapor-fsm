@@ -12,6 +12,8 @@ class DeepLinkService {
   final AppLinks _appLinks = AppLinks();
   StreamSubscription<Uri>? _subscription;
   bool _initialized = false;
+  bool _routerReady = false;
+  String? _pendingResetRoute;
 
   Future<void> init() async {
     if (_initialized || _subscription != null || kIsWeb) return;
@@ -34,6 +36,19 @@ class DeepLinkService {
     );
   }
 
+  String? consumePendingResetRoute() {
+    final route = _pendingResetRoute;
+    _pendingResetRoute = null;
+    return route;
+  }
+
+  void openPendingResetRouteIfAny() {
+    _routerReady = true;
+    final route = consumePendingResetRoute();
+    if (route == null) return;
+    appRouter.go(route);
+  }
+
   void _handleUri(Uri uri) {
     if (uri.scheme != 'laporfsm') return;
 
@@ -50,7 +65,12 @@ class DeepLinkService {
 
       final encodedToken = Uri.encodeQueryComponent(token);
       final encodedEmail = Uri.encodeQueryComponent(email);
-      appRouter.go('/reset-password?token=$encodedToken&email=$encodedEmail');
+      final route = '/reset-password?token=$encodedToken&email=$encodedEmail';
+      _pendingResetRoute = route;
+      if (_routerReady) {
+        appRouter.go(route);
+        _pendingResetRoute = null;
+      }
       return;
     }
 
