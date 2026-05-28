@@ -6,6 +6,30 @@ import { jwt } from '@elysiajs/jwt';
 import { mapToMobileUser } from '../utils/mapper';
 import { NotificationService } from '../services/notification.service';
 import { EmailService } from '../services/email.service';
+import { resolve } from 'node:path';
+
+let resetPasswordLogoCache: string | null = null;
+
+const getResetPasswordLogo = async (): Promise<string> => {
+  if (resetPasswordLogoCache !== null) return resetPasswordLogoCache;
+
+  const candidatePaths = [
+    resolve(process.cwd(), '../mobile/assets/images/logo.png'),
+    resolve(process.cwd(), 'mobile/assets/images/logo.png'),
+  ];
+
+  for (const candidatePath of candidatePaths) {
+    const file = Bun.file(candidatePath);
+    if (await file.exists()) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      resetPasswordLogoCache = `data:image/png;base64,${buffer.toString('base64')}`;
+      return resetPasswordLogoCache;
+    }
+  }
+
+  resetPasswordLogoCache = '';
+  return resetPasswordLogoCache;
+};
 
 export const authController = new Elysia({ prefix: '/auth' })
   .use(
@@ -485,6 +509,7 @@ export const authController = new Elysia({ prefix: '/auth' })
     const { token, email } = query;
     const encodedToken = encodeURIComponent(token);
     const encodedEmail = encodeURIComponent(email);
+    const logoSrc = await getResetPasswordLogo();
 
     set.headers['Content-Type'] = 'text/html';
     return `
@@ -525,20 +550,42 @@ export const authController = new Elysia({ prefix: '/auth' })
           padding: 28px 24px 22px;
           box-shadow: 0 18px 40px rgba(18, 37, 82, 0.11);
         }
+        .brand {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 16px;
+        }
+        .brand-logo {
+          width: 94px;
+          height: auto;
+          border-radius: 10px;
+          box-shadow: 0 6px 18px rgba(11, 31, 82, 0.12);
+        }
+        .hero-icon {
+          width: 104px;
+          height: 104px;
+          margin: 0 auto 20px;
+          border-radius: 999px;
+          background: rgba(30, 58, 138, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .hero-icon svg { width: 50px; height: 50px; fill: var(--primary); }
         h1 {
           color: #0F172A;
           text-align: center;
-          font-size: 36px;
+          font-size: 30px;
           font-weight: 800;
           letter-spacing: -0.02em;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
         .subtitle {
           color: var(--muted);
           text-align: center;
-          font-size: 15px;
-          line-height: 1.6;
-          margin-bottom: 22px;
+          font-size: 14px;
+          line-height: 1.55;
+          margin-bottom: 24px;
         }
         .card {
           border: 0;
@@ -663,20 +710,29 @@ export const authController = new Elysia({ prefix: '/auth' })
           body {
             padding: 0;
             display: block;
-            background: #eef2f8;
+            background: #f3f4f6;
             min-height: 100dvh;
           }
           .container {
             max-width: 100%;
-            min-height: calc(100dvh - 12px);
-            margin: 12px 12px 0;
-            border-radius: 24px;
-            padding: 26px 20px 24px;
+            min-height: 100dvh;
+            margin: 0;
+            border-radius: 0;
+            padding: 26px 24px 24px;
             box-shadow: none;
-            background: #fff;
+            background: transparent;
+            border: 0;
           }
-          h1 { font-size: 44px; margin-bottom: 12px; }
-          .subtitle { font-size: 17px; margin-bottom: 22px; line-height: 1.52; }
+          .brand { margin-bottom: 12px; }
+          .brand-logo { width: 86px; }
+          .hero-icon {
+            width: 112px;
+            height: 112px;
+            margin-bottom: 20px;
+          }
+          .hero-icon svg { width: 52px; height: 52px; }
+          h1 { font-size: 24px; margin-bottom: 10px; }
+          .subtitle { font-size: 14px; margin-bottom: 26px; line-height: 1.55; }
           .card {
             padding: 0;
             border: 0;
@@ -700,7 +756,7 @@ export const authController = new Elysia({ prefix: '/auth' })
           .toggle-visibility svg { width: 24px; height: 24px; }
           .hint { font-size: 13px; margin-top: 7px; }
           .btn-primary, .btn-open-app {
-            font-size: 18px;
+            font-size: 17px;
             border-radius: 20px;
             padding: 17px 16px;
             margin-top: 18px;
@@ -715,6 +771,12 @@ export const authController = new Elysia({ prefix: '/auth' })
 </head>
 <body>
     <div class="container">
+        <div class="brand">
+          ${logoSrc ? `<img src="${logoSrc}" alt="Logo Lapor FSM" class="brand-logo" />` : ''}
+        </div>
+        <div class="hero-icon">
+          <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        </div>
         <h1>Reset Password</h1>
         <p class="subtitle">Masukkan password baru Anda di halaman ini. Setelah berhasil, silakan langsung login lewat aplikasi.</p>
         <div class="card" id="resetFormCard">
