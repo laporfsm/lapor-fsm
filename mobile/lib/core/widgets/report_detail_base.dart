@@ -299,6 +299,68 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
                   _buildStatusCard(),
                   const Gap(16),
 
+                  if (widget.report.parentId != null) ...[
+                    _buildGroupingInfoCard(
+                      'Laporan ini telah digabungkan ke laporan lain karena duplikasi atau lokasi berdekatan.',
+                      isChild: true,
+                    ),
+                    const Gap(16),
+                  ],
+
+                  if (widget.report.isParent) ...[
+                    _buildGroupingInfoCard(
+                      'Laporan ini merupakan induk dari ${widget.report.mergedCount} laporan lainnya yang digabungkan.',
+                      isChild: false,
+                    ),
+                    if (widget.report.mergedReports != null &&
+                        widget.report.mergedReports!.isNotEmpty) ...[
+                      const Gap(8),
+                      ...widget.report.mergedReports!.map(
+                        (child) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: InkWell(
+                            onTap: () => context.push('/report/${child.id}'),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    LucideIcons.fileText,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  const Gap(8),
+                                  Expanded(
+                                    child: Text(
+                                      child.title,
+                                      style: const TextStyle(fontSize: 12),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const Icon(
+                                    LucideIcons.chevronRight,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const Gap(16),
+                  ],
+
                   // Media Evidence Gallery (Always show logic)
                   MediaGalleryWidget(
                     mediaUrls:
@@ -734,6 +796,80 @@ class _ReportDetailBaseState extends State<ReportDetailBase> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGroupingInfoCard(String message, {required bool isChild}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isChild ? LucideIcons.copy : LucideIcons.combine,
+              size: 16,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isChild ? 'Laporan Tergabung' : 'Induk Laporan',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+                const Gap(4),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
+                ),
+                if (isChild && widget.report.parentId != null) ...[
+                  const Gap(8),
+                  TextButton.icon(
+                    onPressed: () {
+                      context.push('/report/${widget.report.parentId}');
+                    },
+                    icon: const Icon(LucideIcons.arrowRight, size: 14),
+                    label: const Text(
+                      'Lihat Laporan Utama',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -20,6 +20,9 @@ export const mapToMobileReport = (report: any, logs: any[] = []) => {
     handledBy: report.handlerName ? [report.handlerName] : [],
     supervisorId: report.approvedBy?.toString() || report.verifiedBy?.toString() || null,
     supervisorName: report.supervisorName || null,
+    parentId: report.parentId?.toString() || null,
+    mergedCount: report.mergedCount || 0,
+    isParent: (report.mergedCount || 0) > 0,
     logs: (logs || []).map(log => ({
       ...log,
       id: log.id.toString(),

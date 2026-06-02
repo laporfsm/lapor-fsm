@@ -674,6 +674,8 @@ class _SupervisorDashboardPageState
             pausedAt: report.pausedAt,
             totalPausedDurationSeconds: report.totalPausedDurationSeconds,
             reporterName: report.reporterName,
+            isParent: report.isParent,
+            mergedCount: report.mergedCount,
             showStatus: true,
             showTimer: true,
             onTap: () {
@@ -739,6 +741,8 @@ class _SupervisorDashboardPageState
           createdAt: r.createdAt,
           pausedAt: r.pausedAt,
           totalPausedDurationSeconds: r.totalPausedDurationSeconds,
+          isParent: r.isParent,
+          mergedCount: r.mergedCount,
           showStatus: true,
           showTimer: true,
           onTap: () => context.push(
@@ -800,6 +804,8 @@ class _SupervisorDashboardPageState
           createdAt: r.createdAt,
           pausedAt: r.pausedAt,
           totalPausedDurationSeconds: r.totalPausedDurationSeconds,
+          isParent: r.isParent,
+          mergedCount: r.mergedCount,
           showStatus: true,
           showTimer: true,
           onTap: () => context.push(

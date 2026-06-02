@@ -733,6 +733,8 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
                               isSelected: _selectedReportIds.contains(
                                 report.id,
                               ),
+                              isParent: report.isParent,
+                              mergedCount: report.mergedCount,
                               onLongPress: () =>
                                   _toggleSelectionMode(report.id),
                               onTap: () {
@@ -838,31 +840,58 @@ class _SharedAllReportsPageState extends State<SharedAllReportsPage> {
     if (widget.showAppBar) {
       return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
-        appBar: AppBar(
-          title: Text(widget.appBarTitle),
-          backgroundColor: widget.appBarColor,
-          centerTitle: true,
-          titleTextStyle:
-              widget.appBarTitleStyle ??
-              TextStyle(
-                color: widget.appBarIconColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-          leading: widget.showBackButton
-              ? IconButton(
-                  icon: Icon(
-                    LucideIcons.arrowLeft,
-                    color: widget.appBarIconColor,
+        appBar: _isSelectionMode
+            ? AppBar(
+                title: Text('${_selectedReportIds.length} Laporan Terpilih'),
+                backgroundColor: AppTheme.supervisorColor,
+                centerTitle: false,
+                leading: IconButton(
+                  icon: const Icon(LucideIcons.x, color: Colors.white),
+                  onPressed: _exitSelectionMode,
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(LucideIcons.combine, color: Colors.white),
+                    onPressed: _groupSelectedReports,
+                    tooltip: 'Gabungkan Laporan',
                   ),
-                  onPressed: () => Navigator.pop(context),
-                )
-              : null,
-          actions: widget.appBarActions,
-        ),
+                ],
+                titleTextStyle: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              )
+            : AppBar(
+                title: Text(widget.appBarTitle),
+                backgroundColor: widget.appBarColor,
+                centerTitle: true,
+                titleTextStyle:
+                    widget.appBarTitleStyle ??
+                    TextStyle(
+                      color: widget.appBarIconColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                leading: widget.showBackButton
+                    ? IconButton(
+                        icon: Icon(
+                          LucideIcons.arrowLeft,
+                          color: widget.appBarIconColor,
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    : null,
+                actions: widget.appBarActions,
+              ),
         body: content,
         floatingActionButton: _isSelectionMode
-            ? null
+            ? FloatingActionButton.extended(
+                onPressed: _groupSelectedReports,
+                backgroundColor: AppTheme.supervisorColor,
+                label: const Text('Gabungkan'),
+                icon: const Icon(LucideIcons.combine),
+              )
             : widget.floatingActionButton,
       );
     } else {

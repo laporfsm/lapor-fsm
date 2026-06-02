@@ -24,6 +24,7 @@ class SupervisorReportListBody extends ConsumerStatefulWidget {
   final DateTime? endDate;
   final Widget? floatingActionButton;
   final List<Map<String, String>>? statusFilterOptions;
+  final Function(List<String> selectedIds)? onMerge;
 
   const SupervisorReportListBody({
     super.key,
@@ -38,6 +39,7 @@ class SupervisorReportListBody extends ConsumerStatefulWidget {
     this.endDate,
     this.floatingActionButton,
     this.statusFilterOptions,
+    this.onMerge,
   });
 
   @override
@@ -627,6 +629,8 @@ class _SupervisorReportListBodyState
                             reporterName: report.reporterName,
                             assignedTo: report.assignedTo,
                             handledBy: report.handledBy,
+                            isParent: report.isParent,
+                            mergedCount: report.mergedCount,
                             selectionMode: state.isSelectionMode,
                             isSelected: isSelected,
                             showStatus: true,
@@ -661,7 +665,10 @@ class _SupervisorReportListBodyState
         floatingActionButton: widget.floatingActionButton,
         bottomNavigationBar: state.isSelectionMode
             ? Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   boxShadow: [
@@ -675,38 +682,73 @@ class _SupervisorReportListBodyState
                 child: SafeArea(
                   child: Row(
                     children: [
-                      Text(
-                        '${state.selectedReportIds.length} Dipilih',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${state.selectedReportIds.length} Dipilih',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Laporan terseleksi',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
                       ),
                       const Spacer(),
                       TextButton(
                         onPressed: () => notifier.exitSelectionMode(),
-                        child: const Text('Batal'),
-                      ),
-                      const Gap(8),
-                      ElevatedButton(
-                        onPressed: state.selectedReportIds.length < 2
-                            ? null
-                            : () {
-                                // Implement grouping action
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Fitur Grouping (Coming Soon)',
-                                    ),
-                                  ),
-                                );
-                                notifier.exitSelectionMode();
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppTheme.supervisorColor,
-                          foregroundColor: Colors.white,
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(color: Colors.grey.shade600),
                         ),
-                        child: const Text('Gabungkan'),
+                      ),
+                      const Gap(12),
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: state.selectedReportIds.length < 2
+                              ? null
+                              : () {
+                                  if (widget.onMerge != null) {
+                                    widget.onMerge!(
+                                      state.selectedReportIds.toList(),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Aksi penggabungan tidak tersedia.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                          icon: const Icon(LucideIcons.combine, size: 18),
+                          label: const Text(
+                            'Gabungkan',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.supervisorColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                        ),
                       ),
                     ],
                   ),
