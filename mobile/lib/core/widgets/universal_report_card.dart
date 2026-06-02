@@ -33,6 +33,8 @@ class UniversalReportCard extends StatelessWidget {
   final bool selectionMode;
   final bool isSelected;
   final VoidCallback? onLongPress;
+  final bool isParent; // New
+  final int mergedCount; // New
 
   const UniversalReportCard({
     super.key,
@@ -60,6 +62,8 @@ class UniversalReportCard extends StatelessWidget {
     this.selectionMode = false,
     this.isSelected = false,
     this.onLongPress,
+    this.isParent = false,
+    this.mergedCount = 0,
   });
 
   // ... (keeping methods same)
@@ -219,6 +223,45 @@ class UniversalReportCard extends StatelessWidget {
                                 ],
                               ),
                             ),
+                            if (isParent) ...[
+                              const Gap(8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor.withValues(
+                                    alpha: 0.1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: AppTheme.primaryColor.withValues(
+                                      alpha: 0.2,
+                                    ),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      LucideIcons.combine,
+                                      size: 10,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                    const Gap(4),
+                                    Text(
+                                      'GRUP (+${mergedCount})',
+                                      style: const TextStyle(
+                                        color: AppTheme.primaryColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                             const Spacer(),
                           ] else
                             const Spacer(),
