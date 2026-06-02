@@ -179,6 +179,8 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                 handlerName: reports.handlerNames,
                 approvedBy: reports.approvedBy,
                 verifiedBy: reports.verifiedBy,
+                parentId: reports.parentId,
+                mergedCount: sql<number>`(SELECT count(*)::int FROM reports r WHERE r.parent_id = ${reports.id})`,
                 supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
             })
             .from(reports)
@@ -611,17 +613,17 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
         const childIds = children.map(c => c.id);
 
         if (childIds.length > 0) {
-            // Update Children: Set parentId and status to 'recalled' (hidden/merged)
+            // Update Children: Set parentId and status to 'archived' (hidden/merged)
             await db
                 .update(reports)
                 .set({
                     parentId: parent.id,
-                    status: 'recalled', // Mark as recalled/merged
+                    status: 'archived', // Mark as archived/merged instead of recalled
                     updatedAt: new Date(),
                 })
                 .where(inArray(reports.id, childIds));
 
-            // Log for Children
+            // Log and notify for Children
             for (const child of children) {
                 await db.insert(reportLogs).values({
                     reportId: child.id,
@@ -629,9 +631,20 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                     actorName: "Supervisor",
                     actorRole: "supervisor",
                     action: 'groupedChild',
-                    toStatus: 'recalled',
-                    reason: `Digabungkan ke laporan #${parent.id}`,
+                    toStatus: 'archived',
+                    reason: `Laporan ini digabungkan ke laporan #${parent.id} (${parent.title}) karena memiliki topik atau lokasi yang sama.`,
                 });
+
+                // Notify Child Reporter
+                if (child.userId) {
+                    await NotificationService.notifyUser(
+                        child.userId,
+                        'Laporan Digabungkan',
+                        `Laporan #${child.id} telah digabungkan ke laporan #${parent.id} agar penanganan lebih efisien.`,
+                        'info',
+                        parent.id // Link to Parent report instead of child
+                    );
+                }
             }
         }
 

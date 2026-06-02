@@ -272,6 +272,7 @@ export const reportController = new Elysia({ prefix: '/reports' })
         verifiedBy: reports.verifiedBy,
         supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
         assignedTo: reports.assignedTo,
+        parentId: reports.parentId,
       })
       .from(reports)
       .leftJoin(users, eq(reports.userId, users.id))
@@ -290,9 +291,26 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .where(eq(reportLogs.reportId, reportId))
       .orderBy(desc(reportLogs.timestamp));
 
+    // Fetch children if this is a parent
+    const children = await db
+      .select({
+        id: reports.id,
+        title: reports.title,
+        status: reports.status,
+      })
+      .from(reports)
+      .where(eq(reports.parentId, reportId.toString()));
+
+    const reportData = mapToMobileReport(result[0], logsList);
+
     return {
       status: 'success',
-      data: mapToMobileReport(result[0], logsList),
+      data: {
+        ...reportData,
+        isParent: children.length > 0,
+        mergedCount: children.length,
+        mergedReports: children,
+      },
     };
   })
 
