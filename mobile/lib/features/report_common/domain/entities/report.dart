@@ -59,6 +59,9 @@ class Report {
 
   // Grouping info
   final String? parentId;
+  final bool isParent;
+  final int mergedCount;
+  final List<Report>? mergedReports;
 
   const Report({
     required this.id,
@@ -94,6 +97,9 @@ class Report {
     this.holdPhoto,
     this.logs = const [],
     this.parentId,
+    this.isParent = false,
+    this.mergedCount = 0,
+    this.mergedReports,
   });
 
   /// Get elapsed time since creation (accounting for pauses)
@@ -166,6 +172,9 @@ class Report {
     List<ReportLog>? logs,
     bool clearPausedAt = false,
     String? parentId,
+    bool? isParent,
+    int? mergedCount,
+    List<Report>? mergedReports,
   }) {
     return Report(
       id: id ?? this.id,
@@ -196,17 +205,16 @@ class Report {
       supervisorId: supervisorId ?? this.supervisorId,
       supervisorName: supervisorName ?? this.supervisorName,
       pausedAt: clearPausedAt ? null : (pausedAt ?? this.pausedAt),
-      totalPausedDurationSeconds:
-          totalPausedDurationSeconds ?? this.totalPausedDurationSeconds,
+      totalPausedDurationSeconds: totalPausedDurationSeconds ?? this.totalPausedDurationSeconds,
       holdReason: holdReason ?? this.holdReason,
       holdPhoto: holdPhoto ?? this.holdPhoto,
       logs: logs ?? this.logs,
       parentId: parentId ?? this.parentId,
+      isParent: isParent ?? this.isParent,
+      mergedCount: mergedCount ?? this.mergedCount,
+      mergedReports: mergedReports ?? this.mergedReports,
     );
   }
-
-  // Json serialization... (keeping simple or using freezed? Current code uses manual fromJson)
-  // I will update fromJson to include new fields
 
   factory Report.fromJson(Map<String, dynamic> json) {
     return Report(
@@ -266,6 +274,11 @@ class Report {
               .toList() ??
           [],
       parentId: json['parentId']?.toString(),
+      isParent: json['isParent'] as bool? ?? false,
+      mergedCount: json['mergedCount'] as int? ?? 0,
+      mergedReports: (json['mergedReports'] as List<dynamic>?)
+          ?.map((e) => Report.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -304,6 +317,9 @@ class Report {
       'holdPhoto': holdPhoto,
       'logs': logs.map((e) => e.toJson()).toList(),
       'parentId': parentId,
+      'isParent': isParent,
+      'mergedCount': mergedCount,
+      'mergedReports': mergedReports?.map((e) => e.toJson()).toList(),
     };
   }
 }
