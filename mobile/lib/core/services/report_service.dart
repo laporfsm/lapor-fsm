@@ -739,7 +739,45 @@ class ReportService {
     }
   }
 
+  /// Split a single report into multiple independent reports (Supervisor or PJ Gedung)
+  Future<Map<String, dynamic>> splitReport(
+    String reportId,
+    int staffId,
+    List<Map<String, dynamic>> splits, {
+    required String role, // 'pj' or 'supervisor'
+  }) async {
+    try {
+      final prefix = role == 'supervisor' ? 'supervisor' : 'pj-gedung';
+      final response = await apiService.dio.post(
+        '/$prefix/reports/$reportId/split',
+        data: {
+          'staffId': staffId,
+          'splits': splits,
+        },
+      );
+      if (response.data['status'] == 'success') {
+        return {
+          'success': true,
+          'message': response.data['message'] ?? 'Berhasil memecah laporan',
+          'data': response.data['data'],
+        };
+      }
+      return {
+        'success': false,
+        'message': response.data['message'] ?? 'Gagal memecah laporan',
+      };
+    } catch (e) {
+      debugPrint('Error splitting report: $e');
+      String msg = 'Gagal memecah laporan.';
+      if (e is DioException && e.response?.data != null) {
+        msg = e.response?.data['message'] ?? msg;
+      }
+      return {'success': false, 'message': msg};
+    }
+  }
+
   /// Recall a report (Supervisor)
+
   Future<Report> recallReport(
     String reportId,
     int staffId,
