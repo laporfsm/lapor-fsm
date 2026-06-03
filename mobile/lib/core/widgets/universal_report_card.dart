@@ -251,7 +251,7 @@ class UniversalReportCard extends StatelessWidget {
                                     ),
                                     const Gap(4),
                                     Text(
-                                      'GRUP (+${mergedCount})',
+                                      'GRUP (+$mergedCount)',
                                       style: const TextStyle(
                                         color: AppTheme.primaryColor,
                                         fontWeight: FontWeight.bold,

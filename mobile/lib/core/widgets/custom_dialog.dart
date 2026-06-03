@@ -367,3 +367,228 @@ class SuccessDialog extends StatelessWidget {
     );
   }
 }
+
+class SplitReportDialog extends StatefulWidget {
+  final String originalTitle;
+  final String originalDescription;
+  final List<Map<String, dynamic>> categories;
+  final Color themeColor;
+
+  const SplitReportDialog({
+    super.key,
+    required this.originalTitle,
+    required this.originalDescription,
+    required this.categories,
+    required this.themeColor,
+  });
+
+  static Future<List<Map<String, dynamic>>?> show(
+    BuildContext context, {
+    required String originalTitle,
+    required String originalDescription,
+    required List<Map<String, dynamic>> categories,
+    Color themeColor = AppTheme.primaryColor,
+  }) {
+    return showDialog<List<Map<String, dynamic>>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => SplitReportDialog(
+        originalTitle: originalTitle,
+        originalDescription: originalDescription,
+        categories: categories,
+        themeColor: themeColor,
+      ),
+    );
+  }
+
+  @override
+  State<SplitReportDialog> createState() => _SplitReportDialogState();
+}
+
+class _SplitReportDialogState extends State<SplitReportDialog> {
+  final List<Map<String, dynamic>> _splits = [];
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with 2 splits by default
+    _splits.add({
+      'title': widget.originalTitle,
+      'description': widget.originalDescription,
+      'categoryId': widget.categories.isNotEmpty ? widget.categories[0]['id'] : null,
+    });
+    _splits.add({
+      'title': '',
+      'description': '',
+      'categoryId': widget.categories.isNotEmpty ? widget.categories[0]['id'] : null,
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Row(
+        children: [
+          Icon(LucideIcons.split, color: widget.themeColor, size: 24),
+          const Gap(12),
+          const Expanded(
+            child: Text(
+              'Pecah Laporan',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Original: "${widget.originalTitle}"',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.grey),
+                ),
+                const Gap(16),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _splits.length,
+                  separatorBuilder: (context, index) => const Divider(height: 16),
+                  itemBuilder: (context, index) {
+                    final split = _splits[index];
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Pecahan #${index + 1}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: widget.themeColor,
+                              ),
+                            ),
+                            if (_splits.length > 2)
+                              IconButton(
+                                icon: const Icon(LucideIcons.trash2, color: Colors.red, size: 18),
+                                onPressed: () {
+                                  setState(() {
+                                    _splits.removeAt(index);
+                                  });
+                                },
+                              ),
+                          ],
+                        ),
+                        const Gap(8),
+                        DropdownButtonFormField<int>(
+                          initialValue: split['categoryId'],
+                          decoration: InputDecoration(
+                            labelText: 'Kategori',
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          items: widget.categories.map((cat) {
+                            return DropdownMenuItem<int>(
+                              value: cat['id'] as int,
+                              child: Text(cat['name'] as String),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            split['categoryId'] = val;
+                          },
+                        ),
+                        const Gap(12),
+                        TextFormField(
+                          initialValue: split['title'],
+                          decoration: InputDecoration(
+                            labelText: 'Judul Laporan',
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'Judul wajib diisi' : null,
+                          onChanged: (val) {
+                            split['title'] = val.trim();
+                          },
+                        ),
+                        const Gap(12),
+                        TextFormField(
+                          initialValue: split['description'],
+                          maxLines: 2,
+                          decoration: InputDecoration(
+                            labelText: 'Deskripsi Masalah',
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          validator: (val) => val == null || val.trim().isEmpty ? 'Deskripsi wajib diisi' : null,
+                          onChanged: (val) {
+                            split['description'] = val.trim();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const Gap(16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _splits.add({
+                        'title': '',
+                        'description': '',
+                        'categoryId': widget.categories.isNotEmpty ? widget.categories[0]['id'] : null,
+                      });
+                    });
+                  },
+                  icon: const Icon(LucideIcons.plus),
+                  label: const Text('Tambah Pecahan'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: widget.themeColor,
+                    side: BorderSide(color: widget.themeColor),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+              ),
+            ),
+            const Gap(12),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    Navigator.pop(context, _splits);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: widget.themeColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Pecah'),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
