@@ -94,6 +94,21 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
               ),
             ),
           ),
+          OutlinedButton.icon(
+            onPressed: _isProcessing
+                ? null
+                : _handleSplitReport,
+            icon: const Icon(LucideIcons.split),
+            label: const Text('Pecah'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.supervisorColor,
+              side: const BorderSide(color: AppTheme.supervisorColor),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
           ElevatedButton.icon(
             onPressed: _isProcessing
                 ? null
@@ -125,6 +140,21 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
       case ReportStatus.terverifikasi: // Siap Assign
         // Siap diproses -> Tugaskan Teknisi
         return [
+          OutlinedButton.icon(
+            onPressed: _isProcessing
+                ? null
+                : _handleSplitReport,
+            icon: const Icon(LucideIcons.split),
+            label: const Text('Pecah Laporan'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.supervisorColor,
+              side: const BorderSide(color: AppTheme.supervisorColor),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
           ElevatedButton.icon(
             onPressed: _isProcessing ? null : _showAssignTechnicianDialog,
             icon: _isProcessing
@@ -379,6 +409,71 @@ class _SupervisorReviewPageState extends State<SupervisorReviewPage> {
         );
       }
     });
+  }
+
+  Future<void> _handleSplitReport() async {
+    if (_report == null) return;
+    setState(() => _isProcessing = true);
+    try {
+      final categories = await reportService.getCategories();
+      if (!mounted) return;
+
+      final splits = await SplitReportDialog.show(
+        context,
+        originalTitle: _report!.title,
+        originalDescription: _report!.description,
+        categories: categories,
+        themeColor: AppTheme.supervisorColor,
+      );
+
+      if (splits == null || splits.isEmpty) {
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = int.parse(user['id'].toString());
+        
+        final res = await reportService.splitReport(
+          _report!.id,
+          staffId,
+          splits,
+          role: 'supervisor',
+        );
+
+        if (!mounted) return;
+
+        if (res['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Laporan berhasil dipecah.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message'] ?? 'Gagal memecah laporan.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error splitting report: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memecah laporan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
   }
 }
 

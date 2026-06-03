@@ -57,6 +57,21 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
             ),
           ),
         ),
+        OutlinedButton.icon(
+          onPressed: _isProcessing
+              ? null
+              : () => _handleSplitReport(context, report, refresh),
+          icon: const Icon(LucideIcons.split),
+          label: const Text('Pecah'),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            side: const BorderSide(color: Color(0xFF059669)),
+            foregroundColor: const Color(0xFF059669),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
         ElevatedButton.icon(
           onPressed: _isProcessing
               ? null
@@ -87,6 +102,75 @@ class _PJGedungReportDetailPageState extends State<PJGedungReportDetailPage> {
     }
     return null;
   }
+
+  Future<void> _handleSplitReport(
+    BuildContext context,
+    Report report,
+    Future<void> Function() refresh,
+  ) async {
+    setState(() => _isProcessing = true);
+    try {
+      final categories = await reportService.getCategories();
+      if (!context.mounted) return;
+
+      final splits = await SplitReportDialog.show(
+        context,
+        originalTitle: report.title,
+        originalDescription: report.description,
+        categories: categories,
+        themeColor: const Color(0xFF059669),
+      );
+
+      if (splits == null || splits.isEmpty) {
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      final user = await authService.getCurrentUser();
+      if (user != null) {
+        final staffId = int.parse(user['id'].toString());
+        
+        final res = await reportService.splitReport(
+          report.id,
+          staffId,
+          splits,
+          role: 'pj',
+        );
+
+        if (!context.mounted) return;
+
+        if (res['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Laporan berhasil dipecah.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.pop();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(res['message'] ?? 'Gagal memecah laporan.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error splitting report: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memecah laporan: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
 
   Future<bool> _showConfirmDialog({
     required BuildContext context,
