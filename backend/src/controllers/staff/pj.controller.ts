@@ -313,7 +313,161 @@ export const pjController = new Elysia({ prefix: '/pj-gedung' })
         body: t.Object({ staffId: t.Number(), reason: t.String() })
     })
 
+    // Split Report (Break down single report into multiple independent reports for PJ Gedung)
+    .post('/reports/:id/split', async ({ params, body, managedLocation }) => {
+        const reportId = parseInt(params.id);
+        const { staffId, splits } = body;
+
+        if (!splits || splits.length < 2) {
+            return { status: 'error', message: 'Minimal harus ada 2 pecahan laporan.' };
+        }
+
+        try {
+            const foundStaff = await db.select().from(staff).where(eq(staff.id, staffId)).limit(1);
+            if (foundStaff.length === 0) {
+                return { status: 'error', message: 'Staff tidak ditemukan' };
+            }
+
+            const current = await db.select().from(reports).where(eq(reports.id, reportId)).limit(1);
+            if (current.length === 0) {
+                return { status: 'error', message: 'Laporan tidak ditemukan' };
+            }
+
+            const originalReport = current[0];
+
+            // Strict Location Scope Check
+            if (managedLocation && originalReport.location !== managedLocation) {
+                return {
+                    status: 'error',
+                    message: 'Akses ditolak: Laporan ini berada di luar lokasi pengelolaan Anda.'
+                };
+            }
+
+            // Only allow splitting when status is pending or terverifikasi
+            if (!['pending', 'terverifikasi'].includes(originalReport.status || '')) {
+                return {
+                    status: 'error',
+                    message: 'Hanya laporan dengan status Pending atau Terverifikasi yang dapat dipecah.'
+                };
+            }
+
+            // Prevent PJ Gedung from splitting emergency reports (just like they cannot verify/reject them)
+            if (originalReport.isEmergency) {
+                return { status: 'error', message: 'Laporan darurat hanya bisa dikelola oleh Supervisor.' };
+            }
+
+            // 1. Update the original report with the first split detail
+            const updatedOriginal = await db
+                .update(reports)
+                .set({
+                    title: splits[0].title,
+                    description: splits[0].description,
+                    categoryId: splits[0].categoryId,
+                    updatedAt: new Date(),
+                })
+                .where(eq(reports.id, reportId))
+                .returning();
+
+            // Insert log for original report update
+            await db.insert(reportLogs).values({
+                reportId: reportId,
+                actorId: staffId.toString(),
+                actorName: foundStaff[0].name,
+                actorRole: foundStaff[0].role,
+                action: 'split_updated',
+                fromStatus: originalReport.status,
+                toStatus: originalReport.status,
+                reason: `Laporan dipecah. Detail laporan ini diperbarui dari bagian pertama hasil pemecahan oleh PJ Lokasi. Judul lama: "${originalReport.title}".`,
+            });
+
+            const newReportsCreated = [];
+
+            // 2. Insert the subsequent split details as new reports
+            for (let i = 1; i < splits.length; i++) {
+                const splitItem = splits[i];
+                const inserted = await db
+                    .insert(reports)
+                    .values({
+                        userId: originalReport.userId,
+                        categoryId: splitItem.categoryId,
+                        title: splitItem.title,
+                        description: splitItem.description,
+                        location: originalReport.location,
+                        locationDetail: originalReport.locationDetail,
+                        latitude: originalReport.latitude,
+                        longitude: originalReport.longitude,
+                        mediaUrls: originalReport.mediaUrls,
+                        isEmergency: originalReport.isEmergency,
+                        status: originalReport.status, // Keep the same status
+                        createdAt: new Date(),
+                        updatedAt: new Date(),
+                    })
+                    .returning();
+
+                if (inserted.length > 0) {
+                    newReportsCreated.push(inserted[0]);
+
+                    // Insert log for new report creation from split
+                    await db.insert(reportLogs).values({
+                        reportId: inserted[0].id,
+                        actorId: staffId.toString(),
+                        actorName: foundStaff[0].name,
+                        actorRole: foundStaff[0].role,
+                        action: 'split_created',
+                        fromStatus: 'pending',
+                        toStatus: inserted[0].status || 'pending',
+                        reason: `Laporan ini dibuat sebagai hasil pemecahan dari Laporan #${reportId} ("${originalReport.title}") oleh PJ Lokasi.`,
+                    });
+                }
+            }
+
+            // Emit events for new logs and reports
+            logEventEmitter.emit(LOG_EVENTS.NEW_LOG, reportId);
+            for (const newRep of newReportsCreated) {
+                logEventEmitter.emit(LOG_EVENTS.NEW_LOG, newRep.id);
+            }
+
+            // Notify reporter about the split
+            if (originalReport.userId) {
+                const newReportLinks = newReportsCreated.map(r => `#${r.id} (${r.title})`).join(', ');
+                await NotificationService.notifyUser(
+                    originalReport.userId,
+                    'Laporan Anda Dipecah',
+                    `Laporan #${reportId} telah dipecah oleh PJ Lokasi menjadi beberapa laporan agar penanganan lebih cepat: #${reportId} dan ${newReportLinks}.`,
+                    'info',
+                    reportId
+                );
+            }
+
+            // Notify Supervisor
+            await NotificationService.notifyRole('supervisor', 'Laporan Dipecah', `Laporan #${reportId} di ${originalReport.location} telah dipecah menjadi ${splits.length} laporan oleh PJ Lokasi.`, 'info', reportId);
+
+            return {
+                status: 'success',
+                message: `Berhasil memecah laporan menjadi ${splits.length} bagian.`,
+                data: {
+                    updatedReport: mapToMobileReport(updatedOriginal[0]),
+                    newReports: newReportsCreated.map(r => mapToMobileReport(r)),
+                }
+            };
+
+        } catch (e: any) {
+            console.error('Split Report Error:', e);
+            return { status: 'error', message: 'Gagal memecah laporan: ' + e.message };
+        }
+    }, {
+        body: t.Object({
+            staffId: t.Number(),
+            splits: t.Array(t.Object({
+                title: t.String(),
+                description: t.String(),
+                categoryId: t.Number(),
+            }))
+        })
+    })
+
     // Get statistics for PJ Lokasi (Dynamic & Correctly Filtered)
+
     .get('/statistics', async ({ query, managedLocation }) => {
         const { location, period } = query;
 
