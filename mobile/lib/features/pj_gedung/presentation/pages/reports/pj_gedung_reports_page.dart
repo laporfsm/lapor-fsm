@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile/core/theme.dart';
 import 'package:mobile/features/pj_gedung/presentation/widgets/pj_gedung_report_list_body.dart';
+import 'package:mobile/features/pj_gedung/presentation/providers/pj_gedung_reports_provider.dart';
 import 'package:go_router/go_router.dart';
 
 /// PJ Gedung Reports Page - wrapper for SharedAllReportsPage
-class PJGedungReportsPage extends StatelessWidget {
+class PJGedungReportsPage extends ConsumerWidget {
   final Map<String, String> queryParams;
 
   const PJGedungReportsPage({super.key, this.queryParams = const {}});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // Parse query params
     final statusParam = queryParams['status'];
     final periodParam = queryParams['period'];
@@ -36,8 +38,11 @@ class PJGedungReportsPage extends StatelessWidget {
         period: periodParam,
         isEmergency: emergencyParam,
         showSearch: true,
-        onReportTap: (reportId, status) {
-          context.push('/pj-gedung/report/$reportId');
+        onReportTap: (reportId, status) async {
+          await context.push('/pj-gedung/report/$reportId');
+          ref
+              .read(pjGedungReportsProvider(statusParam ?? '').notifier)
+              .refresh();
         },
       ),
     );
