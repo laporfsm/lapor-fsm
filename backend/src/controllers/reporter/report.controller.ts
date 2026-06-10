@@ -292,14 +292,45 @@ export const reportController = new Elysia({ prefix: '/reports' })
       .orderBy(desc(reportLogs.timestamp));
 
     // Fetch children if this is a parent
-    const children = await db
+    const childReporterStaff = alias(staff, 'child_reporter_staff');
+    const childrenResult = await db
       .select({
         id: reports.id,
         title: reports.title,
+        description: reports.description,
+        location: reports.location,
+        locationDetail: reports.locationDetail,
+        latitude: reports.latitude,
+        longitude: reports.longitude,
+        mediaUrls: reports.mediaUrls,
+        isEmergency: reports.isEmergency,
         status: reports.status,
+        createdAt: reports.createdAt,
+        handlingCompletedAt: reports.handlingCompletedAt,
+        userId: reports.userId,
+        staffId: reports.staffId,
+        pausedAt: reports.pausedAt,
+        totalPausedDurationSeconds: reports.totalPausedDurationSeconds,
+        holdReason: reports.holdReason,
+        holdPhoto: reports.holdPhoto,
+        reporterName: sql<string>`COALESCE(${users.name}, ${childReporterStaff.name})`,
+        reporterEmail: sql<string>`COALESCE(${users.email}, ${childReporterStaff.email})`,
+        reporterPhone: sql<string>`COALESCE(${users.phone}, ${childReporterStaff.phone})`,
+        categoryName: categories.name,
+        handlerName: reports.handlerNames,
+        approvedBy: reports.approvedBy,
+        verifiedBy: reports.verifiedBy,
+        supervisorName: sql<string>`(SELECT name FROM staff WHERE id = COALESCE(${reports.approvedBy}, ${reports.verifiedBy}))`,
+        assignedTo: reports.assignedTo,
+        parentId: reports.parentId,
       })
       .from(reports)
-      .where(eq(reports.parentId, reportId.toString()));
+      .leftJoin(users, eq(reports.userId, users.id))
+      .leftJoin(childReporterStaff, eq(reports.staffId, childReporterStaff.id))
+      .leftJoin(categories, eq(reports.categoryId, categories.id))
+      .where(eq(reports.parentId, reportId));
+
+    const children = childrenResult.map(c => mapToMobileReport(c));
 
     const reportData = mapToMobileReport(result[0], logsList);
 

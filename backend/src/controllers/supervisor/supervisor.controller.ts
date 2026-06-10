@@ -750,7 +750,7 @@ export const supervisorController = new Elysia({ prefix: '/supervisor' })
                         mediaUrls: originalReport.mediaUrls,
                         isEmergency: originalReport.isEmergency,
                         status: originalReport.status, // Keep the same status
-                        createdAt: new Date(),
+                        createdAt: originalReport.createdAt,
                         updatedAt: new Date(),
                     })
                     .returning();
