@@ -182,8 +182,10 @@ class _SupervisorActiveReportsPageState
           {'label': 'Selesai', 'value': 'selesai'},
           {'label': 'Recalled', 'value': 'recalled'},
         ],
-        onReportTap: (reportId, status) =>
-            context.push('/supervisor/review/$reportId'),
+        onReportTap: (reportId, status) async {
+          await context.push('/supervisor/review/$reportId');
+          ref.read(supervisorReportsProvider(_status).notifier).refresh();
+        },
         onMerge: (selectedIds) => _mergeReports(selectedIds),
         floatingActionButton: reportState.isSelectionMode
             ? null // Hide FAB in selection mode, use bottom bar instead
